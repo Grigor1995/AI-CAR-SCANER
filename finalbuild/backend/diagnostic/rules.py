@@ -39,7 +39,7 @@ class DiagnosticReasoningEngine:
     def _add_dtc_categories(dtcs: set[str], categories: list[tuple[str, str]]) -> None:
         for code in sorted(dtcs):
             if re.fullmatch(r"P03\d{2}", code):
-                categories.append(("ignition", f"The {code} family indicates a misfire/combustion issue; identify whether it follows fuel mode, load, or cylinder."))
+                categories.append(("ignition / combustion", f"The {code} family indicates a misfire/combustion issue; identify whether it follows fuel mode, load, or cylinder."))
                 categories.append(("intake", f"Misfire can also be influenced by intake/airflow conditions; verify air-fuel and mechanical evidence before concluding component failure."))
             elif code in {"P0171", "P0174"}:
                 categories.append(("lean mixture", f"{code} indicates a lean condition; separate air leak, fuel delivery, and sensor/model causes."))

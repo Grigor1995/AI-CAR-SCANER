@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
-from backend.ai.interfaces import LLMProvider, LLMResponse
-from backend.diagnostic.models import DiagnosticSession
+from ai.interfaces import LLMProvider, LLMResponse
+from diagnostic.models import DiagnosticSession
 
 class DiagnosticLLMOrchestrator:
     """LLM is constrained to explanation/orchestration; deterministic reasoning remains authoritative."""

@@ -1,8 +1,8 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from api.state import sessions
-from backend.multi_ecu.models import MultiEcuConnectRequest, MultiEcuStatusResponse
-from backend.multi_ecu.service import MultiEcuDiagnosticService
+from multi_ecu.models import MultiEcuConnectRequest, MultiEcuStatusResponse
+from multi_ecu.service import MultiEcuDiagnosticService
 from diagnostic.models import DTC, Evidence, EvidenceSource, EvidenceStatus
 
 router = APIRouter(prefix='/api/v1/multi-ecu', tags=['multi-ecu'])

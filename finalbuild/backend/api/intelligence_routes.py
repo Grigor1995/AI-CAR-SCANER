@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from uuid import UUID
 from diagnostic.models import EvidenceSource, TestResult
-from backend.ai.reasoning.engine import DiagnosticIntelligenceEngine
+from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from api.state import sessions
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["diagnostic-intelligence"])

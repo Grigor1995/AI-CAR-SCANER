@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from diagnostic.models import EvidenceSource
 from api.state import sessions
-from backend.telemetry.evidence import events_to_evidence
-from backend.telemetry.models import TelemetrySample, TelemetrySummary
-from backend.telemetry.service import TelemetryService
-from backend.ai.live_analysis import analyze_live_session
+from telemetry.evidence import events_to_evidence
+from telemetry.models import TelemetrySample, TelemetrySummary
+from telemetry.service import TelemetryService
+from ai.live_analysis import analyze_live_session
 
 router = APIRouter(prefix="/api/v1/telemetry", tags=["vehicle-telemetry"])
 service = TelemetryService()

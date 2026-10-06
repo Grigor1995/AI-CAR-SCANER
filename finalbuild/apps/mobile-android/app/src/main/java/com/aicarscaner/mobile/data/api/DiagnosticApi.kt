@@ -27,6 +27,6 @@ interface DiagnosticApi {
     @POST("api/v1/sessions/{sessionId}/dtcs")
     suspend fun addDtc(@Path("sessionId") sessionId: String, @Body request: DtcRequest): DiagnosticSessionDto
 
-    @POST("api/v1/sessions/{sessionId}/analyze")
+    @POST("api/v1/analysis/{sessionId}")
     suspend fun analyze(@Path("sessionId") sessionId: String): DiagnosticSessionDto
 }

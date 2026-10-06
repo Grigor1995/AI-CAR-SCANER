@@ -16,3 +16,8 @@ build/
 .vscode/
 *.log
 postgres_data/
+
+# Local LLM model artifacts (never commit large model files)
+*.gguf
+*.ggml
+*.safetensors

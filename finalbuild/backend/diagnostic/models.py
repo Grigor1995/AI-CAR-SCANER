@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 class SessionState(str, Enum):
     CREATED="CREATED"; VEHICLE_IDENTIFIED="VEHICLE_IDENTIFIED"; SYMPTOMS_COLLECTED="SYMPTOMS_COLLECTED"; INITIAL_ANALYSIS="INITIAL_ANALYSIS"; QUESTIONS_PENDING="QUESTIONS_PENDING"; DATA_COLLECTION="DATA_COLLECTION"; TESTING="TESTING"; HYPOTHESIS_VALIDATION="HYPOTHESIS_VALIDATION"; ROOT_CAUSE_FOUND="ROOT_CAUSE_FOUND"; REPAIR="REPAIR"; POST_REPAIR_VERIFICATION="POST_REPAIR_VERIFICATION"; CLOSED="CLOSED"
@@ -13,7 +13,19 @@ class EvidenceStatus(str, Enum):
 class Vehicle(BaseModel):
     make: str; model: str; year: int | None=None; engine: str | None=None; fuel: list[str]=Field(default_factory=list); ecu: str | None=None; metadata: dict=Field(default_factory=dict)
 class Symptom(BaseModel):
-    id: UUID=Field(default_factory=uuid4); raw_text: str; normalized: dict=Field(default_factory=dict)
+    id: UUID=Field(default_factory=uuid4)
+    raw_text: str = ""
+    normalized: dict=Field(default_factory=dict)
+    symptom: str | None = None
+
+    @model_validator(mode="after")
+    def normalize_legacy_payload(self):
+        if not self.raw_text.strip() and self.symptom:
+            self.raw_text = self.symptom.strip()
+        if not self.raw_text.strip():
+            raise ValueError("Symptom text must not be empty")
+        return self
+
 class DTC(BaseModel):
     code: str; description: str | None=None; source: EvidenceSource=EvidenceSource.USER_REPORTED
 class Evidence(BaseModel):

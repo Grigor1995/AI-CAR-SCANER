@@ -6,7 +6,7 @@ import os
 import re
 from typing import Any
 
-from backend.ai.interfaces import EmbeddingProvider
+from ai.interfaces import EmbeddingProvider
 
 
 class HashEmbeddingProvider(EmbeddingProvider):

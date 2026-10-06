@@ -8,7 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from typing import Any
 
-from backend.ai.interfaces import LLMProvider, LLMResponse
+from ai.interfaces import LLMProvider, LLMResponse
 
 
 @dataclass(frozen=True)

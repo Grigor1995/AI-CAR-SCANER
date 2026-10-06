@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import os
 
-from backend.ai.interfaces import LocalLLMProvider
-from backend.ai.llm.llama_server import LlamaServerConfig, LlamaServerLLMProvider
-from backend.ai.llm.openai_compatible import OpenAICompatibleConfig, HttpOpenAICompatibleProvider
+from ai.interfaces import LocalLLMProvider
+from ai.llm.llama_server import LlamaServerConfig, LlamaServerLLMProvider
+from ai.llm.openai_compatible import OpenAICompatibleConfig, HttpOpenAICompatibleProvider
 
 
 def build_llm_provider():

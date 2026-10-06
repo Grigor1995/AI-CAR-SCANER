@@ -4,7 +4,7 @@ import com.aicarscaner.mobile.data.api.*
 
 class DiagnosticRepository(private val api: DiagnosticApi) {
     suspend fun createSession(vehicle: VehicleDto) =
-        api.createSession(CreateSessionRequest(vehicle))
+        api.createSession(vehicle)
 
     suspend fun addSymptom(sessionId: String, symptom: String) =
         api.addSymptom(sessionId, SymptomRequest(symptom))

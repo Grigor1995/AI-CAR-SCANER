@@ -3,9 +3,9 @@ from fastapi import APIRouter, HTTPException
 from api.state import sessions
 from diagnostic.models import DTC, Evidence, EvidenceSource, EvidenceStatus
 from api.state import vci_manager
-from backend.vehicle_diagnostic.models import SessionDeviceBindRequest, SessionDeviceBindingResponse, SessionObdSyncResponse
-from backend.vehicle_diagnostic.models import DiagnosticConnectRequest, DiagnosticRuntimeStatus, EcuIdentityResponse, UdsDtcResponse
-from backend.vehicle_diagnostic.service import VehicleDiagnosticService
+from vehicle_diagnostic.models import SessionDeviceBindRequest, SessionDeviceBindingResponse, SessionObdSyncResponse
+from vehicle_diagnostic.models import DiagnosticConnectRequest, DiagnosticRuntimeStatus, EcuIdentityResponse, UdsDtcResponse
+from vehicle_diagnostic.service import VehicleDiagnosticService
 
 router = APIRouter(prefix='/api/v1/vehicle-diagnostic', tags=['vehicle-diagnostic'])
 service = VehicleDiagnosticService()

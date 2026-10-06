@@ -1,0 +1,6 @@
+case_id: LPG_MISFIRE_001
+vehicle: {make: Mercedes-Benz, model: W211, year: 2006, engine: M272 3.5, fuel: [petrol, LPG]}
+symptoms: [engine_shaking, acceleration, below_2000_rpm, LPG_only]
+dtc: [P0302]
+expected_categories: [LPG_injection, LPG_calibration, ignition, intake]
+forbidden_claims: [confirmed_coil_failure]

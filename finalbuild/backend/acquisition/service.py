@@ -8,7 +8,7 @@ from vehicle.acquisition.models import ReconnectPolicy
 from vehicle.acquisition.sources import ObdPollingSource
 from vehicle.obd.client import GenericObdClient
 from vehicle.obd.adapters.simulator import SimulatorTransport
-from backend.telemetry.models import TelemetrySample
+from telemetry.models import TelemetrySample
 from api.telemetry_routes import service as telemetry_service
 from .models import AcquisitionStartRequest, AcquisitionStatus
 

@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from api.state import sessions
-from backend.ai.llm.factory import build_llm_provider
-from backend.ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
-from backend.ai.reasoning.pipeline import DiagnosticIntelligencePipeline
+from ai.llm.factory import build_llm_provider
+from ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
+from ai.reasoning.pipeline import DiagnosticIntelligencePipeline
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 knowledge_store = HybridKnowledgeStore()

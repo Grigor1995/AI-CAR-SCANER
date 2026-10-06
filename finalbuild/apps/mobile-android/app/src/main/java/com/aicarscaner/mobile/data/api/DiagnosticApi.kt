@@ -19,7 +19,7 @@ data class DiagnosticSessionDto(val session_id: String, val state: String)
 
 interface DiagnosticApi {
     @POST("api/v1/sessions")
-    suspend fun createSession(@Body request: CreateSessionRequest): DiagnosticSessionDto
+    suspend fun createSession(@Body vehicle: VehicleDto): DiagnosticSessionDto
 
     @POST("api/v1/sessions/{sessionId}/symptoms")
     suspend fun addSymptom(@Path("sessionId") sessionId: String, @Body request: SymptomRequest): DiagnosticSessionDto

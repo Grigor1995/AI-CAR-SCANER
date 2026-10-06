@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from backend.ai.reasoning.engine import DiagnosticIntelligenceEngine
-from backend.ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
-from backend.ai.rag.reranker import LexicalReranker
-from backend.ai.llm.interfaces_guard import SafePromptContext
-from backend.diagnostic.models import DiagnosticSession
+from ai.reasoning.engine import DiagnosticIntelligenceEngine
+from ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
+from ai.rag.reranker import LexicalReranker
+from ai.llm.interfaces_guard import SafePromptContext
+from diagnostic.models import DiagnosticSession
 
 @dataclass(frozen=True)
 class DiagnosticIntelligenceResult:

@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
-from backend.ai.interfaces import LLMProvider, LLMResponse
+from ai.interfaces import LLMProvider, LLMResponse
 
 @dataclass(frozen=True)
 class OllamaConfig:

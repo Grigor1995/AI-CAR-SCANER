@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from api.state import sessions
-from backend.network_discovery.state import passive_service, active_service
+from network_discovery.state import passive_service, active_service
 from api.multi_bus_routes import _runtime as multi_bus_runtime
 from vehicle.network.active_discovery import ActiveProbePolicy
 

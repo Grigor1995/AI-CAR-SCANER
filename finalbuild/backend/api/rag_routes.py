@@ -5,10 +5,10 @@ import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.ai.embeddings import create_embedding_provider
-from backend.ai.rag.pgvector_hybrid import PgVectorConfig, PgVectorHybridRepository
-from backend.ai.rag.retrieval import DiagnosticRAGRetriever
-from backend.ai.rag.reranker import create_reranker
+from ai.embeddings import create_embedding_provider
+from ai.rag.pgvector_hybrid import PgVectorConfig, PgVectorHybridRepository
+from ai.rag.retrieval import DiagnosticRAGRetriever
+from ai.rag.reranker import create_reranker
 
 router = APIRouter(prefix="/api/v1/rag", tags=["rag-retrieval"])
 

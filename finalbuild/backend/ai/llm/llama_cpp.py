@@ -6,7 +6,7 @@ LlamaServerLLMProvider instead.
 """
 from __future__ import annotations
 
-from backend.ai.llm.llama_server import LlamaServerLLMProvider as LlamaCppLLMProvider
-from backend.ai.llm.llama_server import LlamaServerConfig as LlamaCppConfig
+from ai.llm.llama_server import LlamaServerLLMProvider as LlamaCppLLMProvider
+from ai.llm.llama_server import LlamaServerConfig as LlamaCppConfig
 
 __all__ = ["LlamaCppConfig", "LlamaCppLLMProvider"]

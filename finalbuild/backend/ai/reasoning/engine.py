@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from backend.diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Hypothesis, DiagnosticTest, SessionState
+from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Hypothesis, DiagnosticTest, SessionState
 from backend.diagnostic.rules import DiagnosticReasoningEngine
 from backend.ai.reasoning.evidence_extractor import StructuredEvidenceExtractor
 from backend.ai.ml.anomaly import NumericAnomalyDetector

@@ -4,7 +4,7 @@ from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource,
 from diagnostic.rules import DiagnosticReasoningEngine
 from backend.ai.reasoning.evidence_extractor import StructuredEvidenceExtractor
 from backend.ai.ml.anomaly import NumericAnomalyDetector
-from backend.diagnostic.decision import DiagnosticDecisionEngine
+from diagnostic.decision import DiagnosticDecisionEngine
 
 class DiagnosticIntelligenceEngine:
     """Evidence-driven loop around the deterministic domain engine."""
@@ -49,7 +49,7 @@ class DiagnosticIntelligenceEngine:
         return session
 
     def record_test_result(self, session: DiagnosticSession, test_id, result: str, measurements: dict | None = None, notes: str | None = None) -> DiagnosticSession:
-        from backend.diagnostic.models import TestResult, Evidence
+        from diagnostic.models import TestResult, Evidence
         measurements = measurements or {}
         session.test_results.append(TestResult(test_id=test_id, result=result, measurements=measurements, notes=notes))
         session.evidence.append(Evidence(

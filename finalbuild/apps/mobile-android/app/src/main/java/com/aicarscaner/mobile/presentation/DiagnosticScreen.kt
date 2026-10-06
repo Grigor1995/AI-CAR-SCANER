@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +27,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var model by remember { mutableStateOf("W211") }
     var year by remember { mutableStateOf("2006") }
     var engine by remember { mutableStateOf("M272 3.5") }
+    var petrol by remember { mutableStateOf(true) }
+    var lpg by remember { mutableStateOf(true) }
     var symptom by remember { mutableStateOf("") }
     var dtc by remember { mutableStateOf("") }
 
@@ -41,10 +45,20 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             OutlinedTextField(year, { year = it }, Modifier.fillMaxWidth(), label = { Text("Year") })
             OutlinedTextField(engine, { engine = it }, Modifier.fillMaxWidth(), label = { Text("Engine") })
 
+            Text("Fuel", style = MaterialTheme.typography.titleMedium)
+            Row {
+                Checkbox(checked = petrol, onCheckedChange = { petrol = it })
+                Text("Petrol")
+            }
+            Row {
+                Checkbox(checked = lpg, onCheckedChange = { lpg = it })
+                Text("LPG")
+            }
+
             Button(
                 onClick = {
                     viewModel.createSession(
-                        VehicleDto(make, model, year.toIntOrNull(), engine, listOf("petrol", "LPG"))
+                        VehicleDto(make, model, year.toIntOrNull(), engine, buildList { if (petrol) add("petrol"); if (lpg) add("LPG") })
                     )
                 },
                 enabled = !state.loading && state.session == null,

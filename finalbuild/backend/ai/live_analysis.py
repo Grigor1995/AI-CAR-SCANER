@@ -4,11 +4,11 @@ from collections import defaultdict
 from statistics import mean
 from typing import Any
 
-from backend.ai.llm.factory import build_llm_provider
-from backend.ai.reasoning.engine import DiagnosticIntelligenceEngine
-from backend.diagnostic.models import DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus
-from backend.telemetry.models import TelemetrySample, TelemetrySummary
-from backend.telemetry.evidence import events_to_evidence
+from ai.llm.factory import build_llm_provider
+from ai.reasoning.engine import DiagnosticIntelligenceEngine
+from diagnostic.models import DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus
+from telemetry.models import TelemetrySample, TelemetrySummary
+from telemetry.evidence import events_to_evidence
 
 
 def _recent_signal_context(samples: list[TelemetrySample], max_per_signal: int = 8) -> list[dict[str, Any]]:

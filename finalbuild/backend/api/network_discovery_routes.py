@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from api.state import sessions
 from vehicle.can.models import CanFrame
-from backend.network_discovery.state import passive_service
+from network_discovery.state import passive_service
 
 router = APIRouter(prefix="/api/v1/network-discovery", tags=["network-discovery"])
 service = passive_service

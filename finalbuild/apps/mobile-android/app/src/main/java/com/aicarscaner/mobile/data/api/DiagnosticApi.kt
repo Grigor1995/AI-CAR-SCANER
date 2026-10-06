@@ -13,7 +13,10 @@ data class VehicleDto(
     val fuel: List<String> = emptyList(),
     val ecu: String? = null
 )
-data class SymptomRequest(val raw_text: String)
+data class SymptomRequest(
+    val raw_text: String,
+    val normalized: Map<String, String> = emptyMap()
+)
 data class DtcRequest(val code: String, val description: String? = null)
 
 data class HypothesisDto(

@@ -5,8 +5,8 @@ from tempfile import NamedTemporaryFile
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.ai.ingestion.models import DocumentMetadata
-from backend.ai.ingestion.pipeline import KnowledgeIngestionPipeline
+from ai.ingestion.models import DocumentMetadata
+from ai.ingestion.pipeline import KnowledgeIngestionPipeline
 
 router = APIRouter(prefix="/api/v1/knowledge", tags=["knowledge-ingestion"])
 pipeline = KnowledgeIngestionPipeline()

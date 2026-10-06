@@ -15,7 +15,37 @@ data class VehicleDto(
 )
 data class SymptomRequest(val raw_text: String)
 data class DtcRequest(val code: String, val description: String? = null)
-data class DiagnosticSessionDto(val session_id: String, val state: String)
+
+data class HypothesisDto(
+    val id: String,
+    val title: String,
+    val category: String,
+    val score: Double,
+    val rationale: String,
+    val supporting_evidence_ids: List<String> = emptyList(),
+    val status: String
+)
+
+data class RecommendationDto(
+    val id: String,
+    val title: String,
+    val purpose: String,
+    val priority: Int,
+    val expected_observation: String? = null
+)
+
+data class AuditEventDto(
+    val event: String,
+    val hypotheses: Int? = null
+)
+
+data class DiagnosticSessionDto(
+    val session_id: String,
+    val state: String,
+    val hypotheses: List<HypothesisDto> = emptyList(),
+    val recommendations: List<RecommendationDto> = emptyList(),
+    val audit_log: List<AuditEventDto> = emptyList()
+)
 
 interface DiagnosticApi {
     @POST("api/v1/sessions")

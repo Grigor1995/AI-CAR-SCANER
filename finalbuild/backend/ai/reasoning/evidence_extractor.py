@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from backend.diagnostic.models import EvidenceSource, EvidenceStatus, Evidence, Symptom, DTC
+from diagnostic.models import EvidenceSource, EvidenceStatus, Evidence, Symptom, DTC
 
 class StructuredEvidenceExtractor:
     """Conservative rule-based extraction: converts language into explicit evidence, never a diagnosis."""

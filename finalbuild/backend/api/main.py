@@ -43,6 +43,9 @@ def get_session(session_id:str):
     return sessions[session_id]
 @app.post('/api/v1/sessions/{session_id}/symptoms',response_model=DiagnosticSession)
 def add_symptom(session_id:str,symptom:Symptom):
+    """Add a user-reported symptom using the canonical raw_text payload."""
+    if not symptom.raw_text.strip():
+        raise HTTPException(422,'Symptom text must not be empty')
     s=get_session(session_id); s.symptoms.append(symptom); s.evidence.append(Evidence(fact=symptom.raw_text,source=EvidenceSource.USER_REPORTED,status=EvidenceStatus.REPORTED)); return s
 @app.post('/api/v1/sessions/{session_id}/dtcs',response_model=DiagnosticSession)
 def add_dtc(session_id:str,dtc:DTC):

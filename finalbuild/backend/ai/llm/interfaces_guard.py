@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from backend.diagnostic.models import DiagnosticSession
+from diagnostic.models import DiagnosticSession
 
 @dataclass(frozen=True)
 class SafePromptContext:

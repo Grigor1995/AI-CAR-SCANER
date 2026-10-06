@@ -21,14 +21,17 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
 
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }
+
     fun addSymptom(text: String) = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.addSymptom(id, text)
     }
+
     fun addDtc(code: String) = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.addDtc(id, code)
     }
+
     fun analyze() = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.analyze(id)
@@ -38,7 +41,9 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             runCatching { block() }
-                .onSuccess { _uiState.value = DiagnosticUiState(session = it) }
+                .onSuccess {
+                    _uiState.value = DiagnosticUiState(session = it, loading = false)
+                }
                 .onFailure {
                     _uiState.value = _uiState.value.copy(
                         loading = false,

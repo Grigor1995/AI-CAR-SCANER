@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -27,11 +30,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
     MaterialTheme {
         Column(
-            modifier = Modifier.fillMaxSize().padding(20.dp),
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text("AI CAR SCANER", style = MaterialTheme.typography.headlineMedium)
             Text("Diagnostic Session", style = MaterialTheme.typography.titleMedium)
+
             OutlinedTextField(make, { make = it }, Modifier.fillMaxWidth(), label = { Text("Make") })
             OutlinedTextField(model, { model = it }, Modifier.fillMaxWidth(), label = { Text("Model") })
             OutlinedTextField(year, { year = it }, Modifier.fillMaxWidth(), label = { Text("Year") })
@@ -48,8 +52,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             ) { Text("Create Diagnostic Session") }
 
             state.session?.let { session ->
-                Text("Session: ${session.session_id}")
-                Text("State: ${session.state}")
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Session", style = MaterialTheme.typography.titleMedium)
+                        Text(session.session_id)
+                        Text("Analysis state: ${session.state}", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+
                 OutlinedTextField(
                     symptom, { symptom = it }, Modifier.fillMaxWidth(),
                     label = { Text("Symptom") }
@@ -75,6 +85,45 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     enabled = !state.loading,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Analyze") }
+
+                if (session.hypotheses.isNotEmpty()) {
+                    Text("Hypotheses", style = MaterialTheme.typography.titleLarge)
+                    session.hypotheses.forEach { hypothesis ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(hypothesis.title, style = MaterialTheme.typography.titleMedium)
+                                Text("Category: ${hypothesis.category}")
+                                Text("Status: ${hypothesis.status}")
+                                Text("Confidence / score: ${"%.2f".format(hypothesis.score)}")
+                                Text("Rationale: ${hypothesis.rationale}")
+                            }
+                        }
+                    }
+                }
+
+                if (session.recommendations.isNotEmpty()) {
+                    Text("Recommendations", style = MaterialTheme.typography.titleLarge)
+                    session.recommendations.forEach { recommendation ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(recommendation.title, style = MaterialTheme.typography.titleMedium)
+                                Text("Priority: ${recommendation.priority}")
+                                Text("Purpose: ${recommendation.purpose}")
+                                recommendation.expected_observation?.let { Text("Expected observation: $it") }
+                            }
+                        }
+                    }
+                }
+
+                if (session.audit_log.isNotEmpty()) {
+                    Text("Audit Events", style = MaterialTheme.typography.titleLarge)
+                    session.audit_log.forEach { event ->
+                        Text(buildString {
+                            append(event.event)
+                            event.hypotheses?.let { append(" (hypotheses: $it)") }
+                        })
+                    }
+                }
             }
 
             if (state.loading) CircularProgressIndicator()

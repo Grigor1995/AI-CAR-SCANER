@@ -1,8 +1,8 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from api.state import sessions
-from backend.acquisition.models import AcquisitionStartRequest, AcquisitionStatus
-from backend.acquisition.service import AcquisitionApiService
+from acquisition.models import AcquisitionStartRequest, AcquisitionStatus
+from acquisition.service import AcquisitionApiService
 
 router=APIRouter(prefix='/api/v1/acquisition',tags=['vehicle-acquisition'])
 service=AcquisitionApiService()

@@ -54,6 +54,21 @@ def test_create_add_symptom_dtc_and_analyze():
     assert response.status_code == 200, response.text
     assert response.json()["dtcs"][0]["code"] == "P0302"
 
+    edited_vehicle = {
+        "make": "Mercedes-Benz",
+        "model": "W211 E350",
+        "year": 2006,
+        "engine": "M272 3.5",
+        "fuel": ["petrol", "LPG"],
+        "ecu": "ME 9.7",
+    }
+    response = client.put(
+        f"/api/v1/sessions/{session_id}/vehicle",
+        json=edited_vehicle,
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["vehicle"]["engine"] == "M272 3.5"
+
     response = client.post(f"/api/v1/analysis/{session_id}")
     assert response.status_code == 200, response.text
 

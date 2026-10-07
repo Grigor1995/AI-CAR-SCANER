@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.rules import DiagnosticReasoningEngine
+from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router
 from api.intelligence_routes import router as intelligence_router
 from api.state import sessions
@@ -18,6 +19,7 @@ from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
 app=FastAPI(title="AI Auto Diagnostic Platform",version="0.1.0")
 engine=DiagnosticReasoningEngine()
+decision_engine=DiagnosticDecisionEngine()
 app.include_router(platform_router)
 app.include_router(intelligence_router)
 app.include_router(ai_router)
@@ -90,8 +92,13 @@ def delete_symptom(session_id:str,symptom_id:str):
 def add_dtc(session_id:str,dtc:DTC):
     s=get_session(session_id); s.dtcs.append(dtc); status=EvidenceStatus.MEASURED if dtc.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED; s.evidence.append(Evidence(fact=dtc.code,source=dtc.source,status=status)); return s
 @app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)
-def analyze(session_id:str): return engine.analyze(get_session(session_id))
+def analyze(session_id:str):
+    s=engine.analyze(get_session(session_id))
+    decision_engine.refresh_recommendations(s)
+    return s
 
 @app.post('/api/v1/analysis/{session_id}',response_model=DiagnosticSession)
 def analyze_compat(session_id:str):
-    return engine.analyze(get_session(session_id))
+    s=engine.analyze(get_session(session_id))
+    decision_engine.refresh_recommendations(s)
+    return s

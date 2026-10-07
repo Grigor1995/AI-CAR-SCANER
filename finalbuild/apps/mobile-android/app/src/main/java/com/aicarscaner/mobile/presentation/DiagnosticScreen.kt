@@ -121,6 +121,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var symptom by remember { mutableStateOf("") }
     var editingSymptomId by remember { mutableStateOf<String?>(null) }
     var dtc by remember { mutableStateOf("") }
+    var editingDtcId by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var editingVehicle by remember { mutableStateOf(false) }
     var obdDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
@@ -199,6 +200,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         editingSymptomId = null
         symptom = ""
         dtc = ""
+        editingDtcId = null
         make = "Mercedes"
         model = "W211"
         year = "2006"
@@ -442,32 +444,92 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             Text(text.dtc, style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
-                                dtc,
-                                { dtc = it.uppercase() },
-                                Modifier.fillMaxWidth(),
+                                value = dtc,
+                                onValueChange = { dtc = it.uppercase() },
+                                modifier = Modifier.fillMaxWidth(),
                                 label = { Text("Diagnostic trouble code") },
                                 placeholder = { Text("P0302") }
                             )
-                            Button(
-                                onClick = {
-                                    viewModel.addDtc(dtc.trim())
-                                    dtc = ""
-                                },
-                                enabled = dtc.trim().isNotEmpty() && !state.loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text(text.addDtc) }
+
+                            if (editingDtcId != null) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = {
+                                            viewModel.updateDtc(editingDtcId!!, dtc.trim())
+                                            editingDtcId = null
+                                            dtc = ""
+                                        },
+                                        enabled = dtc.trim().isNotEmpty() && !state.loading,
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(text.save) }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            editingDtcId = null
+                                            dtc = ""
+                                        },
+                                        enabled = !state.loading,
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(text.cancel) }
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        viewModel.addDtc(dtc.trim())
+                                        dtc = ""
+                                    },
+                                    enabled = dtc.trim().isNotEmpty() && !state.loading,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { Text(text.addDtc) }
+                            }
 
                             session.dtcs.forEach { item ->
                                 Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
+                                    Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                    )
+                                ) {
+                                    Column(
+                                        Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                    Column(Modifier.padding(12.dp)) {
-                                        Text(item.code, style = MaterialTheme.typography.titleMedium)
-                                        item.description?.let { Text(it) }
+                                        Row(
+                                            Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(item.code, style = MaterialTheme.typography.titleMedium)
+                                                item.description?.let { Text(it) }
+                                            }
+                                            if (item.id != null) {
+                                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            dtc = item.code
+                                                            editingDtcId = item.id
+                                                        },
+                                                        enabled = !state.loading
+                                                    ) { Text(text.edit) }
+
+                                                    Button(
+                                                        onClick = {
+                                                            viewModel.deleteDtc(item.id)
+                                                            if (editingDtcId == item.id) {
+                                                                editingDtcId = null
+                                                                dtc = ""
+                                                            }
+                                                        },
+                                                        enabled = !state.loading,
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = MaterialTheme.colorScheme.error,
+                                                            contentColor = MaterialTheme.colorScheme.onError
+                                                        )
+                                                    ) { Text(text.delete) }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -810,6 +872,31 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                         4 -> {
                             Text(text.analysis, style = MaterialTheme.typography.titleLarge)
+                            if (session.hypotheses.isEmpty() && session.recommendations.isEmpty()) {
+                                Card(
+                                    Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                    )
+                                ) {
+                                    Column(
+                                        Modifier.padding(18.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text.analysisEmpty,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            "${text.symptoms}: ${session.symptoms.size}  •  ${text.dtc}: ${session.dtcs.size}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
                             Button(
                                 onClick = { viewModel.analyze() },
                                 enabled = !state.loading &&

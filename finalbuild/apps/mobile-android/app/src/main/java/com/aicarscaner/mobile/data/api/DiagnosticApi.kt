@@ -62,6 +62,7 @@ data class AuditEventDto(
 data class DiagnosticSessionDto(
     val session_id: String,
     val state: String,
+    val vehicle: VehicleDto? = null,
     val symptoms: List<SymptomDto> = emptyList(),
     val dtcs: List<DtcDto> = emptyList(),
     val hypotheses: List<HypothesisDto> = emptyList(),

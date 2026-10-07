@@ -8,7 +8,7 @@ class DiagnosticLLMOrchestrator:
     def __init__(self, provider: LLMProvider):
         self.provider = provider
 
-    def build_context(self, session: DiagnosticSession, retrieved: list[dict] | None = None) -> dict:
+    def build_context(self, session: DiagnosticSession, retrieved: list[dict] | None = None, language: str = "en") -> dict:
         return {
             "session_id": str(session.session_id),
             "vehicle": session.vehicle.model_dump() if session.vehicle else None,
@@ -17,9 +17,13 @@ class DiagnosticLLMOrchestrator:
             "recommended_tests": [t.model_dump(mode="json") for t in session.recommendations],
             "retrieved_knowledge": retrieved or [],
             "instruction": "Do not invent measurements, confirmations, or component failures. Separate evidence from inference.",
+            "response_language": language,
         }
 
-    async def explain(self, session: DiagnosticSession, retrieved: list[dict] | None = None) -> LLMResponse:
-        context = self.build_context(session, retrieved)
-        prompt = "Explain the current diagnostic reasoning using only the supplied evidence and clearly label uncertainty."
+    async def explain(self, session: DiagnosticSession, retrieved: list[dict] | None = None, language: str = "en") -> LLMResponse:
+        context = self.build_context(session, retrieved, language)
+        prompt = (
+            "Explain the current diagnostic reasoning using only the supplied evidence and clearly label uncertainty. "
+            f"Respond in language code '{language}'."
+        )
         return await self.provider.generate(prompt, context)

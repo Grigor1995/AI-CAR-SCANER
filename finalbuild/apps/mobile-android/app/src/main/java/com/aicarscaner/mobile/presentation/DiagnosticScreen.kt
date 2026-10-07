@@ -926,7 +926,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
                             } else {
                                 val evidenceById = session.evidence.associateBy { it.id }
-                                val latestQuestions = session.audit_log.flatMap { it.questions }.distinct()
+                                val latestQuestions = session.audit_log.flatMap { it.questions.orEmpty() }.distinct()
 
                                 Card(
                                     Modifier.fillMaxWidth(),

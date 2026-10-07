@@ -69,9 +69,75 @@ class DiagnosticReasoningEngine:
                 unique.append((category, statement))
 
         session.hypotheses = [
-            Hypothesis(category=category, statement=statement) for category, statement in unique
+            Hypothesis(
+                category=category,
+                statement=statement,
+                supporting_evidence_ids=self._supporting_evidence_ids(category, session),
+                contradicting_evidence_ids=self._contradicting_evidence_ids(category, session),
+            )
+            for category, statement in unique
         ]
         return self._recommend(session, text, dtcs)
+
+    @staticmethod
+    def _supporting_evidence_ids(category: str, session: DiagnosticSession) -> list:
+        category = category.lower()
+        hints = {
+            "ignition / combustion": ("misfire", "spark", "coil", "ignition", "p03"),
+            "air-fuel / intake": ("air", "fuel", "trim", "intake", "mixture", "misfire"),
+            "mechanical cylinder condition": ("compression", "leak-down", "leakdown", "mechanical", "misfire", "p03"),
+            "lpg fuel delivery / mixture": ("lpg", "gas pressure", "injector", "mixture", "trim"),
+            "lpg fuel delivery": ("lpg", "gas pressure", "injector"),
+            "lpg injection": ("lpg", "injector"),
+            "ignition under lpg load": ("lpg", "misfire", "load", "acceleration"),
+            "ignition": ("spark", "coil", "ignition", "misfire", "p03"),
+            "intake": ("intake", "air leak", "vacuum", "misfire"),
+            "load-dependent behavior": ("load", "acceleration", "rpm"),
+            "load-dependent combustion": ("load", "acceleration", "misfire", "rpm"),
+            "idle stability / air-fuel control": ("idle", "trim", "maf", "map", "misfire"),
+            "oil / combustion condition": ("smoke", "oil", "combustion"),
+            "lean mixture": ("lean", "trim", "p0171", "p0174", "air leak"),
+            "rich mixture": ("rich", "trim", "p0172", "p0175", "injector"),
+            "air metering / maf": ("maf", "airflow", "p010"),
+            "coolant temperature sensing": ("coolant", "temperature", "ect", "p011"),
+            "oxygen sensor / fuel feedback": ("oxygen", "o2", "lambda", "p013", "p014", "p015", "p016"),
+            "catalyst efficiency": ("catalyst", "p0420", "p0430"),
+            "cam/crank correlation": ("timing", "cam", "crank", "p0016", "p0017", "p0018", "p0019"),
+            "transmission control / gear ratio": ("transmission", "gear", "slip", "p073"),
+            "power supply / voltage": ("battery", "voltage", "charging", "p056"),
+            "vehicle network communication": ("can", "communication", "gateway", "u010", "u012"),
+            "starting system / engine start": ("start", "crank", "authorization", "battery"),
+            "engine stalling": ("stall", "stalls", "dies", "rpm"),
+            "cooling system": ("overheat", "overheating", "coolant", "fan", "temperature"),
+            "electrical power supply": ("electrical", "battery", "voltage", "charging"),
+        }
+        terms = hints.get(category, tuple(x for x in re.split(r"[/ ]+", category) if len(x) > 3))
+        return [e.id for e in session.evidence if any(term in e.fact.lower() for term in terms)]
+
+    @staticmethod
+    def _contradicting_evidence_ids(category: str, session: DiagnosticSession) -> list:
+        category = category.lower()
+        contradiction_terms = {
+            "mechanical cylinder condition": ("compression normal", "leak-down normal", "leakdown normal", "mechanical normal"),
+            "ignition / combustion": ("spark normal", "coil normal", "ignition normal"),
+            "ignition under lpg load": ("spark normal", "coil normal", "ignition normal"),
+            "ignition": ("spark normal", "coil normal", "ignition normal"),
+            "intake": ("no leak", "intake normal", "vacuum normal"),
+            "lean mixture": ("trim normal", "mixture normal", "no leak"),
+            "rich mixture": ("trim normal", "mixture normal"),
+            "air metering / maf": ("maf normal", "airflow normal"),
+            "coolant temperature sensing": ("temperature normal", "ect normal"),
+            "oxygen sensor / fuel feedback": ("o2 normal", "lambda normal"),
+            "catalyst efficiency": ("catalyst normal"),
+            "cam/crank correlation": ("timing normal", "correlation normal"),
+            "transmission control / gear ratio": ("slip normal", "gear normal", "transmission normal"),
+            "power supply / voltage": ("voltage normal", "battery normal", "charging normal"),
+            "vehicle network communication": ("can normal", "communication normal", "network normal"),
+            "cooling system": ("temperature normal", "fan works normally"),
+            "electrical power supply": ("voltage normal", "battery normal", "charging normal"),
+        }
+        terms = contradiction_terms.get(category, ())
+        return [e.id for e in session.evidence if any(term in e.fact.lower() for term in terms)]
 
     @staticmethod
     def _add_dtc_categories(dtcs: set[str], categories: list[tuple[str, str]]) -> None:

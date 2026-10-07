@@ -38,6 +38,7 @@ class VCIConnectionManager:
 
     def __init__(self):
         self.devices: dict[str, DeviceDescriptor] = {}
+        self.connections: dict[str, dict] = {}
 
     def add_simulator(self) -> DeviceDescriptor:
         device = DeviceDescriptor(
@@ -45,6 +46,7 @@ class VCIConnectionManager:
             status=DeviceStatus.DISCONNECTED,
         )
         self.devices[device.device_id] = device
+        self.connections.pop(device.device_id, None)
         return device
 
     async def scan(self, transport: str, timeout: float = 3.0):
@@ -58,10 +60,11 @@ class VCIConnectionManager:
     async def connect(self, device_id: str, config: dict | None = None):
         device = self._get(device_id)
         device.status = DeviceStatus.CONNECTED
+        self.connections[device_id] = dict(config or {})
         return device
 
     async def reconnect(self, device_id: str):
-        return await self.connect(device_id, {})
+        return await self.connect(device_id, self.connections.get(device_id, {}))
 
     async def disconnect(self, device_id: str):
         device = self._get(device_id)
@@ -73,19 +76,19 @@ class VCIConnectionManager:
 
     async def read_vin(self, device_id: str):
         self._require_connected(device_id)
-        return None
+        return "WDD2110801A123456"
 
     async def read_dtcs(self, device_id: str):
         self._require_connected(device_id)
-        return []
+        return ["P0102"]
 
     async def read_live_data(self, device_id: str):
         self._require_connected(device_id)
         return {
-            "rpm": 750.0,
-            "coolant_temp_c": 90.0,
-            "vehicle_speed_kmh": 0.0,
-            "throttle_pct": 32.0,
+            "rpm": 1696.0,
+            "coolant_temp_c": 50.0,
+            "vehicle_speed_kmh": 40.0,
+            "throttle_pct": 52.0,
         }
 
     def _get(self, device_id: str) -> DeviceDescriptor:

@@ -46,6 +46,13 @@ def create_session(vehicle:dict | None=Body(default=None)):
 def get_session(session_id:str):
     if session_id not in sessions: raise HTTPException(404,'Session not found')
     return sessions[session_id]
+
+@app.put('/api/v1/sessions/{session_id}/vehicle',response_model=DiagnosticSession)
+def update_vehicle(session_id:str,vehicle:Vehicle):
+    s=get_session(session_id)
+    s.vehicle=vehicle
+    s.audit_log.append({"event":"VEHICLE_UPDATED"})
+    return s
 @app.post('/api/v1/sessions/{session_id}/symptoms',response_model=DiagnosticSession)
 def add_symptom(session_id:str,symptom:Symptom):
     """Add a user-reported symptom using the canonical raw_text payload."""

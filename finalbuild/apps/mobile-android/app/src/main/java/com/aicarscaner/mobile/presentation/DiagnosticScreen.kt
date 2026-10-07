@@ -27,7 +27,11 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,12 +58,9 @@ import com.aicarscaner.mobile.settings.strings
 import android.app.PendingIntent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import android.content.Intent
-import android.provider.Settings
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-private val AppDarkColors = darkColorScheme()
 
 @Composable
 fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
@@ -117,7 +118,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         }
     }
 
-    fun refreshObdDevices() {
+    fun refreshBluetoothDevices() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ContextCompat.checkSelfPermission(
                 context,
@@ -128,24 +129,50 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             return
         }
         val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
-        obdDevices = adapter?.bondedDevices?.toList()?.sortedBy { it.name ?: it.address } ?: emptyList()
+        obdDevices = adapter?.bondedDevices?.toList()?.sortedBy {
+            it.name ?: it.address
+        } ?: emptyList()
+    }
+
+    fun refreshUsbDevices() {
+        val manager = context.getSystemService(UsbManager::class.java)
+        usbDevices = manager?.deviceList?.values?.toList() ?: emptyList()
+    }
+
+    fun closeAllObd() {
+        bluetoothClient.close()
+        wifiClient.close()
+        usbClient.close()
+        obdStatus = text.notConnected
+        obdResponse = ""
+    }
+
+    fun resetForNewSession() {
+        viewModel.clearSession()
+        selectedTab = 0
+        editingVehicle = false
+        editingSymptomId = null
+        symptom = ""
+        dtc = ""
+        make = "Mercedes"
+        model = "W211"
+        year = "2006"
+        engine = "M272 3.5"
+        petrol = true
+        lpg = true
     }
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionLauncher.launch(bluetoothPermission)
-        } else {
-            refreshObdDevices()
-        }
+        refreshBluetoothDevices()
+        refreshUsbDevices()
     }
 
     DisposableEffect(Unit) {
-        onDispose { obdClient.close() }
+        onDispose {
+            bluetoothClient.close()
+            wifiClient.close()
+            usbClient.close()
+        }
     }
 
     if (settingsOpen) {
@@ -179,14 +206,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         Text(text.appName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
                         state.session?.let { Text("Session ${it.session_id.take(8)}…", style = MaterialTheme.typography.bodySmall) }
                     }
-                    if (state.session != null) {
-                        Button(onClick = {
-                            viewModel.clearSession()
-                            selectedTab = 0
-                            editingVehicle = false
-                            symptom = ""
-                            dtc = ""
-                        }, enabled = !state.loading) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(onClick = { settingsOpen = true }) {
+                            Text(text.settings)
+                        }
+                        if (state.session != null) {
+                            Button(onClick = { resetForNewSession() }, enabled = !state.loading) {
+                                Text(text.newSession)
+                            }
+                        }
+                    }
+ enabled = !state.loading) {
                             Text(text.newSession)
                         }
                     }

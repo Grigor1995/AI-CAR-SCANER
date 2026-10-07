@@ -77,7 +77,24 @@ data class AppStrings(
     val map: String,
     val throttle: String,
     val stft: String,
-    val ltft: String
+    val ltft: String,
+    val evidence: String,
+    val supportingEvidence: String,
+    val contradictingEvidence: String,
+    val confidence: String,
+    val nextQuestions: String,
+    val informationGain: String,
+    val risk: String,
+    val estimatedCost: String,
+    val prerequisites: String,
+    val safetyNotes: String,
+    val targetHypotheses: String,
+    val newSessionConfirmTitle: String,
+    val newSessionConfirmMessage: String,
+    val possible: String,
+    val supportedByTest: String,
+    val disfavoredByTest: String,
+    val rejected: String
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {
@@ -92,7 +109,9 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Хост","Порт","Подключить Wi‑Fi","USB устройства","Запросить доступ USB","Нет USB устройств",
         "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG","Нет результатов анализа. Добавьте симптомы или DTC и запустите анализ.",
         "Поток данных","Обороты","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
-        "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT"
+        "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT",
+        "Доказательства","Поддерживающие доказательства","Противоречащие доказательства","Уверенность","Следующие диагностические вопросы","Информационная ценность","Риск","Оценочная стоимость","Предпосылки","Меры безопасности","Целевые гипотезы",
+        "Начать новую сессию?","Данные текущей сессии будут очищены с экрана приложения.","Возможно","Поддержано тестом","Ослаблено тестом","Отклонено"
     )
     AppLanguage.HY -> AppStrings(
         "AI CAR SCANER","Նոր սեսիա","Կարգավորումներ","Ախտորոշում","Սեսիա","OBD","Վերլուծություն","Գործողություններ",
@@ -105,7 +124,9 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
         "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG","Վերլուծության արդյունքներ դեռ չկան։ Ավելացրեք ախտանշան կամ DTC և գործարկեք վերլուծությունը։",
         "Կենդանի տվյալներ","Պտույտներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
-        "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT"
+        "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT",
+        "Ապացույցներ","Աջակցող ապացույցներ","Հակասող ապացույցներ","Վստահություն","Հաջորդ հարցեր","Տեղեկատվական արժեք","Ռիսկ","Մոտավոր արժեք","Նախապայմաններ","Անվտանգության նշումներ","Թիրախ հիպոթեզներ",
+        "Սկսե՞լ նոր սեսիա","Ընթացիկ սեսիայի տվյալները կհեռացվեն էկրանից։","Հնարավոր","Թեստով աջակցվում է","Թեստով թուլացվել է","Մերժված"
     )
     AppLanguage.EN -> AppStrings(
         "AI CAR SCANER","New Session","Settings","Diagnose","Session","OBD","Analysis","Activity",
@@ -118,6 +139,8 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Host","Port","Connect Wi‑Fi","USB devices","Request USB access","No USB devices",
         "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG","No analysis results yet. Add symptoms or DTCs and run analysis.",
         "Live Data","RPM","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
-        "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT"
+        "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT",
+        "Evidence","Supporting evidence","Contradicting evidence","Confidence","Next diagnostic questions","Information gain","Risk","Estimated cost","Prerequisites","Safety notes","Target hypotheses",
+        "Start a new session?","The current session data will be cleared from the app screen.","Possible","Supported by test","Disfavored by test","Rejected"
     )
 }

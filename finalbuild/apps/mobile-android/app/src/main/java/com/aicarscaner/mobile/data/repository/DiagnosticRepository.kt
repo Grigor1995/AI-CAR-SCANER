@@ -7,7 +7,7 @@ class DiagnosticRepository(private val api: DiagnosticApi) {
         api.createSession(vehicle)
 
     suspend fun addSymptom(sessionId: String, symptom: String) =
-        api.addSymptom(sessionId, SymptomRequest(symptom))
+        api.addSymptom(sessionId, SymptomRequest(raw_text = symptom.trim(), symptom = symptom.trim()))
 
     suspend fun addDtc(sessionId: String, code: String) =
         api.addDtc(sessionId, DtcRequest(code))

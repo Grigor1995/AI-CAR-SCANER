@@ -95,9 +95,64 @@ def delete_symptom(session_id:str,symptom_id:str):
     s.evidence=[e for e in s.evidence if not (e.source == EvidenceSource.USER_REPORTED and e.fact == removed.raw_text)]
     s.audit_log.append({"event":"SYMPTOM_DELETED","symptom_id":symptom_id})
     return s
+def _invalidate_analysis(s: DiagnosticSession) -> None:
+    s.hypotheses=[]
+    s.recommendations=[]
+
 @app.post('/api/v1/sessions/{session_id}/dtcs',response_model=DiagnosticSession)
 def add_dtc(session_id:str,dtc:DTC):
-    s=get_session(session_id); s.dtcs.append(dtc); status=EvidenceStatus.MEASURED if dtc.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED; s.evidence.append(Evidence(fact=dtc.code,source=dtc.source,status=status)); return s
+    code=dtc.code.strip().upper()
+    if not code:
+        raise HTTPException(422,'DTC code must not be empty')
+    s=get_session(session_id)
+    dtc.code=code
+    s.dtcs.append(dtc)
+    status=EvidenceStatus.MEASURED if dtc.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED
+    s.evidence.append(Evidence(fact=dtc.code,source=dtc.source,status=status))
+    _invalidate_analysis(s)
+    s.audit_log.append({"event":"DTC_ADDED","dtc_id":str(dtc.id)})
+    return s
+
+@app.put('/api/v1/sessions/{session_id}/dtcs/{dtc_id}',response_model=DiagnosticSession)
+def update_dtc(session_id:str,dtc_id:str,dtc:DTC):
+    code=dtc.code.strip().upper()
+    if not code:
+        raise HTTPException(422,'DTC code must not be empty')
+    s=get_session(session_id)
+    target=next((item for item in s.dtcs if str(item.id)==dtc_id),None)
+    if target is None:
+        raise HTTPException(404,'DTC not found')
+    old_code=target.code
+    old_source=target.source
+    target.code=code
+    target.description=dtc.description
+    target.source=dtc.source
+    for evidence in s.evidence:
+        if evidence.fact == old_code and evidence.source == old_source:
+            evidence.fact=target.code
+            evidence.source=target.source
+            evidence.status=EvidenceStatus.MEASURED if target.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED
+            break
+    _invalidate_analysis(s)
+    s.audit_log.append({"event":"DTC_UPDATED","dtc_id":dtc_id})
+    return s
+
+@app.delete('/api/v1/sessions/{session_id}/dtcs/{dtc_id}',response_model=DiagnosticSession)
+def delete_dtc(session_id:str,dtc_id:str):
+    s=get_session(session_id)
+    index=next((i for i,item in enumerate(s.dtcs) if str(item.id)==dtc_id),None)
+    if index is None:
+        raise HTTPException(404,'DTC not found')
+    removed=s.dtcs.pop(index)
+    for i in range(len(s.evidence)-1,-1,-1):
+        evidence=s.evidence[i]
+        if evidence.fact == removed.code and evidence.source == removed.source:
+            s.evidence.pop(i)
+            break
+    _invalidate_analysis(s)
+    s.audit_log.append({"event":"DTC_DELETED","dtc_id":dtc_id})
+    return s
+
 @app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)
 def analyze(session_id:str):
     s=engine.analyze(get_session(session_id))

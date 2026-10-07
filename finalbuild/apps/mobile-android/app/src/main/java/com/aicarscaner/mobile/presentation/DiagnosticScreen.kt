@@ -618,7 +618,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             Text(text.analysis, style = MaterialTheme.typography.titleLarge)
                             Button(
                                 onClick = { viewModel.analyze() },
-                                enabled = !state.loading,
+                                enabled = !state.loading &&
+                                    (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()),
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(text.analyzeSession) }
 
@@ -710,26 +711,30 @@ private fun SettingsDialog(
     onSettingsChanged: (AppSettings) -> Unit,
     onClose: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(text.settings) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(text.language, style = MaterialTheme.typography.titleMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
-                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
-                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
+    MaterialTheme(
+        colorScheme = if (settings.darkTheme) darkColorScheme() else lightColorScheme()
+    ) {
+        AlertDialog(
+            onDismissRequest = onClose,
+            title = { Text(text.settings) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(text.language, style = MaterialTheme.typography.titleMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
+                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
+                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
+                    }
+                    Text(text.theme, style = MaterialTheme.typography.titleMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
+                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                    }
                 }
-                Text(text.theme, style = MaterialTheme.typography.titleMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
-                    OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
-                }
+            },
+            confirmButton = {
+                TextButton(onClick = onClose) { Text(text.close) }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onClose) { Text(text.close) }
-        }
-    )
+        )
+    }
 }

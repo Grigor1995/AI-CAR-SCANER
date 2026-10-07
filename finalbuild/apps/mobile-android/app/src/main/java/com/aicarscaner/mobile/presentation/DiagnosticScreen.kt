@@ -105,11 +105,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     session.hypotheses.forEach { hypothesis ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(hypothesis.title, style = MaterialTheme.typography.titleMedium)
+                                Text(hypothesis.category, style = MaterialTheme.typography.titleMedium)
                                 Text("Category: ${hypothesis.category}")
                                 Text("Status: ${hypothesis.status}")
-                                Text("Confidence / score: ${"%.2f".format(hypothesis.score)}")
-                                Text("Rationale: ${hypothesis.rationale}")
+                                Text("Statement: ${hypothesis.statement}")
                             }
                         }
                     }

@@ -54,7 +54,14 @@ data class AppStrings(
     val requestUsbAccess: String,
     val noUsbDevices: String,
     val connected: String,
-    val diagnosisFirst: String
+    val diagnosisFirst: String,
+    val make: String,
+    val model: String,
+    val year: String,
+    val engine: String,
+    val fuel: String,
+    val petrol: String,
+    val lpg: String
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

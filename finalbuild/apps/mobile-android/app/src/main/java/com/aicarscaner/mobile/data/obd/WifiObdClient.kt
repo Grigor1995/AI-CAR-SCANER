@@ -74,3 +74,4 @@ class WifiObdClient {
 
     private fun clean(value: String): String =
         value.replace("SEARCHING...", "", ignoreCase = true).trim()
+}

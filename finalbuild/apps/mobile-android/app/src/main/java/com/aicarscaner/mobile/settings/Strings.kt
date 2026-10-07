@@ -62,6 +62,7 @@ data class AppStrings(
     val fuel: String,
     val petrol: String,
     val lpg: String,
+    val analysisEmpty: String,
     val liveData: String,
     val rpm: String,
     val startLiveData: String,
@@ -89,7 +90,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Прочитать DTC","Ответ адаптера","Анализировать сессию","Рекомендуемые тесты","Приоритет",
         "Журнал пуст","Внешний вид","Язык","Тема","Тёмная","Светлая","Закрыть","Bluetooth","Wi‑Fi","USB",
         "Хост","Порт","Подключить Wi‑Fi","USB устройства","Запросить доступ USB","Нет USB устройств",
-        "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG",
+        "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG","Нет результатов анализа. Добавьте симптомы или DTC и запустите анализ.",
         "Поток данных","Обороты","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
         "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT"
     )
@@ -102,7 +103,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Կարդալ DTC","Ադապտերի պատասխանը","Վերլուծել սեսիան","Առաջարկվող թեստեր","Առաջնահերթություն",
         "Գործողություններ չկան","Տեսք","Լեզու","Թեմա","Մուգ","Բաց","Փակել","Bluetooth","Wi‑Fi","USB",
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
-        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG",
+        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG","Վերլուծության արդյունքներ դեռ չկան։ Ավելացրեք ախտանշան կամ DTC և գործարկեք վերլուծությունը։",
         "Կենդանի տվյալներ","Պտույտներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
         "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT"
     )
@@ -115,7 +116,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Read DTCs","Adapter response","Analyze Diagnostic Session","Recommended tests","Priority",
         "No activity recorded yet","Appearance","Language","Theme","Dark","Light","Close","Bluetooth","Wi‑Fi","USB",
         "Host","Port","Connect Wi‑Fi","USB devices","Request USB access","No USB devices",
-        "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG",
+        "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG","No analysis results yet. Add symptoms or DTCs and run analysis.",
         "Live Data","RPM","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
         "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT"
     )

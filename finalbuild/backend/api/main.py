@@ -52,3 +52,7 @@ def add_dtc(session_id:str,dtc:DTC):
     s=get_session(session_id); s.dtcs.append(dtc); status=EvidenceStatus.MEASURED if dtc.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED; s.evidence.append(Evidence(fact=dtc.code,source=dtc.source,status=status)); return s
 @app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)
 def analyze(session_id:str): return engine.analyze(get_session(session_id))
+
+@app.post('/api/v1/analysis/{session_id}',response_model=DiagnosticSession)
+def analyze_compat(session_id:str):
+    return engine.analyze(get_session(session_id))

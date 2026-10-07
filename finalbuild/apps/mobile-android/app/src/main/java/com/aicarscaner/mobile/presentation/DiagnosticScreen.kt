@@ -112,8 +112,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text("Symptom ${index + 1}", style = MaterialTheme.typography.labelLarge)
                                 Text(item.raw_text)
-                                item.normalized?.takeIf { it.isNotBlank() }?.let {
-                                    Text("Normalized: $it", style = MaterialTheme.typography.bodySmall)
+                                item.normalized.takeIf { it.isNotEmpty() }?.let { normalized ->
+                                    val formatted = normalized.entries.joinToString(", ") { entry -> "${entry.key}=${entry.value}" }
+                                    Text("Normalized: $formatted", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }

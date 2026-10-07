@@ -24,6 +24,7 @@ data class SymptomRequest(
 data class DtcRequest(val code: String, val description: String? = null)
 
 data class DtcDto(
+    val id: String? = null,
     val code: String,
     val description: String? = null,
     val source: String? = null
@@ -98,6 +99,19 @@ interface DiagnosticApi {
 
     @POST("api/v1/sessions/{sessionId}/dtcs")
     suspend fun addDtc(@Path("sessionId") sessionId: String, @Body request: DtcRequest): DiagnosticSessionDto
+
+    @PUT("api/v1/sessions/{sessionId}/dtcs/{dtcId}")
+    suspend fun updateDtc(
+        @Path("sessionId") sessionId: String,
+        @Path("dtcId") dtcId: String,
+        @Body request: DtcRequest
+    ): DiagnosticSessionDto
+
+    @DELETE("api/v1/sessions/{sessionId}/dtcs/{dtcId}")
+    suspend fun deleteDtc(
+        @Path("sessionId") sessionId: String,
+        @Path("dtcId") dtcId: String
+    ): DiagnosticSessionDto
 
     @POST("api/v1/analysis/{sessionId}")
     suspend fun analyze(@Path("sessionId") sessionId: String): DiagnosticSessionDto

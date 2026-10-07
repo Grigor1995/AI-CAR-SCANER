@@ -23,6 +23,7 @@ data class SymptomRequest(
 data class DtcRequest(val code: String, val description: String? = null)
 
 data class SymptomDto(
+    val id: String,
     val raw_text: String,
     val normalized: Map<String, String> = emptyMap()
 )

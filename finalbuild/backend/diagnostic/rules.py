@@ -27,7 +27,7 @@ class DiagnosticReasoningEngine:
         lpg_misfire = (
             "lpg" in text
             and any(x in text for x in ("misfire", "shak", "jerk"))
-            and any(re.fullmatch(r"P03\\d{2}", code) for code in dtcs)
+            and any(re.fullmatch(r"P03\d{2}", code) for code in dtcs)
             and ("petrol normal" in text or "normal on petrol" in text or "smoothly on petrol" in text or "significantly reduces" in text)
         )
         if lpg_misfire:

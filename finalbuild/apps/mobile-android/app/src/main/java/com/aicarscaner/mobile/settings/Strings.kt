@@ -63,6 +63,7 @@ data class AppStrings(
     val petrol: String,
     val lpg: String,
     val liveData: String,
+    val rpm: String,
     val startLiveData: String,
     val stopLiveData: String,
     val liveDataDisconnected: String,
@@ -89,7 +90,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Журнал пуст","Внешний вид","Язык","Тема","Тёмная","Светлая","Закрыть","Bluetooth","Wi‑Fi","USB",
         "Хост","Порт","Подключить Wi‑Fi","USB устройства","Запросить доступ USB","Нет USB устройств",
         "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG",
-        "Поток данных","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
+        "Поток данных","Обороты","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
         "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT"
     )
     AppLanguage.HY -> AppStrings(
@@ -102,7 +103,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Գործողություններ չկան","Տեսք","Լեզու","Թեմա","Մուգ","Բաց","Փակել","Bluetooth","Wi‑Fi","USB",
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
         "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG",
-        "Կենդանի տվյալներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
+        "Կենդանի տվյալներ","Պտույտներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
         "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT"
     )
     AppLanguage.EN -> AppStrings(
@@ -115,7 +116,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "No activity recorded yet","Appearance","Language","Theme","Dark","Light","Close","Bluetooth","Wi‑Fi","USB",
         "Host","Port","Connect Wi‑Fi","USB devices","Request USB access","No USB devices",
         "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG",
-        "Live Data","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
+        "Live Data","RPM","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
         "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT"
     )
 }

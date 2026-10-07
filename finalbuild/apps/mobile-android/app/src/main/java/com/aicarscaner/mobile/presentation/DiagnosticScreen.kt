@@ -106,6 +106,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val settingsStore = remember { AppSettingsStore(context) }
     var appSettings by remember { mutableStateOf(settingsStore.load()) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var newSessionConfirmOpen by remember { mutableStateOf(false) }
     val text = strings(appSettings.language)
 
     val bluetoothClient = remember { BluetoothObdClient() }
@@ -194,6 +195,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     fun resetForNewSession() {
+        closeAllObd()
         viewModel.clearSession()
         selectedTab = 0
         editingVehicle = false
@@ -260,6 +262,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 appSettings = it
                 settingsStore.save(it)
             },
+            onLanguageChanged = { language ->
+                val active = state.session
+                if (active != null && (active.symptoms.isNotEmpty() || active.dtcs.isNotEmpty())) {
+                    viewModel.analyze(language.code)
+                }
+            },
             onClose = { settingsOpen = false }
         )
     }
@@ -267,6 +275,28 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     MaterialTheme(
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
+        if (newSessionConfirmOpen) {
+            AlertDialog(
+                onDismissRequest = { newSessionConfirmOpen = false },
+                title = { Text(text.newSessionConfirmTitle) },
+                text = { Text(text.newSessionConfirmMessage) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            newSessionConfirmOpen = false
+                            resetForNewSession()
+                        },
+                        enabled = !state.loading
+                    ) { Text(text.startNewSession) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { newSessionConfirmOpen = false }) {
+                        Text(text.cancel)
+                    }
+                }
+            )
+        }
+
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -288,7 +318,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             Text(text.settings)
                         }
                         if (state.session != null) {
-                            Button(onClick = { resetForNewSession() }, enabled = !state.loading) {
+                            Button(onClick = { newSessionConfirmOpen = true }, enabled = !state.loading) {
                                 Text(text.newSession)
                             }
                         }
@@ -538,7 +568,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 onClick = {
                                     selectedTab = 4
                                     if (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()) {
-                                        viewModel.analyze()
+                                        viewModel.analyze(appSettings.language.code)
                                     }
                                 },
                                 enabled = !state.loading &&
@@ -554,7 +584,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) {
                                 Text(text.session, style = MaterialTheme.typography.titleLarge)
                                 Button(onClick = { editingVehicle = !editingVehicle }, enabled = !state.loading) {
-                                    Text(if (editingVehicle) "Cancel" else "Edit")
+                                    Text(if (editingVehicle) text.cancel else text.edit)
                                 }
                             }
 
@@ -597,7 +627,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             Button(
-                                onClick = { resetForNewSession() },
+                                onClick = { newSessionConfirmOpen = true },
                                 enabled = !state.loading,
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(text.startNewSession) }
@@ -1076,6 +1106,7 @@ private fun SettingsDialog(
     settings: AppSettings,
     text: com.aicarscaner.mobile.settings.AppStrings,
     onSettingsChanged: (AppSettings) -> Unit,
+    onLanguageChanged: (AppLanguage) -> Unit,
     onClose: () -> Unit
 ) {
     MaterialTheme(
@@ -1088,14 +1119,34 @@ private fun SettingsDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(text.language, style = MaterialTheme.typography.titleMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
-                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
-                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
+                        if (settings.language == AppLanguage.EN) {
+                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)); onLanguageChanged(AppLanguage.EN) }) { Text("EN") }
+                        } else {
+                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)); onLanguageChanged(AppLanguage.EN) }) { Text("EN") }
+                        }
+                        if (settings.language == AppLanguage.RU) {
+                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)); onLanguageChanged(AppLanguage.RU) }) { Text("RU") }
+                        } else {
+                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)); onLanguageChanged(AppLanguage.RU) }) { Text("RU") }
+                        }
+                        if (settings.language == AppLanguage.HY) {
+                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)); onLanguageChanged(AppLanguage.HY) }) { Text("ARM") }
+                        } else {
+                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)); onLanguageChanged(AppLanguage.HY) }) { Text("ARM") }
+                        }
                     }
                     Text(text.theme, style = MaterialTheme.typography.titleMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
-                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                        if (settings.darkTheme) {
+                            Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
+                        } else {
+                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
+                        }
+                        if (!settings.darkTheme) {
+                            Button(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                        } else {
+                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                        }
                     }
                 }
             },

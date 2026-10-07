@@ -78,7 +78,7 @@ data class AuditEventDto(
     val hypotheses: Int? = null,
     val evidence_count: Int? = null,
     val hypothesis_count: Int? = null,
-    val questions: List<String> = emptyList()
+    val questions: List<String>? = null
 )
 
 data class DiagnosticSessionDto(

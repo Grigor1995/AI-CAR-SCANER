@@ -251,16 +251,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     }
 
                     val tabs = listOf(
-                        "Diagnose ${session.symptoms.size + session.dtcs.size}",
-                        "Session",
-                        "OBD",
-                        "Analysis",
-                        "Activity"
+                        "${text.diagnose} (${session.symptoms.size + session.dtcs.size})",
+                        text.session,
+                        text.obd,
+                        text.analysis,
+                        text.activity
                     )
 
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Current session", style = MaterialTheme.typography.labelLarge)
+                            Text(text.session, style = MaterialTheme.typography.labelLarge)
                             Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: "Vehicle not identified")
                             Text("State: ${session.state}", style = MaterialTheme.typography.bodySmall)
                         }
@@ -299,7 +299,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         },
                                         enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
                                         modifier = Modifier.weight(1f)
-                                    ) { Text("Save") }
+                                    ) { Text(text.save) }
                                     Button(
                                         onClick = {
                                             editingSymptomId = null
@@ -307,7 +307,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         },
                                         enabled = !state.loading,
                                         modifier = Modifier.weight(1f)
-                                    ) { Text("Cancel") }
+                                    ) { Text(text.cancel) }
                                 }
                             } else {
                                 Button(
@@ -375,8 +375,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             Button(
-                                onClick = { selectedTab = 3 },
-                                enabled = !state.loading,
+                                onClick = {
+                                    selectedTab = 3
+                                    if (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()) {
+                                        viewModel.analyze()
+                                    }
+                                },
+                                enabled = !state.loading &&
+                                    (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()),
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(text.reviewAnalysis) }
                         }
@@ -414,7 +420,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             } else {
                                 Card(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        Text("Vehicle", style = MaterialTheme.typography.labelLarge)
+                                        Text(text.vehicle, style = MaterialTheme.typography.labelLarge)
                                         Text("${session.vehicle?.make.orEmpty()} ${session.vehicle?.model.orEmpty()}")
                                         Text("Year: ${session.vehicle?.year ?: "—"}")
                                         Text("Engine: ${session.vehicle?.engine ?: "—"}")
@@ -425,10 +431,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             Button(
-                                onClick = {
-                                    viewModel.clearSession()
-                                    selectedTab = 0
-                                },
+                                onClick = { resetForNewSession() },
                                 enabled = !state.loading,
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(text.startNewSession) }
@@ -437,7 +440,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         2 -> {
                             Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
                             Text("Bluetooth + Wi-Fi + USB OBD adapters")
-                            Text("Status: ${obdStatus}", fontWeight = FontWeight.Medium)
+                            Text("${text.obdConnection}: ${obdStatus}", fontWeight = FontWeight.Medium)
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Button(onClick = { obdTransport = "bluetooth" }) { Text(text.bluetooth) }

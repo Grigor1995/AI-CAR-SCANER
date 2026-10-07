@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import retrofit2.HttpException
 
 data class DiagnosticUiState(
     val session: DiagnosticSessionDto? = null,
@@ -59,16 +61,31 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     private fun execute(block: suspend () -> DiagnosticSessionDto) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
-            runCatching { block() }
-                .onSuccess {
-                    _uiState.value = DiagnosticUiState(session = it, loading = false)
-                }
-                .onFailure {
-                    _uiState.value = _uiState.value.copy(
-                        loading = false,
-                        error = it.message ?: "Request failed"
-                    )
-                }
+            try {
+                val result = block()
+                _uiState.value = DiagnosticUiState(session = result, loading = false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Throwable) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = friendlyError(error)
+                )
+            }
         }
+    }
+
+    private fun friendlyError(error: Throwable): String {
+        if (error is HttpException) {
+            val body = runCatching { error.response()?.errorBody()?.string() }.getOrNull()
+            return buildString {
+                append("HTTP ${error.code()}")
+                if (!body.isNullOrBlank()) {
+                    append(": ")
+                    append(body.take(500))
+                }
+            }
+        }
+        return error.message ?: "Request failed"
     }
 }

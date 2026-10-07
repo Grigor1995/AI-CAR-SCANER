@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.rules import DiagnosticReasoningEngine
 from api.platform_routes import router as platform_router
@@ -35,8 +35,11 @@ app.include_router(device_router)
 @app.get('/health')
 def health(): return {'status':'ok','service':'diagnostic-api','version':'0.1.0'}
 @app.post('/api/v1/sessions',response_model=DiagnosticSession)
-def create_session(vehicle:Vehicle|None=None):
-    s=DiagnosticSession(vehicle=vehicle); sessions[str(s.session_id)]=s; return s
+def create_session(vehicle:dict | None=Body(default=None)):
+    # Accept both the canonical vehicle object and an empty JSON body for
+    # legacy clients that create a session before vehicle identification.
+    parsed_vehicle = Vehicle(**vehicle) if vehicle else None
+    s=DiagnosticSession(vehicle=parsed_vehicle); sessions[str(s.session_id)]=s; return s
 @app.get('/api/v1/sessions/{session_id}',response_model=DiagnosticSession)
 def get_session(session_id:str):
     if session_id not in sessions: raise HTTPException(404,'Session not found')

@@ -27,7 +27,10 @@ class Symptom(BaseModel):
         return self
 
 class DTC(BaseModel):
-    code: str; description: str | None=None; source: EvidenceSource=EvidenceSource.USER_REPORTED
+    id: UUID=Field(default_factory=uuid4)
+    code: str
+    description: str | None=None
+    source: EvidenceSource=EvidenceSource.USER_REPORTED
 class Evidence(BaseModel):
     id: UUID=Field(default_factory=uuid4); fact: str; source: EvidenceSource; status: EvidenceStatus; confidence: float | None=Field(default=None, ge=0, le=1); source_ref: str | None=None; metadata: dict=Field(default_factory=dict); created_at: datetime=Field(default_factory=lambda: datetime.now(timezone.utc))
 class Hypothesis(BaseModel):

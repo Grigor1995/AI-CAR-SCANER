@@ -19,11 +19,11 @@ class DiagnosticIntelligencePipeline:
         self.store = store or HybridKnowledgeStore()
         self.reranker = LexicalReranker()
 
-    def run(self, session: DiagnosticSession, query: str | None = None) -> DiagnosticIntelligenceResult:
+    def run(self, session: DiagnosticSession, query: str | None = None, language: str = "en") -> DiagnosticIntelligenceResult:
         session = self.engine.analyze(session)
         query = query or " ".join(e.fact for e in session.evidence)
         hits = self.reranker.rerank(query, self.store.search(query, top_k=10), top_k=5)
         retrieved = [{"document_id": x.hit.document_id, "title": x.hit.title, "text": x.hit.text, "score": x.rerank_score, "metadata": x.hit.metadata} for x in hits]
-        safe = SafePromptContext.from_session(session, retrieved)
+        safe = SafePromptContext.from_session(session, retrieved, language)
         prompt = safe.to_prompt()
         return DiagnosticIntelligenceResult(session, retrieved, prompt)

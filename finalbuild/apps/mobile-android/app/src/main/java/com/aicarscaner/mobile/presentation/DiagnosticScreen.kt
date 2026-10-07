@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,12 +45,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.ContextCompat
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.obd.BluetoothObdClient
+import com.aicarscaner.mobile.data.obd.LiveDataReader
+import com.aicarscaner.mobile.data.obd.LiveDataSnapshot
 import com.aicarscaner.mobile.data.obd.UsbObdClient
 import com.aicarscaner.mobile.data.obd.WifiObdClient
 import com.aicarscaner.mobile.settings.AppLanguage
@@ -59,8 +65,38 @@ import android.app.PendingIntent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+
+private val AutomotiveDarkColors = darkColorScheme(
+    primary = Color(0xFF37D7E8),
+    onPrimary = Color(0xFF001E22),
+    secondary = Color(0xFF62E6A5),
+    onSecondary = Color(0xFF002115),
+    tertiary = Color(0xFFFFC857),
+    background = Color(0xFF0B1013),
+    surface = Color(0xFF11181D),
+    surfaceVariant = Color(0xFF1A252B),
+    onSurface = Color(0xFFE5EEF1),
+    onSurfaceVariant = Color(0xFFB6C6CB),
+    error = Color(0xFFFF6B6B)
+)
+
+private val AutomotiveLightColors = lightColorScheme(
+    primary = Color(0xFF006D78),
+    onPrimary = Color.White,
+    secondary = Color(0xFF087F5B),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF9A6500),
+    background = Color(0xFFF4F7F8),
+    surface = Color.White,
+    surfaceVariant = Color(0xFFE8EFF1),
+    onSurface = Color(0xFF172126),
+    onSurfaceVariant = Color(0xFF506269),
+    error = Color(0xFFBA1A1A)
+)
 
 @Composable
 fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
@@ -94,6 +130,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var obdStatus by remember { mutableStateOf(text.notConnected) }
     var obdResponse by remember { mutableStateOf("") }
     var obdTransport by remember { mutableStateOf("bluetooth") }
+    var liveDataRunning by remember { mutableStateOf(false) }
+    var liveData by remember { mutableStateOf<LiveDataSnapshot?>(null) }
+    var liveDataError by remember { mutableStateOf<String?>(null) }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
@@ -143,6 +182,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     fun closeAllObd() {
+        liveDataRunning = false
+        liveData = null
+        liveDataError = null
         bluetoothClient.close()
         wifiClient.close()
         usbClient.close()
@@ -170,6 +212,36 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         refreshUsbDevices()
     }
 
+    val obdConnected =
+        bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected
+
+    LaunchedEffect(liveDataRunning, obdTransport, obdConnected) {
+        if (!liveDataRunning || !obdConnected) {
+            return@LaunchedEffect
+        }
+
+        while (isActive) {
+            LiveDataReader.read { command ->
+                when (obdTransport) {
+                    "bluetooth" -> bluetoothClient.command(command)
+                    "wifi" -> wifiClient.command(command)
+                    else -> usbClient.command(command)
+                }
+            }.onSuccess {
+                liveData = it
+                liveDataError = if (
+                    it.rpm == null &&
+                    it.speedKph == null &&
+                    it.coolantC == null &&
+                    it.engineLoadPct == null
+                ) text.noLiveData else null
+            }.onFailure {
+                liveDataError = it.message ?: "Live Data read failed"
+            }
+            delay(1200)
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             bluetoothClient.close()
@@ -191,7 +263,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     MaterialTheme(
-        colorScheme = if (appSettings.darkTheme) darkColorScheme() else lightColorScheme()
+        colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -257,11 +329,18 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         "${text.diagnose} (${session.symptoms.size + session.dtcs.size})",
                         text.session,
                         text.obd,
+                        text.liveData,
                         text.analysis,
                         text.activity
                     )
 
-                    Card(Modifier.fillMaxWidth()) {
+                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(text.session, style = MaterialTheme.typography.labelLarge)
                             Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: "Vehicle not identified")
@@ -324,7 +403,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             session.symptoms.forEachIndexed { index, item ->
-                                Card(Modifier.fillMaxWidth()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text("Symptom ${index + 1}", style = MaterialTheme.typography.labelLarge)
                                         Text(item.raw_text)
@@ -344,7 +429,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                         symptom = ""
                                                     }
                                                 },
-                                                enabled = !state.loading
+                                                enabled = !state.loading,
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                    contentColor = MaterialTheme.colorScheme.onError
+                                                )
                                             ) { Text(text.delete) }
                                         }
                                     }
@@ -369,7 +458,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) { Text(text.addDtc) }
 
                             session.dtcs.forEach { item ->
-                                Card(Modifier.fillMaxWidth()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Text(item.code, style = MaterialTheme.typography.titleMedium)
                                         item.description?.let { Text(it) }
@@ -379,7 +474,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             Button(
                                 onClick = {
-                                    selectedTab = 3
+                                    selectedTab = 4
                                     if (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()) {
                                         viewModel.analyze()
                                     }
@@ -421,7 +516,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text(text.saveSession) }
                             } else {
-                                Card(Modifier.fillMaxWidth()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text(text.vehicle, style = MaterialTheme.typography.labelLarge)
                                         Text("${session.vehicle?.make.orEmpty()} ${session.vehicle?.model.orEmpty()}")
@@ -446,9 +547,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             Text("${text.obdConnection}: ${obdStatus}", fontWeight = FontWeight.Medium)
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Button(onClick = { obdTransport = "bluetooth" }) { Text(text.bluetooth) }
-                                Button(onClick = { obdTransport = "wifi" }) { Text(text.wifi) }
-                                Button(onClick = { obdTransport = "usb" }) { Text(text.usb) }
+                                TransportButton(obdTransport == "bluetooth", { obdTransport = "bluetooth" }, text.bluetooth)
+                                TransportButton(obdTransport == "wifi", { obdTransport = "wifi" }, text.wifi)
+                                TransportButton(obdTransport == "usb", { obdTransport = "usb" }, text.usb)
                             }
 
                             when (obdTransport) {
@@ -463,7 +564,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         Text(text.noPairedDevices)
                                     } else {
                                         obdDevices.forEach { device ->
-                                            Card(Modifier.fillMaxWidth()) {
+                                            Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                                     Text(device.name ?: text.bluetooth, style = MaterialTheme.typography.titleMedium)
                                                     Text(device.address, style = MaterialTheme.typography.bodySmall)
@@ -528,7 +635,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         Text(text.noUsbDevices)
                                     } else {
                                         usbDevices.forEach { device ->
-                                            Card(Modifier.fillMaxWidth()) {
+                                            Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                                     Text(
                                                         device.productName ?: device.deviceName,
@@ -605,7 +718,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             if (obdResponse.isNotBlank()) {
-                                Card(Modifier.fillMaxWidth()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Text(text.adapterResponse, style = MaterialTheme.typography.labelLarge)
                                         Text(obdResponse)
@@ -615,16 +734,102 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         3 -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(text.liveData, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        if (obdConnected) text.connected else text.liveDataDisconnected,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (obdConnected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Button(
+                                    onClick = {
+                                        if (liveDataRunning) {
+                                            liveDataRunning = false
+                                        } else {
+                                            liveDataError = null
+                                            liveDataRunning = true
+                                        }
+                                    },
+                                    enabled = obdConnected,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (liveDataRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                                        contentColor = if (liveDataRunning) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondary
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(if (liveDataRunning) text.stopLiveData else text.startLiveData)
+                                }
+                            }
+
+                            if (!obdConnected) {
+                                Card(
+                                    Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                    )
+                                ) {
+                                    Text(
+                                        text.liveDataDisconnected,
+                                        modifier = Modifier.padding(18.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    LiveDataTile(text.rpm, liveData?.rpm?.let { "%.0f".format(it) } ?: "—", "rpm", Modifier.weight(1f), true)
+                                    LiveDataTile(text.speed, liveData?.speedKph?.let { "%.0f".format(it) } ?: "—", "km/h", Modifier.weight(1f), true)
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    LiveDataTile(text.coolantTemp, liveData?.coolantC?.let { "%.0f".format(it) } ?: "—", "°C", Modifier.weight(1f))
+                                    LiveDataTile(text.engineLoad, liveData?.engineLoadPct?.let { "%.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    LiveDataTile(text.intakeAirTemp, liveData?.intakeAirC?.let { "%.0f".format(it) } ?: "—", "°C", Modifier.weight(1f))
+                                    LiveDataTile(text.map, liveData?.mapKpa?.let { "%.0f".format(it) } ?: "—", "kPa", Modifier.weight(1f))
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    LiveDataTile(text.maf, liveData?.mafGps?.let { "%.1f".format(it) } ?: "—", "g/s", Modifier.weight(1f))
+                                    LiveDataTile(text.throttle, liveData?.throttlePct?.let { "%.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    LiveDataTile(text.stft, liveData?.shortFuelTrimPct?.let { "%+.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
+                                    LiveDataTile(text.ltft, liveData?.longFuelTrimPct?.let { "%+.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
+                                }
+                            }
+
+                            liveDataError?.let {
+                                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        4 -> {
                             Text(text.analysis, style = MaterialTheme.typography.titleLarge)
                             Button(
                                 onClick = { viewModel.analyze() },
                                 enabled = !state.loading &&
                                     (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary,
+                                    contentColor = MaterialTheme.colorScheme.onSecondary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) { Text(text.analyzeSession) }
 
                             session.hypotheses.forEach { hypothesis ->
-                                Card(Modifier.fillMaxWidth()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text(hypothesis.category, style = MaterialTheme.typography.titleMedium)
                                         Text("Status: ${hypothesis.status}")
@@ -636,7 +841,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             if (session.recommendations.isNotEmpty()) {
                                 Text(text.recommendedTests, style = MaterialTheme.typography.titleMedium)
                                 session.recommendations.forEach { recommendation ->
-                                    Card(Modifier.fillMaxWidth()) {
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                             Text(recommendation.title, style = MaterialTheme.typography.titleMedium)
                                             Text("Priority: ${(recommendation.priority * 100).roundToInt()}%")
@@ -647,13 +858,19 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
                         }
 
-                        4 -> {
+                        5 -> {
                             Text(text.activity, style = MaterialTheme.typography.titleLarge)
                             if (session.audit_log.isEmpty()) {
                                 Text(text.activityEmpty)
                             } else {
                                 session.audit_log.forEach { event ->
-                                    Card(Modifier.fillMaxWidth()) {
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
                                         Column(Modifier.padding(12.dp)) {
                                             Text(event.event, style = MaterialTheme.typography.labelLarge)
                                             event.hypotheses?.let { Text("Hypotheses: ${it}", style = MaterialTheme.typography.bodySmall) }
@@ -668,6 +885,69 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
             if (state.loading) CircularProgressIndicator()
             state.error?.let { Text("Error: ${it}", color = MaterialTheme.colorScheme.error) }
+        }
+    }
+}
+
+@Composable
+private fun TransportButton(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String
+) {
+    if (selected) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(10.dp)
+        ) { Text(label) }
+    } else {
+        OutlinedButton(onClick = onClick, shape = RoundedCornerShape(10.dp)) {
+            Text(label)
+        }
+    }
+}
+
+@Composable
+private fun LiveDataTile(
+    label: String,
+    value: String,
+    unit: String,
+    modifier: Modifier = Modifier,
+    highlight: Boolean = false
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlight) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            }
+        )
+    ) {
+        Column(
+            Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
+                Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    " $unit",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(bottom = 3.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -712,7 +992,7 @@ private fun SettingsDialog(
     onClose: () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (settings.darkTheme) darkColorScheme() else lightColorScheme()
+        colorScheme = if (settings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
         AlertDialog(
             onDismissRequest = onClose,
@@ -721,9 +1001,9 @@ private fun SettingsDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(text.language, style = MaterialTheme.typography.titleMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
-                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
-                        Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
+                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
+                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
+                        OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
                     }
                     Text(text.theme, style = MaterialTheme.typography.titleMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

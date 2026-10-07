@@ -30,6 +30,22 @@ def test_create_add_symptom_dtc_and_analyze():
     )
     assert response.status_code == 200, response.text
     assert response.json()["symptoms"][0]["raw_text"] == symptom
+    symptom_id = response.json()["symptoms"][0]["id"]
+
+    updated = "Engine shakes on LPG below 2000 RPM under load."
+    response = client.put(
+        f"/api/v1/sessions/{session_id}/symptoms/{symptom_id}",
+        json={"raw_text": updated, "symptom": updated},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["symptoms"][0]["id"] == symptom_id
+    assert response.json()["symptoms"][0]["raw_text"] == updated
+
+    response = client.delete(
+        f"/api/v1/sessions/{session_id}/symptoms/{symptom_id}"
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["symptoms"] == []
 
     response = client.post(
         f"/api/v1/sessions/{session_id}/dtcs",

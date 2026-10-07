@@ -73,6 +73,12 @@ interface DiagnosticApi {
     @POST("api/v1/sessions")
     suspend fun createSession(@Body vehicle: VehicleDto): DiagnosticSessionDto
 
+    @PUT("api/v1/sessions/{sessionId}/vehicle")
+    suspend fun updateVehicle(
+        @Path("sessionId") sessionId: String,
+        @Body vehicle: VehicleDto
+    ): DiagnosticSessionDto
+
     @POST("api/v1/sessions/{sessionId}/symptoms")
     suspend fun addSymptom(@Path("sessionId") sessionId: String, @Body request: SymptomRequest): DiagnosticSessionDto
 

@@ -902,6 +902,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                         4 -> {
                             Text(text.analysis, style = MaterialTheme.typography.titleLarge)
+
                             if (session.hypotheses.isEmpty() && session.recommendations.isEmpty()) {
                                 Card(
                                     Modifier.fillMaxWidth(),
@@ -910,25 +911,158 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
                                 ) {
-                                    Column(
-                                        Modifier.padding(18.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
+                                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Text(
                                             text.analysisEmpty,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
                                         Text(
-                                            "${text.symptoms}: ${session.symptoms.size}  •  ${text.dtc}: ${session.dtcs.size}",
+                                            "${text.symptoms}: ${session.symptoms.size}  •  ${text.dtc}: ${session.dtcs.size}  •  ${text.evidence}: ${session.evidence.size}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
+                            } else {
+                                val evidenceById = session.evidence.associateBy { it.id }
+                                val latestQuestions = session.audit_log.flatMap { it.questions }.distinct()
+
+                                Card(
+                                    Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                                    )
+                                ) {
+                                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(text.evidence, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                        Text(
+                                            "${text.symptoms}: ${session.symptoms.size}  •  ${text.dtc}: ${session.dtcs.size}  •  ${text.evidence}: ${session.evidence.size}  •  ${text.analysis}: ${session.hypotheses.size}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Text(
+                                            session.evidence.groupingBy { it.status.lowercase() }.eachCount().entries
+                                                .joinToString(" • ") { "${it.key}: ${it.value}" },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                session.hypotheses.forEachIndexed { index, hypothesis ->
+                                    val supporting = hypothesis.supporting_evidence_ids.mapNotNull { evidenceById[it] }
+                                    val contradicting = hypothesis.contradicting_evidence_ids.mapNotNull { evidenceById[it] }
+                                    val confidence = hypothesis.status.substringAfter(":", "").toDoubleOrNull()
+
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
+                                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                            Text(
+                                                "${index + 1}. ${hypothesis.category}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Row(
+                                                Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(hypothesis.status, style = MaterialTheme.typography.labelLarge)
+                                                confidence?.let {
+                                                    Text(
+                                                        "${text.confidence}: ${(it * 100).roundToInt()}%",
+                                                        style = MaterialTheme.typography.labelLarge
+                                                    )
+                                                }
+                                            }
+                                            Text(hypothesis.statement)
+
+                                            if (supporting.isNotEmpty()) {
+                                                Text(text.supportingEvidence, style = MaterialTheme.typography.labelLarge)
+                                                supporting.forEach { evidence ->
+                                                    Text(
+                                                        "• ${evidence.fact} [${evidence.status}]",
+                                                        style = MaterialTheme.typography.bodySmall
+                                                    )
+                                                }
+                                            }
+
+                                            if (contradicting.isNotEmpty()) {
+                                                Text(text.contradictingEvidence, style = MaterialTheme.typography.labelLarge)
+                                                contradicting.forEach { evidence ->
+                                                    Text(
+                                                        "• ${evidence.fact} [${evidence.status}]",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (latestQuestions.isNotEmpty()) {
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f)
+                                        )
+                                    ) {
+                                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text(text.nextQuestions, style = MaterialTheme.typography.titleMedium)
+                                            latestQuestions.forEach { question -> Text("• $question") }
+                                        }
+                                    }
+                                }
+
+                                if (session.recommendations.isNotEmpty()) {
+                                    Text(text.recommendedTests, style = MaterialTheme.typography.titleMedium)
+                                    session.recommendations.forEachIndexed { index, recommendation ->
+                                        Card(
+                                            Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                            )
+                                        ) {
+                                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                                Text(
+                                                    "${index + 1}. ${recommendation.title}",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(recommendation.purpose)
+                                                Row(
+                                                    Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text("${text.priority}: ${(recommendation.priority * 100).roundToInt()}%")
+                                                    Text("${text.informationGain}: ${(recommendation.informationGain * 100).roundToInt()}%")
+                                                }
+                                                Row(
+                                                    Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text("${text.risk}: ${recommendation.riskLevel}")
+                                                    Text("${text.estimatedCost}: %.1f".format(recommendation.estimatedCost))
+                                                }
+                                                recommendation.expected_observation?.takeIf { it.isNotBlank() }?.let {
+                                                    Text(it, style = MaterialTheme.typography.bodySmall)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
+
                             Button(
-                                onClick = { viewModel.analyze() },
+                                onClick = { viewModel.analyze(appSettings.language.code) },
                                 enabled = !state.loading &&
                                     (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()),
                                 modifier = Modifier.fillMaxWidth(),
@@ -938,41 +1072,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) { Text(text.analyzeSession) }
-
-                            session.hypotheses.forEach { hypothesis ->
-                                Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        Text(hypothesis.category, style = MaterialTheme.typography.titleMedium)
-                                        Text("Status: ${hypothesis.status}")
-                                        Text(hypothesis.statement)
-                                    }
-                                }
-                            }
-
-                            if (session.recommendations.isNotEmpty()) {
-                                Text(text.recommendedTests, style = MaterialTheme.typography.titleMedium)
-                                session.recommendations.forEach { recommendation ->
-                                    Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                            Text(recommendation.title, style = MaterialTheme.typography.titleMedium)
-                                            Text("Priority: ${(recommendation.priority * 100).roundToInt()}%")
-                                            Text(recommendation.purpose)
-                                        }
-                                    }
-                                }
-                            }
                         }
 
                         5 -> {

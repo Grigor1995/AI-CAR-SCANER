@@ -22,11 +22,10 @@ data class DtcRequest(val code: String, val description: String? = null)
 
 data class HypothesisDto(
     val id: String,
-    val title: String,
     val category: String,
-    val score: Double,
-    val rationale: String,
+    val statement: String,
     val supporting_evidence_ids: List<String> = emptyList(),
+    val contradicting_evidence_ids: List<String> = emptyList(),
     val status: String
 )
 

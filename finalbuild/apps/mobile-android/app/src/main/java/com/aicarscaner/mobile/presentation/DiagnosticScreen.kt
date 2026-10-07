@@ -45,6 +45,17 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.obd.BluetoothObdClient
+import com.aicarscaner.mobile.data.obd.UsbObdClient
+import com.aicarscaner.mobile.data.obd.WifiObdClient
+import com.aicarscaner.mobile.settings.AppLanguage
+import com.aicarscaner.mobile.settings.AppSettings
+import com.aicarscaner.mobile.settings.AppSettingsStore
+import com.aicarscaner.mobile.settings.strings
+import android.app.PendingIntent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.content.Intent
+import android.provider.Settings
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -55,7 +66,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val obdClient = remember { BluetoothObdClient() }
+    val settingsStore = remember { AppSettingsStore(context) }
+    var appSettings by remember { mutableStateOf(settingsStore.load()) }
+    var settingsOpen by remember { mutableStateOf(false) }
+    val text = strings(appSettings.language)
+
+    val bluetoothClient = remember { BluetoothObdClient() }
+    val wifiClient = remember { WifiObdClient() }
+    val usbClient = remember { UsbObdClient() }
 
     var make by remember { mutableStateOf("Mercedes") }
     var model by remember { mutableStateOf("W211") }
@@ -69,8 +87,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var editingVehicle by remember { mutableStateOf(false) }
     var obdDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
-    var obdStatus by remember { mutableStateOf("Not connected") }
+    var usbDevices by remember { mutableStateOf<List<UsbDevice>>(emptyList()) }
+    var wifiHost by remember { mutableStateOf("") }
+    var wifiPort by remember { mutableStateOf("35000") }
+    var obdStatus by remember { mutableStateOf(text.notConnected) }
     var obdResponse by remember { mutableStateOf("") }
+    var obdTransport by remember { mutableStateOf("bluetooth") }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
@@ -90,10 +112,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
-            if (adapter != null) {
-                obdDevices = adapter.bondedDevices.toList().sortedBy { it.name ?: it.address }
-            }
+            refreshBluetoothDevices()
+            refreshUsbDevices()
         }
     }
 
@@ -128,7 +148,21 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         onDispose { obdClient.close() }
     }
 
-    MaterialTheme(colorScheme = AppDarkColors) {
+    if (settingsOpen) {
+        SettingsDialog(
+            settings = appSettings,
+            text = text,
+            onSettingsChanged = {
+                appSettings = it
+                settingsStore.save(it)
+            },
+            onClose = { settingsOpen = false }
+        )
+    }
+
+    MaterialTheme(
+        colorScheme = if (appSettings.darkTheme) darkColorScheme() else lightColorScheme()
+    ) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -142,7 +176,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("AI CAR SCANER", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                        Text(text.appName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
                         state.session?.let { Text("Session ${it.session_id.take(8)}…", style = MaterialTheme.typography.bodySmall) }
                     }
                     if (state.session != null) {
@@ -153,14 +187,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             symptom = ""
                             dtc = ""
                         }, enabled = !state.loading) {
-                            Text("New")
+                            Text(text.newSession)
                         }
                     }
                 }
 
                 if (state.session == null) {
-                    Text("New diagnostic session", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                    Text(text.newSession, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                     VehicleFields(
+                        text,
                         make, { make = it }, model, { model = it }, year, { year = it },
                         engine, { engine = it }, petrol, { petrol = it }, lpg, { lpg = it }
                     )
@@ -175,7 +210,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         },
                         enabled = !state.loading,
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Create Diagnostic Session") }
+                    ) { Text(text.createSession) }
                 } else {
                     val session = state.session!!
                     LaunchedEffect(session.vehicle) {
@@ -217,14 +252,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                     when (selectedTab) {
                         0 -> {
-                            Text("Symptoms", style = MaterialTheme.typography.titleLarge)
+                            Text(text.symptoms, style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
                                 value = symptom,
                                 onValueChange = { symptom = it },
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 3,
                                 maxLines = 5,
-                                label = { Text("Driver symptom") },
+                                label = { Text(text.driverSymptom) },
                                 placeholder = { Text("Example: Shakes on LPG below 2000 RPM under load; petrol is normal") },
                                 supportingText = { Text("${symptom.length}/500") }
                             )
@@ -256,7 +291,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     },
                                     enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
                                     modifier = Modifier.fillMaxWidth()
-                                ) { Text("Add Symptom") }
+                                ) { Text(text.addSymptom) }
                             }
 
                             session.symptoms.forEachIndexed { index, item ->
@@ -271,7 +306,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     editingSymptomId = item.id
                                                 },
                                                 enabled = !state.loading
-                                            ) { Text("Edit") }
+                                            ) { Text(text.edit) }
                                             Button(
                                                 onClick = {
                                                     viewModel.deleteSymptom(item.id)
@@ -281,13 +316,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     }
                                                 },
                                                 enabled = !state.loading
-                                            ) { Text("Delete") }
+                                            ) { Text(text.delete) }
                                         }
                                     }
                                 }
                             }
 
-                            Text("DTC", style = MaterialTheme.typography.titleLarge)
+                            Text(text.dtc, style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
                                 dtc,
                                 { dtc = it.uppercase() },
@@ -302,7 +337,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 },
                                 enabled = dtc.trim().isNotEmpty() && !state.loading,
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Add DTC") }
+                            ) { Text(text.addDtc) }
 
                             session.dtcs.forEach { item ->
                                 Card(Modifier.fillMaxWidth()) {
@@ -317,7 +352,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 onClick = { selectedTab = 3 },
                                 enabled = !state.loading,
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Review Analysis") }
+                            ) { Text(text.reviewAnalysis) }
                         }
 
                         1 -> {
@@ -325,7 +360,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Current session", style = MaterialTheme.typography.titleLarge)
+                                Text(text.session, style = MaterialTheme.typography.titleLarge)
                                 Button(onClick = { editingVehicle = !editingVehicle }, enabled = !state.loading) {
                                     Text(if (editingVehicle) "Cancel" else "Edit")
                                 }
@@ -333,6 +368,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             if (editingVehicle) {
                                 VehicleFields(
+                                    text,
                                     make, { make = it }, model, { model = it }, year, { year = it },
                                     engine, { engine = it }, petrol, { petrol = it }, lpg, { lpg = it }
                                 )
@@ -348,7 +384,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     },
                                     enabled = !state.loading,
                                     modifier = Modifier.fillMaxWidth()
-                                ) { Text("Save Session") }
+                                ) { Text(text.saveSession) }
                             } else {
                                 Card(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -369,79 +405,177 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 },
                                 enabled = !state.loading,
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Start New Session") }
+                            ) { Text(text.startNewSession) }
                         }
 
                         2 -> {
-                            Text("OBD Connection", style = MaterialTheme.typography.titleLarge)
-                            Text("Connect a paired Bluetooth ELM327-style adapter using a real Bluetooth SPP connection.")
+                            Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
+                            Text("Bluetooth + Wi-Fi + USB OBD adapters")
                             Text("Status: ${obdStatus}", fontWeight = FontWeight.Medium)
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { refreshObdDevices() }) { Text("Refresh") }
-                                Button(onClick = {
-                                    context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                                }) { Text("Bluetooth Settings") }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(onClick = { obdTransport = "bluetooth" }) { Text(text.bluetooth) }
+                                Button(onClick = { obdTransport = "wifi" }) { Text(text.wifi) }
+                                Button(onClick = { obdTransport = "usb" }) { Text(text.usb) }
                             }
 
-                            if (obdDevices.isEmpty()) {
-                                Text("No paired Bluetooth devices. Pair the OBD adapter in Android settings first.")
-                            } else {
-                                obdDevices.forEach { device ->
-                                    Card(Modifier.fillMaxWidth()) {
-                                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                            Text(device.name ?: "Bluetooth device", style = MaterialTheme.typography.titleMedium)
-                                            Text(device.address, style = MaterialTheme.typography.bodySmall)
-                                            Button(
-                                                onClick = {
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                                                        ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-                                                    ) {
-                                                        permissionLauncher.launch(bluetoothPermission)
-                                                    } else {
-                                                        scope.launch {
-                                                            obdStatus = "Connecting…"
-                                                            obdClient.connect(device)
-                                                                .onSuccess { obdStatus = it }
-                                                                .onFailure { obdStatus = "Connection failed: ${it.message ?: "unknown error"}" }
-                                                        }
+                            when (obdTransport) {
+                                "bluetooth" -> {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Button(onClick = { refreshBluetoothDevices() }) { Text(text.refresh) }
+                                        Button(onClick = {
+                                            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                                        }) { Text(text.bluetoothSettings) }
+                                    }
+                                    if (obdDevices.isEmpty()) {
+                                        Text(text.noPairedDevices)
+                                    } else {
+                                        obdDevices.forEach { device ->
+                                            Card(Modifier.fillMaxWidth()) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    Text(device.name ?: text.bluetooth, style = MaterialTheme.typography.titleMedium)
+                                                    Text(device.address, style = MaterialTheme.typography.bodySmall)
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                closeAllObd()
+                                                                obdTransport = "bluetooth"
+                                                                obdStatus = "Connecting Bluetooth..."
+                                                                bluetoothClient.connect(device)
+                                                                    .onSuccess { obdStatus = it }
+                                                                    .onFailure { obdStatus = "Bluetooth error: ${it.message ?: "unknown"}" }
+                                                            }
+                                                        },
+                                                        enabled = !bluetoothClient.isConnected
+                                                    ) { Text(text.connect) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                "wifi" -> {
+                                    OutlinedTextField(
+                                        wifiHost,
+                                        { wifiHost = it },
+                                        Modifier.fillMaxWidth(),
+                                        label = { Text(text.host) },
+                                        placeholder = { Text("192.168.0.10") }
+                                    )
+                                    OutlinedTextField(
+                                        wifiPort,
+                                        { wifiPort = it.filter { ch -> ch.isDigit() }.take(5) },
+                                        Modifier.fillMaxWidth(),
+                                        label = { Text(text.port) },
+                                        placeholder = { Text("35000") }
+                                    )
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                closeAllObd()
+                                                obdTransport = "wifi"
+                                                val port = wifiPort.toIntOrNull() ?: 35000
+                                                if (wifiHost.isBlank()) {
+                                                    obdStatus = "Enter Wi-Fi host"
+                                                } else {
+                                                    obdStatus = "Connecting Wi-Fi..."
+                                                    wifiClient.connect(wifiHost, port)
+                                                        .onSuccess { obdStatus = it }
+                                                        .onFailure { obdStatus = "Wi-Fi error: ${it.message ?: "unknown"}" }
+                                                }
+                                            }
+                                        },
+                                        enabled = wifiHost.isNotBlank() && !wifiClient.isConnected,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text(text.connectWifi) }
+                                }
+
+                                "usb" -> {
+                                    Button(onClick = { refreshUsbDevices() }) { Text(text.refresh) }
+                                    if (usbDevices.isEmpty()) {
+                                        Text(text.noUsbDevices)
+                                    } else {
+                                        usbDevices.forEach { device ->
+                                            Card(Modifier.fillMaxWidth()) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    Text(
+                                                        device.productName ?: device.deviceName,
+                                                        style = MaterialTheme.typography.titleMedium
+                                                    )
+                                                    Text(
+                                                        "VID ${device.vendorId} / PID ${device.productId}",
+                                                        style = MaterialTheme.typography.bodySmall
+                                                    )
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                        Button(onClick = {
+                                                            val manager = context.getSystemService(UsbManager::class.java)
+                                                            if (manager != null) {
+                                                                val pending = PendingIntent.getBroadcast(
+                                                                    context,
+                                                                    device.deviceId,
+                                                                    Intent("com.aicarscaner.mobile.USB_PERMISSION"),
+                                                                    PendingIntent.FLAG_IMMUTABLE
+                                                                )
+                                                                manager.requestPermission(device, pending)
+                                                                obdStatus = "USB permission requested"
+                                                            }
+                                                        }) { Text(text.requestUsbAccess) }
+                                                        Button(
+                                                            onClick = {
+                                                                scope.launch {
+                                                                    val manager = context.getSystemService(UsbManager::class.java)
+                                                                    if (manager == null) {
+                                                                        obdStatus = "USB manager unavailable"
+                                                                    } else {
+                                                                        closeAllObd()
+                                                                        obdTransport = "usb"
+                                                                        obdStatus = "Connecting USB..."
+                                                                        usbClient.connect(manager, device)
+                                                                            .onSuccess { obdStatus = it }
+                                                                            .onFailure { obdStatus = "USB error: ${it.message ?: "unknown"}" }
+                                                                    }
+                                                                }
+                                                            },
+                                                            enabled = !usbClient.isConnected
+                                                        ) { Text(text.connect) }
                                                     }
-                                                },
-                                                enabled = !state.loading
-                                            ) { Text("Connect OBD") }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
 
-                            if (obdClient.isConnected) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Button(onClick = {
                                         scope.launch {
-                                            obdClient.readPid010c()
-                                                .onSuccess { obdResponse = "RPM response: ${it}" }
-                                                .onFailure { obdResponse = "RPM read failed: ${it.message}" }
+                                            when (obdTransport) {
+                                                "bluetooth" -> bluetoothClient.command("010C")
+                                                "wifi" -> wifiClient.readRpm()
+                                                else -> usbClient.readRpm()
+                                            }.onSuccess { obdResponse = "RPM: ${it}" }
+                                                .onFailure { obdResponse = "RPM read failed: ${it.message ?: "unknown"}" }
                                         }
-                                    }) { Text("Read RPM") }
+                                    }) { Text(text.readRpm) }
                                     Button(onClick = {
                                         scope.launch {
-                                            obdClient.readDtcs()
-                                                .onSuccess { obdResponse = "DTC response: ${it}" }
-                                                .onFailure { obdResponse = "DTC read failed: ${it.message}" }
+                                            when (obdTransport) {
+                                                "bluetooth" -> bluetoothClient.command("03")
+                                                "wifi" -> wifiClient.readDtcs()
+                                                else -> usbClient.readDtcs()
+                                            }.onSuccess { obdResponse = "DTC: ${it}" }
+                                                .onFailure { obdResponse = "DTC read failed: ${it.message ?: "unknown"}" }
                                         }
-                                    }) { Text("Read DTCs") }
-                                    Button(onClick = {
-                                        obdClient.close()
-                                        obdStatus = "Not connected"
-                                        obdResponse = ""
-                                    }) { Text("Disconnect") }
+                                    }) { Text(text.readDtcs) }
+                                    Button(onClick = { closeAllObd() }) { Text(text.disconnect) }
                                 }
                             }
 
                             if (obdResponse.isNotBlank()) {
                                 Card(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(12.dp)) {
-                                        Text("Adapter response", style = MaterialTheme.typography.labelLarge)
+                                        Text(text.adapterResponse, style = MaterialTheme.typography.labelLarge)
                                         Text(obdResponse)
                                     }
                                 }
@@ -449,12 +583,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         3 -> {
-                            Text("Analysis", style = MaterialTheme.typography.titleLarge)
+                            Text(text.analysis, style = MaterialTheme.typography.titleLarge)
                             Button(
                                 onClick = { viewModel.analyze() },
                                 enabled = !state.loading,
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Analyze Diagnostic Session") }
+                            ) { Text(text.analyzeSession) }
 
                             session.hypotheses.forEach { hypothesis ->
                                 Card(Modifier.fillMaxWidth()) {
@@ -467,7 +601,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             if (session.recommendations.isNotEmpty()) {
-                                Text("Recommended tests", style = MaterialTheme.typography.titleMedium)
+                                Text(text.recommendedTests, style = MaterialTheme.typography.titleMedium)
                                 session.recommendations.forEach { recommendation ->
                                     Card(Modifier.fillMaxWidth()) {
                                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -481,9 +615,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         4 -> {
-                            Text("Activity", style = MaterialTheme.typography.titleLarge)
+                            Text(text.activity, style = MaterialTheme.typography.titleLarge)
                             if (session.audit_log.isEmpty()) {
-                                Text("No activity recorded yet.")
+                                Text(text.activityEmpty)
                             } else {
                                 session.audit_log.forEach { event ->
                                     Card(Modifier.fillMaxWidth()) {
@@ -507,6 +641,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
 @Composable
 private fun VehicleFields(
+    text: com.aicarscaner.mobile.settings.AppStrings,
     make: String,
     onMake: (String) -> Unit,
     model: String,
@@ -520,18 +655,49 @@ private fun VehicleFields(
     lpg: Boolean,
     onLpg: (Boolean) -> Unit
 ) {
-    OutlinedTextField(make, onMake, Modifier.fillMaxWidth(), label = { Text("Make") })
-    OutlinedTextField(model, onModel, Modifier.fillMaxWidth(), label = { Text("Model") })
-    OutlinedTextField(year, onYear, Modifier.fillMaxWidth(), label = { Text("Year") })
-    OutlinedTextField(engine, onEngine, Modifier.fillMaxWidth(), label = { Text("Engine") })
+    OutlinedTextField(make, onMake, Modifier.fillMaxWidth(), label = { Text(text.make) })
+    OutlinedTextField(model, onModel, Modifier.fillMaxWidth(), label = { Text(text.model) })
+    OutlinedTextField(year, onYear, Modifier.fillMaxWidth(), label = { Text(text.year) })
+    OutlinedTextField(engine, onEngine, Modifier.fillMaxWidth(), label = { Text(text.engine) })
 
-    Text("Fuel", style = MaterialTheme.typography.titleMedium)
+    Text(text.fuel, style = MaterialTheme.typography.titleMedium)
     Row {
         Checkbox(checked = petrol, onCheckedChange = onPetrol)
-        Text("Petrol")
+        Text(text.petrol)
     }
     Row {
         Checkbox(checked = lpg, onCheckedChange = onLpg)
-        Text("LPG")
+        Text(text.lpg)
     }
+}
+
+@Composable
+private fun SettingsDialog(
+    settings: AppSettings,
+    text: com.aicarscaner.mobile.settings.AppStrings,
+    onSettingsChanged: (AppSettings) -> Unit,
+    onClose: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(text.settings) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text.language, style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)) }) { Text("EN") }
+                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)) }) { Text("RU") }
+                    Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)) }) { Text("ARM") }
+                }
+                Text(text.theme, style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
+                    OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onClose) { Text(text.close) }
+        }
+    )
 }

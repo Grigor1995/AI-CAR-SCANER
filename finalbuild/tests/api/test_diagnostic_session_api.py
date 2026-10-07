@@ -64,6 +64,8 @@ def test_create_add_symptom_dtc_and_analyze():
     assert "air-fuel / intake" in categories
     assert "mechanical cylinder condition" in categories
     assert all("confirmed coil failure" not in item["statement"].lower() for item in body["hypotheses"])
+    assert body["recommendations"]
+    assert any(item["priority_score"] > 0 for item in body["recommendations"])
 
 
 def test_legacy_symptom_payload_is_accepted():

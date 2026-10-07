@@ -51,6 +51,14 @@ class DiagnosticReasoningEngine:
                 "air-fuel / intake",
                 "mechanical cylinder condition",
             )]
+            # Compatibility aliases for older reasoning/decision consumers.
+            categories.extend([
+                ("LPG fuel delivery", statements["LPG fuel delivery / mixture"]),
+                ("LPG injection", statements["LPG fuel delivery / mixture"]),
+                ("ignition under LPG load", statements["ignition / combustion"]),
+                ("ignition", statements["ignition / combustion"]),
+                ("intake", statements["air-fuel / intake"]),
+            ])
 
         # Preserve order while removing duplicates.
         seen: set[str] = set()

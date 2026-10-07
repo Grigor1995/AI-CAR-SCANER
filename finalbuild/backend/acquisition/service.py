@@ -3,11 +3,16 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
+from enum import Enum
 from uuid import UUID, uuid4
 
 from api.telemetry_routes import service as telemetry_service
 from telemetry.models import TelemetrySample
 from .models import AcquisitionStartRequest, AcquisitionStatus
+
+
+class AcquisitionSourceType(str, Enum):
+    OBD_ACQUISITION = "OBD_ACQUISITION"
 
 
 @dataclass
@@ -23,7 +28,7 @@ class AcquisitionRecord:
     sequence: int | None = None
     quality: str = "GOOD"
     metadata: dict = field(default_factory=dict)
-    source_type: str = "OBD_ACQUISITION"
+    source_type: AcquisitionSourceType = AcquisitionSourceType.OBD_ACQUISITION
     raw: bytes | None = None
 
 

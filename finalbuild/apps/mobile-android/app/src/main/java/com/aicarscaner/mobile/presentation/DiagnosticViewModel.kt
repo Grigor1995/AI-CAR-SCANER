@@ -27,6 +27,16 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         repository.addSymptom(id, text)
     }
 
+    fun updateSymptom(symptomId: String, text: String) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.updateSymptom(id, symptomId, text)
+    }
+
+    fun deleteSymptom(symptomId: String) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.deleteSymptom(id, symptomId)
+    }
+
     fun addDtc(code: String) = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.addDtc(id, code)

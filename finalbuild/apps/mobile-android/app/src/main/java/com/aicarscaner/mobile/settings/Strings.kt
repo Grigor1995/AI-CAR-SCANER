@@ -61,7 +61,21 @@ data class AppStrings(
     val engine: String,
     val fuel: String,
     val petrol: String,
-    val lpg: String
+    val lpg: String,
+    val liveData: String,
+    val startLiveData: String,
+    val stopLiveData: String,
+    val liveDataDisconnected: String,
+    val noLiveData: String,
+    val speed: String,
+    val coolantTemp: String,
+    val engineLoad: String,
+    val intakeAirTemp: String,
+    val maf: String,
+    val map: String,
+    val throttle: String,
+    val stft: String,
+    val ltft: String
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {
@@ -74,7 +88,9 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Прочитать DTC","Ответ адаптера","Анализировать сессию","Рекомендуемые тесты","Приоритет",
         "Журнал пуст","Внешний вид","Язык","Тема","Тёмная","Светлая","Закрыть","Bluetooth","Wi‑Fi","USB",
         "Хост","Порт","Подключить Wi‑Fi","USB устройства","Запросить доступ USB","Нет USB устройств",
-        "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG"
+        "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG",
+        "Поток данных","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
+        "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT"
     )
     AppLanguage.HY -> AppStrings(
         "AI CAR SCANER","Նոր սեսիա","Կարգավորումներ","Ախտորոշում","Սեսիա","OBD","Վերլուծություն","Գործողություններ",
@@ -85,7 +101,9 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Կարդալ DTC","Ադապտերի պատասխանը","Վերլուծել սեսիան","Առաջարկվող թեստեր","Առաջնահերթություն",
         "Գործողություններ չկան","Տեսք","Լեզու","Թեմա","Մուգ","Բաց","Փակել","Bluetooth","Wi‑Fi","USB",
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
-        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG"
+        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG",
+        "Կենդանի տվյալներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
+        "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT"
     )
     AppLanguage.EN -> AppStrings(
         "AI CAR SCANER","New Session","Settings","Diagnose","Session","OBD","Analysis","Activity",

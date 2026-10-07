@@ -31,6 +31,6 @@ class DiagnosticRepository(private val api: DiagnosticApi) {
     suspend fun deleteDtc(sessionId: String, dtcId: String) =
         api.deleteDtc(sessionId, dtcId)
 
-    suspend fun analyze(sessionId: String) =
-        api.analyze(sessionId)
+    suspend fun analyze(sessionId: String, language: String = "en") =
+        api.analyze(sessionId, language)
 }

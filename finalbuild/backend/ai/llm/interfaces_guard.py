@@ -9,15 +9,17 @@ class SafePromptContext:
     hypotheses: list[dict]
     tests: list[dict]
     retrieved: list[dict]
+    response_language: str = "en"
 
     @classmethod
-    def from_session(cls, session: DiagnosticSession, retrieved: list[dict]) -> "SafePromptContext":
+    def from_session(cls, session: DiagnosticSession, retrieved: list[dict], response_language: str = "en") -> "SafePromptContext":
         return cls(
             vehicle=session.vehicle.model_dump(mode="json") if session.vehicle else None,
             evidence=[e.model_dump(mode="json") for e in session.evidence],
             hypotheses=[h.model_dump(mode="json") for h in session.hypotheses],
             tests=[t.model_dump(mode="json") for t in session.recommendations],
             retrieved=retrieved,
+            response_language=response_language,
         )
 
     def to_prompt(self) -> str:

@@ -127,6 +127,10 @@ class DiagnosticReasoningEngine:
                 ("ignition under LPG load", "A marginal ignition system can misfire under the higher demand associated with LPG/load; confirm with cylinder-specific evidence."),
                 ("air-fuel / intake", "An air-fuel or intake imbalance can become more visible under LPG load; verify trims, airflow, and intake integrity."),
                 ("mechanical cylinder condition", "A cylinder-specific misfire remains mechanically possible; verify compression, leak-down, and timing evidence before ruling it out."),
+                ("LPG fuel delivery", "The fault is strongly associated with LPG operation; verify LPG pressure, injector delivery, and mixture/calibration before condemning ignition hardware."),
+                ("LPG injection", "The fault is strongly associated with LPG operation; verify LPG pressure, injector delivery, and mixture/calibration before condemning ignition hardware."),
+                ("ignition", "A marginal ignition system can misfire under the higher demand associated with LPG/load; confirm with cylinder-specific evidence."),
+                ("intake", "An air-fuel or intake imbalance can become more visible under LPG load; verify trims, airflow, and intake integrity."),
             ])
 
         if "acceleration" in text or "under load" in text:

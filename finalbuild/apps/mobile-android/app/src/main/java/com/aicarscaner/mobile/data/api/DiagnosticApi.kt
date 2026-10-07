@@ -1,7 +1,9 @@
 package com.aicarscaner.mobile.data.api
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 data class CreateSessionRequest(val vehicle: VehicleDto? = null)
@@ -62,6 +64,19 @@ interface DiagnosticApi {
 
     @POST("api/v1/sessions/{sessionId}/symptoms")
     suspend fun addSymptom(@Path("sessionId") sessionId: String, @Body request: SymptomRequest): DiagnosticSessionDto
+
+    @PUT("api/v1/sessions/{sessionId}/symptoms/{symptomId}")
+    suspend fun updateSymptom(
+        @Path("sessionId") sessionId: String,
+        @Path("symptomId") symptomId: String,
+        @Body request: SymptomRequest
+    ): DiagnosticSessionDto
+
+    @DELETE("api/v1/sessions/{sessionId}/symptoms/{symptomId}")
+    suspend fun deleteSymptom(
+        @Path("sessionId") sessionId: String,
+        @Path("symptomId") symptomId: String
+    ): DiagnosticSessionDto
 
     @POST("api/v1/sessions/{sessionId}/dtcs")
     suspend fun addDtc(@Path("sessionId") sessionId: String, @Body request: DtcRequest): DiagnosticSessionDto

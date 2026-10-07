@@ -18,6 +18,14 @@ class _TraceEvent:
 
 
 @dataclass
+class _SimDtc:
+    code: str
+    raw_dtc: int = 0
+    status_byte: int = 0x28
+    confirmed: bool = True
+
+
+@dataclass
 class _Runtime:
     adapter: str
     request_id: int
@@ -90,7 +98,7 @@ class VehicleDiagnosticService:
             "EcuIdentity",
             (),
             {
-                "vin": "SIMULATORVIN0000001",
+                "vin": "VINTEST1234567890",
                 "software_version": "SIM-ECU-1.0",
                 "hardware_version": "SIM-HW-1.0",
             },
@@ -98,8 +106,9 @@ class VehicleDiagnosticService:
 
     async def read_dtcs(self, session_id: UUID):
         runtime = self._require_connected(session_id)
-        runtime.record("DTC_READ", count=0)
-        return []
+        records = [_SimDtc(code="P0102", raw_dtc=0x0102)]
+        runtime.record("DTC_READ", count=len(records))
+        return records
 
     def trace(self, session_id: UUID, limit: int = 500):
         return self._require(session_id).trace[-limit:]

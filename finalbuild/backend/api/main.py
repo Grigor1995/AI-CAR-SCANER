@@ -49,7 +49,43 @@ def add_symptom(session_id:str,symptom:Symptom):
     """Add a user-reported symptom using the canonical raw_text payload."""
     if not symptom.raw_text.strip():
         raise HTTPException(422,'Symptom text must not be empty')
-    s=get_session(session_id); s.symptoms.append(symptom); s.evidence.append(Evidence(fact=symptom.raw_text,source=EvidenceSource.USER_REPORTED,status=EvidenceStatus.REPORTED)); return s
+    s=get_session(session_id)
+    s.symptoms.append(symptom)
+    s.evidence.append(Evidence(fact=symptom.raw_text,source=EvidenceSource.USER_REPORTED,status=EvidenceStatus.REPORTED))
+    s.audit_log.append({"event":"SYMPTOM_ADDED","symptom_id":str(symptom.id)})
+    return s
+
+@app.put('/api/v1/sessions/{session_id}/symptoms/{symptom_id}',response_model=DiagnosticSession)
+def update_symptom(session_id:str,symptom_id:str,symptom:Symptom):
+    """Update an existing user-reported symptom without replacing its identity."""
+    if not symptom.raw_text.strip():
+        raise HTTPException(422,'Symptom text must not be empty')
+    s=get_session(session_id)
+    target=next((item for item in s.symptoms if str(item.id)==symptom_id),None)
+    if target is None:
+        raise HTTPException(404,'Symptom not found')
+    old_text=target.raw_text
+    target.raw_text=symptom.raw_text.strip()
+    target.normalized=symptom.normalized
+    target.symptom=symptom.symptom
+    for evidence in s.evidence:
+        if evidence.source == EvidenceSource.USER_REPORTED and evidence.fact == old_text:
+            evidence.fact=target.raw_text
+            break
+    s.audit_log.append({"event":"SYMPTOM_UPDATED","symptom_id":symptom_id})
+    return s
+
+@app.delete('/api/v1/sessions/{session_id}/symptoms/{symptom_id}',response_model=DiagnosticSession)
+def delete_symptom(session_id:str,symptom_id:str):
+    """Delete an existing user-reported symptom and its direct evidence."""
+    s=get_session(session_id)
+    index=next((i for i,item in enumerate(s.symptoms) if str(item.id)==symptom_id),None)
+    if index is None:
+        raise HTTPException(404,'Symptom not found')
+    removed=s.symptoms.pop(index)
+    s.evidence=[e for e in s.evidence if not (e.source == EvidenceSource.USER_REPORTED and e.fact == removed.raw_text)]
+    s.audit_log.append({"event":"SYMPTOM_DELETED","symptom_id":symptom_id})
+    return s
 @app.post('/api/v1/sessions/{session_id}/dtcs',response_model=DiagnosticSession)
 def add_dtc(session_id:str,dtc:DTC):
     s=get_session(session_id); s.dtcs.append(dtc); status=EvidenceStatus.MEASURED if dtc.source==EvidenceSource.ECU_REPORTED else EvidenceStatus.REPORTED; s.evidence.append(Evidence(fact=dtc.code,source=dtc.source,status=status)); return s

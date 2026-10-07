@@ -1,5 +1,6 @@
 package com.aicarscaner.mobile.data.api
 
+import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.POST
@@ -39,9 +40,11 @@ data class HypothesisDto(
 
 data class RecommendationDto(
     val id: String,
+    @SerializedName("name")
     val title: String,
     val purpose: String,
-    val priority: Int,
+    @SerializedName("priority_score")
+    val priority: Double,
     val expected_observation: String? = null
 )
 

@@ -53,6 +53,16 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         repository.addDtc(id, code)
     }
 
+    fun updateDtc(dtcId: String, code: String) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.updateDtc(id, dtcId, code)
+    }
+
+    fun deleteDtc(dtcId: String) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.deleteDtc(id, dtcId)
+    }
+
     fun analyze() = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.analyze(id)

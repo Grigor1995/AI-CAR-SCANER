@@ -28,7 +28,7 @@ class DiagnosticReasoningEngine:
             "lpg" in text
             and any(x in text for x in ("misfire", "shak", "jerk"))
             and any(re.fullmatch(r"P03\d{2}", code) for code in dtcs)
-            and ("petrol normal" in text or "normal on petrol" in text or "smoothly on petrol" in text or "significantly reduces" in text)
+            and ("petrol normal" in text or "normal on petrol" in text or "smoothly on petrol" in text or "significantly reduces" in text or "petrol_normal" in text or "lpg_only" in text)
         )
         if lpg_misfire:
             focused = {
@@ -120,6 +120,7 @@ class DiagnosticReasoningEngine:
             or "smoothly on petrol" in text
             or "only on lpg" in text
             or ("petrol" in text and "significantly reduces" in text)
+            or "lpg_only" in text
         )
         if lpg_only and any(x in text for x in ("misfire", "shak", "jerk")):
             categories.extend([

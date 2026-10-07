@@ -30,6 +30,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var petrol by remember { mutableStateOf(true) }
     var lpg by remember { mutableStateOf(true) }
     var symptom by remember { mutableStateOf("") }
+    var editingSymptomId by remember { mutableStateOf<String?>(null) }
     var dtc by remember { mutableStateOf("") }
 
     MaterialTheme {
@@ -99,11 +100,33 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     placeholder = { Text("Example: Smooth on petrol, shakes on LPG below 2000 RPM under load") },
                     supportingText = { Text("${symptom.length}/500") }
                 )
-                Button(
-                    onClick = { viewModel.addSymptom(symptom.trim()) },
-                    enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Add Symptom") }
+                if (editingSymptomId != null) {
+                    Text("Editing symptom", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                viewModel.updateSymptom(editingSymptomId!!, symptom.trim())
+                                editingSymptomId = null
+                            },
+                            enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Save Changes") }
+                        Button(
+                            onClick = {
+                                editingSymptomId = null
+                                symptom = ""
+                            },
+                            enabled = !state.loading,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Cancel") }
+                    }
+                } else {
+                    Button(
+                        onClick = { viewModel.addSymptom(symptom.trim()) },
+                        enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Add Symptom") }
+                }
 
                 if (session.symptoms.isNotEmpty()) {
                     Text("Recorded symptoms (${session.symptoms.size})", style = MaterialTheme.typography.titleMedium)
@@ -116,11 +139,29 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     val formatted = normalized.entries.joinToString(", ") { entry -> "${entry.key}=${entry.value}" }
                                     Text("Normalized: $formatted", style = MaterialTheme.typography.bodySmall)
                                 }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(
+                                        onClick = {
+                                            symptom = item.raw_text
+                                            editingSymptomId = item.id
+                                        },
+                                        enabled = !state.loading
+                                    ) { Text("Edit") }
+                                    Button(
+                                        onClick = {
+                                            viewModel.deleteSymptom(item.id)
+                                            if (editingSymptomId == item.id) {
+                                                editingSymptomId = null
+                                                symptom = ""
+                                            }
+                                        },
+                                        enabled = !state.loading
+                                    ) { Text("Delete") }
+                                }
                             }
                         }
                     }
                 }
-
                 OutlinedTextField(
                     dtc, { dtc = it }, Modifier.fillMaxWidth(),
                     label = { Text("DTC, e.g. P0302") }

@@ -6,6 +6,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 data class CreateSessionRequest(val vehicle: VehicleDto? = null)
 data class VehicleDto(
@@ -36,6 +37,14 @@ data class SymptomDto(
     val normalized: Map<String, String> = emptyMap()
 )
 
+data class EvidenceDto(
+    val id: String,
+    val fact: String,
+    val source: String,
+    val status: String,
+    val confidence: Double? = null
+)
+
 data class HypothesisDto(
     val id: String,
     val category: String,
@@ -52,12 +61,24 @@ data class RecommendationDto(
     val purpose: String,
     @SerializedName("priority_score")
     val priority: Double,
-    val expected_observation: String? = null
+    val expected_observation: String? = null,
+    @SerializedName("expected_information_gain")
+    val informationGain: Double = 0.0,
+    @SerializedName("estimated_cost")
+    val estimatedCost: Double = 0.0,
+    @SerializedName("risk_level")
+    val riskLevel: String = "LOW",
+    val prerequisites: List<String> = emptyList(),
+    val target_hypotheses: List<String> = emptyList(),
+    val safety_notes: List<String> = emptyList()
 )
 
 data class AuditEventDto(
     val event: String,
-    val hypotheses: Int? = null
+    val hypotheses: Int? = null,
+    val evidence_count: Int? = null,
+    val hypothesis_count: Int? = null,
+    val questions: List<String> = emptyList()
 )
 
 data class DiagnosticSessionDto(
@@ -66,6 +87,7 @@ data class DiagnosticSessionDto(
     val vehicle: VehicleDto? = null,
     val symptoms: List<SymptomDto> = emptyList(),
     val dtcs: List<DtcDto> = emptyList(),
+    val evidence: List<EvidenceDto> = emptyList(),
     val hypotheses: List<HypothesisDto> = emptyList(),
     val recommendations: List<RecommendationDto> = emptyList(),
     val audit_log: List<AuditEventDto> = emptyList()
@@ -114,5 +136,8 @@ interface DiagnosticApi {
     ): DiagnosticSessionDto
 
     @POST("api/v1/analysis/{sessionId}")
-    suspend fun analyze(@Path("sessionId") sessionId: String): DiagnosticSessionDto
+    suspend fun analyze(
+        @Path("sessionId") sessionId: String,
+        @Query("language") language: String = "en"
+    ): DiagnosticSessionDto
 }

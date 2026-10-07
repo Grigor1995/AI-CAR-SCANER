@@ -15,7 +15,8 @@ data class VehicleDto(
 )
 data class SymptomRequest(
     val raw_text: String,
-    val normalized: Map<String, String> = emptyMap()
+    val normalized: Map<String, String> = emptyMap(),
+    val symptom: String? = null
 )
 data class DtcRequest(val code: String, val description: String? = null)
 

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.localization import localize_session_analysis
+from diagnostic.localization import localize_session_analysis
 from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router

@@ -22,6 +22,11 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
 
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }
 
+    fun updateVehicle(vehicle: VehicleDto) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.updateVehicle(id, vehicle)
+    }
+
     fun addSymptom(text: String) = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.addSymptom(id, text)

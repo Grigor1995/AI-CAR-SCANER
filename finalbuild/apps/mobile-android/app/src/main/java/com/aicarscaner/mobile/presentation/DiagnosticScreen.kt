@@ -74,15 +74,51 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     }
                 }
 
+                Text("Symptoms", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Describe what the driver observes. Add conditions such as RPM, load, temperature, fuel mode, or when the symptom disappears.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { symptom = "Engine shakes and hesitates when accelerating below 2000 RPM" }) {
+                        Text("Low RPM")
+                    }
+                    Button(onClick = { symptom = "Engine misfires under load" }) {
+                        Text("Misfire")
+                    }
+                }
+
                 OutlinedTextField(
-                    symptom, { symptom = it }, Modifier.fillMaxWidth(),
-                    label = { Text("Symptom") }
+                    value = symptom,
+                    onValueChange = { symptom = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                    maxLines = 6,
+                    label = { Text("Describe the symptom") },
+                    placeholder = { Text("Example: Smooth on petrol, shakes on LPG below 2000 RPM under load") },
+                    supportingText = { Text("${symptom.length}/500") }
                 )
                 Button(
-                    onClick = { viewModel.addSymptom(symptom) },
-                    enabled = symptom.isNotBlank() && !state.loading,
+                    onClick = { viewModel.addSymptom(symptom.trim()) },
+                    enabled = symptom.trim().length >= 3 && symptom.length <= 500 && !state.loading,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Add Symptom") }
+
+                if (session.symptoms.isNotEmpty()) {
+                    Text("Recorded symptoms (${session.symptoms.size})", style = MaterialTheme.typography.titleMedium)
+                    session.symptoms.forEachIndexed { index, item ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Symptom ${index + 1}", style = MaterialTheme.typography.labelLarge)
+                                Text(item.raw_text)
+                                item.normalized?.takeIf { it.isNotBlank() }?.let {
+                                    Text("Normalized: $it", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     dtc, { dtc = it }, Modifier.fillMaxWidth(),

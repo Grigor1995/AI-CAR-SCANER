@@ -63,9 +63,9 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         repository.deleteDtc(id, dtcId)
     }
 
-    fun analyze() = execute {
+    fun analyze(language: String = "en") = execute {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
-        repository.analyze(id)
+        repository.analyze(id, language)
     }
 
     private fun execute(block: suspend () -> DiagnosticSessionDto) {

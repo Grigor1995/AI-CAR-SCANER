@@ -113,9 +113,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            refreshBluetoothDevices()
-            refreshUsbDevices()
+            val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
+            obdDevices = adapter?.bondedDevices?.toList()?.sortedBy {
+                it.name ?: it.address
+            } ?: emptyList()
         }
+        refreshUsbDevices()
     }
 
     fun refreshBluetoothDevices() {

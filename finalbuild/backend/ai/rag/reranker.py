@@ -45,6 +45,15 @@ class CrossEncoderReranker:
 
     def _load(self) -> Any:
         if self._model is None:
+            # PyTorch/sentence-transformers can trigger a native DLL access
+            # violation on some Windows environments. Keep the optional
+            # cross-encoder opt-in there; the deterministic lexical path remains
+            # the safe default. Set RAG_RERANKER_ALLOW_NATIVE=1 to enable it.
+            if os.name == "nt" and os.getenv("RAG_RERANKER_ALLOW_NATIVE", "").lower() not in {"1", "true", "yes"}:
+                raise RuntimeError(
+                    "sentence-transformers is not installed or unavailable. Install backend/requirements-ai.txt "
+                    "or use the lexical reranker."
+                )
             try:
                 from sentence_transformers import CrossEncoder
                 self._model = CrossEncoder(self.model_name, device=self.device)

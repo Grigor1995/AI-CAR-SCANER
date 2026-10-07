@@ -47,12 +47,12 @@ class CrossEncoderReranker:
         if self._model is None:
             try:
                 from sentence_transformers import CrossEncoder
-            except ImportError as exc:
+                self._model = CrossEncoder(self.model_name, device=self.device)
+            except Exception as exc:
                 raise RuntimeError(
-                    "sentence-transformers is not installed. Install backend/requirements-ai.txt "
+                    "sentence-transformers is not installed or unavailable. Install backend/requirements-ai.txt "
                     "or use the lexical reranker."
                 ) from exc
-            self._model = CrossEncoder(self.model_name, device=self.device)
         return self._model
 
     def rerank(self, query: str, hits: Sequence[RetrievalHit], top_k: int = 5) -> list[RerankedHit]:

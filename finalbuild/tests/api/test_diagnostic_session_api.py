@@ -95,3 +95,76 @@ def test_legacy_symptom_payload_is_accepted():
     )
     assert response.status_code == 200, response.text
     assert response.json()["symptoms"][0]["raw_text"] == "Engine shakes on LPG"
+
+
+def test_analysis_localizes_to_requested_language_and_links_evidence():
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/sessions",
+        json={
+            "make": "Mercedes-Benz",
+            "model": "W211 E350",
+            "year": 2006,
+            "engine": "M272 3.5",
+            "fuel": ["petrol", "LPG"],
+        },
+    )
+    assert response.status_code == 200
+    session_id = response.json()["session_id"]
+
+    symptom = "Engine shakes on LPG below 2000 RPM under load; petrol is normal."
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/symptoms",
+        json={"raw_text": symptom},
+    )
+    assert response.status_code == 200
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/dtcs",
+        json={"code": "P0302"},
+    )
+    assert response.status_code == 200
+
+    response = client.post(f"/api/v1/analysis/{session_id}?language=hy")
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    assert any(item["category"] == "Բոցավառում / այրում" for item in body["hypotheses"])
+    assert any(item["supporting_evidence_ids"] for item in body["hypotheses"])
+    assert body["recommendations"]
+    assert body["recommendations"][0]["name"] != "Compare fuel-trim and misfire behavior by fuel mode"
+
+    english = client.post(f"/api/v1/analysis/{session_id}?language=en")
+    assert english.status_code == 200
+    english_body = english.json()
+    assert any(item["category"] == "ignition / combustion" for item in english_body["hypotheses"])
+
+
+def test_non_lpg_analysis_keeps_rule_recommendations():
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/sessions",
+        json={
+            "make": "Toyota",
+            "model": "Camry",
+            "year": 2020,
+            "engine": "2.5",
+            "fuel": ["petrol"],
+        },
+    )
+    session_id = response.json()["session_id"]
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/symptoms",
+        json={"raw_text": "Engine idles rough and RPM fluctuates."},
+    )
+    assert response.status_code == 200
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/dtcs",
+        json={"code": "P0171"},
+    )
+    assert response.status_code == 200
+
+    response = client.post(f"/api/v1/analysis/{session_id}")
+    assert response.status_code == 200, response.text
+    names = {item["name"] for item in response.json()["recommendations"]}
+    assert "Check for unmetered-air leak" in names

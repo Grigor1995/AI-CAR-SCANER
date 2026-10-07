@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from api.state import sessions
@@ -40,10 +40,10 @@ def search_knowledge(request: SearchRequest):
 
 
 @router.post("/sessions/{session_id}/context")
-def build_ai_context(session_id: str):
+def build_ai_context(session_id: str, language: str = Query("en")):
     if session_id not in sessions:
         raise HTTPException(404, "Session not found")
-    result = pipeline.run(sessions[session_id])
+    result = pipeline.run(sessions[session_id], language=language)
     return {"session": result.session, "retrieved": result.retrieved, "prompt": result.llm_prompt}
 
 

@@ -39,8 +39,9 @@ class DiagnosticReasoningEngine:
     def _add_dtc_categories(dtcs: set[str], categories: list[tuple[str, str]]) -> None:
         for code in sorted(dtcs):
             if re.fullmatch(r"P03\d{2}", code):
-                categories.append(("ignition / combustion", f"The {code} family indicates a misfire/combustion issue; identify whether it follows fuel mode, load, or cylinder."))
-                categories.append(("intake", f"Misfire can also be influenced by intake/airflow conditions; verify air-fuel and mechanical evidence before concluding component failure."))
+                categories.append(("ignition / combustion", f"The {code} family indicates a cylinder-specific misfire/combustion issue; determine whether it follows fuel mode, load, or cylinder."))
+                categories.append(("air-fuel / intake", f"A misfire can result from an air-fuel or intake imbalance; verify mixture, airflow, and related evidence before concluding component failure."))
+                categories.append(("mechanical cylinder condition", f"A cylinder-specific misfire can have a mechanical cause; verify compression, leak-down, and valve/timing evidence before ruling this domain out."))
             elif code in {"P0171", "P0174"}:
                 categories.append(("lean mixture", f"{code} indicates a lean condition; separate air leak, fuel delivery, and sensor/model causes."))
             elif code in {"P0172", "P0175"}:
@@ -78,10 +79,10 @@ class DiagnosticReasoningEngine:
         lpg_only = "lpg" in text and ("petrol normal" in text or "normal on petrol" in text or "only on lpg" in text)
         if lpg_only and any(x in text for x in ("misfire", "shak", "jerk")):
             categories.extend([
-                ("LPG injection", "The fault appears fuel-mode specific; verify LPG pressure and injector delivery before condemning ignition hardware."),
-                ("LPG fuel delivery", "The fault appears fuel-mode specific; verify LPG pressure and injector delivery before condemning ignition hardware."),
-                ("LPG calibration", "Fuel-mode-specific behavior can result from mixture/calibration errors; compare trims and commanded/actual gas conditions."),
+                ("LPG fuel delivery / mixture", "The fault is strongly associated with LPG operation; verify LPG pressure, injector delivery, and mixture/calibration before condemning ignition hardware."),
                 ("ignition under LPG load", "A marginal ignition system can misfire under the higher demand associated with LPG/load; confirm with cylinder-specific evidence."),
+                ("air-fuel / intake", "An air-fuel or intake imbalance can become more visible under LPG load; verify trims, airflow, and intake integrity."),
+                ("mechanical cylinder condition", "A cylinder-specific misfire remains mechanically possible; verify compression, leak-down, and timing evidence before ruling it out."),
             ])
 
         if "acceleration" in text or "under load" in text:
@@ -109,10 +110,10 @@ class DiagnosticReasoningEngine:
             ))
 
         cats = {h.category for h in session.hypotheses}
-        if cats & {"LPG injection", "LPG fuel delivery", "LPG calibration"}:
-            add("Measure LPG pressure at idle and under load", "Determine whether gas pressure remains stable during the symptom window.", ["LPG fuel delivery", "LPG calibration"], ["Use approved LPG diagnostic procedures and keep ignition sources controlled."])
-            add("Compare STFT/LTFT on petrol versus LPG", "Separate a fuel-system-specific mixture problem from an engine-wide control problem.", ["LPG calibration", "LPG fuel delivery", "lean mixture", "rich mixture"])
-            add("Compare LPG injector contribution / balance", "Check whether one cylinder receives materially different LPG delivery.", ["LPG fuel delivery"], ["Follow LPG system manufacturer procedures."], "MEDIUM")
+        if "LPG fuel delivery / mixture" in cats:
+            add("Measure LPG pressure at idle and under load", "Determine whether gas pressure remains stable during the symptom window.", ["LPG fuel delivery / mixture"], ["Use approved LPG diagnostic procedures and keep ignition sources controlled."])
+            add("Compare STFT/LTFT on petrol versus LPG", "Separate a fuel-system-specific mixture problem from an engine-wide control problem.", ["LPG fuel delivery / mixture", "lean mixture", "rich mixture"])
+            add("Compare LPG injector contribution / balance", "Check whether one cylinder receives materially different LPG delivery.", ["LPG fuel delivery / mixture"], ["Follow LPG system manufacturer procedures."], "MEDIUM")
         if "ignition / combustion" in cats or "ignition under LPG load" in cats:
             add("Compare cylinder misfire counters under the same load", "Determine whether the event remains isolated to a cylinder and under which fuel mode it occurs.", ["ignition / combustion", "ignition under LPG load"])
             add("Check ignition performance under controlled load", "Correlate ignition behavior with the exact RPM/load/fuel condition where the misfire occurs.", ["ignition / combustion", "ignition under LPG load"], ["Use properly rated test equipment and workshop precautions."], "MEDIUM")

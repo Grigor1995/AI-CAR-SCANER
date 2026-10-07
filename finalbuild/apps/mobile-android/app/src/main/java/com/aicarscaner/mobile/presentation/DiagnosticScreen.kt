@@ -104,6 +104,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         emptyArray()
     }
 
+    fun refreshUsbDevices() {
+        val manager = context.getSystemService(UsbManager::class.java)
+        usbDevices = manager?.deviceList?.values?.toList() ?: emptyList()
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
@@ -135,11 +140,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         obdDevices = adapter?.bondedDevices?.toList()?.sortedBy {
             it.name ?: it.address
         } ?: emptyList()
-    }
-
-    fun refreshUsbDevices() {
-        val manager = context.getSystemService(UsbManager::class.java)
-        usbDevices = manager?.deviceList?.values?.toList() ?: emptyList()
     }
 
     fun closeAllObd() {

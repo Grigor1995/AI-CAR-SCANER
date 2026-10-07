@@ -23,6 +23,12 @@ data class SymptomRequest(
 )
 data class DtcRequest(val code: String, val description: String? = null)
 
+data class DtcDto(
+    val code: String,
+    val description: String? = null,
+    val source: String? = null
+)
+
 data class SymptomDto(
     val id: String,
     val raw_text: String,
@@ -57,6 +63,7 @@ data class DiagnosticSessionDto(
     val session_id: String,
     val state: String,
     val symptoms: List<SymptomDto> = emptyList(),
+    val dtcs: List<DtcDto> = emptyList(),
     val hypotheses: List<HypothesisDto> = emptyList(),
     val recommendations: List<RecommendationDto> = emptyList(),
     val audit_log: List<AuditEventDto> = emptyList()

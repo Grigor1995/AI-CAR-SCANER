@@ -74,7 +74,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Прочитать DTC","Ответ адаптера","Анализировать сессию","Рекомендуемые тесты","Приоритет",
         "Журнал пуст","Внешний вид","Язык","Тема","Тёмная","Светлая","Закрыть","Bluetooth","Wi‑Fi","USB",
         "Хост","Порт","Подключить Wi‑Fi","USB устройства","Запросить доступ USB","Нет USB устройств",
-        "Подключено","Сначала добавьте симптомы и DTC."
+        "Подключено","Сначала добавьте симптомы и DTC.","Марка","Модель","Год","Двигатель","Топливо","Бензин","LPG"
     )
     AppLanguage.HY -> AppStrings(
         "AI CAR SCANER","Նոր սեսիա","Կարգավորումներ","Ախտորոշում","Սեսիա","OBD","Վերլուծություն","Գործողություններ",
@@ -85,7 +85,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Կարդալ DTC","Ադապտերի պատասխանը","Վերլուծել սեսիան","Առաջարկվող թեստեր","Առաջնահերթություն",
         "Գործողություններ չկան","Տեսք","Լեզու","Թեմա","Մուգ","Բաց","Փակել","Bluetooth","Wi‑Fi","USB",
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
-        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։"
+        "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG"
     )
     AppLanguage.EN -> AppStrings(
         "AI CAR SCANER","New Session","Settings","Diagnose","Session","OBD","Analysis","Activity",
@@ -96,6 +96,6 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Read DTCs","Adapter response","Analyze Diagnostic Session","Recommended tests","Priority",
         "No activity recorded yet","Appearance","Language","Theme","Dark","Light","Close","Bluetooth","Wi‑Fi","USB",
         "Host","Port","Connect Wi‑Fi","USB devices","Request USB access","No USB devices",
-        "Connected","Add symptoms and DTCs first."
+        "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG"
     )
 }

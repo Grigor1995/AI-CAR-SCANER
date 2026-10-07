@@ -254,27 +254,27 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         }
     }
 
-    if (settingsOpen) {
-        SettingsDialog(
-            settings = appSettings,
-            text = text,
-            onSettingsChanged = {
-                appSettings = it
-                settingsStore.save(it)
-            },
-            onLanguageChanged = { language ->
-                val active = state.session
-                if (active != null && (active.symptoms.isNotEmpty() || active.dtcs.isNotEmpty())) {
-                    viewModel.analyze(language.code)
-                }
-            },
-            onClose = { settingsOpen = false }
-        )
-    }
-
     MaterialTheme(
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
+        if (settingsOpen) {
+            SettingsDialog(
+                settings = appSettings,
+                text = text,
+                onSettingsChanged = {
+                    appSettings = it
+                    settingsStore.save(it)
+                },
+                onLanguageChanged = { language ->
+                    val active = state.session
+                    if (active != null && (active.symptoms.isNotEmpty() || active.dtcs.isNotEmpty())) {
+                        viewModel.analyze(language.code)
+                    }
+                },
+                onClose = { settingsOpen = false }
+            )
+        }
+
         if (newSessionConfirmOpen) {
             AlertDialog(
                 onDismissRequest = { newSessionConfirmOpen = false },

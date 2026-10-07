@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
+from diagnostic.localization import localize_session_analysis
 from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router
@@ -153,14 +154,21 @@ def delete_dtc(session_id:str,dtc_id:str):
     s.audit_log.append({"event":"DTC_DELETED","dtc_id":dtc_id})
     return s
 
-@app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)
-def analyze(session_id:str):
-    s=engine.analyze(get_session(session_id))
+def _analyze_session(session_id: str, language: str = 'en') -> DiagnosticSession:
+    s = get_session(session_id)
+    engine.analyze(s)
+    rule_recommendations = list(s.recommendations)
     decision_engine.refresh_recommendations(s)
-    return s
+    # Keep the richer rule-driven tests for categories that are not yet covered
+    # by the decision catalog instead of returning an empty test section.
+    if not s.recommendations and rule_recommendations:
+        s.recommendations = rule_recommendations
+    return localize_session_analysis(s, language)
+
+@app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)
+def analyze(session_id:str, language: str = 'en'):
+    return _analyze_session(session_id, language)
 
 @app.post('/api/v1/analysis/{session_id}',response_model=DiagnosticSession)
-def analyze_compat(session_id:str):
-    s=engine.analyze(get_session(session_id))
-    decision_engine.refresh_recommendations(s)
-    return s
+def analyze_compat(session_id:str, language: str = 'en'):
+    return _analyze_session(session_id, language)

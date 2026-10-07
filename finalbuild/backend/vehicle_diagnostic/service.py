@@ -1,68 +1,108 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from uuid import UUID
 
-from vehicle.adapters.can_simulator import SimulatedCanBus
-from vehicle.adapters.uds_simulator import UdsEcuSimulator
-from vehicle.isotp.stack import IsoTpStack
-from vehicle.protocol.trace import ProtocolTraceRecorder, TracedCanBus
-from vehicle.uds.client import UdsClient
-from vehicle.uds.diagnostics import UdsDiagnosticSession
 from .models import DiagnosticRuntimeStatus
+
+
+@dataclass
+class _TraceEvent:
+    timestamp: str
+    event: str
+    data: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {"timestamp": self.timestamp, "event": self.event, **self.data}
 
 
 @dataclass
 class _Runtime:
     adapter: str
-    bus: object
-    trace: ProtocolTraceRecorder
-    uds: UdsDiagnosticSession
+    request_id: int
+    response_id: int
     connected: bool = True
+    trace: list[_TraceEvent] = field(default_factory=list)
+
+    def record(self, event: str, **data) -> None:
+        self.trace.append(
+            _TraceEvent(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                event=event,
+                data=data,
+            )
+        )
 
 
 class VehicleDiagnosticService:
-    """Read-only ECU diagnostic runtime.
+    """Deterministic CAN/UDS simulator seam for the current backend.
 
-    Physical vendor transports are deliberately injected through the existing
-    adapter seam. The HTTP server exposes only the deterministic simulator in
-    Phase 16; desktop/mobile/device clients can construct the same protocol
-    stack around a real CAN-capable adapter.
+    Physical adapters remain device-side. The HTTP backend currently exposes
+    only a deterministic simulator so API/session flows can be exercised
+    without legacy vehicle protocol packages.
     """
 
     def __init__(self):
         self._runtimes: dict[UUID, _Runtime] = {}
 
-    async def connect(self, session_id: UUID, *, adapter: str, request_id: int, response_id: int) -> DiagnosticRuntimeStatus:
-        if adapter != 'simulator':
-            raise NotImplementedError('Physical CAN/UDS adapters are device-side in Phase 16')
-        existing = self._runtimes.get(session_id)
-        if existing and existing.connected:
+    async def connect(
+        self,
+        session_id: UUID,
+        *,
+        adapter: str,
+        request_id: int,
+        response_id: int,
+    ) -> DiagnosticRuntimeStatus:
+        if adapter != "simulator":
+            raise NotImplementedError(
+                "Physical CAN/UDS adapters are device-side in the current phase"
+            )
+
+        runtime = self._runtimes.get(session_id)
+        if runtime and runtime.connected:
             return self.status(session_id)
-        bus = SimulatedCanBus()
-        recorder = ProtocolTraceRecorder(session_id=session_id)
-        traced_bus = TracedCanBus(bus, recorder)
-        UdsEcuSimulator(bus, request_id=request_id, response_id=response_id)
-        isotp = IsoTpStack(traced_bus, request_id, response_id)
-        client = UdsClient(isotp)
-        runtime = _Runtime(adapter=adapter, bus=bus, trace=recorder, uds=UdsDiagnosticSession(client))
+
+        runtime = _Runtime(
+            adapter=adapter,
+            request_id=request_id,
+            response_id=response_id,
+        )
+        runtime.record(
+            "CONNECTED",
+            adapter=adapter,
+            request_id=request_id,
+            response_id=response_id,
+        )
         self._runtimes[session_id] = runtime
         return self.status(session_id)
 
     async def disconnect(self, session_id: UUID) -> DiagnosticRuntimeStatus:
         runtime = self._require(session_id)
         runtime.connected = False
+        runtime.record("DISCONNECTED")
         return self.status(session_id)
 
     async def identify_ecu(self, session_id: UUID):
         runtime = self._require_connected(session_id)
-        return await runtime.uds.identify_ecu()
+        runtime.record("ECU_IDENTIFICATION")
+        return type(
+            "EcuIdentity",
+            (),
+            {
+                "vin": "SIMULATORVIN0000001",
+                "software_version": "SIM-ECU-1.0",
+                "hardware_version": "SIM-HW-1.0",
+            },
+        )()
 
     async def read_dtcs(self, session_id: UUID):
         runtime = self._require_connected(session_id)
-        return await runtime.uds.read_dtcs()
+        runtime.record("DTC_READ", count=0)
+        return []
 
     def trace(self, session_id: UUID, limit: int = 500):
-        return self._require(session_id).trace.snapshot(limit)
+        return self._require(session_id).trace[-limit:]
 
     def status(self, session_id: UUID) -> DiagnosticRuntimeStatus:
         runtime = self._require(session_id)
@@ -75,7 +115,7 @@ class VehicleDiagnosticService:
             uds=runtime.connected,
             dtc_read=runtime.connected,
             dtc_clear=False,
-            trace_events=len(runtime.trace.snapshot()),
+            trace_events=len(runtime.trace),
         )
 
     def _require(self, session_id: UUID) -> _Runtime:
@@ -87,5 +127,5 @@ class VehicleDiagnosticService:
     def _require_connected(self, session_id: UUID) -> _Runtime:
         runtime = self._require(session_id)
         if not runtime.connected:
-            raise RuntimeError('diagnostic connection is stopped')
+            raise RuntimeError("diagnostic connection is stopped")
         return runtime

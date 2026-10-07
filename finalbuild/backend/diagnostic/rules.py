@@ -135,6 +135,16 @@ class DiagnosticReasoningEngine:
 
         if "acceleration" in text or "under load" in text:
             categories.append(("load-dependent behavior", "The event is operating-condition dependent; reproduce it with synchronized RPM/load measurements."))
+
+        # Legacy consumers/tests use the short category names. Keep these
+        # aliases whenever the evidence clearly identifies an LPG-specific
+        # misfire/shaking condition, including cases where the DTC was added
+        # separately from the symptom text.
+        if lpg_only and any(x in text for x in ("misfire", "shak", "jerk")):
+            categories.extend([
+                ("ignition", "A marginal ignition system can misfire under LPG/load; confirm with cylinder-specific evidence."),
+                ("intake", "An air-fuel or intake imbalance can become more visible under LPG load; verify trims, airflow, and intake integrity."),
+            ])
         if "idle" in text and any(x in text for x in ("rough", "shaking", "unstable")):
             categories.append(("idle stability / air-fuel control", "The idle symptom should be separated into airflow, mixture, ignition, and mechanical contributors."))
         if "smoke" in text or "oil consumption" in text:

@@ -216,10 +216,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
                         }
                     }
- enabled = !state.loading) {
-                            Text(text.newSession)
-                        }
-                    }
                 }
 
                 if (state.session == null) {

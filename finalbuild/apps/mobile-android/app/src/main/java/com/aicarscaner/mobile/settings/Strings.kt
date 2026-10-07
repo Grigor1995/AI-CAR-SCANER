@@ -114,6 +114,8 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Read DTCs","Adapter response","Analyze Diagnostic Session","Recommended tests","Priority",
         "No activity recorded yet","Appearance","Language","Theme","Dark","Light","Close","Bluetooth","Wi‑Fi","USB",
         "Host","Port","Connect Wi‑Fi","USB devices","Request USB access","No USB devices",
-        "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG"
+        "Connected","Add symptoms and DTCs first.","Make","Model","Year","Engine","Fuel","Petrol","LPG",
+        "Live Data","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
+        "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT"
     )
 }

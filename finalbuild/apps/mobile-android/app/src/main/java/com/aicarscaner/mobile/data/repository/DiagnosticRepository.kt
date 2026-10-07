@@ -9,6 +9,16 @@ class DiagnosticRepository(private val api: DiagnosticApi) {
     suspend fun addSymptom(sessionId: String, symptom: String) =
         api.addSymptom(sessionId, SymptomRequest(raw_text = symptom.trim(), symptom = symptom.trim()))
 
+    suspend fun updateSymptom(sessionId: String, symptomId: String, symptom: String) =
+        api.updateSymptom(
+            sessionId,
+            symptomId,
+            SymptomRequest(raw_text = symptom.trim(), symptom = symptom.trim())
+        )
+
+    suspend fun deleteSymptom(sessionId: String, symptomId: String) =
+        api.deleteSymptom(sessionId, symptomId)
+
     suspend fun addDtc(sessionId: String, code: String) =
         api.addDtc(sessionId, DtcRequest(code))
 

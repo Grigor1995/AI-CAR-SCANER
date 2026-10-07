@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.localization import localize_session_analysis
+from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from diagnostic.localization import localize_session_analysis
 from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
@@ -21,6 +22,7 @@ from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
 app=FastAPI(title="AI Auto Diagnostic Platform",version="0.1.0")
 engine=DiagnosticReasoningEngine()
+intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()
 app.include_router(platform_router)
 app.include_router(intelligence_router)
@@ -158,6 +160,10 @@ def delete_dtc(session_id:str,dtc_id:str):
 def _analyze_session(session_id: str, language: str = 'en') -> DiagnosticSession:
     s = get_session(session_id)
     engine.analyze(s)
+    # Add evidence-linked confidence and missing-question context used by the
+    # detailed mobile Analysis screen without changing the deterministic rules.
+    intelligence_engine._annotate_scores(s)
+    intelligence_engine._add_missing_questions(s)
     rule_recommendations = list(s.recommendations)
     decision_engine.refresh_recommendations(s)
     # Keep the richer rule-driven tests for categories that are not yet covered

@@ -122,12 +122,25 @@ class MultiEcuRuntime:
         return result
 
     def correlate_dtcs(self, dtcs):
-        correlations = []
+        by_code: dict[str, list[str]] = {}
         for ecu_id, records in dtcs.items():
             for record in records:
+                by_code.setdefault(record.code, []).append(ecu_id)
+
+        correlations = []
+        for code, ecu_ids in by_code.items():
+            if len(ecu_ids) > 1:
                 correlations.append({
-                    "ecu_id": ecu_id,
-                    "code": record.code,
+                    "type": "SHARED_DTC",
+                    "code": code,
+                    "ecu_ids": ecu_ids,
+                    "relationship": "shared across ECUs",
+                })
+            else:
+                correlations.append({
+                    "type": "ECU_LOCAL",
+                    "code": code,
+                    "ecu_ids": ecu_ids,
                     "relationship": "ECU-local",
                 })
         return correlations

@@ -18,6 +18,7 @@ jobs:
           python-version: "3.13"
       - run: pip install -r backend/requirements-dev.txt
       - run: pytest -q
+      - run: pytest -q -s tests/harness/test_performance.py
       - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=60
       - run: python -m compileall backend
       - run: python backend/tools/import_check.py

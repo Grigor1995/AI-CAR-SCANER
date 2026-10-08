@@ -194,6 +194,8 @@ def test_recommendations_and_test_result_follow_requested_language():
         for item in body["recommendations"]
     )
 
+    before_statuses = {item["category"]: item["status"] for item in body["hypotheses"]}
+
     test_id = body["recommendations"][0]["id"]
     result = client.post(
         f"/api/v1/intelligence/sessions/{session_id}/test-results?language=hy",
@@ -208,6 +210,12 @@ def test_recommendations_and_test_result_follow_requested_language():
     assert localized["recommendations"]
     assert all(item["name"] not in english_names for item in localized["recommendations"])
     assert any("Թեստի արդյունք" in item["fact"] for item in localized["evidence"])
+
+    after_statuses = {item["category"]: item["status"] for item in localized["hypotheses"]}
+    assert any(
+        after_statuses.get(category) != before_statuses.get(category)
+        for category in after_statuses.keys() & before_statuses.keys()
+    )
 
 
 def test_non_lpg_analysis_keeps_rule_recommendations():

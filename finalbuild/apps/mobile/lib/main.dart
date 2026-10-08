@@ -32,19 +32,19 @@ class _VehicleSetupPageState extends State<VehicleSetupPage> {
 
   void selectMake(String value) {
     final m=findMake(value)??vehicleCatalog.first; final mo=m.models.first; final ch=mo.chassisOptions.first; final en=ch.engines.first;
-    setState(()=>{make=m.name,model=mo.name,chassis=ch.chassis,year=ch.years.first,engine=en.name,ecu=en.ecus.first});
+    setState(() { make=m.name; model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
   }
   void selectModel(String value) {
     final mo=findModel(make,value)??modelData; final ch=mo.chassisOptions.first; final en=ch.engines.first;
-    setState(()=>{model=mo.name,chassis=ch.chassis,year=ch.years.first,engine=en.name,ecu=en.ecus.first});
+    setState(() { model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
   }
   void selectChassis(String value) {
     final ch=findChassis(make,model,value)??chassisData; final en=ch.engines.first;
-    setState(()=>{chassis=ch.chassis,year=ch.years.first,engine=en.name,ecu=en.ecus.first});
+    setState(() { chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
   }
   void selectEngine(String value) {
     final en=chassisData.engines.firstWhere((e)=>e.name==value,orElse:()=>chassisData.engines.first);
-    setState(()=>{engine=en.name,ecu=en.ecus.first});
+    setState(() { engine=en.name; ecu=en.ecus.first; });
   }
 
   Widget field(String label,String value,List<String> options,ValueChanged<String> onChanged)=>DropdownButtonFormField<String>(
@@ -83,7 +83,7 @@ class _VehicleSetupPageState extends State<VehicleSetupPage> {
         const SizedBox(height:12),
         field('Engine',engine,engines,selectEngine),
         const SizedBox(height:12),
-        TextFormField(initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU')),
+        TextFormField(key:ValueKey(ecu),initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU')),
         const SizedBox(height:12),
         const Text('Fuel'),
         CheckboxListTile(value:petrol,onChanged:(v)=>setState(()=>petrol=v??false),title:const Text('Petrol'),contentPadding:EdgeInsets.zero),

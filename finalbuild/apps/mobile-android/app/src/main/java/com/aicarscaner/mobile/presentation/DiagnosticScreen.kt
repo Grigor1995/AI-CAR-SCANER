@@ -34,6 +34,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -418,7 +423,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     enabled = true,
                                     modifier = Modifier
                                 ) {
-                                    Text("+", style = MaterialTheme.typography.titleLarge)
+                                    Icon(Icons.Outlined.Add, contentDescription = text.newSession)
                                 }
                             }
                         }

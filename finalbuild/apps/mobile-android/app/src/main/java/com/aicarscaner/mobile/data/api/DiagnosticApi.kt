@@ -84,6 +84,8 @@ data class TestResultDto(
     val test_id: String,
     val result: String,
     val measurements: Map<String, Any?> = emptyMap(),
+    val notes: String? = null,
+    @SerializedName("test_name") val testName: String? = null,
     val notes: String? = null
 )
 

@@ -26,7 +26,7 @@ class DiagnosticReasoningEngine:
         # the four diagnostic domains used by the LPG misfire golden case.
         vehicle_fuel = {str(f).strip().lower() for f in (session.vehicle.fuel if session.vehicle else [])}
         dual_fuel_lpg = "lpg" in vehicle_fuel and "petrol" in vehicle_fuel
-        has_misfire_dtc = any(re.fullmatch(r"P03\\d{2}", code) for code in dtcs)
+        has_misfire_dtc = any(re.fullmatch(r"P03\d{2}", code) for code in dtcs)
         fuel_mode_specific = (
             "petrol normal" in text
             or "normal on petrol" in text

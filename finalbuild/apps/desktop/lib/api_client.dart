@@ -13,6 +13,13 @@ class DiagnosticApiClient {
   final Dio _dio;
 
 
+  Future<List<Map<String, dynamic>>> catalogEntries() async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/entries');
+    return ((response.data as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
   Future<List<String>> catalogMakes() async {
     final response = await _dio.get('/api/v1/vehicle-catalog/makes');
     return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();

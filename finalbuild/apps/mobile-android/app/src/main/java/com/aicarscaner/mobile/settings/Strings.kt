@@ -99,11 +99,13 @@ data class AppStrings(
 )
 
 data class AppExtraStrings(
+    val session: String = "Session",
     val vehicleNotIdentified: String = "Vehicle not identified",
     val state: String = "State",
     val symptomExample: String = "Example: Shakes on LPG below 2000 RPM under load; petrol is normal",
     val symptomItem: String = "Symptom",
     val diagnosticTroubleCode: String = "Diagnostic trouble code",
+    val ecu: String = "ECU",
     val obdAdapters: String = "Bluetooth + Wi-Fi + USB OBD adapters",
     val connectingBluetooth: String = "Connecting Bluetooth...",
     val bluetoothError: String = "Bluetooth error",
@@ -127,11 +129,13 @@ data class AppExtraStrings(
 )
 
 private val ruExtra = AppExtraStrings(
+    session = "Сессия",
     vehicleNotIdentified = "Автомобиль не определён",
     state = "Состояние",
     symptomExample = "Пример: на LPG двигатель трясётся ниже 2000 об/мин под нагрузкой; на бензине работает нормально",
     symptomItem = "Симптом",
     diagnosticTroubleCode = "Диагностический код неисправности",
+    ecu = "ECU",
     obdAdapters = "OBD-адаптеры Bluetooth + Wi-Fi + USB",
     connectingBluetooth = "Подключение Bluetooth...",
     bluetoothError = "Ошибка Bluetooth",
@@ -155,11 +159,13 @@ private val ruExtra = AppExtraStrings(
 )
 
 private val hyExtra = AppExtraStrings(
+    session = "Սեսիա",
     vehicleNotIdentified = "Մեքենան չի նույնականացվել",
     state = "Վիճակ",
     symptomExample = "Օրինակ՝ LPG-ով շարժիչը ցնցվում է 2000 պտ/րոպե-ից ցածր՝ բեռնվածության տակ, իսկ բենզինով աշխատում է նորմալ",
     symptomItem = "Ախտանշան",
     diagnosticTroubleCode = "Դիագնոստիկ սխալի կոդ",
+    ecu = "ECU",
     obdAdapters = "Bluetooth + Wi-Fi + USB OBD ադապտերներ",
     connectingBluetooth = "Bluetooth-ի միացում...",
     bluetoothError = "Bluetooth-ի սխալ",

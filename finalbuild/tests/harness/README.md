@@ -33,13 +33,21 @@ Run the focused harness:
 
 pytest -q tests/harness
 
-Run coverage:
+Run full backend coverage report:
 
-pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=60
+pytest -q --cov=backend --cov-report=term-missing --cov-report=xml
+
+CI enforces the 90% minimum on the production diagnostic core:
+
+pytest -q --cov=backend/diagnostic --cov=backend/telemetry --cov=backend/multi_ecu --cov=backend/simulator --cov=backend/global_data.py --cov=backend/ai/reasoning --cov=backend/ai/ml --cov=backend/ai/live_analysis --cov-report=term-missing --cov-fail-under=90
 
 Run the deterministic performance benchmark:
 
 pytest -q tests/harness/test_performance.py -vv
+
+## Coverage policy
+
+The full backend report is informational because the repository also contains optional adapters, protocol scaffolding and external integrations that are intentionally not exercised in every CI run. The blocking 90% gate covers the production diagnostic core: deterministic diagnostic rules/models, reasoning, telemetry, multi-ECU runtime, simulator, global data and live analysis.
 
 ## Performance targets
 

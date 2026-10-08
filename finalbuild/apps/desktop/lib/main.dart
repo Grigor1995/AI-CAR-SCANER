@@ -464,7 +464,15 @@ class DashboardPage extends StatelessWidget {
 }
 
 class VehiclesPage extends StatefulWidget {
-  const VehiclesPage({super.key, required this.vehicles, required this.onCreateSession, required this.onSaveVehicle});
+  const VehiclesPage({
+    super.key,
+    required this.catalog,
+    required this.vehicles,
+    required this.onCreateSession,
+    required this.onSaveVehicle,
+  });
+
+  final List<Map<String, dynamic>> catalog;
   final List<VehicleModel> vehicles;
   final Future<void> Function(VehicleModel vehicle) onCreateSession;
   final Future<void> Function(VehicleModel vehicle) onSaveVehicle;
@@ -474,39 +482,168 @@ class VehiclesPage extends StatefulWidget {
 }
 
 class _VehiclesPageState extends State<VehiclesPage> {
-  String make = vehicleCatalog.first.name;
-  String model = vehicleCatalog.first.models.first.name;
-  String chassis = vehicleCatalog.first.models.first.chassisOptions.first.chassis;
-  int? year = vehicleCatalog.first.models.first.chassisOptions.first.years.first;
-  String engine = vehicleCatalog.first.models.first.chassisOptions.first.engines.first.name;
-  String ecu = vehicleCatalog.first.models.first.chassisOptions.first.engines.first.ecus.first;
-  final fuel = TextEditingController(text: 'Petrol');
+  String make = 'Mercedes-Benz';
+  String model = 'E-Class';
+  String chassis = 'W211';
+  int? year = 2006;
+  String engine = 'M272 E35 3.5';
+  String ecu = 'ME9.7';
+  final fuel = TextEditingController(text: 'Petrol,LPG');
 
-  VehicleModelOption get _model => findModel(make, model) ?? vehicleCatalog.first.models.first;
-  VehicleChassisOption get _chassis => findChassis(make, model, chassis) ?? _model.chassisOptions.first;
+  List<Map<String, dynamic>> get _catalog => widget.catalog;
+
+  List<Map<String, dynamic>> _filtered({
+    String? selectedMake,
+    String? selectedModel,
+    String? selectedChassis,
+    int? selectedYear,
+    String? selectedEngine,
+  }) {
+    Iterable<Map<String, dynamic>> rows = _catalog;
+    if (selectedMake != null) rows = rows.where((x) => x['make']?.toString() == selectedMake);
+    if (selectedModel != null) rows = rows.where((x) => x['model']?.toString() == selectedModel);
+    if (selectedChassis != null && selectedChassis.isNotEmpty) rows = rows.where((x) => x['chassis']?.toString() == selectedChassis);
+    if (selectedYear != null) rows = rows.where((x) => (x['year'] as num?)?.toInt() == selectedYear);
+    if (selectedEngine != null) rows = rows.where((x) => x['engine']?.toString() == selectedEngine);
+    return rows.toList();
+  }
+
+  List<String> _makes() {
+    if (_catalog.isEmpty) return vehicleCatalog.map((x) => x.name).toList();
+    return _catalog.map((x) => x['make']?.toString()).whereType<String>().toSet().toList()..sort();
+  }
+
+  List<String> _models() {
+    if (_catalog.isEmpty) return findMake(make)?.models.map((x) => x.name).toList() ?? [];
+    return _filtered(selectedMake: make).map((x) => x['model']?.toString()).whereType<String>().toSet().toList()..sort();
+  }
+
+  List<String> _chassisOptions() {
+    if (_catalog.isEmpty) return findModel(make, model)?.chassisOptions.map((x) => x.chassis).toList() ?? [];
+    return _filtered(selectedMake: make, selectedModel: model)
+        .map((x) => x['chassis']?.toString()).whereType<String>().toSet().toList()..sort();
+  }
+
+  List<int> _years() {
+    if (_catalog.isEmpty) return findChassis(make, model, chassis)?.years ?? [];
+    return _filtered(selectedMake: make, selectedModel: model, selectedChassis: chassis)
+        .map((x) => (x['year'] as num?)?.toInt()).whereType<int>().toSet().toList()..sort((a,b) => b.compareTo(a));
+  }
+
+  List<String> _engines() {
+    if (_catalog.isEmpty) return findChassis(make, model, chassis)?.engines.map((x) => x.name).toList() ?? [];
+    return _filtered(selectedMake: make, selectedModel: model, selectedChassis: chassis, selectedYear: year)
+        .map((x) => x['engine']?.toString()).whereType<String>().toSet().toList()..sort();
+  }
+
+  List<String> _ecus() {
+    if (_catalog.isEmpty) return findChassis(make, model, chassis)
+        ?.engines.firstWhere((x) => x.name == engine, orElse: () => findChassis(make, model, chassis)!.engines.first)
+        .ecus ?? [];
+    return _filtered(
+      selectedMake: make,
+      selectedModel: model,
+      selectedChassis: chassis,
+      selectedYear: year,
+      selectedEngine: engine,
+    ).map((x) => x['ecu']?.toString()).whereType<String>().toSet().toList()..sort();
+  }
 
   void _selectMake(String value) {
-    final m = findMake(value) ?? vehicleCatalog.first;
-    final mo = m.models.first; final ch = mo.chassisOptions.first; final en = ch.engines.first;
-    setState(() { make=m.name; model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+    if (_catalog.isEmpty) {
+      final m = findMake(value) ?? vehicleCatalog.first;
+      final mo = m.models.first; final ch = mo.chassisOptions.first; final en = ch.engines.first;
+      setState(() { make=m.name; model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+      return;
+    }
+    final models = _filtered(selectedMake: value).map((x) => x['model']?.toString()).whereType<String>().toSet().toList()..sort();
+    if (models.isEmpty) return;
+    _selectModel(models.first, makeValue: value);
   }
-  void _selectModel(String value) {
-    final mo = findModel(make, value) ?? _model; final ch=mo.chassisOptions.first; final en=ch.engines.first;
-    setState(() { model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+
+  void _selectModel(String value, {String? makeValue}) {
+    final selectedMake = makeValue ?? make;
+    if (_catalog.isEmpty) {
+      final mo = findModel(selectedMake, value) ?? findMake(selectedMake)!.models.first;
+      final ch = mo.chassisOptions.first; final en = ch.engines.first;
+      setState(() { make=selectedMake; model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+      return;
+    }
+    final rows = _filtered(selectedMake: selectedMake, selectedModel: value);
+    final chassisValues = rows.map((x) => x['chassis']?.toString()).whereType<String>().toSet().toList()..sort();
+    if (chassisValues.isEmpty) return;
+    final nextChassis = chassisValues.first;
+    final years = _filtered(selectedMake: selectedMake, selectedModel: value, selectedChassis: nextChassis)
+        .map((x) => (x['year'] as num?)?.toInt()).whereType<int>().toSet().toList()..sort((a,b) => b.compareTo(a));
+    if (years.isEmpty) return;
+    final nextYear = years.contains(2006) ? 2006 : years.first;
+    final engines = _filtered(selectedMake: selectedMake, selectedModel: value, selectedChassis: nextChassis, selectedYear: nextYear)
+        .map((x) => x['engine']?.toString()).whereType<String>().toSet().toList()..sort();
+    if (engines.isEmpty) return;
+    final nextEngine = engines.first;
+    final ecus = _filtered(selectedMake: selectedMake, selectedModel: value, selectedChassis: nextChassis, selectedYear: nextYear, selectedEngine: nextEngine)
+        .map((x) => x['ecu']?.toString()).whereType<String>().toSet().toList()..sort();
+    setState(() { make=selectedMake; model=value; chassis=nextChassis; year=nextYear; engine=nextEngine; ecu=ecus.isEmpty ? '' : ecus.first; });
   }
+
   void _selectChassis(String value) {
-    final ch=findChassis(make, model, value) ?? _chassis; final en=ch.engines.first;
-    setState(() { chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+    if (_catalog.isEmpty) {
+      final ch = findChassis(make, model, value) ?? findModel(make, model)!.chassisOptions.first;
+      final en = ch.engines.first;
+      setState(() { chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+      return;
+    }
+    final years = _filtered(selectedMake: make, selectedModel: model, selectedChassis: value)
+        .map((x) => (x['year'] as num?)?.toInt()).whereType<int>().toSet().toList()..sort((a,b) => b.compareTo(a));
+    if (years.isEmpty) return;
+    final nextYear = years.first;
+    final engines = _filtered(selectedMake: make, selectedModel: model, selectedChassis: value, selectedYear: nextYear)
+        .map((x) => x['engine']?.toString()).whereType<String>().toSet().toList()..sort();
+    if (engines.isEmpty) return;
+    final nextEngine = engines.first;
+    final ecus = _filtered(selectedMake: make, selectedModel: model, selectedChassis: value, selectedYear: nextYear, selectedEngine: nextEngine)
+        .map((x) => x['ecu']?.toString()).whereType<String>().toSet().toList()..sort();
+    setState(() { chassis=value; year=nextYear; engine=nextEngine; ecu=ecus.isEmpty ? '' : ecus.first; });
   }
+
+  void _selectYear(int value) {
+    if (_catalog.isEmpty) {
+      setState(() => year=value);
+      return;
+    }
+    final engines = _filtered(selectedMake: make, selectedModel: model, selectedChassis: chassis, selectedYear: value)
+        .map((x) => x['engine']?.toString()).whereType<String>().toSet().toList()..sort();
+    if (engines.isEmpty) return;
+    final nextEngine = engines.contains(engine) ? engine : engines.first;
+    final ecus = _filtered(selectedMake: make, selectedModel: model, selectedChassis: chassis, selectedYear: value, selectedEngine: nextEngine)
+        .map((x) => x['ecu']?.toString()).whereType<String>().toSet().toList()..sort();
+    setState(() { year=value; engine=nextEngine; ecu=ecus.isEmpty ? '' : ecus.first; });
+  }
+
   void _selectEngine(String value) {
-    final en=_chassis.engines.firstWhere((e)=>e.name==value, orElse: ()=>_chassis.engines.first);
-    setState(() { engine=en.name; ecu=en.ecus.first; });
+    if (_catalog.isEmpty) {
+      final ch = findChassis(make, model, chassis)!;
+      final en = ch.engines.firstWhere((x)=>x.name==value,orElse:()=>ch.engines.first);
+      setState(() { engine=en.name; ecu=en.ecus.first; });
+      return;
+    }
+    final ecus = _filtered(selectedMake: make, selectedModel: model, selectedChassis: chassis, selectedYear: year, selectedEngine: value)
+        .map((x) => x['ecu']?.toString()).whereType<String>().toSet().toList()..sort();
+    setState(() { engine=value; ecu=ecus.isEmpty ? '' : ecus.first; });
   }
+
   VehicleModel get _formVehicle => VehicleModel(
-    make:make, model:model, chassis:chassis, year:year, engine:engine,
-    fuel:fuel.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(), ecu:ecu,
+    make: make,
+    model: model,
+    chassis: chassis,
+    year: year,
+    engine: engine,
+    fuel: fuel.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(),
+    ecu: ecu,
   );
-  @override void dispose(){ fuel.dispose(); super.dispose(); }
+
+  @override
+  void dispose() { fuel.dispose(); super.dispose(); }
 
   Widget _select(String label,String value,List<String> options,ValueChanged<String> onChanged)=>SizedBox(
     width:210, child:DropdownButtonFormField<String>(
@@ -518,41 +655,56 @@ class _VehiclesPageState extends State<VehiclesPage> {
 
   @override
   Widget build(BuildContext context){
-    final modelOptions=findMake(make)?.models.map((x)=>x.name).toList()??[];
-    final chassisOptions=_model.chassisOptions.map((x)=>x.chassis).toList();
-    final yearOptions=_chassis.years;
-    final engineOptions=_chassis.engines.map((x)=>x.name).toList();
+    final modelOptions=_models();
+    final chassisOptions=_chassisOptions();
+    final yearOptions=_years();
+    final engineOptions=_engines();
+    final ecuOptions=_ecus();
     return ListView(padding:const EdgeInsets.all(26),children:[
-      _PageTitle(title:'Vehicles',subtitle:'Real-world Make → Model → Chassis → Year → Engine → ECU selection.'),
+      _PageTitle(title:'Vehicles',subtitle:'Real-world Make → Model → Chassis → Year → Engine → ECU selection from the shared backend catalog.'),
       const SizedBox(height:20),
       Card(child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Create / select vehicle',style:TextStyle(fontSize:18,fontWeight:FontWeight.w700)),
         const SizedBox(height:16),
         Wrap(spacing:12,runSpacing:12,children:[
-          _select('Manufacturer',make,vehicleCatalog.map((x)=>x.name).toList(),_selectMake),
+          _select('Manufacturer',make,_makes(),_selectMake),
           _select('Model',model,modelOptions,_selectModel),
           _select('Chassis',chassis,chassisOptions,_selectChassis),
           SizedBox(width:120,child:DropdownButtonFormField<int>(
             value:yearOptions.contains(year)?year:(yearOptions.isEmpty?null:yearOptions.first),
             decoration:const InputDecoration(labelText:'Year'),
             items:yearOptions.map((x)=>DropdownMenuItem(value:x,child:Text('$x'))).toList(),
-            onChanged:(v)=>setState(()=>year=v),
+            onChanged:yearOptions.isEmpty?null:(v){if(v!=null)_selectYear(v);},
           )),
           _select('Engine',engine,engineOptions,_selectEngine),
-          SizedBox(width:210,child:TextFormField(key:ValueKey(ecu),initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU'))),
+          SizedBox(width:210,child:DropdownButtonFormField<String>(
+            value:ecuOptions.contains(ecu)?ecu:(ecuOptions.isEmpty?null:ecuOptions.first),
+            decoration:const InputDecoration(labelText:'ECU'),
+            items:ecuOptions.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),
+            onChanged:ecuOptions.isEmpty?null:(v){if(v!=null)setState(()=>ecu=v);},
+          )),
           SizedBox(width:220,child:TextField(controller:fuel,decoration:const InputDecoration(labelText:'Fuel modes'))),
         ]),
         const SizedBox(height:18),
-        FilledButton.icon(onPressed:()=>widget.onSaveVehicle(_formVehicle),icon:const Icon(Icons.add_circle_outline),label:const Text('Save & Start Session')),
+        FilledButton.icon(
+          onPressed:(_makes().isEmpty || modelOptions.isEmpty || chassisOptions.isEmpty || yearOptions.isEmpty || engineOptions.isEmpty)
+              ? null
+              : ()=>widget.onSaveVehicle(_formVehicle),
+          icon:const Icon(Icons.add_circle_outline),
+          label:const Text('Save & Start Session'),
+        ),
       ]))),
       const SizedBox(height:18),
       if(widget.vehicles.isEmpty)const _EmptyState(icon:Icons.directions_car_outlined,title:'No saved vehicles',subtitle:'Add your first workshop vehicle above.'),
-      ...widget.vehicles.map((v)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-        leading:CircleAvatar(child:Text(v.make.isEmpty?'?':v.make.substring(0,1))),
-        title:Text('${v.make} ${v.model} / ${v.chassis}${v.year==null?'':' • ${v.year}'}'),
-        subtitle:Text('${v.engine??'Engine unknown'} • ECU ${v.ecu.isEmpty?'unknown':v.ecu} • ${v.fuel.isEmpty?'Fuel unknown':v.fuel.join(' + ')}'),
-        trailing:FilledButton.tonal(onPressed:()=>widget.onCreateSession(v),child:const Text('Start Session')),
-      ))),
+      ...widget.vehicles.map((v)=>Card(
+        margin:const EdgeInsets.only(bottom:10),
+        child:ListTile(
+          leading:CircleAvatar(child:Text(v.make.isEmpty?'?':v.make.substring(0,1))),
+          title:Text('${v.make} ${v.model} / ${v.chassis}${v.year==null?'':' • ${v.year}'}'),
+          subtitle:Text('${v.engine??'Engine unknown'} • ECU ${v.ecu.isEmpty?'unknown':v.ecu} • ${v.fuel.isEmpty?'Fuel unknown':v.fuel.join(' + ')}'),
+          trailing:FilledButton.tonal(onPressed:()=>widget.onCreateSession(v),child:const Text('Start Session')),
+        ),
+      )),
     ]);
   }
 }

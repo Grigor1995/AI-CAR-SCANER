@@ -49,7 +49,7 @@ class DiagnosticTest(BaseModel):
     target_hypotheses: list[str]=Field(default_factory=list)
 class TestResult(BaseModel):
     __test__ = False
-    test_id: UUID; result: str; measurements: dict=Field(default_factory=dict); notes: str | None=None
+    test_id: UUID; result: str; measurements: dict=Field(default_factory=dict); notes: str | None=None; test_name: str | None=None
 class DiagnosticSession(BaseModel):
     session_id: UUID=Field(default_factory=uuid4)
     state: SessionState=SessionState.CREATED

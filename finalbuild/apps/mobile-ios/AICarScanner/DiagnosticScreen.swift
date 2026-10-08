@@ -78,7 +78,7 @@ struct DiagnosticScreen: View {
             HStack{TextField(t.driverSymptom,text:$symptom,axis:.vertical).textFieldStyle(.roundedBorder)
                 Button("＋"){let x=symptom;symptom="";Task{await viewModel.addSymptom(x)}}.disabled(viewModel.session == nil || symptom.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
             ForEach(viewModel.session?.symptoms ?? []){x in
-                InputRow(title:x.raw_text,edit:{editSymptom=x;editText=x},delete:{Task{await viewModel.deleteSymptom(x)}})
+                InputRow(title:x.raw_text,edit:{editSymptom=x;editText=x.raw_text},delete:{Task{await viewModel.deleteSymptom(x)}})
             }
             Text("DTC").font(.title3.bold())
             HStack{TextField("P0302",text:$dtc).textFieldStyle(.roundedBorder).textInputAutocapitalization(.characters)
@@ -91,7 +91,7 @@ struct DiagnosticScreen: View {
     private var analysisView:some View {
         VStack(alignment:.leading,spacing:10) {
             if let s=viewModel.session {
-                StatusCard(title:t.state,value:localizedState(s.state))
+                StatusCard(title:t.state,value:s.state)
                 SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(x.status) • \(x.source)").font(.subheadline)}}
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in

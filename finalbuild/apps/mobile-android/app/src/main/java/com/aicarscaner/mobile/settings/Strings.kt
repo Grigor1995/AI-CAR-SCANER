@@ -242,6 +242,52 @@ private val hyExtra = AppExtraStrings(
     resultPlaceholder = "ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆՈՐՈՇ"
 )
 
+fun localizedState(language: AppLanguage, state: String): String {
+    if (language == AppLanguage.EN) return state
+    return when (language) {
+        AppLanguage.RU -> mapOf(
+            "CREATED" to "Создана",
+            "VEHICLE_IDENTIFIED" to "Автомобиль идентифицирован",
+            "SYMPTOMS_COLLECTED" to "Симптомы собраны",
+            "INITIAL_ANALYSIS" to "Первичный анализ",
+            "QUESTIONS_PENDING" to "Ожидаются уточнения",
+            "DATA_COLLECTION" to "Сбор данных",
+            "TESTING" to "Тестирование",
+            "HYPOTHESIS_VALIDATION" to "Проверка гипотез",
+            "ROOT_CAUSE_FOUND" to "Причина найдена",
+            "REPAIR" to "Ремонт",
+            "POST_REPAIR_VERIFICATION" to "Проверка после ремонта",
+            "CLOSED" to "Закрыта"
+        ).getOrDefault(state, state)
+        AppLanguage.HY -> mapOf(
+            "CREATED" to "Ստեղծված է",
+            "VEHICLE_IDENTIFIED" to "Մեքենան նույնականացված է",
+            "SYMPTOMS_COLLECTED" to "Ախտանշանները հավաքված են",
+            "INITIAL_ANALYSIS" to "Սկզբնական վերլուծություն",
+            "QUESTIONS_PENDING" to "Սպասվում են ճշտումներ",
+            "DATA_COLLECTION" to "Տվյալների հավաքում",
+            "TESTING" to "Թեստավորում",
+            "HYPOTHESIS_VALIDATION" to "Հիպոթեզների ստուգում",
+            "ROOT_CAUSE_FOUND" to "Պատճառը գտնված է",
+            "REPAIR" to "Վերանորոգում",
+            "POST_REPAIR_VERIFICATION" to "Վերանորոգումից հետո ստուգում",
+            "CLOSED" to "Փակված է"
+        ).getOrDefault(state, state)
+        AppLanguage.EN -> state
+    }
+}
+
+fun localizedEvidenceStatus(language: AppLanguage, status: String, extra: AppExtraStrings): String =
+    when (status.lowercase()) {
+        "reported" -> extra.reported
+        "measured" -> extra.measured
+        "calculated" -> extra.calculated
+        "inferred" -> extra.inferred
+        "confirmed" -> extra.confirmed
+        "rejected" -> extra.rejectedStatus
+        else -> status
+    }
+
 fun strings(language: AppLanguage): AppStrings = when (language) {
     AppLanguage.RU -> AppStrings(
         "AI CAR SCANER","Новая сессия","Настройки","Диагностика","Сессия","OBD","Анализ","Журнал",

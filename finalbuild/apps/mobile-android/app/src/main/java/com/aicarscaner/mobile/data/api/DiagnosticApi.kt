@@ -3,10 +3,23 @@ package com.aicarscaner.mobile.data.api
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+
+data class VehicleCatalogEntryDto(
+    val make: String,
+    val model: String,
+    val chassis: String? = null,
+    val year: Int,
+    val engine: String,
+    val ecu: String? = null,
+    val fuel: List<String> = emptyList(),
+    val source: String = "",
+    val scope: String = ""
+)
 
 data class CreateSessionRequest(val vehicle: VehicleDto? = null)
 data class VehicleDto(
@@ -111,6 +124,9 @@ data class DiagnosticSessionDto(
 )
 
 interface DiagnosticApi {
+    @GET("api/v1/vehicle-catalog/entries")
+    suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto>
+
     @POST("api/v1/sessions")
     suspend fun createSession(@Body vehicle: VehicleDto): DiagnosticSessionDto
 

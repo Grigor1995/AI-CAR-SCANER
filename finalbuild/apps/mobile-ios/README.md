@@ -37,3 +37,10 @@ For a physical iPhone, set the backend to the Mac LAN address from Settings.
 ## Adapter note
 
 Wi-Fi/TCP OBD is the preferred generic iOS transport path. BLE discovery is implemented through CoreBluetooth. Generic USB access is handled separately because iOS accessory support differs from Android.
+
+
+## Test report
+
+The latest validated simulator run is documented in [TEST_REPORT.md](TEST_REPORT.md).
+
+The native iOS CI workflow runs on macOS with XcodeGen + Xcode and executes XCTest on an iOS Simulator. The test result bundle is uploaded as a GitHub Actions artifact.

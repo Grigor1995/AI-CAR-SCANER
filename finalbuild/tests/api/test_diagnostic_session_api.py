@@ -186,6 +186,13 @@ def test_recommendations_and_test_result_follow_requested_language():
         "Check for unmetered-air leak",
     }
     assert all(item["name"] not in english_names for item in body["recommendations"])
+    assert all(
+        not item["purpose"].startswith((
+            "Separate ", "Check ", "Determine ", "Verify ", "Validate ",
+            "Look ", "Establish ", "Obtain "
+        ))
+        for item in body["recommendations"]
+    )
 
     test_id = body["recommendations"][0]["id"]
     result = client.post(
@@ -227,7 +234,12 @@ def test_non_lpg_analysis_keeps_rule_recommendations():
     )
     assert response.status_code == 200
 
-    response = client.post(f"/api/v1/analysis/{session_id}")
+    response = client.post(f"/api/v1/analysis/{session_id}?language=hy")
     assert response.status_code == 200, response.text
-    names = {item["name"] for item in response.json()["recommendations"]}
-    assert "Check for unmetered-air leak" in names
+    hy_names = {item["name"] for item in response.json()["recommendations"]}
+    assert "Ստուգել չչափված օդի արտահոսքը" in hy_names
+
+    response = client.post(f"/api/v1/analysis/{session_id}?language=ru")
+    assert response.status_code == 200, response.text
+    ru_names = {item["name"] for item in response.json()["recommendations"]}
+    assert "Проверить подсос неучтённого воздуха" in ru_names

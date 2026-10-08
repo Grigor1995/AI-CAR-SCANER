@@ -58,8 +58,11 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> analyze(String id) async {
-    final response = await _dio.post('/api/v1/intelligence/sessions/$id/analyze');
+  Future<Map<String, dynamic>> analyze(String id, {String language = 'en'}) async {
+    final response = await _dio.post(
+      '/api/v1/analysis/$id',
+      queryParameters: {'language': language},
+    );
     return Map<String, dynamic>.from(response.data as Map);
   }
 

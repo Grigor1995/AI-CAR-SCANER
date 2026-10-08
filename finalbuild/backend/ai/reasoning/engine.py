@@ -51,12 +51,18 @@ class DiagnosticIntelligenceEngine:
     def record_test_result(self, session: DiagnosticSession, test_id, result: str, measurements: dict | None = None, notes: str | None = None) -> DiagnosticSession:
         from diagnostic.models import TestResult, Evidence
         measurements = measurements or {}
-        session.test_results.append(TestResult(test_id=test_id, result=result, measurements=measurements, notes=notes))
+        selected_test = next((x for x in session.recommendations if x.id == test_id), None)
+        session.test_results.append(TestResult(
+            test_id=test_id,
+            result=result.strip().upper(),
+            measurements=measurements,
+            notes=notes,
+            test_name=selected_test.name if selected_test else None,
+        ))
         session.evidence.append(Evidence(
             fact=f"Test {test_id} result: {result}", source=EvidenceSource.TECHNICIAN_OBSERVED,
             status=EvidenceStatus.MEASURED, confidence=0.95, metadata={"test_id": str(test_id), "measurements": measurements}
         ))
-        selected_test = next((x for x in session.recommendations if x.id == test_id), None)
         # Free-form technician notes are part of the result evidence. This lets
         # entries such as "pressure drops" or "no leak, stable" affect the
         # targeted hypotheses even when the UI outcome is left inconclusive.
@@ -65,6 +71,9 @@ class DiagnosticIntelligenceEngine:
         analyzed = self.analyze(session)
         # Re-apply the test interpretation after re-analysis so regenerated hypotheses retain the measured-result effect.
         supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, interpretation_text)
+        # Rebuild the next-test queue after the result so the completed test is
+        # removed and the next best diagnostic step is returned immediately.
+        self.decision.refresh_recommendations(analyzed)
         analyzed.audit_log.append({"event": "TEST_RESULT_INTERPRETED", "test_id": str(test_id), "supported_hypotheses": supported})
         analyzed.state = SessionState.HYPOTHESIS_VALIDATION
         return analyzed

@@ -68,6 +68,16 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         repository.analyze(id, language)
     }
 
+    fun recordTestResult(
+        testId: String,
+        result: String,
+        notes: String?,
+        language: String = "en"
+    ) = execute {
+        val id = _uiState.value.session?.session_id ?: error("Create a session first")
+        repository.recordTestResult(id, testId, result, notes, language)
+    }
+
     private fun execute(block: suspend () -> DiagnosticSessionDto) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)

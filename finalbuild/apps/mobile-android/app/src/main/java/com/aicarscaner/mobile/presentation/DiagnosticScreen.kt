@@ -310,13 +310,49 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(text.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
-                        OutlinedTextField(
-                            value = testOutcome,
-                            onValueChange = { testOutcome = it.uppercase() },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(extra.nextDiagnosticResult) },
-                            placeholder = { Text(extra.resultPlaceholder) }
-                        )
+                        Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                "PASS" to extra.pass,
+                                "FAIL" to extra.fail
+                            ).forEach { (value, label) ->
+                                if (testOutcome == value) {
+                                    Button(
+                                        onClick = { testOutcome = value },
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(label, maxLines = 1) }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { testOutcome = value },
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(label, maxLines = 1) }
+                                }
+                            }
+                        }
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                "INCONCLUSIVE" to extra.inconclusive,
+                                "NOT_TESTED" to extra.notTested
+                            ).forEach { (value, label) ->
+                                if (testOutcome == value) {
+                                    Button(
+                                        onClick = { testOutcome = value },
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(label, maxLines = 1) }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { testOutcome = value },
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(label, maxLines = 1) }
+                                }
+                            }
+                        }
                         OutlinedTextField(
                             value = testNotes,
                             onValueChange = { testNotes = it },

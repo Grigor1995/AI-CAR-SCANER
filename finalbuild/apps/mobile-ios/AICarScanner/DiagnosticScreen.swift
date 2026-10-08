@@ -125,7 +125,7 @@ struct DiagnosticScreen: View {
     private var ecus:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && $0.engine==engine}.compactMap(\.ecu).unique().sorted().ifEmpty(["ME9.7"])}
 
     private func saveVehicle()async{let v=Vehicle(make:make,model:model,chassis:chassis,year:Int(year),engine:engine,fuel:[petrol ? "petrol":"",lpg ? "lpg":""].filter{!$0.isEmpty},ecu:ecu);if viewModel.session == nil{await viewModel.newSession(v)}else{await viewModel.updateVehicle(v)}}
-    private func updateSymptomLocally(_ s:Symptom)async{guard let id=viewModel.session?.session_id else{return};_ = id; /* API edit endpoint is kept for parity and will be wired in the next transport iteration. */ }
+    private func updateSymptomLocally(_ s:Symptom)async{await viewModel.updateSymptom(s,editText)}
     private func reset(){make="Mercedes-Benz";model="E-Class";chassis="W211";year="2006";engine="M272 E35 3.5";ecu="ME9.7";petrol=true;lpg=true;symptom="";dtc="";tab=0}
 }
 

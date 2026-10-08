@@ -407,14 +407,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             IconButton(
                                 onClick = { settingsOpen = true },
-                                enabled = !state.loading
+                                enabled = true,
+                                modifier = Modifier
                             ) {
                                 Text("⚙", style = MaterialTheme.typography.titleLarge)
                             }
                             if (state.session != null) {
                                 IconButton(
                                     onClick = { newSessionConfirmOpen = true },
-                                    enabled = !state.loading
+                                    enabled = true,
+                                    modifier = Modifier
                                 ) {
                                     Text("+", style = MaterialTheme.typography.titleLarge)
                                 }

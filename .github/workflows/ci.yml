@@ -19,7 +19,19 @@ jobs:
       - run: pip install -r backend/requirements-dev.txt
       - run: pytest -q
       - run: pytest -q -s tests/harness/test_performance.py
-      - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+      - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml
+      - run: >-
+          pytest -q
+          --cov=backend/diagnostic
+          --cov=backend/telemetry
+          --cov=backend/multi_ecu
+          --cov=backend/simulator
+          --cov=backend/global_data.py
+          --cov=backend/ai/reasoning
+          --cov=backend/ai/ml
+          --cov=backend/ai/live_analysis
+          --cov-report=term-missing
+          --cov-fail-under=90
       - run: python -m compileall backend
       - run: python backend/tools/import_check.py
 

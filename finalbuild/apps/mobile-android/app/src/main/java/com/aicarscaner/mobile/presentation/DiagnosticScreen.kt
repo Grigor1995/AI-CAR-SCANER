@@ -33,6 +33,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -125,6 +128,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var model by remember { mutableStateOf("W211") }
     var year by remember { mutableStateOf("2006") }
     var engine by remember { mutableStateOf("M272 3.5") }
+    var ecu by remember { mutableStateOf("ME9.7") }
     var petrol by remember { mutableStateOf(true) }
     var lpg by remember { mutableStateOf(true) }
     var symptom by remember { mutableStateOf("") }
@@ -220,6 +224,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         model = "W211"
         year = "2006"
         engine = "M272 3.5"
+        ecu = "ME9.7"
         petrol = true
         lpg = true
     }
@@ -441,8 +446,36 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     )
                     VehicleFields(
                         text,
-                        make, { make = it }, model, { model = it }, year, { year = it },
-                        engine, { engine = it }, petrol, { petrol = it }, lpg, { lpg = it }
+                        make,
+                        onMake = { value ->
+                            make = value
+                            val nextModel = modelOptionsFor(value).firstOrNull()
+                            model = nextModel?.name.orEmpty()
+                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                        },
+                        model,
+                        onModel = { value ->
+                            model = value
+                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
+                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                        },
+                        year,
+                        onYear = { year = it },
+                        engine,
+                        onEngine = {
+                            engine = it
+                            ecu = ecuOptionsFor(make, model, it).firstOrNull().orEmpty()
+                        },
+                        ecu,
+                        onEcu = { ecu = it },
+                        petrol,
+                        onPetrol = { petrol = it },
+                        lpg,
+                        onLpg = { lpg = it }
                     )
                     Button(
                         onClick = {
@@ -450,7 +483,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 VehicleDto(make, model, year.toIntOrNull(), engine, buildList {
                                     if (petrol) add("petrol")
                                     if (lpg) add("LPG")
-                                })
+                                }, ecu)
                             )
                         },
                         enabled = !state.loading,
@@ -464,6 +497,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             model = vehicle.model
                             year = vehicle.year?.toString().orEmpty()
                             engine = vehicle.engine.orEmpty()
+                            ecu = vehicle.ecu ?: ecuOptionsFor(vehicle.make, vehicle.model, vehicle.engine.orEmpty()).firstOrNull().orEmpty()
                             petrol = vehicle.fuel.any { it.equals("petrol", true) }
                             lpg = vehicle.fuel.any { it.equals("lpg", true) }
                         }
@@ -702,17 +736,45 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             if (editingVehicle) {
                                 VehicleFields(
-                                    text,
-                                    make, { make = it }, model, { model = it }, year, { year = it },
-                                    engine, { engine = it }, petrol, { petrol = it }, lpg, { lpg = it }
-                                )
+                        text,
+                        make,
+                        onMake = { value ->
+                            make = value
+                            val nextModel = modelOptionsFor(value).firstOrNull()
+                            model = nextModel?.name.orEmpty()
+                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                        },
+                        model,
+                        onModel = { value ->
+                            model = value
+                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
+                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                        },
+                        year,
+                        onYear = { year = it },
+                        engine,
+                        onEngine = {
+                            engine = it
+                            ecu = ecuOptionsFor(make, model, it).firstOrNull().orEmpty()
+                        },
+                        ecu,
+                        onEcu = { ecu = it },
+                        petrol,
+                        onPetrol = { petrol = it },
+                        lpg,
+                        onLpg = { lpg = it }
+                    )
                                 Button(
                                     onClick = {
                                         viewModel.updateVehicle(
                                             VehicleDto(make, model, year.toIntOrNull(), engine, buildList {
                                                 if (petrol) add("petrol")
                                                 if (lpg) add("LPG")
-                                            })
+                                            }, ecu)
                                         )
                                         editingVehicle = false
                                     },
@@ -1387,15 +1449,24 @@ private fun VehicleFields(
     onYear: (String) -> Unit,
     engine: String,
     onEngine: (String) -> Unit,
+    ecu: String,
+    onEcu: (String) -> Unit,
     petrol: Boolean,
     onPetrol: (Boolean) -> Unit,
     lpg: Boolean,
     onLpg: (Boolean) -> Unit
 ) {
-    OutlinedTextField(make, onMake, Modifier.fillMaxWidth(), label = { Text(text.make) })
-    OutlinedTextField(model, onModel, Modifier.fillMaxWidth(), label = { Text(text.model) })
-    OutlinedTextField(year, onYear, Modifier.fillMaxWidth(), label = { Text(text.year) })
-    OutlinedTextField(engine, onEngine, Modifier.fillMaxWidth(), label = { Text(text.engine) })
+    val makes = vehicleCatalog.map { it.name }
+    val models = modelOptionsFor(make).map { it.name }
+    val years = yearOptionsFor(make, model).map(Int::toString)
+    val engines = engineOptionsFor(make, model).map { it.name }
+    val ecus = ecuOptionsFor(make, model, engine)
+
+    VehicleSelectionField(text.make, make, makes, onMake)
+    VehicleSelectionField(text.model, model, models, onModel)
+    VehicleSelectionField(text.year, year, years, onYear)
+    VehicleSelectionField(text.engine, engine, engines, onEngine)
+    VehicleSelectionField(text.extra.ecu, ecu, ecus, onEcu)
 
     Text(text.fuel, style = MaterialTheme.typography.titleMedium)
     Row {
@@ -1405,6 +1476,52 @@ private fun VehicleFields(
     Row {
         Checkbox(checked = lpg, onCheckedChange = onLpg)
         Text(text.lpg)
+    }
+}
+
+@Composable
+private fun VehicleSelectionField(
+    label: String,
+    value: String,
+    options: List<String>,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember(value, options) { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = {
+            if (options.isNotEmpty()) expanded = !expanded
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            label = { Text(label) },
+            trailingIcon = {
+                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            }
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
 

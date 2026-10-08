@@ -1126,8 +1126,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 val resultLabel = when (result.result.uppercase()) {
                                                     "PASS" -> extra.pass
                                                     "FAIL" -> extra.fail
-                                                    "INCONCLUSIVE" -> extra.inconclusive
-                                                    "NOT_TESTED" -> extra.notTested
+                                                    "UNKNOWN" -> extra.unknown
                                                     else -> result.result
                                                 }
                                                 Text(
@@ -1180,7 +1179,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     onClick = {
                                                         selectedTestId = nextTest.id
                                                         selectedTestTitle = nextTest.title
-                                                        testOutcome = "INCONCLUSIVE"
+                                                        testOutcome = "UNKNOWN"
                                                         testNotes = ""
                                                         testResultDialogOpen = true
                                                     },

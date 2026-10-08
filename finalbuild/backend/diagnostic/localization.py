@@ -336,6 +336,22 @@ def _localized_hypothesis_targets(targets: list[str], language: str) -> list[str
     mapping = HYPOTHESIS_LABELS.get(language, {})
     return [mapping.get(item, CATEGORY_LABELS.get(language, {}).get(item, item)) for item in targets]
 
+PREREQUISITE_LABELS = {
+    "ru": {
+        "fuel_mode_lpg": "режим работы LPG",
+        "petrol normal": "нормальная работа на бензине",
+        "misfire": "пропуски зажигания",
+    },
+    "hy": {
+        "fuel_mode_lpg": "LPG աշխատանքի ռեժիմ",
+        "petrol normal": "բենզինով նորմալ աշխատանք",
+        "misfire": "բոցավառման բացթողումներ",
+    },
+}
+
+def _localized_prerequisite(value: str, language: str) -> str:
+    return PREREQUISITE_LABELS.get(language, {}).get(value, value)
+
 def _localized_safety_note(note: str, language: str) -> str:
     if language == "ru":
         return {
@@ -514,13 +530,20 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         recommendation.safety_notes = [
             _localized_safety_note(note, language) for note in recommendation.safety_notes
         ]
-
+        recommendation.prerequisites = [
+            _localized_prerequisite(item, language) for item in recommendation.prerequisites
+        ]
         recommendation.target_hypotheses = _localized_hypothesis_targets(
             recommendation.target_hypotheses, language
         )
-        recommendation.safety_notes = [
-            _localized_safety_note(note, language) for note in recommendation.safety_notes
-        ]
+
+    for test_result in result.test_results:
+        translated = RECOMMENDATION_TRANSLATIONS.get(language, {}).get(test_result.test_name or "")
+        if translated:
+            test_result.test_name = translated[0]
+        test_result.result = RECOMMENDATION_STATUS_TRANSLATIONS.get(language, {}).get(
+            test_result.result.upper(), test_result.result
+        )
 
     for evidence in result.evidence:
         evidence.fact = _localized_test_result_fact(evidence.fact, language)

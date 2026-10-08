@@ -11,7 +11,7 @@ class EvidenceSource(str, Enum):
 class EvidenceStatus(str, Enum):
     REPORTED="reported"; MEASURED="measured"; CALCULATED="calculated"; INFERRED="inferred"; CONFIRMED="confirmed"; REJECTED="rejected"
 class Vehicle(BaseModel):
-    make: str; model: str; year: int | None=None; engine: str | None=None; fuel: list[str]=Field(default_factory=list); ecu: str | None=None; metadata: dict=Field(default_factory=dict)
+    make: str; model: str; chassis: str | None = None; year: int | None=None; engine: str | None=None; fuel: list[str]=Field(default_factory=list); ecu: str | None=None; metadata: dict=Field(default_factory=dict)
 class Symptom(BaseModel):
     id: UUID=Field(default_factory=uuid4)
     raw_text: str = ""

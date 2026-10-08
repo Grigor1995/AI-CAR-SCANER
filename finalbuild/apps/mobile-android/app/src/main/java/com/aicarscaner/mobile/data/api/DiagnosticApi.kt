@@ -85,8 +85,7 @@ data class TestResultDto(
     val result: String,
     val measurements: Map<String, Any?> = emptyMap(),
     val notes: String? = null,
-    @SerializedName("test_name") val testName: String? = null,
-    val notes: String? = null
+    @SerializedName("test_name") val testName: String? = null
 )
 
 data class AuditEventDto(

@@ -314,7 +314,7 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
             recommendation.name, recommendation.purpose = translated
 
     for evidence in result.evidence:
-        evidence.status = _localized_evidence_status(str(evidence.status), language)
+        evidence.status = _localized_evidence_status(getattr(evidence.status, "value", str(evidence.status)), language)
 
     for event in result.audit_log:
         event["event"] = _localized_event(event.get("event", ""), language)

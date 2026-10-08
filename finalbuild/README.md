@@ -93,3 +93,17 @@ The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1
 
 ## Phase 35
 Adaptive llama-server context handling was added. The client reads `/props`, compacts live diagnostic context to fit the actual server limit, and defaults the managed server to 8192 context.
+
+
+## Architecture documentation
+
+The implementation is documented from high level to code-level responsibility:
+
+- [Documentation index](docs/README.md)
+- [System architecture](docs/architecture/system-overview.md)
+- [Domain and diagnostic flow](docs/architecture/domain-and-flow.md)
+- [Component hierarchy](docs/architecture/component-hierarchy.md)
+- [Dependency map](docs/architecture/dependency-map.md)
+- [Architecture visualizations](docs/architecture/visualization.md)
+
+These documents describe the current repository implementation, including the in-process DiagnosticSession registry, database snapshot persistence, deterministic reasoning boundary, RAG/LLM seams, device abstraction, client hierarchy and current architectural risks.

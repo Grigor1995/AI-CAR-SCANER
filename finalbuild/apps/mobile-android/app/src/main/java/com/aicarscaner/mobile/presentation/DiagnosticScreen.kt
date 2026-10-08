@@ -653,7 +653,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         Text("${session.vehicle?.make.orEmpty()} ${session.vehicle?.model.orEmpty()}")
                                         Text("${text.year}: ${session.vehicle?.year ?: "—"}")
                                         Text("${text.engine}: ${session.vehicle?.engine ?: "—"}")
-                                        Text("${text.fuel}: ${session.vehicle?.fuel?.joinToString(" + ").orEmpty()}")
+                                        Text("${text.fuel}: ${session.vehicle?.fuel?.joinToString(" + ") { fuel -> when (fuel.lowercase()) { "petrol" -> text.petrol; "lpg" -> text.lpg; else -> fuel } }.orEmpty()}")
                                         Text("ECU: ${session.vehicle?.ecu ?: "—"}")
                                     }
                                 }
@@ -1082,7 +1082,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     Modifier.fillMaxWidth(),
                                                     horizontalArrangement = Arrangement.SpaceBetween
                                                 ) {
-                                                    Text("${text.risk}: ${recommendation.riskLevel}")
+                                                    Text("${text.risk}: ${when (recommendation.riskLevel.uppercase()) { "LOW" -> extra.low; "MEDIUM" -> extra.medium; "HIGH" -> extra.high; else -> recommendation.riskLevel }}")
                                                     Text("${text.estimatedCost}: %.1f".format(recommendation.estimatedCost))
                                                 }
                                                 recommendation.expected_observation?.takeIf { it.isNotBlank() }?.let {

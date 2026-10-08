@@ -354,8 +354,10 @@ CREATE TABLE IF NOT EXISTS vehicle_catalog_entries (
     chassis TEXT,
     year INT NOT NULL,
     engine TEXT NOT NULL,
-    ecu TEXT NOT NULL,
+    ecu TEXT,
     fuel JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source TEXT NOT NULL DEFAULT 'unknown',
+    scope TEXT NOT NULL DEFAULT 'family-level',
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (make, model, chassis, year, engine, ecu)
@@ -368,5 +370,9 @@ CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_model_chassis
     ON vehicle_catalog_entries(make, model, chassis);
 CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_year
     ON vehicle_catalog_entries(make, model, chassis, year);
+ALTER TABLE vehicle_catalog_entries ALTER COLUMN ecu DROP NOT NULL;
+ALTER TABLE vehicle_catalog_entries ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE vehicle_catalog_entries ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'family-level';
+
 CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_engine
     ON vehicle_catalog_entries(make, model, chassis, year, engine);

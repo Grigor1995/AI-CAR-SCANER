@@ -77,9 +77,8 @@ class DiagnosticIntelligenceEngine:
         analyzed = self.analyze(session)
         # Re-apply the test interpretation after re-analysis so regenerated hypotheses retain the measured-result effect.
         supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, interpretation_text)
-        # Rebuild the next-test queue after the result so the completed test is
-        # removed and the next best diagnostic step is returned immediately.
-        self.decision.refresh_recommendations(analyzed)
+        # analyze() already rebuilt the next-test queue and excluded this
+        # completed test. Keep that plan after applying the final interpretation.
         analyzed.audit_log.append({"event": "TEST_RESULT_INTERPRETED", "test_id": str(test_id), "supported_hypotheses": supported})
         analyzed.state = SessionState.HYPOTHESIS_VALIDATION
         return analyzed

@@ -346,6 +346,102 @@ def _localized_safety_note(note: str, language: str) -> str:
         }.get(note, note)
     return note
 
+
+# All deterministic recommendation texts used by the rules engine. Keep these
+# complete so a requested app language never silently falls back to English.
+for _lang, _entries in {
+    "ru": {
+        "Measure LPG pressure at idle and under load": ("Измерить давление LPG на холостом ходу и под нагрузкой", "Определить, сохраняется ли стабильное давление газа в момент возникновения симптома."),
+        "Compare STFT/LTFT on petrol versus LPG": ("Сравнить STFT/LTFT на бензине и LPG", "Отделить специфическую проблему топливной системы от общей проблемы управления двигателем."),
+        "Compare LPG injector contribution / balance": ("Сравнить вклад и баланс форсунок LPG", "Проверить, получает ли один цилиндр заметно отличающуюся подачу LPG."),
+        "Compare cylinder misfire counters under the same load": ("Сравнить счётчики пропусков по цилиндрам при одинаковой нагрузке", "Определить, остаётся ли событие локальным для одного цилиндра и в каком режиме топлива оно возникает."),
+        "Check ignition performance under controlled load": ("Проверить работу зажигания под контролируемой нагрузкой", "Сопоставить работу зажигания с точным диапазоном RPM, нагрузки и топлива, где возникает пропуск."),
+        "Validate MAF signal against RPM/load plausibility": ("Проверить правдоподобность сигнала MAF относительно RPM и нагрузки", "Определить, соответствует ли сигнал расхода воздуха режиму работы двигателя."),
+        "Inspect intake and MAF wiring/connectors": ("Проверить впуск и проводку/разъёмы MAF", "Отделить проблему проводки и разъёмов от проблемы самого сигнала датчика."),
+        "Check for unmetered-air leak": ("Проверить подсос неучтённого воздуха", "Проверить наличие воздуха, поступающего в двигатель в обход ожидаемого измерения."),
+        "Measure fuel pressure under load": ("Измерить давление топлива под нагрузкой", "Проверить, сохраняется ли необходимое давление топлива в момент возникновения симптома."),
+        "Check injector leakage / fuel pressure": ("Проверить герметичность форсунок и давление топлива", "Отделить избыточную подачу топлива от проблемы давления или обратной связи."),
+        "Compare lambda response and fuel trims": ("Сравнить отклик lambda и топливные коррекции", "Определить характер и устойчивость состояния смеси по обратной связи."),
+        "Check O2 sensor response and heater behavior": ("Проверить отклик O2-сенсора и работу нагревателя", "Проверить скорость отклика, правдоподобность сигнала и работу нагревателя."),
+        "Compare upstream/downstream O2 behavior after warm-up": ("Сравнить работу O2 до и после катализатора после прогрева", "Проверить условия мониторинга катализатора до вывода о его неисправности."),
+        "Compare ECU coolant temperature with independent measurement": ("Сравнить температуру ECU с независимым измерением", "Отделить проблему датчика от фактического температурного состояния двигателя."),
+        "Verify cooling fan command and actual fan operation": ("Проверить команду вентилятора и фактическую работу", "Определить, соответствует ли включение вентилятора измеренной температуре."),
+        "Compare cam/crank correlation data and timing values": ("Сравнить корреляцию распредвала/коленвала и значения фаз", "Проверить синхронизацию до механического вмешательства."),
+        "Compare commanded gear, actual gear and slip": ("Сравнить заданную и фактическую передачу и проскальзывание", "Определить характер отклонения передаточного отношения."),
+        "Check transmission fluid temperature and pressure evidence": ("Проверить температуру ATF и данные давления", "Связать симптом с рабочей температурой и доступными гидравлическими данными."),
+        "Measure battery voltage at rest and during crank": ("Измерить напряжение аккумулятора в покое и при запуске", "Проверить достаточность и стабильность напряжения при стартерной нагрузке."),
+        "Measure charging voltage under electrical load": ("Измерить напряжение зарядки под электрической нагрузкой", "Проверить работу генератора и регулятора при нагрузке."),
+        "Capture CAN traffic and verify ECU/gateway responses": ("Проверить CAN-трафик и ответы ECU/gateway", "Отделить проблемы шины, gateway и доступности ECU."),
+        "Verify engine speed, battery voltage and start authorization": ("Проверить обороты двигателя, напряжение и разрешение запуска", "Разделить проблемы сигнала RPM, питания и авторизации."),
+        "Correlate stall event with RPM, fuel pressure and ECU status": ("Сопоставить остановку с RPM, давлением топлива и состоянием ECU", "Определить область причины в момент остановки."),
+        "Compare idle fuel trims, MAF/MAP and misfire counters": ("Сравнить топливные коррекции, MAF/MAP и счётчики пропусков на холостом ходу", "Разделить вклад воздуха, смеси, зажигания и механики."),
+        "Collect baseline live data and reproduce the symptom": ("Собрать базовые Live Data и воспроизвести симптом", "Получить синхронизированные RPM, нагрузку, температуру и релевантные данные до сужения области неисправности."),
+        "Read ECU DTCs and freeze-frame data": ("Считать DTC ECU и freeze-frame данные", "Получить данные, сообщённые ECU, и условия работы, связанные с событием."),
+    },
+    "hy": {
+        "Measure LPG pressure at idle and under load": ("Չափել LPG ճնշումը պարապ ընթացքի և բեռնվածության տակ", "Պարզել՝ արդյոք գազի ճնշումը կայուն է մնում ախտանշանի պահին։"),
+        "Compare STFT/LTFT on petrol versus LPG": ("Համեմատել STFT/LTFT-ը բենզինով և LPG-ով", "Տարբերակել վառելիքային համակարգին հատուկ խնդիրը շարժիչի ընդհանուր կառավարման խնդրից։"),
+        "Compare LPG injector contribution / balance": ("Համեմատել LPG ֆորսունկաների ներդրումն ու հավասարակշռությունը", "Ստուգել՝ արդյոք որևէ բալոն ստանում է էապես տարբեր LPG մատակարարում։"),
+        "Compare cylinder misfire counters under the same load": ("Համեմատել բալոնների բացթողումների հաշվիչները նույն բեռնվածության դեպքում", "Պարզել՝ արդյոք խնդիրը մնում է մեկ բալոնին կապված և որ վառելիքի ռեժիմում է առաջանում։"),
+        "Check ignition performance under controlled load": ("Ստուգել բոցավառումը վերահսկվող բեռնվածության տակ", "Համադրել բոցավառման աշխատանքը RPM-ի, բեռնվածության և վառելիքի այն պայմանների հետ, որտեղ առաջանում է բացթողումը։"),
+        "Validate MAF signal against RPM/load plausibility": ("Ստուգել MAF ազդանշանի համապատասխանությունը RPM/բեռնվածությանը", "Պարզել՝ օդի հոսքի ազդանշանը համապատասխանում է շարժիչի աշխատանքի ռեժիմին, թե ոչ։"),
+        "Inspect intake and MAF wiring/connectors": ("Ստուգել ներծծման համակարգը և MAF-ի լարերը/միակցիչները", "Տարբերակել լարերի ու միակցիչների խնդիրը հենց սենսորի ազդանշանի խնդրից։"),
+        "Check for unmetered-air leak": ("Ստուգել չչափված օդի արտահոսքը", "Պարզել՝ կա՞ օդի արտահոսք, որը մտնում է շարժիչ՝ սպասվող չափումից դուրս։"),
+        "Measure fuel pressure under load": ("Չափել վառելիքի ճնշումը բեռնվածության տակ", "Ստուգել՝ արդյոք անհրաժեշտ վառելիքի ճնշումը պահպանվում է ախտանշանի պահին։"),
+        "Check injector leakage / fuel pressure": ("Ստուգել ֆորսունկաների հոսակորուստը և վառելիքի ճնշումը", "Տարբերակել ավելցուկային վառելիքի մատակարարումը ճնշման կամ հետադարձ կապի խնդրից։"),
+        "Compare lambda response and fuel trims": ("Համեմատել lambda-ի արձագանքը և fuel trim-երը", "Պարզել խառնուրդի վիճակի բնույթը և հետադարձ կապի կայունությունը։"),
+        "Check O2 sensor response and heater behavior": ("Ստուգել O2 սենսորի արձագանքը և տաքացուցիչի աշխատանքը", "Ստուգել արձագանքի արագությունը, ազդանշանի տրամաբանությունը և տաքացուցիչը։"),
+        "Compare upstream/downstream O2 behavior after warm-up": ("Տաքանալուց հետո համեմատել կատալիզատորից առաջ և հետո O2-ի աշխատանքը", "Կատալիզատորի անսարքության եզրակացությունից առաջ ստուգել մոնիթորինգի պայմանները։"),
+        "Compare ECU coolant temperature with independent measurement": ("Համեմատել ECU-ի հովացուցիչ հեղուկի ջերմաստիճանը անկախ չափման հետ", "Տարբերակել սենսորի խնդիրը շարժիչի իրական ջերմաստիճանից։"),
+        "Verify cooling fan command and actual fan operation": ("Ստուգել օդափոխիչի հրամանը և փաստացի աշխատանքը", "Պարզել՝ օդափոխիչի միացումը համապատասխանում է չափված ջերմաստիճանին։"),
+        "Compare cam/crank correlation data and timing values": ("Համեմատել ռասպրեդվալ/կոլենվալ համաժամացման և ֆազերի տվյալները", "Ստուգել համաժամացումը՝ մինչև մեխանիկական միջամտությունը։"),
+        "Compare commanded gear, actual gear and slip": ("Համեմատել պահանջված և իրական փոխանցումն ու սայթաքումը", "Պարզել փոխանցման հարաբերակցության շեղման բնույթը։"),
+        "Check transmission fluid temperature and pressure evidence": ("Ստուգել ATF-ի ջերմաստիճանը և ճնշման տվյալները", "Կապել ախտանշանը աշխատանքային ջերմաստիճանի և հասանելի հիդրավլիկ տվյալների հետ։"),
+        "Measure battery voltage at rest and during crank": ("Չափել մարտկոցի լարումը հանգստի և մեկնարկի պահին", "Ստուգել լարման բավարարությունն ու կայունությունը մեկնարկիչի բեռնվածության տակ։"),
+        "Measure charging voltage under electrical load": ("Չափել լիցքավորման լարումը էլեկտրական բեռնվածության տակ", "Ստուգել գեներատորի և կարգավորիչի աշխատանքը բեռնվածության ժամանակ։"),
+        "Capture CAN traffic and verify ECU/gateway responses": ("Գրանցել CAN տրաֆիկը և ստուգել ECU/gateway-ի պատասխանները", "Տարբերակել շղթայի, gateway-ի և ECU հասանելիության խնդիրները։"),
+        "Verify engine speed, battery voltage and start authorization": ("Ստուգել շարժիչի RPM-ը, մարտկոցի լարումը և գործարկման թույլտվությունը", "Տարբերակել RPM ազդանշանի, սնուցման և թույլտվության խնդիրները։"),
+        "Correlate stall event with RPM, fuel pressure and ECU status": ("Շարժիչի կանգը համադրել RPM-ի, վառելիքի ճնշման և ECU վիճակի հետ", "Պարզել պատճառի հնարավոր տարածքը կանգի պահին։"),
+        "Compare idle fuel trims, MAF/MAP and misfire counters": ("Պարապ ընթացքի ժամանակ համեմատել fuel trim-երը, MAF/MAP-ը և բացթողումների հաշվիչները", "Տարբերակել օդի, խառնուրդի, բոցավառման և մեխանիկական պատճառների ներդրումը։"),
+        "Collect baseline live data and reproduce the symptom": ("Հավաքել հիմնական Live Data-ն և վերարտադրել ախտանշանը", "Ստանալ համաժամացված RPM, բեռնվածություն, ջերմաստիճան և համապատասխան սենսորային տվյալներ՝ պատճառի շրջանակը նեղացնելուց առաջ։"),
+        "Read ECU DTCs and freeze-frame data": ("Կարդալ ECU DTC-ները և freeze-frame տվյալները", "Ստանալ ECU-ի գրանցած ապացույցները և դեպքի հետ կապված աշխատանքային պայմանները։"),
+    },
+}.items():
+    RECOMMENDATION_TRANSLATIONS[_lang].update(_entries)
+
+RECOMMENDATION_STATUS_TRANSLATIONS = {
+    "ru": {"PASS": "ПРОЙДЕН", "FAIL": "НЕ ПРОЙДЕН", "INCONCLUSIVE": "НЕОДНОЗНАЧНО", "NOT_TESTED": "НЕ ТЕСТИРОВАЛОСЬ"},
+    "hy": {"PASS": "ԱՆՑԱՎ", "FAIL": "ՉԱՆՑԱՎ", "INCONCLUSIVE": "ԱՆՈՐՈՇ", "NOT_TESTED": "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ"},
+}
+
+def _localized_safety_note(note: str, language: str) -> str:
+    if language == "ru":
+        return {
+            "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Соблюдайте процедуры производителя LPG; исключите утечки и источники воспламенения.",
+            "Follow LPG system manufacturer procedures.": "Соблюдайте процедуры производителя LPG.",
+            "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Используйте изолированное оборудование с подходящими характеристиками и соблюдайте правила безопасности при работе с зажиганием.",
+            "Use the approved leak-test procedure and protect hot/electrical components.": "Используйте утверждённую процедуру проверки утечек и защищайте горячие и электрические компоненты.",
+            "Compression testing requires proper engine shutdown and manufacturer procedures.": "Для проверки компрессии требуется корректно заглушить двигатель и соблюдать процедуры производителя.",
+        }.get(note, note)
+    if language == "hy":
+        return {
+            "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Հետևեք LPG համակարգի արտադրողի ընթացակարգերին և բացառեք արտահոսքն ու բռնկման աղբյուրները։",
+            "Follow LPG system manufacturer procedures.": "Հետևեք LPG համակարգի արտադրողի ընթացակարգերին։",
+            "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Օգտագործեք համապատասխան մեկուսացված չափիչ սարքավորում և պահպանեք բոցավառման համակարգի աշխատանքի անվտանգության կանոնները։",
+            "Use the approved leak-test procedure and protect hot/electrical components.": "Օգտագործեք հաստատված արտահոսքի ստուգման ընթացակարգը և պաշտպանեք տաք ու էլեկտրական բաղադրիչները։",
+            "Compression testing requires proper engine shutdown and manufacturer procedures.": "Կոմպրեսիայի ստուգման համար ճիշտ անջատեք շարժիչը և հետևեք արտադրողի ընթացակարգերին։",
+        }.get(note, note)
+    return note
+
+
+def _localized_evidence_fact(fact: str, language: str) -> str:
+    match = re.match(r"^Test ([0-9a-fA-F-]+) result: (.+)$", fact)
+    if not match or language == "en":
+        return fact
+    result = RECOMMENDATION_STATUS_TRANSLATIONS.get(language, {}).get(match.group(2), match.group(2))
+    prefix = "Результат теста" if language == "ru" else "Թեստի արդյունք"
+    return f"{prefix} {match.group(1)}: {result}"
+
 def normalize_language(language: str | None) -> str:
     return LANGUAGE_ALIASES.get((language or "en").strip().lower(), "en")
 
@@ -407,6 +503,11 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         translated = RECOMMENDATION_TRANSLATIONS.get(language, {}).get(recommendation.name)
         if translated:
             recommendation.name, recommendation.purpose = translated
+
+        recommendation.safety_notes = [
+            _localized_safety_note(note, language) for note in recommendation.safety_notes
+        ]
+
         recommendation.target_hypotheses = _localized_hypothesis_targets(
             recommendation.target_hypotheses, language
         )
@@ -416,6 +517,9 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
 
     for evidence in result.evidence:
         evidence.fact = _localized_test_result_fact(evidence.fact, language)
+
+    for evidence in result.evidence:
+        evidence.fact = _localized_evidence_fact(evidence.fact, language)
 
     for event in result.audit_log:
         event["event"] = _localized_event(event.get("event", ""), language)

@@ -125,7 +125,13 @@ data class AppExtraStrings(
     val liveDataReadFailed: String = "Live Data read failed",
     val low: String = "LOW",
     val medium: String = "MEDIUM",
-    val high: String = "HIGH"
+    val high: String = "HIGH",
+    val reported: String = "Reported",
+    val measured: String = "Measured",
+    val calculated: String = "Calculated",
+    val inferred: String = "Inferred",
+    val confirmed: String = "Confirmed",
+    val rejectedStatus: String = "Rejected"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -155,7 +161,13 @@ private val ruExtra = AppExtraStrings(
     liveDataReadFailed = "Не удалось прочитать Live Data",
     low = "НИЗКИЙ",
     medium = "СРЕДНИЙ",
-    high = "ВЫСОКИЙ"
+    high = "ВЫСОКИЙ",
+    reported = "Заявлено",
+    measured = "Измерено",
+    calculated = "Рассчитано",
+    inferred = "Выведено",
+    confirmed = "Подтверждено",
+    rejectedStatus = "Отклонено"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -185,7 +197,13 @@ private val hyExtra = AppExtraStrings(
     liveDataReadFailed = "Live Data-ի ընթերցումը ձախողվեց",
     low = "ՑԱԾՐ",
     medium = "ՄԻՋԻՆ",
-    high = "ԲԱՐՁՐ"
+    high = "ԲԱՐՁՐ",
+    reported = "Հայտարարված",
+    measured = "Չափված",
+    calculated = "Հաշվարկված",
+    inferred = "Եզրակացված",
+    confirmed = "Հաստատված",
+    rejectedStatus = "Մերժված"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

@@ -68,12 +68,12 @@ struct DiagnosticScreen: View {
             HStack{TextField(t.driverSymptom,text:$symptom,axis:.vertical).textFieldStyle(.roundedBorder)
                 Button("＋"){let x=symptom;symptom="";Task{await viewModel.addSymptom(x)}}.disabled(viewModel.session == nil || symptom.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
             ForEach(viewModel.session?.symptoms ?? []){x in
-                InputRow(title:x.raw_text){editSymptom=x;editText=x.raw_text}.onDelete{Task{await viewModel.deleteSymptom(x)}}
+                InputRow(title:x.raw_text,edit:{editSymptom=x;editText=x},delete:{Task{await viewModel.deleteSymptom(x)}})
             }
             Text("DTC").font(.title3.bold())
             HStack{TextField("P0302",text:$dtc).textFieldStyle(.roundedBorder).textInputAutocapitalization(.characters)
                 Button("＋"){let x=dtc;dtc="";Task{await viewModel.addDTC(x)}}.disabled(viewModel.session == nil || dtc.isEmpty)}
-            ForEach(viewModel.session?.dtcs ?? []){x in InputRow(title:x.code,subtitle:x.description ?? x.source ?? ""){}.onDelete{Task{await viewModel.deleteDTC(x)}}}
+            ForEach(viewModel.session?.dtcs ?? []){x in InputRow(title:x.code,subtitle:x.description ?? x.source ?? "",edit:{},delete:{Task{await viewModel.deleteDTC(x)}})}
             Button(t.analyze){Task{await viewModel.analyze()}}.buttonStyle(.borderedProminent).frame(maxWidth:.infinity)
         }
     }

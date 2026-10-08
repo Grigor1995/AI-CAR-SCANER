@@ -1,0 +1,44 @@
+name: Native iOS Tests
+
+on:
+  push:
+    paths:
+      - "finalbuild/apps/mobile-ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "finalbuild/apps/mobile-ios/**"
+      - ".github/workflows/ios.yml"
+
+jobs:
+  ios-tests:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: finalbuild/apps/mobile-ios
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcodegen version
+
+      - name: Build and run unit tests
+        run: |
+          xcodebuild test             -project AICarScanner.xcodeproj             -scheme AICarScanner             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'             CODE_SIGNING_ALLOWED=NO             -enableCodeCoverage YES             -resultBundlePath TestResults.xcresult
+
+      - name: Upload XCTest result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-xctest-results
+          path: finalbuild/apps/mobile-ios/TestResults.xcresult
+          if-no-files-found: ignore

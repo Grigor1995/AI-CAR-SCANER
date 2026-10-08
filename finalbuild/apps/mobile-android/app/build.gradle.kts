@@ -5,13 +5,6 @@ plugins {
 }
 
 android {
-    // Global asset source of truth lives under finalbuild/assets.
-    // Keep the Android mipmap copy synchronized before every build.
-    val globalAppIcon = rootProject.projectDir
-        .resolve("../../assets/AI-Car-Scanner.webp")
-        .normalize()
-    val androidAppIcon = projectDir.resolve("src/main/res/mipmap/ic_launcher.webp")
-
     namespace = "com.aicarscaner.mobile"
     compileSdk = 36
 
@@ -30,15 +23,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-    }
-}
-
-tasks.named("preBuild").configure {
-    doFirst {
-        check(globalAppIcon.isFile()) {
-            "Missing global app icon: " + globalAppIcon.absolutePath
-        }
-        globalAppIcon.copyTo(androidAppIcon, overwrite = true)
     }
 }
 

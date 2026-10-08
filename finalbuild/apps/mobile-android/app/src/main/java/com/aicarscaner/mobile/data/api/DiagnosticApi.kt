@@ -12,6 +12,7 @@ data class CreateSessionRequest(val vehicle: VehicleDto? = null)
 data class VehicleDto(
     val make: String,
     val model: String,
+    val chassis: String? = null,
     val year: Int? = null,
     val engine: String? = null,
     val fuel: List<String> = emptyList(),

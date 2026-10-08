@@ -1133,7 +1133,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             }
 
             if (state.loading) CircularProgressIndicator()
-            state.error?.let { Text("Error: ${it}", color = MaterialTheme.colorScheme.error) }
+            state.error?.let { Text("${extra.error}: ${it}", color = MaterialTheme.colorScheme.error) }
         }
     }
 }

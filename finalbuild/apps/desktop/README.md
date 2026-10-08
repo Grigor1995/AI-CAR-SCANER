@@ -1,26 +1,66 @@
-# AI Auto Diagnostic Workstation — PySide6 Desktop
+# AI CAR SCANER — Cross-platform Flutter client
 
-Native desktop client for Windows, Linux and macOS.
+`apps/desktop` is the canonical Flutter client for the shared diagnostic platform.
 
-## Windows
+## Supported client targets
 
-Use the same Python environment already used by the project. If your environment is `%USERPROFILE%\Desktop\.venv`, it will be used automatically.
+- Windows
+- Linux
+- macOS
+- Android
+- iOS
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap_desktop.ps1
-python -m apps.desktop.main
+Android currently has a dedicated native Compose client under `apps/mobile-android`. The Flutter client uses the same backend REST contracts and the same server-side diagnostic session/database.
+
+## Shared data architecture
+
+All clients communicate with the same FastAPI backend:
+
+`POST/GET /api/v1/sessions`
+
+The backend persists complete `DiagnosticSession` snapshots to the configured `DATABASE_URL`.
+
+With the repository Docker setup:
+
+`Android / Desktop / iOS -> FastAPI -> PostgreSQL + pgvector`
+
+This means the session, vehicle, symptoms, DTCs, evidence, hypotheses, recommendations, test results and audit history can be shared between devices.
+
+The clients should not maintain an independent authoritative diagnostic database.
+
+## Desktop development
+
+From `finalbuild/apps/desktop`:
+
+```bash
+flutter pub get
+flutter run -d windows
 ```
 
-The Desktop launcher automatically manages:
+Linux and macOS use the corresponding Flutter target.
 
-- `llama-server.exe` at `127.0.0.1:8000`
-- FastAPI at `127.0.0.1:8001`
-- PySide6 UI
+## iOS development
 
-No Flutter, Ollama runtime, or Python `llama_cpp` binding is required.
+The iOS runner has not been committed to this repository yet. On a macOS development machine with Xcode and Flutter installed, generate the platform runner once from this directory:
 
-## Build
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_standalone.ps1
+```bash
+flutter create --platforms=ios .
+flutter pub get
+flutter run -d ios
 ```
+
+Do not replace `lib/`; that is the shared application code.
+
+## API configuration
+
+Override the backend URL at build/run time:
+
+```bash
+flutter run -d windows --dart-define=API_URL=http://127.0.0.1:8000
+```
+
+For a phone or simulator, use the reachable FastAPI host instead of `127.0.0.1`.
+
+## Legacy Python desktop
+
+The repository also contains the older PySide6 client files (`main.py`, `ui.py`, etc.). They are legacy/standalone tooling and are not the cross-platform Flutter client.

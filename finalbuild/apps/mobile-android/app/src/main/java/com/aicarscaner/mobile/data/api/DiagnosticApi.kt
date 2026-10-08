@@ -80,6 +80,13 @@ data class TestResultRequest(
     val notes: String? = null
 )
 
+data class TestResultDto(
+    val test_id: String,
+    val result: String,
+    val measurements: Map<String, Any?> = emptyMap(),
+    val notes: String? = null
+)
+
 data class AuditEventDto(
     val event: String,
     val hypotheses: Int? = null,
@@ -97,6 +104,7 @@ data class DiagnosticSessionDto(
     val evidence: List<EvidenceDto> = emptyList(),
     val hypotheses: List<HypothesisDto> = emptyList(),
     val recommendations: List<RecommendationDto> = emptyList(),
+    val test_results: List<TestResultDto> = emptyList(),
     val audit_log: List<AuditEventDto> = emptyList()
 )
 

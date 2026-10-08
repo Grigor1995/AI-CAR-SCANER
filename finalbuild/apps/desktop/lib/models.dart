@@ -1,25 +1,31 @@
 class VehicleModel {
-  VehicleModel({required this.make, required this.model, this.year, this.engine, this.fuel = const []});
+  VehicleModel({required this.make, required this.model, this.chassis = '', this.year, this.engine, this.fuel = const [], this.ecu = ''});
   final String make;
   final String model;
+  final String chassis;
   final int? year;
   final String? engine;
   final List<String> fuel;
+  final String ecu;
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) => VehicleModel(
         make: json['make'] as String? ?? 'Unknown',
         model: json['model'] as String? ?? 'Vehicle',
+        chassis: json['chassis'] as String? ?? '',
         year: json['year'] as int?,
         engine: json['engine'] as String?,
         fuel: ((json['fuel'] as List?) ?? const []).map((e) => e.toString()).toList(),
+        ecu: json['ecu'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {
         'make': make,
         'model': model,
+        'chassis': chassis,
         'year': year,
         'engine': engine,
         'fuel': fuel,
+        'ecu': ecu,
       };
 }
 

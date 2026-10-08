@@ -59,6 +59,7 @@ class _DesktopShellState extends State<DesktopShell> {
     String? error;
 
   List<VehicleModel> vehicles = [];
+  List<Map<String, dynamic>> catalogEntries = [];
   VehicleModel? activeVehicle;
   DiagnosticSessionModel? activeSession;
   Map<String, dynamic> sessionJson = {};
@@ -98,7 +99,14 @@ class _DesktopShellState extends State<DesktopShell> {
         ecu: legacy ? '' : (parts.length > 6 ? parts[6] : ''),
       );
     }).toList();
-        await refreshHealth();
+    try {
+      catalogEntries = await api.catalogEntries();
+    } catch (_) {
+      // Keep the bundled catalog as an offline/demo fallback. The shared DB
+      // remains authoritative whenever the backend is available.
+      catalogEntries = [];
+    }
+    await refreshHealth();
   }
 
   Future<void> refreshHealth() async {
@@ -334,7 +342,7 @@ class _DesktopShellState extends State<DesktopShell> {
           onDiagnostic: () => setState(() => selectedIndex = 2),
         );
       case 1:
-        return VehiclesPage(vehicles: vehicles, onCreateSession: createSession, onSaveVehicle: saveVehicle);
+        return VehiclesPage(catalog: catalogEntries, vehicles: vehicles, onCreateSession: createSession, onSaveVehicle: saveVehicle);
       case 2:
         return DiagnosticPage(
           session: activeSession,

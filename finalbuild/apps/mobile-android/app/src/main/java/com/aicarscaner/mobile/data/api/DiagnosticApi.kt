@@ -73,6 +73,13 @@ data class RecommendationDto(
     val safety_notes: List<String> = emptyList()
 )
 
+data class TestResultRequest(
+    val test_id: String,
+    val result: String,
+    val measurements: Map<String, Any?> = emptyMap(),
+    val notes: String? = null
+)
+
 data class AuditEventDto(
     val event: String,
     val hypotheses: Int? = null,
@@ -133,6 +140,13 @@ interface DiagnosticApi {
     suspend fun deleteDtc(
         @Path("sessionId") sessionId: String,
         @Path("dtcId") dtcId: String
+    ): DiagnosticSessionDto
+
+    @POST("api/v1/intelligence/sessions/{sessionId}/test-results")
+    suspend fun recordTestResult(
+        @Path("sessionId") sessionId: String,
+        @Body request: TestResultRequest,
+        @Query("language") language: String = "en"
     ): DiagnosticSessionDto
 
     @POST("api/v1/analysis/{sessionId}")

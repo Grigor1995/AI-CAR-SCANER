@@ -17,6 +17,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -73,31 +85,31 @@ import kotlinx.coroutines.launch
 
 
 private val AutomotiveDarkColors = darkColorScheme(
-    primary = Color(0xFF37D7E8),
-    onPrimary = Color(0xFF001E22),
-    secondary = Color(0xFF62E6A5),
-    onSecondary = Color(0xFF002115),
-    tertiary = Color(0xFFFFC857),
-    background = Color(0xFF0B1013),
-    surface = Color(0xFF11181D),
-    surfaceVariant = Color(0xFF1A252B),
-    onSurface = Color(0xFFE5EEF1),
-    onSurfaceVariant = Color(0xFFB6C6CB),
-    error = Color(0xFFFF6B6B)
+    primary = Color.White,
+    onPrimary = Color.Black,
+    secondary = Color(0xFFE5E5E5),
+    onSecondary = Color.Black,
+    tertiary = Color(0xFFD0D0D0),
+    background = Color.Black,
+    surface = Color(0xFF101010),
+    surfaceVariant = Color(0xFF1C1C1C),
+    onSurface = Color.White,
+    onSurfaceVariant = Color(0xFFB8B8B8),
+    error = Color(0xFFFF5A5A)
 )
 
 private val AutomotiveLightColors = lightColorScheme(
-    primary = Color(0xFF006D78),
+    primary = Color.Black,
     onPrimary = Color.White,
-    secondary = Color(0xFF087F5B),
+    secondary = Color(0xFF222222),
     onSecondary = Color.White,
-    tertiary = Color(0xFF9A6500),
-    background = Color(0xFFF4F7F8),
+    tertiary = Color(0xFF444444),
+    background = Color(0xFFF7F7F7),
     surface = Color.White,
-    surfaceVariant = Color(0xFFE8EFF1),
-    onSurface = Color(0xFF172126),
-    onSurfaceVariant = Color(0xFF506269),
-    error = Color(0xFFBA1A1A)
+    surfaceVariant = Color(0xFFEAEAEA),
+    onSurface = Color.Black,
+    onSurfaceVariant = Color(0xFF555555),
+    error = Color(0xFFB00020)
 )
 
 @Composable
@@ -381,58 +393,65 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Column {
-                        Text(
-                            text.appName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        state.session?.let {
-                            Text(
-                                "${text.extra.session} ${it.session_id.take(8)}…",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-
-                    // Keep the two primary actions on their own row so long
-                    // Armenian labels cannot squeeze, clip, or make a button
-                    // effectively untappable on smaller screens.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        OutlinedButton(
-                            onClick = { settingsOpen = true },
-                            enabled = !state.loading,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text.settings,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                text.appName,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
                             )
-                        }
-                        if (state.session != null) {
-                            Button(
-                                onClick = { newSessionConfirmOpen = true },
-                                enabled = !state.loading,
-                                modifier = Modifier.weight(1f)
-                            ) {
+                            state.session?.let {
                                 Text(
-                                    text.newSession,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    "${text.extra.session} ${it.session_id.take(8)}…",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            IconButton(
+                                onClick = { settingsOpen = true },
+                                enabled = !state.loading
+                            ) {
+                                Icon(
+                                    imageVector = Settings,
+                                    contentDescription = text.settings,
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            if (state.session != null) {
+                                IconButton(
+                                    onClick = { newSessionConfirmOpen = true },
+                                    enabled = !state.loading
+                                ) {
+                                    Icon(
+                                        imageVector = NoteAdd,
+                                        contentDescription = text.newSession,
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
                     }
+
+                    androidx.compose.material3.HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    )
                 }
 
                 if (state.session == null) {
-                    Text(text.newSession, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        text.newSession,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     VehicleFields(
                         text,
                         make, { make = it }, model, { model = it }, year, { year = it },
@@ -1269,8 +1288,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     (session.symptoms.isNotEmpty() || session.dtcs.isNotEmpty()),
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondary,
-                                    contentColor = MaterialTheme.colorScheme.onSecondary
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) { Text(text.analyzeSession) }

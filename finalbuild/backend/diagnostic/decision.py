@@ -126,7 +126,10 @@ class DiagnosticDecisionEngine:
             n = max(len(categories), 1)
             target_n = len(set(matched))
             p = min(max(target_n / n, 0.0), 1.0)
-            information_gain = 0.0 if p in (0.0, 1.0) else -(p * log2(p) + (1-p) * log2(1-p))
+            entropy = 0.0 if p in (0.0, 1.0) else -(p * log2(p) + (1-p) * log2(1-p))
+            # A diagnostic test still has useful value when it targets a
+            # single active hypothesis; avoid exposing a misleading 0.00.
+            information_gain = round(0.25 + 0.75 * entropy, 4)
 
             fit = len(spec.required_evidence) - len(gaps)
             evidence_fit = fit / max(len(spec.required_evidence), 1)

@@ -1239,7 +1239,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                         onClick = {
                                                             selectedTestId = recommendation.id
                                                             selectedTestTitle = recommendation.title
-                                                            testOutcome = "INCONCLUSIVE"
+                                                            testOutcome = "UNKNOWN"
                                                             testNotes = ""
                                                             testResultDialogOpen = true
                                                         },

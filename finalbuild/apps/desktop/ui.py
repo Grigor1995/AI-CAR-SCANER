@@ -75,15 +75,131 @@ class MetricCard(QGroupBox):
 
 class VehicleDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent); self.setWindowTitle("Add Vehicle"); self.resize(460, 320)
+        super().__init__(parent)
+        self.setWindowTitle("Add Vehicle")
+        self.resize(520, 440)
+        self._catalog: list[dict[str, Any]] = []
+        api = getattr(parent, "api", None)
+        if api is not None:
+            try:
+                self._catalog = list(api.vehicle_catalog_entries())
+            except Exception:
+                self._catalog = []
+
         form = QFormLayout(self)
-        self.make = QLineEdit("Mercedes-Benz"); self.model = QLineEdit("W211"); self.chassis = QLineEdit("W211")
-        self.year = QSpinBox(); self.year.setRange(1950, 2100); self.year.setValue(2006)
-        self.engine = QLineEdit("M272 3.5"); self.fuel = QLineEdit("Petrol,LPG"); self.ecu = QLineEdit("")
-        form.addRow("Make", self.make); form.addRow("Model", self.model); form.addRow("Chassis", self.chassis); form.addRow("Year", self.year); form.addRow("Engine", self.engine); form.addRow("Fuel", self.fuel); form.addRow("ECU", self.ecu)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel); buttons.accepted.connect(self.accept); buttons.rejected.connect(self.reject); form.addRow(buttons)
+        self.make = QComboBox()
+        self.model = QComboBox()
+        self.chassis = QComboBox()
+        self.year = QComboBox()
+        self.engine = QComboBox()
+        self.ecu = QComboBox()
+        self.fuel = QLineEdit("Petrol,LPG")
+
+        for combo in (self.make, self.model, self.chassis, self.year, self.engine, self.ecu):
+            combo.setEditable(False)
+
+        form.addRow("Make", self.make)
+        form.addRow("Model", self.model)
+        form.addRow("Chassis", self.chassis)
+        form.addRow("Year", self.year)
+        form.addRow("Engine", self.engine)
+        form.addRow("Fuel", self.fuel)
+        form.addRow("ECU", self.ecu)
+
+        self.make.currentTextChanged.connect(self._refresh_models)
+        self.model.currentTextChanged.connect(self._refresh_chassis)
+        self.chassis.currentTextChanged.connect(self._refresh_years)
+        self.year.currentTextChanged.connect(self._refresh_engines)
+        self.engine.currentTextChanged.connect(self._refresh_ecus)
+
+        self._refresh_makes()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def _items(self, **filters: Any) -> list[dict[str, Any]]:
+        rows = self._catalog
+        for key, value in filters.items():
+            if value in (None, "", "—"):
+                continue
+            rows = [row for row in rows if row.get(key) == value]
+        return rows
+
+    @staticmethod
+    def _set_combo(combo: QComboBox, values: list[Any], selected: Any | None = None) -> None:
+        combo.blockSignals(True)
+        combo.clear()
+        for value in values:
+            combo.addItem(str(value))
+        if selected is not None:
+            idx = combo.findText(str(selected))
+            if idx >= 0:
+                combo.setCurrentIndex(idx)
+        combo.blockSignals(False)
+
+    def _refresh_makes(self) -> None:
+        if not self._catalog:
+            self._set_combo(self.make, ["Mercedes-Benz"])
+            self._set_combo(self.model, ["E-Class"])
+            self._set_combo(self.chassis, ["W211"])
+            self._set_combo(self.year, [2006])
+            self._set_combo(self.engine, ["M272 E35 3.5"])
+            self._set_combo(self.ecu, ["ME9.7"])
+            return
+        makes = sorted({row["make"] for row in self._catalog})
+        self._set_combo(self.make, makes, "Mercedes-Benz" if "Mercedes-Benz" in makes else makes[0])
+        self._refresh_models()
+
+    def _refresh_models(self, *_args: Any) -> None:
+        models = sorted({row["model"] for row in self._items(make=self.make.currentText())})
+        self._set_combo(self.model, models, "E-Class" if "E-Class" in models else (models[0] if models else None))
+        self._refresh_chassis()
+
+    def _refresh_chassis(self, *_args: Any) -> None:
+        rows = self._items(make=self.make.currentText(), model=self.model.currentText())
+        chassis = sorted({row["chassis"] for row in rows if row.get("chassis")})
+        self._set_combo(self.chassis, chassis, "W211" if "W211" in chassis else (chassis[0] if chassis else None))
+        self._refresh_years()
+
+    def _refresh_years(self, *_args: Any) -> None:
+        rows = self._items(make=self.make.currentText(), model=self.model.currentText(), chassis=self.chassis.currentText())
+        years = sorted({row["year"] for row in rows}, reverse=True)
+        self._set_combo(self.year, years, 2006 if 2006 in years else (years[0] if years else None))
+        self._refresh_engines()
+
+    def _refresh_engines(self, *_args: Any) -> None:
+        rows = self._items(
+            make=self.make.currentText(),
+            model=self.model.currentText(),
+            chassis=self.chassis.currentText(),
+            year=int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+        )
+        engines = sorted({row["engine"] for row in rows})
+        self._set_combo(self.engine, engines, "M272 E35 3.5" if "M272 E35 3.5" in engines else (engines[0] if engines else None))
+        self._refresh_ecus()
+
+    def _refresh_ecus(self, *_args: Any) -> None:
+        rows = self._items(
+            make=self.make.currentText(),
+            model=self.model.currentText(),
+            chassis=self.chassis.currentText(),
+            year=int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+            engine=self.engine.currentText(),
+        )
+        ecus = sorted({row["ecu"] for row in rows if row.get("ecu")})
+        self._set_combo(self.ecu, ecus, "ME9.7" if "ME9.7" in ecus else (ecus[0] if ecus else None))
+
     def vehicle(self) -> Vehicle:
-        return Vehicle(self.make.text().strip(), self.model.text().strip(), self.chassis.text().strip(), self.year.value(), self.engine.text().strip(), [x.strip() for x in self.fuel.text().split(",") if x.strip()], self.ecu.text().strip())
+        return Vehicle(
+            self.make.currentText().strip(),
+            self.model.currentText().strip(),
+            self.chassis.currentText().strip(),
+            int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+            self.engine.currentText().strip(),
+            [x.strip() for x in self.fuel.text().split(",") if x.strip()],
+            self.ecu.currentText().strip(),
+        )
 
 class DashboardPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:

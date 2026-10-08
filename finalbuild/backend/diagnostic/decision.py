@@ -227,6 +227,53 @@ class DiagnosticDecisionEngine:
         })
         return plan
 
+    def enrich_external_recommendations(
+        self,
+        session: DiagnosticSession,
+        recommendations: Iterable[DiagnosticTest],
+    ) -> list[DiagnosticTest]:
+        """Fill decision metadata for rule-generated tests not present in the catalog."""
+        categories = {
+            h.category for h in session.hypotheses
+            if not h.status.startswith("rejected")
+        }
+        category_count = max(len(categories), 1)
+        enriched: list[DiagnosticTest] = []
+
+        from math import log2
+
+        for item in recommendations:
+            target_matches = len(set(item.target_hypotheses) & categories)
+            coverage = target_matches / category_count if category_count else 0.0
+            if target_matches == 0:
+                information_gain = 0.15
+            elif 0.0 < coverage < 1.0:
+                entropy = -(coverage * log2(coverage) + (1.0 - coverage) * log2(1.0 - coverage))
+                information_gain = max(0.25, entropy)
+            else:
+                information_gain = 0.25
+
+            item.expected_information_gain = round(min(information_gain, 0.95), 4)
+            if item.estimated_cost <= 0:
+                item.estimated_cost = {
+                    "LOW": 1.0,
+                    "MEDIUM": 2.0,
+                    "HIGH": 4.0,
+                }.get(item.risk_level.upper(), 1.0)
+            if item.priority_score <= 0:
+                item.priority_score = round(min(
+                    0.65 * item.expected_information_gain
+                    + 0.35 * (
+                        1.0 if item.risk_level.upper() == "LOW"
+                        else 0.75 if item.risk_level.upper() == "MEDIUM"
+                        else 0.5
+                    ),
+                    1.0,
+                ), 4)
+            enriched.append(item)
+
+        return enriched
+
     def update_hypotheses_from_result(self, session: DiagnosticSession, test: DiagnosticTest | None, result: str) -> list[str]:
         if test is None:
             return []

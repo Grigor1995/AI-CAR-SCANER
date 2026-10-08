@@ -342,14 +342,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             )
                         }
                         Button(
-                            onClick = {
-                                if (state.session != null) {
-                                    newSessionConfirmOpen = true
-                                } else {
-                                    resetForNewSession()
-                                }
-                            },
-                            enabled = !state.loading,
+                            onClick = { newSessionConfirmOpen = true },
+                            enabled = !state.loading && state.session != null,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(

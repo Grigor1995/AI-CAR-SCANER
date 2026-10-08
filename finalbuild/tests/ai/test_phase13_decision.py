@@ -43,3 +43,28 @@ def test_test_result_changes_hypothesis_status_without_claiming_component_confir
     assert any(h.status == "supported_by_test" for h in session.hypotheses)
     assert not any("confirmed component" in h.statement.lower() for h in session.hypotheses)
     assert any(x.get("event") == "TEST_RESULT_INTERPRETED" for x in session.audit_log)
+
+
+def test_pass_and_fail_outcomes_change_target_hypothesis_status():
+    engine = DiagnosticIntelligenceEngine()
+
+    passing = build_case()
+    engine.analyze(passing)
+    passing_test = passing.recommendations[0]
+    engine.record_test_result(passing, passing_test.id, "PASS")
+    assert any(h.status == "disfavored_by_test" for h in passing.hypotheses)
+
+    failing = build_case()
+    engine.analyze(failing)
+    failing_test = failing.recommendations[0]
+    engine.record_test_result(failing, failing_test.id, "FAIL")
+    assert any(h.status == "supported_by_test" for h in failing.hypotheses)
+
+
+def test_technician_notes_can_drive_test_interpretation():
+    engine = DiagnosticIntelligenceEngine()
+    session = build_case()
+    engine.analyze(session)
+    test = session.recommendations[0]
+    engine.record_test_result(session, test.id, "INCONCLUSIVE", notes="LPG pressure drops under load")
+    assert any(h.status == "supported_by_test" for h in session.hypotheses)

@@ -4,8 +4,10 @@ import os
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, text
+
+from diagnostic.db_models import VehicleCatalogEntryRow
 
 
 router = APIRouter(prefix="/api/v1/vehicle-catalog", tags=["vehicle-catalog"])
@@ -24,13 +26,18 @@ class CatalogEntry(BaseModel):
     year: int
     engine: str
     ecu: str | None = None
-    fuel: list[str] = []
+    fuel: list[str] = Field(default_factory=list)
     source: str
     scope: str
 
 
+def _ensure_catalog_table() -> None:
+    VehicleCatalogEntryRow.__table__.create(_engine, checkfirst=True)
+
+
 def _run_all(sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
     try:
+        _ensure_catalog_table()
         with _engine.connect() as conn:
             return [dict(row) for row in conn.execute(text(sql), params).mappings().all()]
     except Exception as exc:
@@ -42,6 +49,40 @@ def _require_make_model(make: str, model: str) -> None:
         raise HTTPException(400, "make and model are required")
 
 
+
+
+@router.get("/entries", response_model=list[CatalogEntry])
+def list_entries(
+    make: str | None = None,
+    model: str | None = None,
+    chassis: str | None = None,
+    year: int | None = None,
+    engine: str | None = None,
+    ecu: str | None = None,
+) -> list[CatalogEntry]:
+    clauses = ["1=1"]
+    params: dict[str, Any] = {}
+    for key, value in (
+        ("make", make),
+        ("model", model),
+        ("chassis", chassis),
+        ("year", year),
+        ("engine", engine),
+        ("ecu", ecu),
+    ):
+        if value is not None and str(value).strip():
+            clauses.append(f"{key} = :{key}")
+            params[key] = value
+    where_clause = " AND ".join(clauses)
+    return _run_all(
+        f"""
+        SELECT make, model, chassis, year, engine, ecu, fuel, source, scope
+        FROM vehicle_catalog_entries
+        WHERE {where_clause}
+        ORDER BY make, model, chassis NULLS LAST, year DESC, engine, ecu NULLS LAST
+        """,
+        params,
+    )
 @router.get("/makes", response_model=list[str])
 def list_makes() -> list[str]:
     rows = _run_all(

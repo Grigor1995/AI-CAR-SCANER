@@ -33,4 +33,16 @@ class DiagnosticRepository(private val api: DiagnosticApi) {
 
     suspend fun analyze(sessionId: String, language: String = "en") =
         api.analyze(sessionId, language)
+
+    suspend fun recordTestResult(
+        sessionId: String,
+        testId: String,
+        result: String,
+        notes: String?,
+        language: String = "en"
+    ) = api.recordTestResult(
+        sessionId,
+        TestResultRequest(testId, result, notes = notes),
+        language
+    )
 }

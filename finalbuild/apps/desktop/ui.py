@@ -80,10 +80,10 @@ class VehicleDialog(QDialog):
         self.make = QLineEdit("Mercedes-Benz"); self.model = QLineEdit("W211")
         self.year = QSpinBox(); self.year.setRange(1950, 2100); self.year.setValue(2006)
         self.engine = QLineEdit("M272 3.5"); self.fuel = QLineEdit("Petrol,LPG"); self.ecu = QLineEdit("")
-        form.addRow("Make", self.make); form.addRow("Model", self.model); form.addRow("Year", self.year); form.addRow("Engine", self.engine); form.addRow("Fuel", self.fuel); form.addRow("ECU", self.ecu)
+        form.addRow("Make", self.make); form.addRow("Model", self.model); form.addRow("Chassis", self.chassis); form.addRow("Year", self.year); form.addRow("Engine", self.engine); form.addRow("Fuel", self.fuel); form.addRow("ECU", self.ecu)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel); buttons.accepted.connect(self.accept); buttons.rejected.connect(self.reject); form.addRow(buttons)
     def vehicle(self) -> Vehicle:
-        return Vehicle(self.make.text().strip(), self.model.text().strip(), self.year.value(), self.engine.text().strip(), [x.strip() for x in self.fuel.text().split(",") if x.strip()], self.ecu.text().strip())
+        return Vehicle(self.make.text().strip(), self.model.text().strip(), self.chassis.text().strip(), self.year.value(), self.engine.text().strip(), [x.strip() for x in self.fuel.text().split(",") if x.strip()], self.ecu.text().strip())
 
 class DashboardPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:

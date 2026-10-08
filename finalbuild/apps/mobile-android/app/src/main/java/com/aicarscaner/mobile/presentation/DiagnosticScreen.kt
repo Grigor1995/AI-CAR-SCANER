@@ -124,10 +124,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val wifiClient = remember { WifiObdClient() }
     val usbClient = remember { UsbObdClient() }
 
-    var make by remember { mutableStateOf("Mercedes") }
-    var model by remember { mutableStateOf("W211") }
+    var make by remember { mutableStateOf("Mercedes-Benz") }
+    var model by remember { mutableStateOf("E-Class") }
+    var chassis by remember { mutableStateOf("W211") }
     var year by remember { mutableStateOf("2006") }
-    var engine by remember { mutableStateOf("M272 3.5") }
+    var engine by remember { mutableStateOf("M272 E35 3.5") }
     var ecu by remember { mutableStateOf("ME9.7") }
     var petrol by remember { mutableStateOf(true) }
     var lpg by remember { mutableStateOf(true) }
@@ -220,10 +221,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         symptom = ""
         dtc = ""
         editingDtcId = null
-        make = "Mercedes"
-        model = "W211"
+        make = "Mercedes-Benz"
+        model = "E-Class"
+        chassis = "W211"
         year = "2006"
-        engine = "M272 3.5"
+        engine = "M272 E35 3.5"
         ecu = "ME9.7"
         petrol = true
         lpg = true
@@ -451,6 +453,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             make = value
                             val nextModel = modelOptionsFor(value).firstOrNull()
                             model = nextModel?.name.orEmpty()
+                            chassis = nextModel?.chassis.orEmpty()
                             year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
                             engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
                             ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
@@ -459,6 +462,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         onModel = { value ->
                             model = value
                             val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
+                            chassis = nextModel?.chassis.orEmpty()
+                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                        },
+                        chassis,
+                        onChassis = { value ->
+                            chassis = value
+                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == model && it.chassis == value }
                             year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
                             engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
                             ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
@@ -468,7 +480,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         engine,
                         onEngine = {
                             engine = it
-                            ecu = ecuOptionsFor(make, model, it).firstOrNull().orEmpty()
+                            ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
                         },
                         ecu,
                         onEcu = { ecu = it },
@@ -480,7 +492,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     Button(
                         onClick = {
                             viewModel.createSession(
-                                VehicleDto(make, model, year.toIntOrNull(), engine, buildList {
+                                VehicleDto(make, model, chassis, year.toIntOrNull(), engine, buildList {
                                     if (petrol) add("petrol")
                                     if (lpg) add("LPG")
                                 }, ecu)
@@ -792,6 +804,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text(text.vehicle, style = MaterialTheme.typography.labelLarge)
                                         Text("${session.vehicle?.make.orEmpty()} ${session.vehicle?.model.orEmpty()}")
+                                        Text("${text.chassis}: ${session.vehicle?.chassis ?: "—"}")
                                         Text("${text.year}: ${session.vehicle?.year ?: "—"}")
                                         Text("${text.engine}: ${session.vehicle?.engine ?: "—"}")
                                         Text("${text.fuel}: ${session.vehicle?.fuel?.joinToString(" + ") { fuel -> when (fuel.lowercase()) { "petrol" -> text.petrol; "lpg" -> text.lpg; else -> fuel } }.orEmpty()}")
@@ -1445,6 +1458,8 @@ private fun VehicleFields(
     onMake: (String) -> Unit,
     model: String,
     onModel: (String) -> Unit,
+    chassis: String,
+    onChassis: (String) -> Unit,
     year: String,
     onYear: (String) -> Unit,
     engine: String,
@@ -1457,13 +1472,15 @@ private fun VehicleFields(
     onLpg: (Boolean) -> Unit
 ) {
     val makes = vehicleCatalog.map { it.name }
-    val models = modelOptionsFor(make).map { it.name }
-    val years = yearOptionsFor(make, model).map(Int::toString)
-    val engines = engineOptionsFor(make, model).map { it.name }
-    val ecus = ecuOptionsFor(make, model, engine)
+    val models = modelOptionsFor(make).map { it.name }.distinct()
+    val chassisOptions = chassisOptionsFor(make, model).map { it.chassis }
+    val years = yearOptionsFor(make, model, chassis).map(Int::toString)
+    val engines = engineOptionsFor(make, model, chassis).map { it.name }
+    val ecus = ecuOptionsFor(make, model, chassis, engine)
 
     VehicleSelectionField(text.make, make, makes, onMake)
     VehicleSelectionField(text.model, model, models, onModel)
+    VehicleSelectionField(text.chassis, chassis, chassisOptions, onChassis)
     VehicleSelectionField(text.year, year, years, onYear)
     VehicleSelectionField(text.engine, engine, engines, onEngine)
     VehicleSelectionField(text.extra.ecu, ecu, ecus, onEcu)

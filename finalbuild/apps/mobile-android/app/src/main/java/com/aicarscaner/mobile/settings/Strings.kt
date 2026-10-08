@@ -140,10 +140,9 @@ data class AppExtraStrings(
     val openLiveData: String = "Open Live Data",
     val pass: String = "PASS",
     val fail: String = "FAIL",
-    val inconclusive: String = "INCONCLUSIVE",
-    val notTested: String = "NOT TESTED",
+    val unknown: String = "UNKNOWN",
     val nextDiagnosticResult: String = "Result",
-    val resultPlaceholder: String = "PASS / FAIL / INCONCLUSIVE"
+    val resultPlaceholder: String = "PASS / FAIL / UNKNOWN"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -188,10 +187,9 @@ private val ruExtra = AppExtraStrings(
     openLiveData = "Открыть Live Data",
     pass = "ПРОЙДЕН",
     fail = "НЕ ПРОЙДЕН",
-    inconclusive = "НЕОДНОЗНАЧНО",
-    notTested = "НЕ ТЕСТИРОВАЛОСЬ",
+    unknown = "НЕИЗВЕСТНО",
     nextDiagnosticResult = "Результат",
-    resultPlaceholder = "ПРОЙДЕН / НЕ ПРОЙДЕН / НЕОДНОЗНАЧНО"
+    resultPlaceholder = "ПРОЙДЕН / НЕ ПРОЙДЕН / НЕИЗВЕСТНО"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -236,10 +234,9 @@ private val hyExtra = AppExtraStrings(
     openLiveData = "Բացել Live Data",
     pass = "ԱՆՑԱՎ",
     fail = "ՉԱՆՑԱՎ",
-    inconclusive = "ԱՆՈՐՈՇ",
-    notTested = "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ",
+    unknown = "ԱՆՀԱՅՏ",
     nextDiagnosticResult = "Արդյունք",
-    resultPlaceholder = "ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆՈՐՈՇ"
+    resultPlaceholder = "ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆՀԱՅՏ"
 )
 
 fun localizedState(language: AppLanguage, state: String): String {

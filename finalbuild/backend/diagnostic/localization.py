@@ -143,6 +143,13 @@ STATEMENT_TEMPLATES = {
 
 RECOMMENDATION_TRANSLATIONS = {
     "ru": {
+        "Measure LPG pressure at idle and under load": ("Измерить давление LPG на холостом ходу и под нагрузкой", "Проверить стабильность давления газа в диапазоне, где проявляется симптом."),
+        "Compare STFT/LTFT on petrol versus LPG": ("Сравнить STFT/LTFT на бензине и LPG", "Отделить специфическую проблему смеси LPG от общей проблемы управления двигателем."),
+        "Compare LPG injector contribution / balance": ("Сравнить вклад / баланс LPG-форсунок", "Проверить, получает ли один цилиндр заметно отличающуюся подачу LPG."),
+        "Compare cylinder misfire counters under the same load": ("Сравнить счётчики пропусков по цилиндрам при одинаковой нагрузке", "Определить, остаётся ли событие локальным для конкретного цилиндра."),
+        "Check ignition performance under controlled load": ("Проверить зажигание под контролируемой нагрузкой", "Связать работу зажигания с точным RPM, нагрузкой и режимом топлива."),
+        "Validate MAF signal against RPM/load plausibility": ("Проверить правдоподобность сигнала MAF относительно RPM/нагрузки", "Определить, соответствует ли сигнал MAF рабочей точке двигателя."),
+        "Inspect intake and MAF wiring/connectors": ("Проверить впуск и проводку/разъёмы MAF", "Отделить проблемы проводки и разъёмов от проблемы самого сигнала датчика."),
         "Compare fuel-trim and misfire behavior by fuel mode": ("Сравнить fuel trim и пропуски по режимам топлива", "Отделить проблему топливной системы LPG от общей проблемы зажигания или нагрузки."),
         "Inspect LPG pressure and injector behavior under load": ("Проверить давление LPG и работу форсунок под нагрузкой", "Проверить, сохраняется ли стабильная подача газа в окне RPM/нагрузки симптома."),
         "Check ignition performance under LPG load": ("Проверить зажигание под нагрузкой LPG", "Определить, связана ли повышенная нагрузка на зажигание с пропусками."),

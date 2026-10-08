@@ -87,14 +87,15 @@ class _DesktopShellState extends State<DesktopShell> {
     final raw = prefs.getStringList('vehicle_profiles') ?? <String>[];
     vehicles = raw.map((line) {
       final parts = line.split('|');
+      final legacy = parts.length < 7;
       return VehicleModel(
         make: parts.isNotEmpty ? parts[0] : 'Vehicle',
         model: parts.length > 1 ? parts[1] : 'Profile',
-        chassis: parts.length > 2 ? parts[2] : '',
-        year: parts.length > 3 ? int.tryParse(parts[3]) : null,
-        engine: parts.length > 4 ? parts[4] : null,
-        fuel: parts.length > 5 ? parts[5].split(',').where((x) => x.isNotEmpty).toList() : const [],
-        ecu: parts.length > 6 ? parts[6] : '',
+        chassis: legacy ? '' : parts[2],
+        year: legacy ? (parts.length > 2 ? int.tryParse(parts[2]) : null) : int.tryParse(parts[3]),
+        engine: legacy ? (parts.length > 3 ? parts[3] : null) : parts[4],
+        fuel: (legacy ? (parts.length > 4 ? parts[4] : '') : (parts.length > 5 ? parts[5] : '')).split(',').where((x) => x.isNotEmpty).toList(),
+        ecu: legacy ? '' : (parts.length > 6 ? parts[6] : ''),
       );
     }).toList();
         await refreshHealth();

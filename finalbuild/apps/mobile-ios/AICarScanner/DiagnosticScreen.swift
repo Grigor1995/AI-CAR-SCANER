@@ -3,14 +3,24 @@ import SwiftUI
 struct DiagnosticScreen: View {
     @ObservedObject var viewModel: DiagnosticViewModel
     @StateObject private var obd = OBDService()
-    @State private var tab=0
-    @State private var make="Mercedes-Benz", model="E-Class", chassis="W211", year="2006", engine="M272 E35 3.5", ecu="ME9.7"
-    @State private var petrol=true, lpg=true, symptom="", dtc=""
-    @State private var settingsOpen=false, newSessionOpen=false
+    @State private var tab = 0
+    @State private var make = "Mercedes-Benz"
+    @State private var model = "E-Class"
+    @State private var chassis = "W211"
+    @State private var year = "2006"
+    @State private var engine = "M272 E35 3.5"
+    @State private var ecu = "ME9.7"
+    @State private var petrol = true
+    @State private var lpg = true
+    @State private var symptom = ""
+    @State private var dtc = ""
+    @State private var settingsOpen = false
+    @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
     @State private var editText=""
     @State private var test:Recommendation?
-    @State private var testResult="INCOMPLETE", testNotes=""
+    @State private var testResult = "INCOMPLETE"
+    @State private var testNotes = ""
 
     private var t:T { T(language:viewModel.settings.language) }
 
@@ -68,7 +78,7 @@ struct DiagnosticScreen: View {
             HStack{TextField(t.driverSymptom,text:$symptom,axis:.vertical).textFieldStyle(.roundedBorder)
                 Button("＋"){let x=symptom;symptom="";Task{await viewModel.addSymptom(x)}}.disabled(viewModel.session == nil || symptom.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)}
             ForEach(viewModel.session?.symptoms ?? []){x in
-                InputRow(title:x.raw_text,edit:{editSymptom=x;editText=x},delete:{Task{await viewModel.deleteSymptom(x)}})
+                InputRow(title:x.raw_text,edit:{editSymptom=x;editText=x.raw_text},delete:{Task{await viewModel.deleteSymptom(x)}})
             }
             Text("DTC").font(.title3.bold())
             HStack{TextField("P0302",text:$dtc).textFieldStyle(.roundedBorder).textInputAutocapitalization(.characters)
@@ -81,7 +91,7 @@ struct DiagnosticScreen: View {
     private var analysisView:some View {
         VStack(alignment:.leading,spacing:10) {
             if let s=viewModel.session {
-                StatusCard(title:t.state,value:localizedState(s.state))
+                StatusCard(title:t.state,value:s.state)
                 SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(x.status) • \(x.source)").font(.subheadline)}}
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in
@@ -111,7 +121,7 @@ struct DiagnosticScreen: View {
 
     private var settingsView:some View {
         NavigationStack{Form{
-            Section(t.language){Picker(t.language,selection:Binding(get:{viewModel.settings.language},set:{viewModel.settings.language=$0;viewModel.saveSettings()})){ForEach(AppLanguage.allCases){Text($0.label).tag($0)}}}
+            Section(t.languageLabel){Picker(t.languageLabel,selection:Binding(get:{viewModel.settings.language},set:{viewModel.settings.language=$0;viewModel.saveSettings()})){ForEach(AppLanguage.allCases){Text($0.label).tag($0)}}}
             Section(t.theme){Toggle(t.dark,isOn:Binding(get:{viewModel.settings.darkTheme},set:{viewModel.settings.darkTheme=$0;viewModel.saveSettings()}))}
             Section("Backend"){TextField("API URL",text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled()}
         }.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
@@ -156,7 +166,7 @@ private struct T{
     var make:String{tr("Make","Марка","Մակնիշ")};var model:String{tr("Model","Модель","Մոդել")};var chassis:String{tr("Chassis","Кузов","Թափք")};var year:String{tr("Year","Год","Տարի")};var engine:String{tr("Engine","Двигатель","Շարժիչ")};var petrol:String{tr("Petrol","Бензин","Բենզին")};var lpg:String{tr("LPG","Газ","Գազ")}
     var create:String{tr("Create diagnostic session","Создать диагностическую сессию","Ստեղծել դիագնոստիկ սեսիա")};var save:String{tr("Save","Сохранить","Պահպանել")};var symptoms:String{tr("Symptoms","Симптомы","Ախտանիշներ")};var symptom:String{tr("Symptom","Симптом","Ախտանիշ")};var driverSymptom:String{tr("Driver symptom","Симптом водителя","Վարորդի ախտանիշը")};var analyze:String{tr("Analyze session","Анализировать","Վերլուծել սեսիան")}
     var evidence:String{tr("Evidence","Доказательства","Ապացույցներ")};var hypotheses:String{tr("Hypotheses","Гипотезы","Հիպոթեզներ")};var nextTests:String{tr("Next diagnostic tests","Следующие тесты","Հաջորդ թեստերը")};var record:String{tr("Record result","Записать результат","Գրանցել արդյունքը")};var state:String{tr("State","Состояние","Կարգավիճակ")};var noSession:String{tr("Create a session first.","Сначала создайте сессию.","Սկզբում ստեղծեք սեսիա։")};var activityEmpty:String{tr("No activity yet.","Журнал пуст.","Գործունեություն չկա։")}
-    var settings:String{tr("Settings","Настройки","Կարգավորումներ")};var language:String{tr("Language","Язык","Լեզու")};var theme:String{tr("Theme","Тема","Թեմա")};var dark:String{tr("Dark","Тёмная","Մուգ")};var close:String{tr("Close","Закрыть","Փակել")};var newSession:String{tr("New session","Новая сессия","Նոր սեսիա")};var start:String{tr("Start","Начать","Սկսել")};var cancel:String{tr("Cancel","Отмена","Չեղարկել")};var confirm:String{tr("Current session data will be cleared from this screen.","Данные текущей сессии будут очищены с экрана.","Ընթացիկ սեսիայի տվյալները կմաքրվեն էկրանից։")};var scan:String{tr("Scan BLE adapters","Сканировать BLE","Սկանավորել BLE")};var editSymptom:String{tr("Edit symptom","Изменить симптом","Խմբագրել ախտանիշը")}
+    var settings:String{tr("Settings","Настройки","Կարգավորումներ")};var languageLabel:String{tr("Language","Язык","Լեզու")};var theme:String{tr("Theme","Тема","Թեմա")};var dark:String{tr("Dark","Тёмная","Մուգ")};var close:String{tr("Close","Закрыть","Փակել")};var newSession:String{tr("New session","Новая сессия","Նոր սեսիա")};var start:String{tr("Start","Начать","Սկսել")};var cancel:String{tr("Cancel","Отмена","Չեղարկել")};var confirm:String{tr("Current session data will be cleared from this screen.","Данные текущей сессии будут очищены с экрана.","Ընթացիկ սեսիայի տվյալները կմաքրվեն էկրանից։")};var scan:String{tr("Scan BLE adapters","Сканировать BLE","Սկանավորել BLE")};var editSymptom:String{tr("Edit symptom","Изменить симптом","Խմբագրել ախտանիշը")}
 }
 private extension Array where Element:Hashable{
     func unique()->[Element]{Array(Set(self))}

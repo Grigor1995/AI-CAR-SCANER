@@ -1140,7 +1140,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     ) {
                                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                             Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.titleMedium)
-                                            session.test_results.takeLast(3).reversed().forEach { result ->
+                                            session.test_results.takeLast(5).reversed().forEach { result ->
                                                 val resultLabel = when (result.result.uppercase()) {
                                                     "PASS" -> extra.pass
                                                     "FAIL" -> extra.fail
@@ -1148,7 +1148,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     "NOT_TESTED" -> extra.notTested
                                                     else -> result.result
                                                 }
-                                                Text(resultLabel, fontWeight = FontWeight.SemiBold)
+                                                Text(
+                                                    result.testName ?: (extra.nextDiagnostic + " #" + result.test_id.take(8)),
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    extra.nextDiagnosticResult + ": " + resultLabel,
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
                                                 result.notes?.takeIf { it.isNotBlank() }?.let {
                                                     Text(it, style = MaterialTheme.typography.bodySmall)
                                                 }

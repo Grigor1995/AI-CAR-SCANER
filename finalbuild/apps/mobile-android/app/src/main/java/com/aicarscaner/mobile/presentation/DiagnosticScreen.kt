@@ -61,6 +61,8 @@ import com.aicarscaner.mobile.settings.AppLanguage
 import com.aicarscaner.mobile.settings.AppSettings
 import com.aicarscaner.mobile.settings.AppSettingsStore
 import com.aicarscaner.mobile.settings.strings
+import com.aicarscaner.mobile.settings.localizedState
+import com.aicarscaner.mobile.settings.localizedEvidenceStatus
 import android.app.PendingIntent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
@@ -500,7 +502,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(text.session, style = MaterialTheme.typography.labelLarge)
                             Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: extra.vehicleNotIdentified)
-                            Text("${extra.state}: ${session.state}", style = MaterialTheme.typography.bodySmall)
+                            Text("${extra.state}: ${localizedState(appSettings.language, session.state)}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
 
@@ -1067,7 +1069,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         )
                                         Text(
                                             session.evidence.groupingBy { it.status.lowercase() }.eachCount().entries
-                                                .joinToString(" • ") { "${it.key}: ${it.value}" },
+                                                .joinToString(" • ") { "${localizedEvidenceStatus(appSettings.language, it.key, extra)}: ${it.value}" },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )

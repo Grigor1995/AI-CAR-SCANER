@@ -1019,7 +1019,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 Text(text.supportingEvidence, style = MaterialTheme.typography.labelLarge)
                                                 supporting.forEach { evidence ->
                                                     Text(
-                                                        "• ${evidence.fact} [${evidence.status}]",
+                                                        "• ${evidence.fact} [${when (evidence.status.lowercase()) { "reported" -> extra.reported; "measured" -> extra.measured; "calculated" -> extra.calculated; "inferred" -> extra.inferred; "confirmed" -> extra.confirmed; "rejected" -> extra.rejectedStatus; else -> evidence.status }}]",
                                                         style = MaterialTheme.typography.bodySmall
                                                     )
                                                 }
@@ -1029,7 +1029,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 Text(text.contradictingEvidence, style = MaterialTheme.typography.labelLarge)
                                                 contradicting.forEach { evidence ->
                                                     Text(
-                                                        "• ${evidence.fact} [${evidence.status}]",
+                                                        "• ${evidence.fact} [${when (evidence.status.lowercase()) { "reported" -> extra.reported; "measured" -> extra.measured; "calculated" -> extra.calculated; "inferred" -> extra.inferred; "confirmed" -> extra.confirmed; "rejected" -> extra.rejectedStatus; else -> evidence.status }}]",
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )

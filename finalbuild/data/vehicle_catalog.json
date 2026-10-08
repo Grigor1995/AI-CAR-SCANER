@@ -1,0 +1,3759 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-10-08",
+  "purpose": "Curated global vehicle catalog seed for make/model/year selection. Year ranges are model-family coverage ranges, not VIN-level fitment.",
+  "source": {
+    "name": "NHTSA vPIC",
+    "api": "https://vpic.nhtsa.dot.gov/api/",
+    "dataset_version": "4.08 (2026-08)",
+    "note": "Use vPIC for dynamic make/model/year refresh and VIN decoding; keep market-specific engine and ECU data separate."
+  },
+  "fields": [
+    "make",
+    "model",
+    "year_ranges",
+    "vehicle_type",
+    "common_fuels",
+    "notes"
+  ],
+  "makes": [
+    {
+      "make": "Mercedes-Benz",
+      "models": [
+        {
+          "model": "A-Class",
+          "year_ranges": [
+            [
+              1997,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "B-Class",
+          "year_ranges": [
+            [
+              2005,
+              2026
+            ]
+          ],
+          "vehicle_type": "MPV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "C-Class",
+          "year_ranges": [
+            [
+              1993,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "E-Class",
+          "year_ranges": [
+            [
+              1993,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "S-Class",
+          "year_ranges": [
+            [
+              1972,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CLA",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CLS",
+          "year_ranges": [
+            [
+              2004,
+              2023
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GLA",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GLC",
+          "year_ranges": [
+            [
+              2015,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GLE",
+          "year_ranges": [
+            [
+              2015,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GLS",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "G-Class",
+          "year_ranges": [
+            [
+              1979,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "V-Class",
+          "year_ranges": [
+            [
+              1996,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sprinter",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "diesel",
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "BMW",
+      "models": [
+        {
+          "model": "1 Series",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "2 Series",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "3 Series",
+          "year_ranges": [
+            [
+              1975,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "4 Series",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "5 Series",
+          "year_ranges": [
+            [
+              1972,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "7 Series",
+          "year_ranges": [
+            [
+              1977,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "8 Series",
+          "year_ranges": [
+            [
+              1990,
+              1999
+            ],
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X1",
+          "year_ranges": [
+            [
+              2009,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X3",
+          "year_ranges": [
+            [
+              2003,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X5",
+          "year_ranges": [
+            [
+              1999,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X6",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X7",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Z4",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Audi",
+      "models": [
+        {
+          "model": "A1",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A3",
+          "year_ranges": [
+            [
+              1996,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A4",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A5",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A6",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A7",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "A8",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Q3",
+          "year_ranges": [
+            [
+              2011,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Q5",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Q7",
+          "year_ranges": [
+            [
+              2005,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Q8",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Volkswagen",
+      "models": [
+        {
+          "model": "Golf",
+          "year_ranges": [
+            [
+              1974,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Passat",
+          "year_ranges": [
+            [
+              1973,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Polo",
+          "year_ranges": [
+            [
+              1975,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Jetta",
+          "year_ranges": [
+            [
+              1979,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tiguan",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Touareg",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "T-Roc",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Atlas",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Transporter",
+          "year_ranges": [
+            [
+              1950,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Toyota",
+      "models": [
+        {
+          "model": "Corolla",
+          "year_ranges": [
+            [
+              1966,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Camry",
+          "year_ranges": [
+            [
+              1982,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Prius",
+          "year_ranges": [
+            [
+              1997,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Yaris",
+          "year_ranges": [
+            [
+              1999,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "RAV4",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "C-HR",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Highlander",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "4Runner",
+          "year_ranges": [
+            [
+              1984,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Land Cruiser",
+          "year_ranges": [
+            [
+              1951,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Hilux",
+          "year_ranges": [
+            [
+              1968,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tacoma",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Supra",
+          "year_ranges": [
+            [
+              1978,
+              2002
+            ],
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Lexus",
+      "models": [
+        {
+          "model": "IS",
+          "year_ranges": [
+            [
+              1999,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "ES",
+          "year_ranges": [
+            [
+              1989,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GS",
+          "year_ranges": [
+            [
+              1993,
+              2020
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "LS",
+          "year_ranges": [
+            [
+              1989,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "NX",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "RX",
+          "year_ranges": [
+            [
+              1998,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "GX",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "LX",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "UX",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Honda",
+      "models": [
+        {
+          "model": "Civic",
+          "year_ranges": [
+            [
+              1972,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Accord",
+          "year_ranges": [
+            [
+              1976,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Jazz / Fit",
+          "year_ranges": [
+            [
+              2001,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CR-V",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "HR-V",
+          "year_ranges": [
+            [
+              1998,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Pilot",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Odyssey",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "MPV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Ridgeline",
+          "year_ranges": [
+            [
+              2005,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Hyundai",
+      "models": [
+        {
+          "model": "i10",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "i20",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "i30",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Elantra",
+          "year_ranges": [
+            [
+              1990,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sonata",
+          "year_ranges": [
+            [
+              1985,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Accent",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tucson",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Santa Fe",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Kona",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Palisade",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Kia",
+      "models": [
+        {
+          "model": "Picanto",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Rio",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Ceed",
+          "year_ranges": [
+            [
+              2006,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Forte / Cerato",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Optima / K5",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sportage",
+          "year_ranges": [
+            [
+              1993,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sorento",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Seltos",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Telluride",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Carnival",
+          "year_ranges": [
+            [
+              1998,
+              2026
+            ]
+          ],
+          "vehicle_type": "MPV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Nissan",
+      "models": [
+        {
+          "model": "Micra",
+          "year_ranges": [
+            [
+              1982,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sentra",
+          "year_ranges": [
+            [
+              1982,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Altima",
+          "year_ranges": [
+            [
+              1992,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Maxima",
+          "year_ranges": [
+            [
+              1981,
+              2023
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Qashqai",
+          "year_ranges": [
+            [
+              2006,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Juke",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "X-Trail",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Patrol",
+          "year_ranges": [
+            [
+              1951,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Navara",
+          "year_ranges": [
+            [
+              1986,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Leaf",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Mazda",
+      "models": [
+        {
+          "model": "Mazda2",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Mazda3",
+          "year_ranges": [
+            [
+              2003,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Mazda6",
+          "year_ranges": [
+            [
+              2002,
+              2021
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CX-3",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CX-5",
+          "year_ranges": [
+            [
+              2012,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CX-30",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "CX-60",
+          "year_ranges": [
+            [
+              2022,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "MX-5",
+          "year_ranges": [
+            [
+              1989,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Ford",
+      "models": [
+        {
+          "model": "Fiesta",
+          "year_ranges": [
+            [
+              1976,
+              2023
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Focus",
+          "year_ranges": [
+            [
+              1998,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Mondeo",
+          "year_ranges": [
+            [
+              1993,
+              2022
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Mustang",
+          "year_ranges": [
+            [
+              1964,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Escape / Kuga",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Explorer",
+          "year_ranges": [
+            [
+              1990,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Edge",
+          "year_ranges": [
+            [
+              2006,
+              2024
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "F-150",
+          "year_ranges": [
+            [
+              1975,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Ranger",
+          "year_ranges": [
+            [
+              1983,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Transit",
+          "year_ranges": [
+            [
+              1965,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Chevrolet",
+      "models": [
+        {
+          "model": "Aveo",
+          "year_ranges": [
+            [
+              2002,
+              2020
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Cruze",
+          "year_ranges": [
+            [
+              2008,
+              2019
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Malibu",
+          "year_ranges": [
+            [
+              1964,
+              2024
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Impala",
+          "year_ranges": [
+            [
+              1958,
+              2020
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Equinox",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tahoe",
+          "year_ranges": [
+            [
+              1992,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Suburban",
+          "year_ranges": [
+            [
+              1935,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Traverse",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Silverado",
+          "year_ranges": [
+            [
+              1998,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Trailblazer",
+          "year_ranges": [
+            [
+              2001,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Opel",
+      "models": [
+        {
+          "model": "Corsa",
+          "year_ranges": [
+            [
+              1982,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Astra",
+          "year_ranges": [
+            [
+              1991,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Insignia",
+          "year_ranges": [
+            [
+              2008,
+              2022
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Mokka",
+          "year_ranges": [
+            [
+              2012,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Grandland",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Zafira",
+          "year_ranges": [
+            [
+              1999,
+              2022
+            ]
+          ],
+          "vehicle_type": "MPV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Peugeot",
+      "models": [
+        {
+          "model": "208",
+          "year_ranges": [
+            [
+              2012,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "308",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "508",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "2008",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "3008",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "5008",
+          "year_ranges": [
+            [
+              2009,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Renault",
+      "models": [
+        {
+          "model": "Clio",
+          "year_ranges": [
+            [
+              1990,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Megane",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Laguna",
+          "year_ranges": [
+            [
+              1994,
+              2015
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Captur",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Kadjar",
+          "year_ranges": [
+            [
+              2015,
+              2022
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Koleos",
+          "year_ranges": [
+            [
+              2007,
+              2024
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Duster",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "LPG"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Master",
+          "year_ranges": [
+            [
+              1980,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Skoda",
+      "models": [
+        {
+          "model": "Fabia",
+          "year_ranges": [
+            [
+              1999,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Octavia",
+          "year_ranges": [
+            [
+              1996,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Superb",
+          "year_ranges": [
+            [
+              2001,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Karoq",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Kodiaq",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Kamiq",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Volvo",
+      "models": [
+        {
+          "model": "S60",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "S90",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "V60",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "wagon",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "V90",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "wagon",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "XC40",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "XC60",
+          "year_ranges": [
+            [
+              2008,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "XC90",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Land Rover",
+      "models": [
+        {
+          "model": "Defender",
+          "year_ranges": [
+            [
+              1990,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Discovery",
+          "year_ranges": [
+            [
+              1989,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Discovery Sport",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Range Rover",
+          "year_ranges": [
+            [
+              1970,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Range Rover Sport",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Range Rover Evoque",
+          "year_ranges": [
+            [
+              2011,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Jeep",
+      "models": [
+        {
+          "model": "Wrangler",
+          "year_ranges": [
+            [
+              1986,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Grand Cherokee",
+          "year_ranges": [
+            [
+              1992,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Cherokee",
+          "year_ranges": [
+            [
+              1974,
+              2023
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Compass",
+          "year_ranges": [
+            [
+              2006,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Renegade",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Gladiator",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Mitsubishi",
+      "models": [
+        {
+          "model": "Lancer",
+          "year_ranges": [
+            [
+              1973,
+              2017
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Outlander",
+          "year_ranges": [
+            [
+              2001,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "ASX",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Pajero",
+          "year_ranges": [
+            [
+              1981,
+              2021
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Pajero Sport",
+          "year_ranges": [
+            [
+              1996,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "L200",
+          "year_ranges": [
+            [
+              1978,
+              2026
+            ]
+          ],
+          "vehicle_type": "pickup",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Subaru",
+      "models": [
+        {
+          "model": "Impreza",
+          "year_ranges": [
+            [
+              1992,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Legacy",
+          "year_ranges": [
+            [
+              1989,
+              2020
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Forester",
+          "year_ranges": [
+            [
+              1997,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Outback",
+          "year_ranges": [
+            [
+              1994,
+              2026
+            ]
+          ],
+          "vehicle_type": "wagon",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "XV / Crosstrek",
+          "year_ranges": [
+            [
+              2011,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "BRZ",
+          "year_ranges": [
+            [
+              2012,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Suzuki",
+      "models": [
+        {
+          "model": "Swift",
+          "year_ranges": [
+            [
+              1983,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Baleno",
+          "year_ranges": [
+            [
+              1995,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Vitara",
+          "year_ranges": [
+            [
+              1988,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Jimny",
+          "year_ranges": [
+            [
+              1970,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "SX4",
+          "year_ranges": [
+            [
+              2006,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "S-Cross",
+          "year_ranges": [
+            [
+              2013,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Fiat",
+      "models": [
+        {
+          "model": "500",
+          "year_ranges": [
+            [
+              1957,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Panda",
+          "year_ranges": [
+            [
+              1980,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Punto",
+          "year_ranges": [
+            [
+              1993,
+              2018
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tipo",
+          "year_ranges": [
+            [
+              1988,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Doblo",
+          "year_ranges": [
+            [
+              2000,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "petrol",
+            "diesel"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Ducato",
+          "year_ranges": [
+            [
+              1981,
+              2026
+            ]
+          ],
+          "vehicle_type": "van",
+          "common_fuels": [
+            "diesel",
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Dacia",
+      "models": [
+        {
+          "model": "Logan",
+          "year_ranges": [
+            [
+              2004,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "LPG"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Sandero",
+          "year_ranges": [
+            [
+              2007,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "LPG"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Duster",
+          "year_ranges": [
+            [
+              2010,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "diesel",
+            "LPG",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Jogger",
+          "year_ranges": [
+            [
+              2021,
+              2026
+            ]
+          ],
+          "vehicle_type": "MPV",
+          "common_fuels": [
+            "petrol",
+            "LPG",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Spring",
+          "year_ranges": [
+            [
+              2021,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Porsche",
+      "models": [
+        {
+          "model": "911",
+          "year_ranges": [
+            [
+              1964,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Cayenne",
+          "year_ranges": [
+            [
+              2002,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Macan",
+          "year_ranges": [
+            [
+              2014,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Panamera",
+          "year_ranges": [
+            [
+              2009,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "petrol",
+            "hybrid",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Taycan",
+          "year_ranges": [
+            [
+              2019,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "718",
+          "year_ranges": [
+            [
+              1996,
+              2026
+            ]
+          ],
+          "vehicle_type": "sports",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Tesla",
+      "models": [
+        {
+          "model": "Model S",
+          "year_ranges": [
+            [
+              2012,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Model 3",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Model X",
+          "year_ranges": [
+            [
+              2015,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Model Y",
+          "year_ranges": [
+            [
+              2020,
+              2026
+            ]
+          ],
+          "vehicle_type": "electric",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "BYD",
+      "models": [
+        {
+          "model": "Atto 3",
+          "year_ranges": [
+            [
+              2022,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Dolphin",
+          "year_ranges": [
+            [
+              2021,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Seal",
+          "year_ranges": [
+            [
+              2022,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "electric"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Han",
+          "year_ranges": [
+            [
+              2020,
+              2026
+            ]
+          ],
+          "vehicle_type": "luxury",
+          "common_fuels": [
+            "electric",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Tang",
+          "year_ranges": [
+            [
+              2015,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "electric",
+            "PHEV"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Song Plus",
+          "year_ranges": [
+            [
+              2017,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "PHEV",
+            "electric"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Geely",
+      "models": [
+        {
+          "model": "Emgrand",
+          "year_ranges": [
+            [
+              2009,
+              2026
+            ]
+          ],
+          "vehicle_type": "passenger",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Coolray",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Atlas",
+          "year_ranges": [
+            [
+              2016,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Monjaro",
+          "year_ranges": [
+            [
+              2021,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "make": "Haval",
+      "models": [
+        {
+          "model": "H2",
+          "year_ranges": [
+            [
+              2014,
+              2021
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "H6",
+          "year_ranges": [
+            [
+              2011,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "Jolion",
+          "year_ranges": [
+            [
+              2020,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol",
+            "hybrid"
+          ],
+          "notes": ""
+        },
+        {
+          "model": "F7",
+          "year_ranges": [
+            [
+              2018,
+              2026
+            ]
+          ],
+          "vehicle_type": "SUV",
+          "common_fuels": [
+            "petrol"
+          ],
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}

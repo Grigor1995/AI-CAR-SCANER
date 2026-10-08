@@ -343,3 +343,30 @@ CREATE TABLE IF NOT EXISTS network_topology_correlations (
 );
 CREATE INDEX IF NOT EXISTS ix_network_topology_correlations_session_status
     ON network_topology_correlations(session_id, status, created_at DESC);
+
+-- Shared vehicle selector catalog. This is the single source of truth for
+-- Make -> Model -> Chassis -> Year -> Engine -> ECU selection used by
+-- desktop and mobile clients through the FastAPI catalog endpoints.
+CREATE TABLE IF NOT EXISTS vehicle_catalog_entries (
+    id UUID PRIMARY KEY,
+    make TEXT NOT NULL,
+    model TEXT NOT NULL,
+    chassis TEXT,
+    year INT NOT NULL,
+    engine TEXT NOT NULL,
+    ecu TEXT NOT NULL,
+    fuel JSONB NOT NULL DEFAULT '[]'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (make, model, chassis, year, engine, ecu)
+);
+CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_make
+    ON vehicle_catalog_entries(make);
+CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_make_model
+    ON vehicle_catalog_entries(make, model);
+CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_model_chassis
+    ON vehicle_catalog_entries(make, model, chassis);
+CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_year
+    ON vehicle_catalog_entries(make, model, chassis, year);
+CREATE INDEX IF NOT EXISTS idx_vehicle_catalog_engine
+    ON vehicle_catalog_entries(make, model, chassis, year, engine);

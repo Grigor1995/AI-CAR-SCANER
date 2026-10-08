@@ -507,9 +507,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         session.vehicle?.let { vehicle ->
                             make = vehicle.make
                             model = vehicle.model
+                            chassis = vehicle.chassis.orEmpty()
                             year = vehicle.year?.toString().orEmpty()
                             engine = vehicle.engine.orEmpty()
-                            ecu = vehicle.ecu ?: ecuOptionsFor(vehicle.make, vehicle.model, vehicle.engine.orEmpty()).firstOrNull().orEmpty()
+                            ecu = vehicle.ecu ?: ecuOptionsFor(vehicle.make, vehicle.model, vehicle.chassis.orEmpty(), vehicle.engine.orEmpty()).firstOrNull().orEmpty()
                             petrol = vehicle.fuel.any { it.equals("petrol", true) }
                             lpg = vehicle.fuel.any { it.equals("lpg", true) }
                         }
@@ -533,7 +534,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     ) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(text.session, style = MaterialTheme.typography.labelLarge)
-                            Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: extra.vehicleNotIdentified)
+                            Text(session.vehicle?.let { "${it.make} ${it.model}${if (it.chassis.isNullOrBlank()) "" else " / ${it.chassis}"}" } ?: extra.vehicleNotIdentified)
                             Text("${extra.state}: ${localizedState(appSettings.language, session.state)}", style = MaterialTheme.typography.bodySmall)
                         }
                     }

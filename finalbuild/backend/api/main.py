@@ -166,10 +166,46 @@ def _analyze_session(session_id: str, language: str = 'en') -> DiagnosticSession
     intelligence_engine._add_missing_questions(s)
     rule_recommendations = list(s.recommendations)
     decision_engine.refresh_recommendations(s)
-    # Keep the richer rule-driven tests for categories that are not yet covered
-    # by the decision catalog instead of returning an empty test section.
+
+    # Keep rule-driven tests that are not represented in the decision catalog,
+    # while enriching their decision fields so the UI never shows meaningless
+    # zero information-gain / zero-cost values.
+    decision_recommendations = list(s.recommendations)
+    decision_names = {item.name.strip().lower() for item in decision_recommendations}
+    categories = {item.category for item in s.hypotheses if not item.status.startswith("rejected")}
+    category_count = max(len(categories), 1)
+
+    def enrich_rule_test(item):
+        target_matches = len(set(item.target_hypotheses) & categories)
+        coverage = target_matches / category_count if category_count else 0.0
+        if target_matches == 0:
+            information_gain = 0.15
+        elif 0.0 < coverage < 1.0:
+            entropy = -(coverage * __import__("math").log2(coverage) + (1.0 - coverage) * __import__("math").log2(1.0 - coverage))
+            information_gain = max(0.25, entropy)
+        else:
+            information_gain = 0.25
+
+        item.expected_information_gain = round(min(information_gain, 0.95), 4)
+        if item.estimated_cost <= 0:
+            cost_by_risk = {"LOW": 1.0, "MEDIUM": 2.0, "HIGH": 4.0}
+            item.estimated_cost = cost_by_risk.get(item.risk_level.upper(), 1.0)
+        if item.priority_score <= 0:
+            item.priority_score = round(min(
+                0.65 * item.expected_information_gain
+                + 0.35 * (1.0 if item.risk_level.upper() == "LOW" else 0.75 if item.risk_level.upper() == "MEDIUM" else 0.5),
+                1.0,
+            ), 4)
+        return item
+
+    s.recommendations = decision_recommendations
+    for item in rule_recommendations:
+        if item.name.strip().lower() not in decision_names:
+            s.recommendations.append(enrich_rule_test(item))
+
     if not s.recommendations and rule_recommendations:
-        s.recommendations = rule_recommendations
+        s.recommendations = [enrich_rule_test(item) for item in rule_recommendations]
+
     return localize_session_analysis(s, language)
 
 @app.post('/api/v1/sessions/{session_id}/analyze',response_model=DiagnosticSession)

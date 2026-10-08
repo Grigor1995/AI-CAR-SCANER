@@ -140,6 +140,69 @@ def test_analysis_localizes_to_requested_language_and_links_evidence():
     assert any(item["category"] == "ignition / combustion" for item in english_body["hypotheses"])
 
 
+def test_recommendations_and_test_result_follow_requested_language():
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/sessions",
+        json={
+            "make": "Mercedes-Benz",
+            "model": "W211 E350",
+            "year": 2006,
+            "engine": "M272 3.5",
+            "fuel": ["petrol", "LPG"],
+        },
+    )
+    assert response.status_code == 200
+    session_id = response.json()["session_id"]
+
+    symptom = "Engine shakes on LPG below 2000 RPM under load; petrol is normal."
+    assert client.post(
+        f"/api/v1/sessions/{session_id}/symptoms",
+        json={"raw_text": symptom},
+    ).status_code == 200
+    assert client.post(
+        f"/api/v1/sessions/{session_id}/dtcs",
+        json={"code": "P0302"},
+    ).status_code == 200
+
+    response = client.post(f"/api/v1/analysis/{session_id}?language=hy")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["recommendations"]
+
+    english_names = {
+        "Measure LPG pressure at idle and under load",
+        "Compare STFT/LTFT on petrol versus LPG",
+        "Compare LPG injector contribution / balance",
+        "Compare cylinder misfire counters under the same load",
+        "Check ignition performance under controlled load",
+        "Validate MAF signal against RPM/load plausibility",
+        "Inspect intake and MAF wiring/connectors",
+        "Compare fuel-trim and misfire behavior by fuel mode",
+        "Inspect LPG pressure and injector behavior under load",
+        "Check ignition performance under LPG load",
+        "Inspect intake system for an air leak",
+        "Compare cylinder-specific misfire counters and compression evidence",
+        "Check for unmetered-air leak",
+    }
+    assert all(item["name"] not in english_names for item in body["recommendations"])
+
+    test_id = body["recommendations"][0]["id"]
+    result = client.post(
+        f"/api/v1/intelligence/sessions/{session_id}/test-results?language=hy",
+        json={
+            "test_id": test_id,
+            "result": "FAIL",
+            "notes": "Գազի ճնշումը նվազում է բեռնվածության ժամանակ։",
+        },
+    )
+    assert result.status_code == 200, result.text
+    localized = result.json()
+    assert localized["recommendations"]
+    assert all(item["name"] not in english_names for item in localized["recommendations"])
+    assert any("Թեստի արդյունք" in item["fact"] for item in localized["evidence"])
+
+
 def test_non_lpg_analysis_keeps_rule_recommendations():
     client = TestClient(app)
     response = client.post(

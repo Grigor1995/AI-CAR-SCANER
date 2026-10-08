@@ -141,7 +141,9 @@ data class AppExtraStrings(
     val pass: String = "PASS",
     val fail: String = "FAIL",
     val inconclusive: String = "INCONCLUSIVE",
-    val notTested: String = "NOT TESTED"
+    val notTested: String = "NOT TESTED",
+    val nextDiagnosticResult: String = "Result",
+    val resultPlaceholder: String = "PASS / FAIL / INCONCLUSIVE"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -187,7 +189,9 @@ private val ruExtra = AppExtraStrings(
     pass = "ПРОЙДЕН",
     fail = "НЕ ПРОЙДЕН",
     inconclusive = "НЕОДНОЗНАЧНО",
-    notTested = "НЕ ТЕСТИРОВАЛОСЬ"
+    notTested = "НЕ ТЕСТИРОВАЛОСЬ",
+    nextDiagnosticResult = "Результат",
+    resultPlaceholder = "ПРОЙДЕН / НЕ ПРОЙДЕН / НЕОДНОЗНАЧНО"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -233,7 +237,9 @@ private val hyExtra = AppExtraStrings(
     pass = "ԱՆՑԱՎ",
     fail = "ՉԱՆՑԱՎ",
     inconclusive = "ԱՆՈՐՈՇ",
-    notTested = "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ"
+    notTested = "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ",
+    nextDiagnosticResult = "Արդյունք",
+    resultPlaceholder = "ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆՈՐՈՇ"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

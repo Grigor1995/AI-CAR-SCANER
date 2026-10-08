@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 import 'models.dart';
+import 'vehicle_catalog.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,9 +90,11 @@ class _DesktopShellState extends State<DesktopShell> {
       return VehicleModel(
         make: parts.isNotEmpty ? parts[0] : 'Vehicle',
         model: parts.length > 1 ? parts[1] : 'Profile',
-        year: parts.length > 2 ? int.tryParse(parts[2]) : null,
-        engine: parts.length > 3 ? parts[3] : null,
-        fuel: parts.length > 4 ? parts[4].split(',').where((x) => x.isNotEmpty).toList() : const [],
+        chassis: parts.length > 2 ? parts[2] : '',
+        year: parts.length > 3 ? int.tryParse(parts[3]) : null,
+        engine: parts.length > 4 ? parts[4] : null,
+        fuel: parts.length > 5 ? parts[5].split(',').where((x) => x.isNotEmpty).toList() : const [],
+        ecu: parts.length > 6 ? parts[6] : '',
       );
     }).toList();
         await refreshHealth();
@@ -128,9 +131,9 @@ class _DesktopShellState extends State<DesktopShell> {
   Future<void> saveVehicle(VehicleModel vehicle) async {
     final prefs = await SharedPreferences.getInstance();
     final merged = [...vehicles, vehicle];
-    final deduped = <String, VehicleModel>{for (final v in merged) '${v.make}|${v.model}|${v.year}|${v.engine}': v}.values.toList();
+    final deduped = <String, VehicleModel>{for (final v in merged) '${v.make}|${v.model}|${v.chassis}|${v.year}|${v.engine}|${v.ecu}': v}.values.toList();
     vehicles = deduped;
-    await prefs.setStringList('vehicle_profiles', vehicles.map((v) => '${v.make}|${v.model}|${v.year ?? ''}|${v.engine ?? ''}|${v.fuel.join(',')}').toList());
+    await prefs.setStringList('vehicle_profiles', vehicles.map((v) => '${v.make}|${v.model}|${v.chassis}|${v.year ?? ''}|${v.engine ?? ''}|${v.fuel.join(',')}|${v.ecu}').toList());
     if (!mounted) return;
     setState(() {});
     await createSession(vehicle);
@@ -462,46 +465,84 @@ class VehiclesPage extends StatefulWidget {
 }
 
 class _VehiclesPageState extends State<VehiclesPage> {
-  final make = TextEditingController(text: 'Mercedes-Benz');
-  final model = TextEditingController(text: 'W211');
-  final year = TextEditingController(text: '2006');
-  final engine = TextEditingController(text: 'M272 3.5');
-  final fuel = TextEditingController(text: 'Petrol,LPG');
+  String make = vehicleCatalog.first.name;
+  String model = vehicleCatalog.first.models.first.name;
+  String chassis = vehicleCatalog.first.models.first.chassisOptions.first.chassis;
+  int? year = vehicleCatalog.first.models.first.chassisOptions.first.years.first;
+  String engine = vehicleCatalog.first.models.first.chassisOptions.first.engines.first.name;
+  String ecu = vehicleCatalog.first.models.first.chassisOptions.first.engines.first.ecus.first;
+  final fuel = TextEditingController(text: 'Petrol');
 
-  @override
-  void dispose() {
-    make.dispose(); model.dispose(); year.dispose(); engine.dispose(); fuel.dispose(); super.dispose();
+  VehicleModelOption get _model => findModel(make, model) ?? vehicleCatalog.first.models.first;
+  VehicleChassisOption get _chassis => findChassis(make, model, chassis) ?? _model.chassisOptions.first;
+
+  void _selectMake(String value) {
+    final m = findMake(value) ?? vehicleCatalog.first;
+    final mo = m.models.first; final ch = mo.chassisOptions.first; final en = ch.engines.first;
+    setState(() { make=m.name; model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
   }
-
+  void _selectModel(String value) {
+    final mo = findModel(make, value) ?? _model; final ch=mo.chassisOptions.first; final en=ch.engines.first;
+    setState(() { model=mo.name; chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+  }
+  void _selectChassis(String value) {
+    final ch=findChassis(make, model, value) ?? _chassis; final en=ch.engines.first;
+    setState(() { chassis=ch.chassis; year=ch.years.first; engine=en.name; ecu=en.ecus.first; });
+  }
+  void _selectEngine(String value) {
+    final en=_chassis.engines.firstWhere((e)=>e.name==value, orElse: ()=>_chassis.engines.first);
+    setState(() { engine=en.name; ecu=en.ecus.first; });
+  }
   VehicleModel get _formVehicle => VehicleModel(
-        make: make.text.trim(), model: model.text.trim(), year: int.tryParse(year.text.trim()), engine: engine.text.trim(), fuel: fuel.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-      );
+    make:make, model:model, chassis:chassis, year:year, engine:engine,
+    fuel:fuel.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList(), ecu:ecu,
+  );
+  @override void dispose(){ fuel.dispose(); super.dispose(); }
+
+  Widget _select(String label,String value,List<String> options,ValueChanged<String> onChanged)=>SizedBox(
+    width:210, child:DropdownButtonFormField<String>(
+      value:options.contains(value)?value:(options.isEmpty?null:options.first),
+      decoration:InputDecoration(labelText:label),
+      items:options.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),
+      onChanged:options.isEmpty?null:(v){if(v!=null)onChanged(v);},
+    ));
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(padding: const EdgeInsets.all(26), children: [
-      _PageTitle(title: 'Vehicles', subtitle: 'Workshop vehicle profiles are stored locally on the desktop.'),
-      const SizedBox(height: 20),
-      Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Create / select vehicle', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 16),
-        Wrap(spacing: 12, runSpacing: 12, children: [
-          SizedBox(width: 210, child: TextField(controller: make, decoration: const InputDecoration(labelText: 'Manufacturer'))),
-          SizedBox(width: 210, child: TextField(controller: model, decoration: const InputDecoration(labelText: 'Model'))),
-          SizedBox(width: 120, child: TextField(controller: year, decoration: const InputDecoration(labelText: 'Year'))),
-          SizedBox(width: 210, child: TextField(controller: engine, decoration: const InputDecoration(labelText: 'Engine'))),
-          SizedBox(width: 220, child: TextField(controller: fuel, decoration: const InputDecoration(labelText: 'Fuel modes'))),
+  Widget build(BuildContext context){
+    final modelOptions=findMake(make)?.models.map((x)=>x.name).toList()??[];
+    final chassisOptions=_model.chassisOptions.map((x)=>x.chassis).toList();
+    final yearOptions=_chassis.years;
+    final engineOptions=_chassis.engines.map((x)=>x.name).toList();
+    return ListView(padding:const EdgeInsets.all(26),children:[
+      _PageTitle(title:'Vehicles',subtitle:'Real-world Make → Model → Chassis → Year → Engine → ECU selection.'),
+      const SizedBox(height:20),
+      Card(child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('Create / select vehicle',style:TextStyle(fontSize:18,fontWeight:FontWeight.w700)),
+        const SizedBox(height:16),
+        Wrap(spacing:12,runSpacing:12,children:[
+          _select('Manufacturer',make,vehicleCatalog.map((x)=>x.name).toList(),_selectMake),
+          _select('Model',model,modelOptions,_selectModel),
+          _select('Chassis',chassis,chassisOptions,_selectChassis),
+          SizedBox(width:120,child:DropdownButtonFormField<int>(
+            value:yearOptions.contains(year)?year:(yearOptions.isEmpty?null:yearOptions.first),
+            decoration:const InputDecoration(labelText:'Year'),
+            items:yearOptions.map((x)=>DropdownMenuItem(value:x,child:Text('$x'))).toList(),
+            onChanged:(v)=>setState(()=>year=v),
+          )),
+          _select('Engine',engine,engineOptions,_selectEngine),
+          SizedBox(width:210,child:TextFormField(initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU'))),
+          SizedBox(width:220,child:TextField(controller:fuel,decoration:const InputDecoration(labelText:'Fuel modes'))),
         ]),
-        const SizedBox(height: 18),
-        FilledButton.icon(onPressed: () => widget.onSaveVehicle(_formVehicle), icon: const Icon(Icons.add_circle_outline), label: const Text('Save & Start Session')),
+        const SizedBox(height:18),
+        FilledButton.icon(onPressed:()=>widget.onSaveVehicle(_formVehicle),icon:const Icon(Icons.add_circle_outline),label:const Text('Save & Start Session')),
       ]))),
-      const SizedBox(height: 18),
-      if (widget.vehicles.isEmpty) const _EmptyState(icon: Icons.directions_car_outlined, title: 'No saved vehicles', subtitle: 'Add your first workshop vehicle above.'),
-      ...widget.vehicles.map((v) => Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(
-        leading: CircleAvatar(child: Text(v.make.isEmpty ? '?' : v.make.substring(0, 1))),
-        title: Text('${v.make} ${v.model}${v.year == null ? '' : ' • ${v.year}'}'),
-        subtitle: Text('${v.engine ?? 'Engine unknown'} • ${v.fuel.isEmpty ? 'Fuel unknown' : v.fuel.join(' + ')}'),
-        trailing: FilledButton.tonal(onPressed: () => widget.onCreateSession(v), child: const Text('Start Session')),
+      const SizedBox(height:18),
+      if(widget.vehicles.isEmpty)const _EmptyState(icon:Icons.directions_car_outlined,title:'No saved vehicles',subtitle:'Add your first workshop vehicle above.'),
+      ...widget.vehicles.map((v)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
+        leading:CircleAvatar(child:Text(v.make.isEmpty?'?':v.make.substring(0,1))),
+        title:Text('${v.make} ${v.model} / ${v.chassis}${v.year==null?'':' • ${v.year}'}'),
+        subtitle:Text('${v.engine??'Engine unknown'} • ECU ${v.ecu.isEmpty?'unknown':v.ecu} • ${v.fuel.isEmpty?'Fuel unknown':v.fuel.join(' + ')}'),
+        trailing:FilledButton.tonal(onPressed:()=>widget.onCreateSession(v),child:const Text('Start Session')),
       ))),
     ]);
   }

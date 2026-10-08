@@ -227,6 +227,7 @@ AUDIT_EVENT_LABELS = {
         "DEVICE_BOUND": "Диагностическое устройство подключено",
         "VIN_RECEIVED": "VIN получен",
         "OBD_SESSION_SYNC": "OBD-сессия синхронизирована",
+        "QUESTIONS_IDENTIFIED": "Выявлены вопросы для дальнейшей диагностики",
     },
     "hy": {
         "VEHICLE_UPDATED": "Մեքենայի տվյալները թարմացվել են",
@@ -242,6 +243,7 @@ AUDIT_EVENT_LABELS = {
         "DEVICE_BOUND": "Ախտորոշիչ սարքը միացվել է",
         "VIN_RECEIVED": "VIN-ը ստացվել է",
         "OBD_SESSION_SYNC": "OBD սեսիան համաժամացվել է",
+        "QUESTIONS_IDENTIFIED": "Հաջորդ ախտորոշման հարցերը հայտնաբերվել են",
     },
 }
 
@@ -250,6 +252,29 @@ def _localized_evidence_status(status: str, language: str) -> str:
 
 def _localized_event(event: str, language: str) -> str:
     return AUDIT_EVENT_LABELS.get(language, {}).get(event, event)
+
+def _localized_test_result_fact(fact: str, language: str) -> str:
+    match = re.match(r"^Test ([^ ]+) result: (.*)$", fact)
+    if not match:
+        return fact
+    result_value = match.group(2)
+    result_labels = {
+        "ru": {
+            "PASS": "ПРОЙДЕН",
+            "FAIL": "НЕ ПРОЙДЕН",
+            "INCONCLUSIVE": "НЕОДНОЗНАЧНО",
+            "NOT_TESTED": "НЕ ТЕСТИРОВАЛОСЬ",
+        },
+        "hy": {
+            "PASS": "ԱՆՑԱՎ",
+            "FAIL": "ՉԱՆՑԱՎ",
+            "INCONCLUSIVE": "ԱՆՈՐՈՇ",
+            "NOT_TESTED": "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ",
+        },
+    }
+    prefix = {"ru": "Результат теста", "hy": "Թեստի արդյունք"}.get(language, "Test result")
+    return f"{prefix} {match.group(1)}: {result_labels.get(language, {}).get(result_value, result_value)}"
+
 
 HYPOTHESIS_LABELS = {
     "ru": {
@@ -388,6 +413,9 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         recommendation.safety_notes = [
             _localized_safety_note(note, language) for note in recommendation.safety_notes
         ]
+
+    for evidence in result.evidence:
+        evidence.fact = _localized_test_result_fact(evidence.fact, language)
 
     for event in result.audit_log:
         event["event"] = _localized_event(event.get("event", ""), language)

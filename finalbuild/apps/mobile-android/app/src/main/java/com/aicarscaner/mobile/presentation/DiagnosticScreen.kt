@@ -309,7 +309,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 title = { Text(selectedTestTitle) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(text.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
+                        Text(extra.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
                         Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.labelLarge)
                         Row(
                             Modifier.fillMaxWidth(),
@@ -359,7 +359,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
                             maxLines = 6,
-                            label = { Text(text.diagnosticNotes) },
+                            label = { Text(extra.diagnosticNotes) },
                             placeholder = { Text(extra.notesPlaceholder) }
                         )
                     }
@@ -1156,7 +1156,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         )
                                     ) {
                                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text(text.nextDiagnostic, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                            Text(extra.nextDiagnostic, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                             Text(nextTest.title, fontWeight = FontWeight.Medium)
                                             Text(nextTest.purpose, style = MaterialTheme.typography.bodySmall)
                                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

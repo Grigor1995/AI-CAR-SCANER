@@ -269,14 +269,12 @@ def _localized_test_result_fact(fact: str, language: str) -> str:
         "ru": {
             "PASS": "ПРОЙДЕН",
             "FAIL": "НЕ ПРОЙДЕН",
-            "INCONCLUSIVE": "НЕОДНОЗНАЧНО",
-            "NOT_TESTED": "НЕ ТЕСТИРОВАЛОСЬ",
+            "UNKNOWN": "НЕИЗВЕСТНО",
         },
         "hy": {
             "PASS": "ԱՆՑԱՎ",
             "FAIL": "ՉԱՆՑԱՎ",
-            "INCONCLUSIVE": "ԱՆՈՐՈՇ",
-            "NOT_TESTED": "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ",
+            "UNKNOWN": "ԱՆՀԱՅՏ",
         },
     }
     prefix = {"ru": "Результат теста", "hy": "Թեստի արդյունք"}.get(language, "Test result")

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Request
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.localization import localize_session_analysis
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
@@ -7,7 +7,7 @@ from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router
 from api.intelligence_routes import router as intelligence_router
-from api.state import sessions
+from api.state import sessions, load_persisted_sessions, persist_sessions
 from api.ai_routes import router as ai_router
 from api.knowledge_routes import router as knowledge_router
 from api.rag_routes import router as rag_router
@@ -21,6 +21,17 @@ from api.network_discovery_routes import router as network_discovery_router
 from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
 app=FastAPI(title="AI Auto Diagnostic Platform",version="0.1.0")
+
+@app.on_event("startup")
+def startup_load_persisted_sessions():
+    load_persisted_sessions()
+
+@app.middleware("http")
+async def persist_diagnostic_sessions(request: Request, call_next):
+    try:
+        return await call_next(request)
+    finally:
+        persist_sessions()
 engine=DiagnosticReasoningEngine()
 intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()

@@ -1130,6 +1130,33 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     }
                                 }
 
+                                if (session.test_results.isNotEmpty()) {
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f)
+                                        )
+                                    ) {
+                                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.titleMedium)
+                                            session.test_results.takeLast(3).reversed().forEach { result ->
+                                                val resultLabel = when (result.result.uppercase()) {
+                                                    "PASS" -> extra.pass
+                                                    "FAIL" -> extra.fail
+                                                    "INCONCLUSIVE" -> extra.inconclusive
+                                                    "NOT_TESTED" -> extra.notTested
+                                                    else -> result.result
+                                                }
+                                                Text(resultLabel, fontWeight = FontWeight.SemiBold)
+                                                result.notes?.takeIf { it.isNotBlank() }?.let {
+                                                    Text(it, style = MaterialTheme.typography.bodySmall)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if (latestQuestions.isNotEmpty()) {
                                     Card(
                                         Modifier.fillMaxWidth(),

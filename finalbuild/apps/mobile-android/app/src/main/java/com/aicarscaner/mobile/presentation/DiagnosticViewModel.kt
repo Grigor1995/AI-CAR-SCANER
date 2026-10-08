@@ -30,12 +30,9 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
                 .onSuccess { catalog ->
                     _uiState.value = _uiState.value.copy(vehicleCatalog = catalog, error = null)
                 }
-                .onFailure { error ->
-                    // Keep the local emergency catalog available when the shared
-                    // database/API is temporarily unavailable.
-                    _uiState.value = _uiState.value.copy(
-                        error = error.message ?: "Vehicle catalog unavailable"
-                    )
+                .onFailure {
+                    // The screen keeps its local safety catalog as a fallback.
+                    // Catalog transport failures must not block session creation.
                 }
         }
     }

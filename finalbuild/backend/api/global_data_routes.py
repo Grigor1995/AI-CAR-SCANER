@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from platform.global_data import global_data
+from global_data import global_data
 
 router = APIRouter(prefix="/api/v1/global-data", tags=["global-data"])
 

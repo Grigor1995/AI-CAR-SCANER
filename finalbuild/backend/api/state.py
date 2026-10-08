@@ -8,7 +8,7 @@ from diagnostic.session_persistence import persistence
 class GlobalSessionRegistry(MutableMapping[str, DiagnosticSession]):
     """Process cache backed by shared persistence.
 
-    Desktop/mobile never own session state. When DATABASE_URL is configured,
+    Desktop/mobile never own session state. With DATABASE_URL configured,
     PostgreSQL is the shared source of truth and this mapping is only a cache.
     """
 
@@ -32,7 +32,6 @@ class GlobalSessionRegistry(MutableMapping[str, DiagnosticSession]):
             persistence.save_one(key, value)
 
     def __delitem__(self, key: str) -> None:
-        # Session deletion is intentionally not exposed by the public API yet.
         del self._cache[key]
 
     def __iter__(self) -> Iterator[str]:
@@ -66,6 +65,5 @@ def load_persisted_sessions() -> None:
 
 
 def persist_sessions() -> None:
-    # Flush in-memory mutations made after a session was retrieved.
     if persistence.enabled:
         persistence.save_all(dict(sessions._cache))

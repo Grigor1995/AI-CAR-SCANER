@@ -141,7 +141,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var testResultDialogOpen by remember { mutableStateOf(false) }
     var selectedTestId by remember { mutableStateOf<String?>(null) }
     var selectedTestTitle by remember { mutableStateOf("") }
-    var testOutcome by remember { mutableStateOf("INCONCLUSIVE") }
+    var testOutcome by remember { mutableStateOf("UNKNOWN") }
     var testNotes by remember { mutableStateOf("") }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -319,28 +319,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         ) {
                             listOf(
                                 "PASS" to extra.pass,
-                                "FAIL" to extra.fail
-                            ).forEach { (value, label) ->
-                                if (testOutcome == value) {
-                                    Button(
-                                        onClick = { testOutcome = value },
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text(label, maxLines = 1) }
-                                } else {
-                                    OutlinedButton(
-                                        onClick = { testOutcome = value },
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text(label, maxLines = 1) }
-                                }
-                            }
-                        }
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf(
-                                "INCONCLUSIVE" to extra.inconclusive,
-                                "NOT_TESTED" to extra.notTested
+                                "FAIL" to extra.fail,
+                                "UNKNOWN" to extra.unknown
                             ).forEach { (value, label) ->
                                 if (testOutcome == value) {
                                     Button(

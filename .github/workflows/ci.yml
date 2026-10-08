@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finalbuild
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r backend/requirements-dev.txt
+      - run: pytest -q
+      - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=60
+      - run: python -m compileall backend
+      - run: python tools/import_check.py
+
+  desktop:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finalbuild
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r apps/desktop/requirements.txt
+      - run: python -m py_compile apps/desktop/ui.py
+      - run: python -m py_compile apps/desktop/main.py
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finalbuild/apps/mobile-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: chmod +x gradlew
+      - run: ./gradlew assembleDebug

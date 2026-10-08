@@ -57,6 +57,16 @@ def create_session(vehicle:dict | None=Body(default=None)):
     # legacy clients that create a session before vehicle identification.
     parsed_vehicle = Vehicle(**vehicle) if vehicle else None
     s=DiagnosticSession(vehicle=parsed_vehicle); sessions[str(s.session_id)]=s; return s
+
+@app.get('/api/v1/sessions',response_model=list[DiagnosticSession])
+def list_sessions(limit: int = 50):
+    limit = max(1, min(limit, 200))
+    return sorted(
+        sessions.values(),
+        key=lambda item: item.session_id.hex,
+        reverse=True,
+    )[:limit]
+
 @app.get('/api/v1/sessions/{session_id}',response_model=DiagnosticSession)
 def get_session(session_id:str):
     if session_id not in sessions: raise HTTPException(404,'Session not found')

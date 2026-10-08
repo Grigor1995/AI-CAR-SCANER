@@ -131,7 +131,8 @@ data class AppExtraStrings(
     val calculated: String = "Calculated",
     val inferred: String = "Inferred",
     val confirmed: String = "Confirmed",
-    val rejectedStatus: String = "Rejected"
+    val rejectedStatus: String = "Rejected",
+    val error: String = "Error"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -167,7 +168,8 @@ private val ruExtra = AppExtraStrings(
     calculated = "Рассчитано",
     inferred = "Выведено",
     confirmed = "Подтверждено",
-    rejectedStatus = "Отклонено"
+    rejectedStatus = "Отклонено",
+    error = "Ошибка"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -203,7 +205,8 @@ private val hyExtra = AppExtraStrings(
     calculated = "Հաշվարկված",
     inferred = "Եզրակացված",
     confirmed = "Հաստատված",
-    rejectedStatus = "Մերժված"
+    rejectedStatus = "Մերժված",
+    error = "Սխալ"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

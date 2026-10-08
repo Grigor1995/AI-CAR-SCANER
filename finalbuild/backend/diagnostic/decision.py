@@ -110,6 +110,15 @@ class DiagnosticDecisionEngine:
 
         results_by_name = {self._recommendation_key(r.name) for r in session.recommendations}
         completed_ids = {str(r.test_id) for r in session.test_results}
+        # Rule analysis can regenerate DiagnosticTest UUIDs on every pass.
+        # Therefore completion must also be tracked by the stable test name,
+        # otherwise a just-completed recommendation can immediately reappear
+        # with a new UUID after re-analysis.
+        completed_names = {
+            self._recommendation_key(r.test_name)
+            for r in session.test_results
+            if r.test_name
+        }
         existing_recommendation_ids = {self._recommendation_key(r.name): r.id for r in session.recommendations}
         evidence_text = " ".join(e.fact.lower() for e in session.evidence)
 
@@ -120,6 +129,8 @@ class DiagnosticDecisionEngine:
             if not matched:
                 continue
             existing_id = existing_recommendation_ids.get(self._recommendation_key(spec.name))
+            if self._recommendation_key(spec.name) in completed_names:
+                continue
             if self._recommendation_key(spec.name) in results_by_name and existing_id and str(existing_id) in completed_ids:
                 continue
 

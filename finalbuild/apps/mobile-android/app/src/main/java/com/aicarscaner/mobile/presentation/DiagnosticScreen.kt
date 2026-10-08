@@ -17,16 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
@@ -432,7 +424,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     enabled = !state.loading
                                 ) {
                                     Icon(
-                                        imageVector = NoteAdd,
+                                        imageVector = AddCircleOutline,
                                         contentDescription = text.newSession,
                                         tint = MaterialTheme.colorScheme.onSurface
                                     )

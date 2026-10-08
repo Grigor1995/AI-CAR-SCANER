@@ -21,6 +21,13 @@ class DiagnosticApiClient {
     }
   }
 
+  Future<List<Map<String, dynamic>>> listSessions({int limit = 50}) async {
+    final response = await _dio.get('/api/v1/sessions', queryParameters: {'limit': limit});
+    return ((response.data as List?) ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
   Future<Map<String, dynamic>> createSession({Map<String, dynamic>? vehicle}) async {
     final response = await _dio.post('/api/v1/sessions', data: vehicle);
     return Map<String, dynamic>.from(response.data as Map);

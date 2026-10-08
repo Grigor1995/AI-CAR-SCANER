@@ -783,7 +783,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Button(
                                     onClick = {
                                         viewModel.updateVehicle(
-                                            VehicleDto(make, model, year.toIntOrNull(), engine, buildList {
+                                            VehicleDto(make, model, chassis, year.toIntOrNull(), engine, buildList {
                                                 if (petrol) add("petrol")
                                                 if (lpg) add("LPG")
                                             }, ecu)

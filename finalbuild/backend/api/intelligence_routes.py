@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Query
 from pydantic import BaseModel
 from uuid import UUID
 from diagnostic.models import EvidenceSource, TestResult
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from api.state import sessions
+from diagnostic.localization import localize_session_analysis
 from diagnostic.localization import localize_session_analysis
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["diagnostic-intelligence"])
@@ -26,10 +27,11 @@ def ingest_text(session_id: str, request: IngestTextRequest):
     return engine.ingest_text(sessions[session_id], request.text, request.source)
 
 @router.post("/sessions/{session_id}/analyze")
-def analyze(session_id: str):
+def analyze(session_id: str, language: str = Query("en")):
     if session_id not in sessions:
         raise HTTPException(404, "Session not found")
-    return engine.analyze(sessions[session_id])
+    result = engine.analyze(sessions[session_id])
+    return localize_session_analysis(result, language)
 
 @router.post("/sessions/{session_id}/test-results")
 def add_test_result(

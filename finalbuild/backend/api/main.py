@@ -20,6 +20,7 @@ from api.multi_bus_routes import router as multi_bus_router
 from api.network_discovery_routes import router as network_discovery_router
 from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
+from api.vehicle_catalog_routes import router as vehicle_catalog_router
 app=FastAPI(title="AI Auto Diagnostic Platform",version="0.1.0")
 
 @app.on_event("startup")
@@ -49,6 +50,7 @@ app.include_router(multi_bus_router)
 app.include_router(network_discovery_router)
 app.include_router(active_discovery_router)
 app.include_router(device_router)
+app.include_router(vehicle_catalog_router)
 @app.get('/health')
 def health(): return {'status':'ok','service':'diagnostic-api','version':'0.1.0'}
 @app.post('/api/v1/sessions',response_model=DiagnosticSession)

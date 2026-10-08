@@ -136,6 +136,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var liveDataRunning by remember { mutableStateOf(false) }
     var liveData by remember { mutableStateOf<LiveDataSnapshot?>(null) }
     var liveDataError by remember { mutableStateOf<String?>(null) }
+    var testResultDialogOpen by remember { mutableStateOf(false) }
+    var selectedTestId by remember { mutableStateOf<String?>(null) }
+    var selectedTestTitle by remember { mutableStateOf("") }
+    var testOutcome by remember { mutableStateOf("INCONCLUSIVE") }
+    var testNotes by remember { mutableStateOf("") }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
@@ -292,6 +297,56 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 },
                 dismissButton = {
                     TextButton(onClick = { newSessionConfirmOpen = false }) {
+                        Text(text.cancel)
+                    }
+                }
+            )
+        }
+
+        if (testResultDialogOpen) {
+            AlertDialog(
+                onDismissRequest = { testResultDialogOpen = false },
+                title = { Text(selectedTestTitle) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(text.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
+                        OutlinedTextField(
+                            value = testOutcome,
+                            onValueChange = { testOutcome = it.uppercase() },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(extra.nextDiagnosticResult) },
+                            placeholder = { Text(extra.resultPlaceholder) }
+                        )
+                        OutlinedTextField(
+                            value = testNotes,
+                            onValueChange = { testNotes = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            maxLines = 6,
+                            label = { Text(text.diagnosticNotes) },
+                            placeholder = { Text(extra.notesPlaceholder) }
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val id = selectedTestId
+                            if (id != null) {
+                                testResultDialogOpen = false
+                                viewModel.recordTestResult(
+                                    id,
+                                    testOutcome,
+                                    testNotes.takeIf { it.isNotBlank() },
+                                    appSettings.language.code
+                                )
+                            }
+                        },
+                        enabled = selectedTestId != null && testOutcome.isNotBlank() && !state.loading
+                    ) { Text(extra.recordResult) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { testResultDialogOpen = false }) {
                         Text(text.cancel)
                     }
                 }
@@ -1055,6 +1110,45 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
 
                                 if (session.recommendations.isNotEmpty()) {
+                                    val nextTest = session.recommendations.first()
+
+                                    Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f)
+                                        )
+                                    ) {
+                                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text(text.nextDiagnostic, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                            Text(nextTest.title, fontWeight = FontWeight.Medium)
+                                            Text(nextTest.purpose, style = MaterialTheme.typography.bodySmall)
+                                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = {
+                                                        selectedTestId = nextTest.id
+                                                        selectedTestTitle = nextTest.title
+                                                        testOutcome = "INCONCLUSIVE"
+                                                        testNotes = ""
+                                                        testResultDialogOpen = true
+                                                    },
+                                                    enabled = !state.loading,
+                                                    modifier = Modifier.weight(1f)
+                                                ) { Text(extra.recordResult, maxLines = 1) }
+
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        selectedTab = 3
+                                                        liveDataError = null
+                                                        if (obdConnected) liveDataRunning = true
+                                                    },
+                                                    enabled = !state.loading,
+                                                    modifier = Modifier.weight(1f)
+                                                ) { Text(extra.openLiveData, maxLines = 1) }
+                                            }
+                                        }
+                                    }
+
                                     Text(text.recommendedTests, style = MaterialTheme.typography.titleMedium)
                                     session.recommendations.forEachIndexed { index, recommendation ->
                                         Card(
@@ -1087,6 +1181,30 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 }
                                                 recommendation.expected_observation?.takeIf { it.isNotBlank() }?.let {
                                                     Text(it, style = MaterialTheme.typography.bodySmall)
+                                                }
+
+                                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            selectedTestId = recommendation.id
+                                                            selectedTestTitle = recommendation.title
+                                                            testOutcome = "INCONCLUSIVE"
+                                                            testNotes = ""
+                                                            testResultDialogOpen = true
+                                                        },
+                                                        enabled = !state.loading,
+                                                        modifier = Modifier.weight(1f)
+                                                    ) { Text(extra.recordResult, maxLines = 1) }
+
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            selectedTab = 3
+                                                            liveDataError = null
+                                                            if (obdConnected) liveDataRunning = true
+                                                        },
+                                                        enabled = !state.loading,
+                                                        modifier = Modifier.weight(1f)
+                                                    ) { Text(extra.openLiveData, maxLines = 1) }
                                                 }
                                             }
                                         }

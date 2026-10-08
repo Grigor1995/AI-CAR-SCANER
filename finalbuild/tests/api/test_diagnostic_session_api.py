@@ -80,7 +80,9 @@ def test_create_add_symptom_dtc_and_analyze():
     assert "mechanical cylinder condition" in categories
     assert all("confirmed coil failure" not in item["statement"].lower() for item in body["hypotheses"])
     assert body["recommendations"]
-    assert any(item["priority_score"] > 0 for item in body["recommendations"])
+    assert all(item["priority_score"] > 0 for item in body["recommendations"])
+    assert all(item["expected_information_gain"] > 0 for item in body["recommendations"])
+    assert all(item["estimated_cost"] > 0 for item in body["recommendations"])
 
 
 def test_legacy_symptom_payload_is_accepted():
@@ -209,7 +211,11 @@ def test_recommendations_and_test_result_follow_requested_language():
     localized = result.json()
     assert localized["recommendations"]
     assert all(item["name"] not in english_names for item in localized["recommendations"])
+    assert all(item["expected_information_gain"] > 0 for item in localized["recommendations"])
+    assert all(item["estimated_cost"] > 0 for item in localized["recommendations"])
     assert any("Թեստի արդյունք" in item["fact"] for item in localized["evidence"])
+    assert any(item.get("test_name") for item in localized["test_results"])
+    assert any(item["result"] == "ԱՆՑԱՎ" or item["result"] == "ՉԱՆՑԱՎ" for item in localized["test_results"])
 
     after_statuses = {item["category"]: item["status"] for item in localized["hypotheses"]}
     assert any(

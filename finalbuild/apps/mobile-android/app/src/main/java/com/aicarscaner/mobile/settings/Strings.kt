@@ -132,7 +132,16 @@ data class AppExtraStrings(
     val inferred: String = "Inferred",
     val confirmed: String = "Confirmed",
     val rejectedStatus: String = "Rejected",
-    val error: String = "Error"
+    val error: String = "Error",
+    val nextDiagnostic: String = "Next diagnostic step",
+    val diagnosticNotes: String = "Technician notes / result",
+    val notesPlaceholder: String = "Enter measurements, observations, or test result",
+    val recordResult: String = "Record result",
+    val openLiveData: String = "Open Live Data",
+    val pass: String = "PASS",
+    val fail: String = "FAIL",
+    val inconclusive: String = "INCONCLUSIVE",
+    val notTested: String = "NOT TESTED"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -169,7 +178,16 @@ private val ruExtra = AppExtraStrings(
     inferred = "Выведено",
     confirmed = "Подтверждено",
     rejectedStatus = "Отклонено",
-    error = "Ошибка"
+    error = "Ошибка",
+    nextDiagnostic = "Следующий диагностический шаг",
+    diagnosticNotes = "Заметки техника / результат",
+    notesPlaceholder = "Введите измерения, наблюдения или результат теста",
+    recordResult = "Записать результат",
+    openLiveData = "Открыть Live Data",
+    pass = "ПРОЙДЕН",
+    fail = "НЕ ПРОЙДЕН",
+    inconclusive = "НЕОДНОЗНАЧНО",
+    notTested = "НЕ ТЕСТИРОВАЛОСЬ"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -206,7 +224,16 @@ private val hyExtra = AppExtraStrings(
     inferred = "Եզրակացված",
     confirmed = "Հաստատված",
     rejectedStatus = "Մերժված",
-    error = "Սխալ"
+    error = "Սխալ",
+    nextDiagnostic = "Հաջորդ ախտորոշիչ քայլը",
+    diagnosticNotes = "Տեխնիկի նշումներ / արդյունք",
+    notesPlaceholder = "Մուտքագրեք չափումները, դիտարկումները կամ թեստի արդյունքը",
+    recordResult = "Գրանցել արդյունքը",
+    openLiveData = "Բացել Live Data",
+    pass = "ԱՆՑԱՎ",
+    fail = "ՉԱՆՑԱՎ",
+    inconclusive = "ԱՆՈՐՈՇ",
+    notTested = "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

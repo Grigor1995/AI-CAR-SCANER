@@ -94,7 +94,83 @@ data class AppStrings(
     val possible: String,
     val supportedByTest: String,
     val disfavoredByTest: String,
-    val rejected: String
+    val rejected: String,
+    val extra: AppExtraStrings = AppExtraStrings()
+)
+
+data class AppExtraStrings(
+    val vehicleNotIdentified: String = "Vehicle not identified",
+    val state: String = "State",
+    val symptomExample: String = "Example: Shakes on LPG below 2000 RPM under load; petrol is normal",
+    val symptomItem: String = "Symptom",
+    val diagnosticTroubleCode: String = "Diagnostic trouble code",
+    val obdAdapters: String = "Bluetooth + Wi-Fi + USB OBD adapters",
+    val connectingBluetooth: String = "Connecting Bluetooth...",
+    val bluetoothError: String = "Bluetooth error",
+    val enterWifiHost: String = "Enter Wi-Fi host",
+    val connectingWifi: String = "Connecting Wi-Fi...",
+    val wifiError: String = "Wi-Fi error",
+    val usbPermissionRequested: String = "USB permission requested",
+    val usbManagerUnavailable: String = "USB manager unavailable",
+    val connectingUsb: String = "Connecting USB...",
+    val usbError: String = "USB error",
+    val rpmValue: String = "RPM",
+    val rpmReadFailed: String = "RPM read failed",
+    val dtcValue: String = "DTC",
+    val dtcReadFailed: String = "DTC read failed",
+    val hypotheses: String = "Hypotheses",
+    val unknownError: String = "unknown",
+    val liveDataReadFailed: String = "Live Data read failed"
+)
+
+private val ruExtra = AppExtraStrings(
+    vehicleNotIdentified = "Автомобиль не определён",
+    state = "Состояние",
+    symptomExample = "Пример: на LPG двигатель трясётся ниже 2000 об/мин под нагрузкой; на бензине работает нормально",
+    symptomItem = "Симптом",
+    diagnosticTroubleCode = "Диагностический код неисправности",
+    obdAdapters = "OBD-адаптеры Bluetooth + Wi-Fi + USB",
+    connectingBluetooth = "Подключение Bluetooth...",
+    bluetoothError = "Ошибка Bluetooth",
+    enterWifiHost = "Введите Wi-Fi хост",
+    connectingWifi = "Подключение Wi-Fi...",
+    wifiError = "Ошибка Wi-Fi",
+    usbPermissionRequested = "Запрошено разрешение USB",
+    usbManagerUnavailable = "USB Manager недоступен",
+    connectingUsb = "Подключение USB...",
+    usbError = "Ошибка USB",
+    rpmValue = "Обороты",
+    rpmReadFailed = "Не удалось прочитать обороты",
+    dtcValue = "DTC",
+    dtcReadFailed = "Не удалось прочитать DTC",
+    hypotheses = "Гипотезы",
+    unknownError = "неизвестная ошибка",
+    liveDataReadFailed = "Не удалось прочитать Live Data"
+)
+
+private val hyExtra = AppExtraStrings(
+    vehicleNotIdentified = "Մեքենան չի նույնականացվել",
+    state = "Վիճակ",
+    symptomExample = "Օրինակ՝ LPG-ով շարժիչը ցնցվում է 2000 պտ/րոպե-ից ցածր՝ բեռնվածության տակ, իսկ բենզինով աշխատում է նորմալ",
+    symptomItem = "Ախտանշան",
+    diagnosticTroubleCode = "Դիագնոստիկ սխալի կոդ",
+    obdAdapters = "Bluetooth + Wi-Fi + USB OBD ադապտերներ",
+    connectingBluetooth = "Bluetooth-ի միացում...",
+    bluetoothError = "Bluetooth-ի սխալ",
+    enterWifiHost = "Մուտքագրեք Wi-Fi host-ը",
+    connectingWifi = "Wi-Fi-ի միացում...",
+    wifiError = "Wi-Fi-ի սխալ",
+    usbPermissionRequested = "USB թույլտվությունը պահանջվել է",
+    usbManagerUnavailable = "USB Manager-ը հասանելի չէ",
+    connectingUsb = "USB-ի միացում...",
+    usbError = "USB-ի սխալ",
+    rpmValue = "Պտույտներ",
+    rpmReadFailed = "Չհաջողվեց կարդալ RPM-ը",
+    dtcValue = "DTC",
+    dtcReadFailed = "Չհաջողվեց կարդալ DTC-ները",
+    hypotheses = "Հիպոթեզներ",
+    unknownError = "անհայտ սխալ",
+    liveDataReadFailed = "Live Data-ի ընթերցումը ձախողվեց"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {
@@ -111,7 +187,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Поток данных","Обороты","Запустить Live Data","Остановить Live Data","OBD не подключен","Нет данных в реальном времени",
         "Скорость","Охлаждающая жидкость","Нагрузка двигателя","Температура воздуха","MAF","MAP","Дроссель","STFT","LTFT",
         "Доказательства","Поддерживающие доказательства","Противоречащие доказательства","Уверенность","Следующие диагностические вопросы","Информационная ценность","Риск","Оценочная стоимость","Предпосылки","Меры безопасности","Целевые гипотезы",
-        "Начать новую сессию?","Данные текущей сессии будут очищены с экрана приложения.","Возможно","Поддержано тестом","Ослаблено тестом","Отклонено"
+        "Начать новую сессию?","Данные текущей сессии будут очищены с экрана приложения.","Возможно","Поддержано тестом","Ослаблено тестом","Отклонено", ruExtra
     )
     AppLanguage.HY -> AppStrings(
         "AI CAR SCANER","Նոր սեսիա","Կարգավորումներ","Ախտորոշում","Սեսիա","OBD","Վերլուծություն","Գործողություններ",
@@ -126,7 +202,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Կենդանի տվյալներ","Պտույտներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
         "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT",
         "Ապացույցներ","Աջակցող ապացույցներ","Հակասող ապացույցներ","Վստահություն","Հաջորդ հարցեր","Տեղեկատվական արժեք","Ռիսկ","Մոտավոր արժեք","Նախապայմաններ","Անվտանգության նշումներ","Թիրախ հիպոթեզներ",
-        "Սկսե՞լ նոր սեսիա","Ընթացիկ սեսիայի տվյալները կհեռացվեն էկրանից։","Հնարավոր","Թեստով աջակցվում է","Թեստով թուլացվել է","Մերժված"
+        "Սկսե՞լ նոր սեսիա","Ընթացիկ սեսիայի տվյալները կհեռացվեն էկրանից։","Հնարավոր","Թեստով աջակցվում է","Թեստով թուլացվել է","Մերժված", hyExtra
     )
     AppLanguage.EN -> AppStrings(
         "AI CAR SCANER","New Session","Settings","Diagnose","Session","OBD","Analysis","Activity",
@@ -141,6 +217,6 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Live Data","RPM","Start Live Data","Stop Live Data","OBD is not connected","No live data available",
         "Speed","Coolant","Engine load","Intake air","MAF","MAP","Throttle","STFT","LTFT",
         "Evidence","Supporting evidence","Contradicting evidence","Confidence","Next diagnostic questions","Information gain","Risk","Estimated cost","Prerequisites","Safety notes","Target hypotheses",
-        "Start a new session?","The current session data will be cleared from the app screen.","Possible","Supported by test","Disfavored by test","Rejected"
+        "Start a new session?","The current session data will be cleared from the app screen.","Possible","Supported by test","Disfavored by test","Rejected", AppExtraStrings()
     )
 }

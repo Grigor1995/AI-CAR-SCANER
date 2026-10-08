@@ -32,7 +32,7 @@ final class DiagnosticAPI {
     func createSession(_ v: Vehicle) async throws -> DiagnosticSession { try await request("/api/v1/sessions", method:"POST", body:v) }
     func updateVehicle(_ id:String,_ v:Vehicle) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/vehicle",method:"PUT",body:v) }
     func addSymptom(_ id:String,_ value:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/symptoms",method:"POST",body:SymptomRequest(raw_text:value,normalized:[:],symptom:value)) }
-    func deleteSymptom(_ id:String,_ sid:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/symptoms/\(sid)",method:"DELETE") }
+    func updateSymptom(_ id:String,_ sid:String,_ value:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\\(id)/symptoms/\\(sid)",method:"PUT",body:SymptomRequest(raw_text:value,normalized:[:],symptom:value)) }\n    func deleteSymptom(_ id:String,_ sid:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/symptoms/\(sid)",method:"DELETE") }
     func addDTC(_ id:String,_ code:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/dtcs",method:"POST",body:DTCRequest(code:code.uppercased())) }
     func deleteDTC(_ id:String,_ did:String) async throws -> DiagnosticSession { try await request("/api/v1/sessions/\(id)/dtcs/\(did)",method:"DELETE") }
     func analyze(_ id:String,_ language:AppLanguage) async throws -> DiagnosticSession { try await request("/api/v1/analysis/\(id)",method:"POST",query:[URLQueryItem(name:"language",value:language.rawValue)]) }

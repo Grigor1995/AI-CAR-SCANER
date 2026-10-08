@@ -22,7 +22,7 @@ final class DiagnosticViewModel: ObservableObject {
     func newSession(_ v:Vehicle) async { await execute{try await self.api.createSession(v)} }
     func updateVehicle(_ v:Vehicle) async { guard let id=session?.session_id else{return};await execute{try await self.api.updateVehicle(id,v)} }
     func addSymptom(_ x:String) async {guard let id=session?.session_id else{return};await execute{try await self.api.addSymptom(id,x)}}
-    func deleteSymptom(_ x:Symptom) async {guard let id=session?.session_id else{return};await execute{try await self.api.deleteSymptom(id,x.id)}}
+    func updateSymptom(_ x:Symptom,_ value:String) async {guard let id=session?.session_id else{return};await execute{try await self.api.updateSymptom(id,x.id,value)}}\n    func deleteSymptom(_ x:Symptom) async {guard let id=session?.session_id else{return};await execute{try await self.api.deleteSymptom(id,x.id)}}
     func addDTC(_ x:String) async {guard let id=session?.session_id else{return};await execute{try await self.api.addDTC(id,x)}}
     func deleteDTC(_ x:DTC) async {guard let id=session?.session_id,let did=x.id else{return};await execute{try await self.api.deleteDTC(id,did)}}
     func analyze() async {guard let id=session?.session_id else{return};await execute{try await self.api.analyze(id,self.settings.language)}}

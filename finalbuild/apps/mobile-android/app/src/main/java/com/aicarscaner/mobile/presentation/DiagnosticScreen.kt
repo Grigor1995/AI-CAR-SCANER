@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.ContextCompat
+import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.obd.BluetoothObdClient
 import com.aicarscaner.mobile.data.obd.LiveDataReader
@@ -232,8 +233,50 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     LaunchedEffect(Unit) {
+        viewModel.loadVehicleCatalog()
         refreshBluetoothDevices()
         refreshUsbDevices()
+    }
+
+    fun applyRemoteMake(value: String): Boolean {
+        val remoteModels = modelOptionsFor(state.vehicleCatalog, value)
+        if (remoteModels.isEmpty()) return false
+        make = value
+        model = remoteModels.first()
+        chassis = chassisOptionsFor(state.vehicleCatalog, make, model).firstOrNull().orEmpty()
+        year = yearOptionsFor(state.vehicleCatalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
+        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        return true
+    }
+
+    fun applyRemoteModel(value: String): Boolean {
+        val remoteChassis = chassisOptionsFor(state.vehicleCatalog, make, value)
+        if (remoteChassis.isEmpty()) return false
+        model = value
+        chassis = remoteChassis.first()
+        year = yearOptionsFor(state.vehicleCatalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
+        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        return true
+    }
+
+    fun applyRemoteChassis(value: String): Boolean {
+        val years = yearOptionsFor(state.vehicleCatalog, make, model, value)
+        if (years.isEmpty()) return false
+        chassis = value
+        year = years.first().toString()
+        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        return true
+    }
+
+    fun applyRemoteEngine(value: String): Boolean {
+        val ecus = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, value, year.toIntOrNull())
+        if (ecus.isEmpty()) return false
+        engine = value
+        ecu = ecus.first()
+        return true
     }
 
     val obdConnected =
@@ -450,37 +493,49 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         text,
                         make,
                         onMake = { value ->
-                            make = value
-                            val nextModel = modelOptionsFor(value).firstOrNull()
-                            model = nextModel?.name.orEmpty()
-                            chassis = nextModel?.chassis.orEmpty()
-                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
-                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
-                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            if (!applyRemoteMake(value)) {
+                                make = value
+                                val nextModel = modelOptionsFor(value).firstOrNull()
+                                model = nextModel?.name.orEmpty()
+                                chassis = nextModel?.chassis.orEmpty()
+                                year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                                engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                                ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            }
                         },
                         model,
                         onModel = { value ->
-                            model = value
-                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
-                            chassis = nextModel?.chassis.orEmpty()
-                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
-                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
-                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            if (!applyRemoteModel(value)) {
+                                model = value
+                                val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
+                                chassis = nextModel?.chassis.orEmpty()
+                                year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                                engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                                ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            }
                         },
                         chassis,
                         onChassis = { value ->
-                            chassis = value
-                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == model && it.chassis == value }
-                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
-                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
-                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            if (!applyRemoteChassis(value)) {
+                                chassis = value
+                                val nextModel = modelOptionsFor(make).firstOrNull { it.name == model && it.chassis == value }
+                                year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                                engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                                ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                            }
                         },
                         year,
-                        onYear = { year = it },
+                        onYear = { value ->
+                            year = value
+                            ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull()
+                                ?: ecuOptionsFor(make, model, chassis, engine).firstOrNull().orEmpty()
+                        },
                         engine,
                         onEngine = {
-                            engine = it
-                            ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
+                            if (!applyRemoteEngine(it)) {
+                                engine = it
+                                ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
+                            }
                         },
                         ecu,
                         onEcu = { ecu = it },
@@ -750,39 +805,51 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             if (editingVehicle) {
                                 VehicleFields(
                                     text = text,
+                                    catalog = state.vehicleCatalog,
                                     make = make,
                                     onMake = { value ->
-                                        make = value
-                                        val nextModel = modelOptionsFor(value).firstOrNull()
-                                        model = nextModel?.name.orEmpty()
-                                        val nextChassis = nextModel?.let { chassisOptionsFor(value, it.name).firstOrNull()?.chassis }.orEmpty()
-                                        chassis = nextChassis
-                                        year = yearOptionsFor(value, model, chassis).firstOrNull()?.toString().orEmpty()
-                                        engine = engineOptionsFor(value, model, chassis).firstOrNull()?.name.orEmpty()
-                                        ecu = ecuOptionsFor(value, model, chassis, engine).firstOrNull().orEmpty()
+                                        if (!applyRemoteMake(value)) {
+                                            make = value
+                                            val nextModel = modelOptionsFor(value).firstOrNull()
+                                            model = nextModel?.name.orEmpty()
+                                            chassis = nextModel?.chassis.orEmpty()
+                                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                                        }
                                     },
                                     model = model,
                                     onModel = { value ->
-                                        model = value
-                                        val nextChassis = chassisOptionsFor(make, value).firstOrNull()?.chassis.orEmpty()
-                                        chassis = nextChassis
-                                        year = yearOptionsFor(make, value, chassis).firstOrNull()?.toString().orEmpty()
-                                        engine = engineOptionsFor(make, value, chassis).firstOrNull()?.name.orEmpty()
-                                        ecu = ecuOptionsFor(make, value, chassis, engine).firstOrNull().orEmpty()
+                                        if (!applyRemoteModel(value)) {
+                                            model = value
+                                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
+                                            chassis = nextModel?.chassis.orEmpty()
+                                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
+                                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
+                                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
+                                        }
                                     },
                                     chassis = chassis,
                                     onChassis = { value ->
-                                        chassis = value
-                                        year = yearOptionsFor(make, model, value).firstOrNull()?.toString().orEmpty()
-                                        engine = engineOptionsFor(make, model, value).firstOrNull()?.name.orEmpty()
-                                        ecu = ecuOptionsFor(make, model, value, engine).firstOrNull().orEmpty()
+                                        if (!applyRemoteChassis(value)) {
+                                            chassis = value
+                                            year = yearOptionsFor(make, model, value).firstOrNull()?.toString().orEmpty()
+                                            engine = engineOptionsFor(make, model, value).firstOrNull()?.name.orEmpty()
+                                            ecu = ecuOptionsFor(make, model, value, engine).firstOrNull().orEmpty()
+                                        }
                                     },
                                     year = year,
-                                    onYear = { year = it },
+                                    onYear = { value ->
+                                        year = value
+                                        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull()
+                                            ?: ecuOptionsFor(make, model, chassis, engine).firstOrNull().orEmpty()
+                                    },
                                     engine = engine,
                                     onEngine = {
-                                        engine = it
-                                        ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
+                                        if (!applyRemoteEngine(it)) {
+                                            engine = it
+                                            ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
+                                        }
                                     },
                                     ecu = ecu,
                                     onEcu = { ecu = it },
@@ -1465,6 +1532,7 @@ private fun LiveDataTile(
 @Composable
 private fun VehicleFields(
     text: com.aicarscaner.mobile.settings.AppStrings,
+    catalog: List<VehicleCatalogEntryDto>,
     make: String,
     onMake: (String) -> Unit,
     model: String,
@@ -1482,12 +1550,14 @@ private fun VehicleFields(
     lpg: Boolean,
     onLpg: (Boolean) -> Unit
 ) {
-    val makes = vehicleCatalog.map { it.name }
-    val models = modelOptionsFor(make).map { it.name }.distinct()
-    val chassisOptions = chassisOptionsFor(make, model).map { it.chassis }
-    val years = yearOptionsFor(make, model, chassis).map(Int::toString)
-    val engines = engineOptionsFor(make, model, chassis).map { it.name }
-    val ecus = ecuOptionsFor(make, model, chassis, engine)
+    val makes = modelOptionsFor(catalog, make).let { 
+        catalog.map { it.make }.distinct().sorted().ifEmpty { vehicleCatalog.map { it.name } }
+    }
+    val models = modelOptionsFor(catalog, make).ifEmpty { modelOptionsFor(make).map { it.name }.distinct() }
+    val chassisOptions = chassisOptionsFor(catalog, make, model).ifEmpty { chassisOptionsFor(make, model).map { it.chassis } }
+    val years = yearOptionsFor(catalog, make, model, chassis).map(Int::toString).ifEmpty { yearOptionsFor(make, model, chassis).map(Int::toString) }
+    val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).ifEmpty { engineOptionsFor(make, model, chassis).map { it.name } }
+    val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).ifEmpty { ecuOptionsFor(make, model, chassis, engine) }
 
     VehicleSelectionField(text.make, make, makes, onMake)
     VehicleSelectionField(text.model, model, models, onModel)

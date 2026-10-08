@@ -12,6 +12,52 @@ class DiagnosticApiClient {
 
   final Dio _dio;
 
+
+  Future<List<String>> catalogMakes() async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/makes');
+    return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
+  Future<List<String>> catalogModels(String make) async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/models', queryParameters: {'make': make});
+    return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
+  Future<List<String>> catalogChassis(String make, String model) async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/chassis', queryParameters: {'make': make, 'model': model});
+    return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
+  Future<List<int>> catalogYears(String make, String model, {String? chassis}) async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/years', queryParameters: {
+      'make': make,
+      'model': model,
+      if (chassis != null && chassis.isNotEmpty) 'chassis': chassis,
+    });
+    return ((response.data as List?) ?? const []).map((e) => (e as num).toInt()).toList();
+  }
+
+  Future<List<String>> catalogEngines(String make, String model, {int? year, String? chassis}) async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/engines', queryParameters: {
+      'make': make,
+      'model': model,
+      if (year != null) 'year': year,
+      if (chassis != null && chassis.isNotEmpty) 'chassis': chassis,
+    });
+    return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
+  Future<List<String>> catalogEcus(String make, String model, String engine, {int? year, String? chassis}) async {
+    final response = await _dio.get('/api/v1/vehicle-catalog/ecus', queryParameters: {
+      'make': make,
+      'model': model,
+      'engine': engine,
+      if (year != null) 'year': year,
+      if (chassis != null && chassis.isNotEmpty) 'chassis': chassis,
+    });
+    return ((response.data as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
   Future<bool> health() async {
     try {
       final response = await _dio.get('/health');

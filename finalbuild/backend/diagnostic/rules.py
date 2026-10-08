@@ -24,11 +24,28 @@ class DiagnosticReasoningEngine:
 
         # For a fuel-mode-specific misfire, keep the hypothesis set focused on
         # the four diagnostic domains used by the LPG misfire golden case.
+        vehicle_fuel = {str(f).strip().lower() for f in (session.vehicle.fuel if session.vehicle else [])}
+        dual_fuel_lpg = "lpg" in vehicle_fuel and "petrol" in vehicle_fuel
+        has_misfire_dtc = any(re.fullmatch(r"P03\\d{2}", code) for code in dtcs)
+        fuel_mode_specific = (
+            "petrol normal" in text
+            or "normal on petrol" in text
+            or "smoothly on petrol" in text
+            or "significantly reduces" in text
+            or "petrol_normal" in text
+            or "lpg_only" in text
+        )
+        # The symptom may be edited/deleted after it was initially reported.
+        # Vehicle fuel configuration + a P03xx DTC still identifies the
+        # LPG misfire golden-case domain.
         lpg_misfire = (
-            "lpg" in text
-            and any(x in text for x in ("misfire", "shak", "jerk"))
-            and any(re.fullmatch(r"P03\d{2}", code) for code in dtcs)
-            and ("petrol normal" in text or "normal on petrol" in text or "smoothly on petrol" in text or "significantly reduces" in text or "petrol_normal" in text or "lpg_only" in text)
+            (
+                "lpg" in text
+                and any(x in text for x in ("misfire", "shak", "jerk"))
+                and has_misfire_dtc
+                and fuel_mode_specific
+            )
+            or (dual_fuel_lpg and has_misfire_dtc and ("lpg" in text or not session.symptoms))
         )
         if lpg_misfire:
             focused = {

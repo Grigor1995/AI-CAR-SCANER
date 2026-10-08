@@ -42,9 +42,12 @@ class DiagnosticIntelligenceEngine:
         self.decision.refresh_recommendations(session)
         if not session.recommendations and rule_recommendations:
             completed_ids = {str(item.test_id) for item in session.test_results}
-            session.recommendations = [
+            remaining = [
                 item for item in rule_recommendations if str(item.id) not in completed_ids
             ]
+            session.recommendations = self.decision.enrich_external_recommendations(
+                session, remaining
+            )
         if session.recommendations:
             session.state = SessionState.TESTING
         elif any(x.get("event") == "QUESTIONS_IDENTIFIED" for x in session.audit_log[-3:]):

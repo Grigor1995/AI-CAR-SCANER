@@ -1,7 +1,15 @@
 from diagnostic.models import DiagnosticSession
 from device.manager import vci_manager
+from diagnostic.session_persistence import persistence
 
-# In-memory session registry for the current API process.
-# VCI connection management is handled by the acquisition/device services;
-# api.state must not import a legacy vehicle.devices module that no longer exists.
+# Fast in-process registry used by the diagnostic engines.
+# The configured database is the durable/shared source of truth.
 sessions: dict[str, DiagnosticSession] = {}
+
+
+def load_persisted_sessions() -> None:
+    sessions.update(persistence.load())
+
+
+def persist_sessions() -> None:
+    persistence.save_all(sessions)

@@ -172,9 +172,84 @@ RECOMMENDATION_TRANSLATIONS = {
         "Check ignition performance under LPG load": ("Ստուգել բոցավառումը LPG բեռնվածության տակ", "Պարզել՝ արդյոք բոցավառման բարձր պահանջը կապված է բացթողումների հետ։"),
         "Inspect intake system for an air leak": ("Ստուգել ներծծման համակարգը օդի արտահոսքի համար", "Պարզել՝ կա՞ չչափված օդ, որը դրսևորվում է նշված ռեժիմում։"),
         "Compare cylinder-specific misfire counters and compression evidence": ("Համեմատել բալոնային բացթողումների հաշվիչներն ու կոմպրեսիան", "Պարզել՝ խնդիրը մնում է կոնկրետ բալոնին կապված և կա՞ մեխանիկական ապացույց։"),
+        "Check for unmetered-air leak": ("Ստուգել չչափված օդի արտահոսքը", "Պարզել՝ կա՞ օդի արտահոսք, որը մտնում է շարժիչ՝ սպասվող չափումից դուրս։"),
+        "Measure fuel pressure under load": ("Չափել վառելիքի ճնշումը բեռնվածության տակ", "Ստուգել՝ անհրաժեշտ վառելիքի ճնշումը պահպանվո՞ւմ է ախտանշանի պահին։"),
+        "Check injector leakage / fuel pressure": ("Ստուգել ֆորսունկաների հոսակորուստը և վառելիքի ճնշումը", "Տարբերակել ավելցուկային վառելիքի մատակարարումը ճնշման խնդրից։"),
+        "Compare lambda response and fuel trims": ("Համեմատել lambda-ի արձագանքը և fuel trim-երը", "Պարզել խառնուրդի բնույթը և հետադարձ կապի կայունությունը։"),
+        "Check O2 sensor response and heater behavior": ("Ստուգել O2 սենսորի արձագանքը և տաքացուցիչի աշխատանքը", "Ստուգել արձագանքի արագությունը, ազդանշանի տրամաբանությունը և տաքացուցիչը։"),
+        "Compare upstream/downstream O2 behavior after warm-up": ("Տաքանալուց հետո համեմատել կատալիզատորից առաջ և հետո O2-ի աշխատանքը", "Կատալիզատորի անսարքության եզրակացությունից առաջ ստուգել մոնիթորինգի պայմանները։"),
+        "Compare ECU coolant temperature with independent measurement": ("Համեմատել ECU-ի հովացուցիչ հեղուկի ջերմաստիճանը անկախ չափման հետ", "Տարբերակել սենսորի խնդիրը շարժիչի իրական ջերմաստիճանից։"),
+        "Verify cooling fan command and actual fan operation": ("Ստուգել օդափոխիչի հրամանը և փաստացի աշխատանքը", "Պարզել՝ օդափոխիչի միացումը համապատասխանում է չափված ջերմաստիճանին։"),
+        "Compare cam/crank correlation data and timing values": ("Համեմատել ռասպրեդվալ/կոլենվալ համաժամացման և ֆազերի տվյալները", "Ստուգել համաժամացումը՝ մինչև մեխանիկական միջամտությունը։"),
+        "Compare commanded gear, actual gear and slip": ("Համեմատել պահանջված և իրական փոխանցումն ու սայթաքումը", "Պարզել փոխանցման հարաբերակցության շեղման բնույթը։"),
+        "Check transmission fluid temperature and pressure evidence": ("Ստուգել ATF-ի ջերմաստիճանը և ճնշման տվյալները", "Կապել ախտանշանը աշխատանքային ջերմաստիճանի և հասանելի հիդրավլիկ տվյալների հետ։"),
+        "Measure battery voltage at rest and during crank": ("Չափել մարտկոցի լարումը հանգստի և մեկնարկի պահին", "Ստուգել լարման բավարարությունն ու կայունությունը մեկնարկիչի բեռնվածության տակ։"),
+        "Measure charging voltage under electrical load": ("Չափել լիցքավորման լարումը էլեկտրական բեռնվածության տակ", "Ստուգել գեներատորի և կարգավորիչի աշխատանքը բեռնվածության ժամանակ։"),
+        "Capture CAN traffic and verify ECU/gateway responses": ("Գրանցել CAN տրաֆիկը և ստուգել ECU/gateway-ի պատասխանները", "Տարբերակել շղթայի, gateway-ի և ECU հասանելիության խնդիրները։"),
+        "Verify engine speed, battery voltage and start authorization": ("Ստուգել շարժիչի RPM-ը, մարտկոցի լարումը և գործարկման թույլտվությունը", "Տարբերակել RPM ազդանշանի, սնուցման և թույլտվության խնդիրները։"),
+        "Correlate stall event with RPM, fuel pressure and ECU status": ("Շարժիչի կանգը համադրել RPM-ի, վառելիքի ճնշման և ECU վիճակի հետ", "Պարզել պատճառի հնարավոր տարածքը կանգի պահին։"),
+        "Compare idle fuel trims, MAF/MAP and misfire counters": ("Պարապ ընթացքի ժամանակ համեմատել fuel trim-երը, MAF/MAP-ը և բացթողումների հաշվիչները", "Տարբերակել օդի, խառնուրդի, բոցավառման և մեխանիկական պատճառների ներդրումը։"),
     },
 }
 
+
+EVIDENCE_STATUS_LABELS = {
+    "ru": {
+        "reported": "заявлено",
+        "measured": "измерено",
+        "calculated": "рассчитано",
+        "inferred": "выведено",
+        "confirmed": "подтверждено",
+        "rejected": "отклонено",
+    },
+    "hy": {
+        "reported": "հայտարարված",
+        "measured": "չափված",
+        "calculated": "հաշվարկված",
+        "inferred": "եզրակացված",
+        "confirmed": "հաստատված",
+        "rejected": "մերժված",
+    },
+}
+
+AUDIT_EVENT_LABELS = {
+    "ru": {
+        "VEHICLE_UPDATED": "Автомобиль обновлён",
+        "SYMPTOM_ADDED": "Добавлен симптом",
+        "DTC_ADDED": "Добавлен DTC",
+        "DTC_UPDATED": "DTC обновлён",
+        "DTC_DELETED": "DTC удалён",
+        "INTELLIGENCE_ANALYSIS_COMPLETED": "Диагностический анализ завершён",
+        "DECISION_PLAN_UPDATED": "План диагностики обновлён",
+        "TEST_RESULT_INTERPRETED": "Результат теста интерпретирован",
+        "LIVE_DATA_SAMPLES_RECEIVED": "Получены Live Data",
+        "TELEMETRY_ANALYSIS_COMPLETED": "Анализ телеметрии завершён",
+        "DEVICE_BOUND": "Диагностическое устройство подключено",
+        "VIN_RECEIVED": "VIN получен",
+        "OBD_SESSION_SYNC": "OBD-сессия синхронизирована",
+    },
+    "hy": {
+        "VEHICLE_UPDATED": "Մեքենայի տվյալները թարմացվել են",
+        "SYMPTOM_ADDED": "Ավելացվել է ախտանշան",
+        "DTC_ADDED": "Ավելացվել է DTC",
+        "DTC_UPDATED": "DTC-ն թարմացվել է",
+        "DTC_DELETED": "DTC-ն ջնջվել է",
+        "INTELLIGENCE_ANALYSIS_COMPLETED": "Ախտորոշիչ վերլուծությունն ավարտվել է",
+        "DECISION_PLAN_UPDATED": "Ախտորոշման պլանը թարմացվել է",
+        "TEST_RESULT_INTERPRETED": "Թեստի արդյունքը մեկնաբանվել է",
+        "LIVE_DATA_SAMPLES_RECEIVED": "Ստացվել են Live Data տվյալներ",
+        "TELEMETRY_ANALYSIS_COMPLETED": "Տելեմետրիայի վերլուծությունն ավարտվել է",
+        "DEVICE_BOUND": "Ախտորոշիչ սարքը միացվել է",
+        "VIN_RECEIVED": "VIN-ը ստացվել է",
+        "OBD_SESSION_SYNC": "OBD սեսիան համաժամացվել է",
+    },
+}
+
+def _localized_evidence_status(status: str, language: str) -> str:
+    return EVIDENCE_STATUS_LABELS.get(language, {}).get(status, status)
+
+def _localized_event(event: str, language: str) -> str:
+    return AUDIT_EVENT_LABELS.get(language, {}).get(event, event)
 
 def normalize_language(language: str | None) -> str:
     return LANGUAGE_ALIASES.get((language or "en").strip().lower(), "en")
@@ -238,7 +313,11 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         if translated:
             recommendation.name, recommendation.purpose = translated
 
+    for evidence in result.evidence:
+        evidence.status = _localized_evidence_status(str(evidence.status), language)
+
     for event in result.audit_log:
+        event["event"] = _localized_event(event.get("event", ""), language)
         questions = event.get("questions")
         if questions:
             event["questions"] = [_localized_question(q, language) for q in questions]

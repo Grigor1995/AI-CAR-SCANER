@@ -251,6 +251,76 @@ def _localized_evidence_status(status: str, language: str) -> str:
 def _localized_event(event: str, language: str) -> str:
     return AUDIT_EVENT_LABELS.get(language, {}).get(event, event)
 
+HYPOTHESIS_LABELS = {
+    "ru": {
+        "LPG injection": "Форсунки LPG",
+        "LPG calibration": "Калибровка LPG",
+        "ignition under LPG load": "Зажигание под нагрузкой LPG",
+        "ignition": "Зажигание",
+        "load-dependent combustion": "Сгорание под нагрузкой",
+        "intake": "Впуск",
+        "lean mixture": "Бедная смесь",
+        "rich mixture": "Богатая смесь",
+        "oxygen sensor / fuel feedback": "Лямбда-зонд / обратная связь по смеси",
+        "catalyst efficiency": "Эффективность катализатора",
+        "coolant temperature sensing": "Датчик температуры охлаждающей жидкости",
+        "cooling system": "Система охлаждения",
+        "cam/crank correlation": "Синхронизация распредвала / коленвала",
+        "transmission control / gear ratio": "Управление АКПП / передаточное отношение",
+        "power supply / voltage": "Питание / напряжение",
+        "electrical power supply": "Электропитание",
+        "vehicle network communication": "Связь по сети автомобиля",
+        "starting system / engine start": "Система запуска двигателя",
+        "engine stalling": "Остановка двигателя",
+        "air metering / MAF": "Измерение воздуха / MAF",
+        "idle stability / air-fuel control": "Стабильность холостого хода / управление смесью",
+    },
+    "hy": {
+        "LPG injection": "LPG ֆորսունկաներ",
+        "LPG calibration": "LPG կարգավորում",
+        "ignition under LPG load": "Բոցավառում LPG բեռնվածության տակ",
+        "ignition": "Բոցավառում",
+        "load-dependent combustion": "Այրում բեռնվածության տակ",
+        "intake": "Ներծծման համակարգ",
+        "lean mixture": "Նիհար խառնուրդ",
+        "rich mixture": "Հարուստ խառնուրդ",
+        "oxygen sensor / fuel feedback": "Թթվածնի սենսոր / վառելիքի հետադարձ կապ",
+        "catalyst efficiency": "Կատալիզատորի արդյունավետություն",
+        "coolant temperature sensing": "Հովացուցիչ հեղուկի ջերմաստիճանի չափում",
+        "cooling system": "Սառեցման համակարգ",
+        "cam/crank correlation": "Ռասպրեդվալ / կոլենվալ համաժամացում",
+        "transmission control / gear ratio": "Ավտոմատ փոխանցման կառավարում / փոխանցման հարաբերակցություն",
+        "power supply / voltage": "Սնուցում / լարում",
+        "electrical power supply": "Էլեկտրական սնուցում",
+        "vehicle network communication": "Մեքենայի ցանցային կապ",
+        "starting system / engine start": "Գործարկման համակարգ / շարժիչի մեկնարկ",
+        "engine stalling": "Շարժիչի կանգ",
+        "air metering / MAF": "Օդի չափում / MAF",
+        "idle stability / air-fuel control": "Պարապ ընթացքի կայունություն / խառնուրդի կառավարում",
+    },
+}
+
+def _localized_hypothesis_targets(targets: list[str], language: str) -> list[str]:
+    mapping = HYPOTHESIS_LABELS.get(language, {})
+    return [mapping.get(item, CATEGORY_LABELS.get(language, {}).get(item, item)) for item in targets]
+
+def _localized_safety_note(note: str, language: str) -> str:
+    if language == "ru":
+        return {
+            "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Следуйте процедурам производителя LPG; исключите утечки и источники воспламенения.",
+            "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Используйте изолированное/подходящее по классу измерительное оборудование и соблюдайте правила безопасности при работе с зажиганием.",
+            "Use the approved leak-test procedure and protect hot/electrical components.": "Используйте утверждённую процедуру проверки утечек и защищайте горячие/электрические компоненты.",
+            "Compression testing requires proper engine shutdown and manufacturer procedures.": "Проверка компрессии требует правильной остановки двигателя и соблюдения процедур производителя.",
+        }.get(note, note)
+    if language == "hy":
+        return {
+            "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Հետևեք LPG համակարգի արտադրողի ընթացակարգերին, բացառեք արտահոսքերը և բոցավառման աղբյուրները։",
+            "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Օգտագործեք մեկուսացված/համապատասխան դասի չափիչ սարքավորում և պահպանեք բոցավառման համակարգի անվտանգության կանոնները։",
+            "Use the approved leak-test procedure and protect hot/electrical components.": "Օգտագործեք արտահոսքի ստուգման հաստատված ընթացակարգը և պաշտպանեք տաք/էլեկտրական բաղադրիչները։",
+            "Compression testing requires proper engine shutdown and manufacturer procedures.": "Կոմպրեսիայի ստուգումը պահանջում է շարժիչի ճիշտ կանգնեցում և արտադրողի ընթացակարգերի պահպանում։",
+        }.get(note, note)
+    return note
+
 def normalize_language(language: str | None) -> str:
     return LANGUAGE_ALIASES.get((language or "en").strip().lower(), "en")
 
@@ -312,6 +382,12 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         translated = RECOMMENDATION_TRANSLATIONS.get(language, {}).get(recommendation.name)
         if translated:
             recommendation.name, recommendation.purpose = translated
+        recommendation.target_hypotheses = _localized_hypothesis_targets(
+            recommendation.target_hypotheses, language
+        )
+        recommendation.safety_notes = [
+            _localized_safety_note(note, language) for note in recommendation.safety_notes
+        ]
 
     for event in result.audit_log:
         event["event"] = _localized_event(event.get("event", ""), language)

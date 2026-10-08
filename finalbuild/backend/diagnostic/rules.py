@@ -223,62 +223,88 @@ class DiagnosticReasoningEngine:
         # not component verdicts.
         recommendations: list[DiagnosticTest] = []
 
-        def add(name: str, purpose: str, target: list[str], safety: list[str] | None = None, risk: str = "LOW") -> None:
+        def add(
+            name: str,
+            purpose: str,
+            target: list[str],
+            safety: list[str] | None = None,
+            risk: str = "LOW",
+            cost: float = 1.0,
+            information_gain: float | None = None,
+        ) -> None:
+            # Rule-driven recommendations must expose real decision metadata as
+            # well, instead of falling back to DiagnosticTest's zero defaults.
+            n = max(len(session.hypotheses), 1)
+            target_count = len(set(target) & {h.category for h in session.hypotheses})
+            coverage = min(max(target_count / n, 0.0), 1.0)
+            # Use a bounded uncertainty/value score. A small floor keeps
+            # single-hypothesis cases useful without pretending the test is fully
+            # discriminative.
+            if information_gain is None:
+                information_gain = round(0.25 + 0.75 * (1.0 - abs(0.5 - coverage) * 2.0), 4)
+            risk_penalty = {"LOW": 0.0, "MEDIUM": 0.10, "HIGH": 0.20}.get(risk, 0.15)
+            cost_penalty = min(max((cost - 1.0) / 4.0, 0.0), 1.0)
+            priority = round(
+                min(max(0.60 * information_gain + 0.25 * (1.0 - cost_penalty) + 0.15 * (1.0 - risk_penalty), 0.0), 1.0),
+                4,
+            )
             recommendations.append(DiagnosticTest(
                 name=name,
                 purpose=purpose,
                 safety_notes=safety or [],
                 target_hypotheses=target,
                 prerequisites=[],
-                priority_score=0.0,
+                priority_score=priority,
+                expected_information_gain=round(information_gain, 4),
+                estimated_cost=cost,
                 risk_level=risk,
             ))
 
         cats = {h.category for h in session.hypotheses}
         if "LPG fuel delivery / mixture" in cats:
-            add("Measure LPG pressure at idle and under load", "Determine whether gas pressure remains stable during the symptom window.", ["LPG fuel delivery / mixture"], ["Use approved LPG diagnostic procedures and keep ignition sources controlled."])
-            add("Compare STFT/LTFT on petrol versus LPG", "Separate a fuel-system-specific mixture problem from an engine-wide control problem.", ["LPG fuel delivery / mixture", "lean mixture", "rich mixture"])
-            add("Compare LPG injector contribution / balance", "Check whether one cylinder receives materially different LPG delivery.", ["LPG fuel delivery / mixture"], ["Follow LPG system manufacturer procedures."], "MEDIUM")
+            add("Measure LPG pressure at idle and under load", "Determine whether gas pressure remains stable during the symptom window.", ["LPG fuel delivery / mixture"], ["Use approved LPG diagnostic procedures and keep ignition sources controlled."], cost=1.5)
+            add("Compare STFT/LTFT on petrol versus LPG", "Separate a fuel-system-specific mixture problem from an engine-wide control problem.", ["LPG fuel delivery / mixture", "lean mixture", "rich mixture"], cost=1.0)
+            add("Compare LPG injector contribution / balance", "Check whether one cylinder receives materially different LPG delivery.", ["LPG fuel delivery / mixture"], ["Follow LPG system manufacturer procedures."], "MEDIUM", cost=2.0)
         if "ignition / combustion" in cats or "ignition under LPG load" in cats:
-            add("Compare cylinder misfire counters under the same load", "Determine whether the event remains isolated to a cylinder and under which fuel mode it occurs.", ["ignition / combustion", "ignition under LPG load"])
-            add("Check ignition performance under controlled load", "Correlate ignition behavior with the exact RPM/load/fuel condition where the misfire occurs.", ["ignition / combustion", "ignition under LPG load"], ["Use properly rated test equipment and workshop precautions."], "MEDIUM")
+            add("Compare cylinder misfire counters under the same load", "Determine whether the event remains isolated to a cylinder and under which fuel mode it occurs.", ["ignition / combustion", "ignition under LPG load"], cost=1.0)
+            add("Check ignition performance under controlled load", "Correlate ignition behavior with the exact RPM/load/fuel condition where the misfire occurs.", ["ignition / combustion", "ignition under LPG load"], ["Use properly rated test equipment and workshop precautions."], "MEDIUM", cost=2.0)
         if "air metering / MAF" in cats:
-            add("Validate MAF signal against RPM/load plausibility", "Determine whether the airflow signal is plausible across operating points.", ["air metering / MAF"])
-            add("Inspect intake and MAF wiring/connectors", "Separate wiring/connector faults from a sensor-signal problem.", ["air metering / MAF", "lean mixture"])
+            add("Validate MAF signal against RPM/load plausibility", "Determine whether the airflow signal is plausible across operating points.", ["air metering / MAF"], cost=1.0)
+            add("Inspect intake and MAF wiring/connectors", "Separate wiring/connector faults from a sensor-signal problem.", ["air metering / MAF", "lean mixture"], cost=1.0)
         if "lean mixture" in cats:
-            add("Check for unmetered-air leak", "Look for air entering downstream of the expected metering point.", ["lean mixture"])
-            add("Measure fuel pressure under load", "Verify that fuel delivery can maintain required pressure during the reported condition.", ["lean mixture"])
+            add("Check for unmetered-air leak", "Look for air entering downstream of the expected metering point.", ["lean mixture"], cost=1.5)
+            add("Measure fuel pressure under load", "Verify that fuel delivery can maintain required pressure during the reported condition.", ["lean mixture"], cost=2.0)
         if "rich mixture" in cats:
-            add("Check injector leakage / fuel pressure", "Separate excess fuel delivery from feedback or airflow-model errors.", ["rich mixture"])
-            add("Compare lambda response and fuel trims", "Determine whether the rich condition is persistent and how the feedback system responds.", ["rich mixture", "oxygen sensor / fuel feedback"])
+            add("Check injector leakage / fuel pressure", "Separate excess fuel delivery from feedback or airflow-model errors.", ["rich mixture"], cost=2.0)
+            add("Compare lambda response and fuel trims", "Determine whether the rich condition is persistent and how the feedback system responds.", ["rich mixture", "oxygen sensor / fuel feedback"], cost=1.5)
         if "oxygen sensor / fuel feedback" in cats:
-            add("Check O2 sensor response and heater behavior", "Validate sensor response speed, plausibility, and heater-related behavior.", ["oxygen sensor / fuel feedback"])
+            add("Check O2 sensor response and heater behavior", "Validate sensor response speed, plausibility, and heater-related behavior.", ["oxygen sensor / fuel feedback"], cost=2.0)
         if "catalyst efficiency" in cats:
-            add("Compare upstream/downstream O2 behavior after warm-up", "Verify catalyst-monitoring conditions before attributing low efficiency to the catalyst itself.", ["catalyst efficiency"])
+            add("Compare upstream/downstream O2 behavior after warm-up", "Verify catalyst-monitoring conditions before attributing low efficiency to the catalyst itself.", ["catalyst efficiency"], cost=1.5)
         if "coolant temperature sensing" in cats or "cooling system" in cats:
-            add("Compare ECU coolant temperature with independent measurement", "Separate sensor/rationality problems from actual thermal conditions.", ["coolant temperature sensing", "cooling system"])
-            add("Verify cooling fan command and actual fan operation", "Determine whether fan activation matches the measured temperature condition.", ["cooling system"])
+            add("Compare ECU coolant temperature with independent measurement", "Separate sensor/rationality problems from actual thermal conditions.", ["coolant temperature sensing", "cooling system"], cost=1.0)
+            add("Verify cooling fan command and actual fan operation", "Determine whether fan activation matches the measured temperature condition.", ["cooling system"], cost=1.0)
         if "cam/crank correlation" in cats:
-            add("Compare cam/crank correlation data and timing values", "Validate correlation before considering mechanical timing intervention.", ["cam/crank correlation"], ["Follow manufacturer timing and engine-running safety procedures."], "MEDIUM")
+            add("Compare cam/crank correlation data and timing values", "Validate correlation before considering mechanical timing intervention.", ["cam/crank correlation"], ["Follow manufacturer timing and engine-running safety procedures."], "MEDIUM", cost=2.5)
         if "transmission control / gear ratio" in cats:
-            add("Compare commanded gear, actual gear and slip", "Determine whether the ratio deviation is hydraulic, sensor-related, or control-related.", ["transmission control / gear ratio"])
-            add("Check transmission fluid temperature and pressure evidence", "Correlate the event with operating temperature and available hydraulic evidence.", ["transmission control / gear ratio"], ["Follow transmission service safety procedures."], "MEDIUM")
+            add("Compare commanded gear, actual gear and slip", "Determine whether the ratio deviation is hydraulic, sensor-related, or control-related.", ["transmission control / gear ratio"], cost=2.0)
+            add("Check transmission fluid temperature and pressure evidence", "Correlate the event with operating temperature and available hydraulic evidence.", ["transmission control / gear ratio"], ["Follow transmission service safety procedures."], "MEDIUM", cost=2.5)
         if "power supply / voltage" in cats or "electrical power supply" in cats:
-            add("Measure battery voltage at rest and during crank", "Determine whether battery voltage is adequate and stable during starting load.", ["power supply / voltage", "electrical power supply"])
-            add("Measure charging voltage under electrical load", "Check alternator/regulator behavior across representative loads.", ["power supply / voltage", "electrical power supply"])
+            add("Measure battery voltage at rest and during crank", "Determine whether battery voltage is adequate and stable during starting load.", ["power supply / voltage", "electrical power supply"], cost=1.0)
+            add("Measure charging voltage under electrical load", "Check alternator/regulator behavior across representative loads.", ["power supply / voltage", "electrical power supply"], cost=1.0)
         if "vehicle network communication" in cats:
-            add("Capture CAN traffic and verify ECU/gateway responses", "Separate bus integrity, gateway routing, ECU availability, and application-level faults.", ["vehicle network communication"])
+            add("Capture CAN traffic and verify ECU/gateway responses", "Separate bus integrity, gateway routing, ECU availability, and application-level faults.", ["vehicle network communication"], cost=2.5)
         if "starting system / engine start" in cats:
-            add("Verify engine speed, battery voltage and start authorization", "Separate crank/electrical/authorization issues before fuel or ignition parts are isolated.", ["starting system / engine start", "power supply / voltage"])
+            add("Verify engine speed, battery voltage and start authorization", "Separate crank/electrical/authorization issues before fuel or ignition parts are isolated.", ["starting system / engine start", "power supply / voltage"], cost=1.0)
         if "engine stalling" in cats:
-            add("Correlate stall event with RPM, fuel pressure and ECU status", "Determine whether the stall is caused by fuel, ignition, speed-signal, or control evidence.", ["engine stalling", "ignition / combustion"])
+            add("Correlate stall event with RPM, fuel pressure and ECU status", "Determine whether the stall is caused by fuel, ignition, speed-signal, or control evidence.", ["engine stalling", "ignition / combustion"], cost=1.0)
         if "idle stability / air-fuel control" in cats:
-            add("Compare idle fuel trims, MAF/MAP and misfire counters", "Separate air-fuel control from ignition and mechanical idle contributors.", ["idle stability / air-fuel control", "lean mixture", "air metering / MAF"])
+            add("Compare idle fuel trims, MAF/MAP and misfire counters", "Separate air-fuel control from ignition and mechanical idle contributors.", ["idle stability / air-fuel control", "lean mixture", "air metering / MAF"], cost=1.0)
 
         # Safe generic fallback for unknown scenarios.
         if not recommendations:
-            add("Collect baseline live data and reproduce the symptom", "Establish time-synchronized RPM, load, temperature, and relevant sensor evidence before narrowing the fault domain.", [])
-            add("Read ECU DTCs and freeze-frame data", "Obtain ECU-reported evidence and operating conditions associated with the event.", [])
+            add("Collect baseline live data and reproduce the symptom", "Establish time-synchronized RPM, load, temperature, and relevant sensor evidence before narrowing the fault domain.", [], cost=1.0)
+            add("Read ECU DTCs and freeze-frame data", "Obtain ECU-reported evidence and operating conditions associated with the event.", [], cost=1.0)
 
         session.recommendations = recommendations
         session.state = SessionState.TESTING

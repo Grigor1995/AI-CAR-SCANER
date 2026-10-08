@@ -32,20 +32,18 @@ const vehicleCatalog = <VehicleMakeOption>[
         VehicleEngineOption('M272 E35 3.5', ['ME9.7']),
         VehicleEngineOption('OM642 3.0 V6', ['CDI']),
       ]),
+      VehicleChassisOption('W212', [2009,2010,2011,2012,2013,2014,2015,2016], [
+        VehicleEngineOption('M271 1.8', ['ME9.7']),
+        VehicleEngineOption('M276 3.5 V6', ['MED17']),
+        VehicleEngineOption('OM651 2.1', ['CDI']),
+        VehicleEngineOption('OM642 3.0 V6', ['CDI']),
+      ]),
     ]),
     VehicleModelOption('C-Class', [
       VehicleChassisOption('W204', [2007,2008,2009,2010,2011,2012,2013,2014], [
         VehicleEngineOption('M271 1.8', ['ME9.7']),
         VehicleEngineOption('M272 3.5 V6', ['ME9.7']),
         VehicleEngineOption('OM651 2.1', ['CDI']),
-      ]),
-    ]),
-    VehicleModelOption('E-Class', [
-      VehicleChassisOption('W212', [2009,2010,2011,2012,2013,2014,2015,2016], [
-        VehicleEngineOption('M271 1.8', ['ME9.7']),
-        VehicleEngineOption('M276 3.5 V6', ['MED17']),
-        VehicleEngineOption('OM651 2.1', ['CDI']),
-        VehicleEngineOption('OM642 3.0 V6', ['CDI']),
       ]),
     ]),
   ]),

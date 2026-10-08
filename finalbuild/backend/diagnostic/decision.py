@@ -227,10 +227,19 @@ class DiagnosticDecisionEngine:
     def update_hypotheses_from_result(self, session: DiagnosticSession, test: DiagnosticTest | None, result: str) -> list[str]:
         if test is None:
             return []
-        text = result.lower()
+        text = result.strip().lower()
         supported: list[str] = []
-        positive = any(k in text for k in ("supports", "confirmed", "drops", "low", "unstable", "leak", "misfire reproduced", "fails"))
-        negative = any(k in text for k in ("normal", "stable", "no leak", "within spec", "passes"))
+        # Normalize the UI outcome values as well as free-form technician notes.
+        # PASS means the selected test did NOT show the targeted fault;
+        # FAIL means the targeted fault was observed.
+        positive = (
+            text in {"fail", "failed", "failure"}
+            or any(k in text for k in ("supports", "confirmed", "drops", "low", "unstable", "leak", "misfire reproduced", "fails"))
+        )
+        negative = (
+            text in {"pass", "passed", "normal", "stable", "within spec", "no leak"}
+            or any(k in text for k in ("normal", "stable", "no leak", "within spec", "passes"))
+        )
         for hypothesis in session.hypotheses:
             if hypothesis.category not in test.target_hypotheses:
                 continue

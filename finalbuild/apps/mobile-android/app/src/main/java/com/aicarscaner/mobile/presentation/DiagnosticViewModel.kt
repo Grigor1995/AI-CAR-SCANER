@@ -3,6 +3,7 @@ package com.aicarscaner.mobile.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
+import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import retrofit2.HttpException
 
 data class DiagnosticUiState(
     val session: DiagnosticSessionDto? = null,
+    val vehicleCatalog: List<VehicleCatalogEntryDto> = emptyList(),
     val loading: Boolean = false,
     val error: String? = null
 )
@@ -22,10 +24,27 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     private val _uiState = MutableStateFlow(DiagnosticUiState())
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
 
+    fun loadVehicleCatalog() {
+        viewModelScope.launch {
+            runCatching { repository.vehicleCatalog() }
+                .onSuccess { catalog ->
+                    _uiState.value = _uiState.value.copy(vehicleCatalog = catalog, error = null)
+                }
+                .onFailure { error ->
+                    // Keep the local emergency catalog available when the shared
+                    // database/API is temporarily unavailable.
+                    _uiState.value = _uiState.value.copy(
+                        error = error.message ?: "Vehicle catalog unavailable"
+                    )
+                }
+        }
+    }
+
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }
 
     fun clearSession() {
-        _uiState.value = DiagnosticUiState()
+        val catalog = _uiState.value.vehicleCatalog
+        _uiState.value = DiagnosticUiState(vehicleCatalog = catalog)
     }
 
     fun updateVehicle(vehicle: VehicleDto) = execute {
@@ -83,7 +102,11 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 val result = block()
-                _uiState.value = DiagnosticUiState(session = result, loading = false)
+                _uiState.value = DiagnosticUiState(
+                    session = result,
+                    vehicleCatalog = _uiState.value.vehicleCatalog,
+                    loading = false
+                )
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {

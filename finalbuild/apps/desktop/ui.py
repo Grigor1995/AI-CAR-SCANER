@@ -77,7 +77,7 @@ class VehicleDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent); self.setWindowTitle("Add Vehicle"); self.resize(460, 320)
         form = QFormLayout(self)
-        self.make = QLineEdit("Mercedes-Benz"); self.model = QLineEdit("W211")
+        self.make = QLineEdit("Mercedes-Benz"); self.model = QLineEdit("W211"); self.chassis = QLineEdit("W211")
         self.year = QSpinBox(); self.year.setRange(1950, 2100); self.year.setValue(2006)
         self.engine = QLineEdit("M272 3.5"); self.fuel = QLineEdit("Petrol,LPG"); self.ecu = QLineEdit("")
         form.addRow("Make", self.make); form.addRow("Model", self.model); form.addRow("Chassis", self.chassis); form.addRow("Year", self.year); form.addRow("Engine", self.engine); form.addRow("Fuel", self.fuel); form.addRow("ECU", self.ecu)
@@ -123,7 +123,7 @@ class VehiclesPage(QWidget):
         if not items: return
         v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
     def show_vehicle(self,v:Vehicle):
-        self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
+        self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
 class DiagnosticPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:

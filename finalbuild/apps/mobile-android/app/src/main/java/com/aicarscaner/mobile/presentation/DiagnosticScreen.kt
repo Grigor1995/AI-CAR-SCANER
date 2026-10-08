@@ -341,16 +341,18 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
-                        Button(
-                            onClick = { newSessionConfirmOpen = true },
-                            enabled = !state.loading && state.session != null,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text.newSession,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
+                        if (state.session != null) {
+                            Button(
+                                onClick = { newSessionConfirmOpen = true },
+                                enabled = !state.loading,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text.newSession,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }

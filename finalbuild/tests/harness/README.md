@@ -43,7 +43,7 @@ pytest -q tests/harness/test_performance.py -vv
 
 ## Performance targets
 
-- deterministic reasoning p95 < 100 ms
+- deterministic reasoning p95 < 90 ms
 - ordinary API p95 < 500 ms
 - DTC processing < 200 ms
 - RAG retrieval < 500 ms

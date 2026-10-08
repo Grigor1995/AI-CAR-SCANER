@@ -28,3 +28,20 @@ def test_global_case_contract():
     case = response.json()
     assert case["case_id"] == "LPG_MISFIRE_001"
     assert "P0302" in case["dtcs"]
+
+
+def test_global_data_returns_none_for_unknown_case():
+    assert global_data.case("DOES_NOT_EXIST") is None
+
+
+def test_global_data_snapshot_is_deep_copied():
+    snapshot = global_data.snapshot()
+    exported = snapshot.as_dict()
+    exported["vehicles"][0]["make"] = "MUTATED"
+    assert global_data.snapshot().vehicles[0]["make"] != "MUTATED"
+
+
+def test_global_data_api_returns_404_for_unknown_case():
+    client = TestClient(app)
+    response = client.get("/api/v1/global-data/cases/DOES_NOT_EXIST")
+    assert response.status_code == 404

@@ -305,22 +305,58 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Column {
-                        Text(text.appName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                        state.session?.let { Text("Session ${it.session_id.take(8)}…", style = MaterialTheme.typography.bodySmall) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(onClick = { settingsOpen = true }) {
-                            Text(text.settings)
+                        Text(
+                            text.appName,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        state.session?.let {
+                            Text(
+                                "Session ${it.session_id.take(8)}…",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
-                        if (state.session != null) {
-                            Button(onClick = { newSessionConfirmOpen = true }, enabled = !state.loading) {
-                                Text(text.newSession)
-                            }
+                    }
+
+                    // Keep the two primary actions on their own row so long
+                    // Armenian labels cannot squeeze, clip, or make a button
+                    // effectively untappable on smaller screens.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { settingsOpen = true },
+                            enabled = !state.loading,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text.settings,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (state.session != null) {
+                                    newSessionConfirmOpen = true
+                                } else {
+                                    resetForNewSession()
+                                }
+                            },
+                            enabled = !state.loading,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text.newSession,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }

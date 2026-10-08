@@ -35,6 +35,9 @@ class DiagnosticApiClient:
     def create_session(self, vehicle: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/api/v1/sessions", json=vehicle)
 
+    def vehicle_catalog_entries(self) -> list[dict[str, Any]]:
+        return self._request("GET", "/api/v1/vehicle-catalog/entries")
+
     def get_session(self, session_id: str) -> dict[str, Any]:
         return self._request("GET", f"/api/v1/sessions/{session_id}")
 

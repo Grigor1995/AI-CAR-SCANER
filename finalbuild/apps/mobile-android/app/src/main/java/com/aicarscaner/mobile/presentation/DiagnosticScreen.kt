@@ -749,38 +749,48 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             if (editingVehicle) {
                                 VehicleFields(
-                        text,
-                        make,
-                        onMake = { value ->
-                            make = value
-                            val nextModel = modelOptionsFor(value).firstOrNull()
-                            model = nextModel?.name.orEmpty()
-                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
-                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
-                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
-                        },
-                        model,
-                        onModel = { value ->
-                            model = value
-                            val nextModel = modelOptionsFor(make).firstOrNull { it.name == value }
-                            year = nextModel?.years?.firstOrNull()?.toString().orEmpty()
-                            engine = nextModel?.engines?.firstOrNull()?.name.orEmpty()
-                            ecu = nextModel?.engines?.firstOrNull()?.ecus?.firstOrNull().orEmpty()
-                        },
-                        year,
-                        onYear = { year = it },
-                        engine,
-                        onEngine = {
-                            engine = it
-                            ecu = ecuOptionsFor(make, model, it).firstOrNull().orEmpty()
-                        },
-                        ecu,
-                        onEcu = { ecu = it },
-                        petrol,
-                        onPetrol = { petrol = it },
-                        lpg,
-                        onLpg = { lpg = it }
-                    )
+                                    text = text,
+                                    make = make,
+                                    onMake = { value ->
+                                        make = value
+                                        val nextModel = modelOptionsFor(value).firstOrNull()
+                                        model = nextModel?.name.orEmpty()
+                                        val nextChassis = nextModel?.let { chassisOptionsFor(value, it.name).firstOrNull()?.chassis }.orEmpty()
+                                        chassis = nextChassis
+                                        year = yearOptionsFor(value, model, chassis).firstOrNull()?.toString().orEmpty()
+                                        engine = engineOptionsFor(value, model, chassis).firstOrNull()?.name.orEmpty()
+                                        ecu = ecuOptionsFor(value, model, chassis, engine).firstOrNull().orEmpty()
+                                    },
+                                    model = model,
+                                    onModel = { value ->
+                                        model = value
+                                        val nextChassis = chassisOptionsFor(make, value).firstOrNull()?.chassis.orEmpty()
+                                        chassis = nextChassis
+                                        year = yearOptionsFor(make, value, chassis).firstOrNull()?.toString().orEmpty()
+                                        engine = engineOptionsFor(make, value, chassis).firstOrNull()?.name.orEmpty()
+                                        ecu = ecuOptionsFor(make, value, chassis, engine).firstOrNull().orEmpty()
+                                    },
+                                    chassis = chassis,
+                                    onChassis = { value ->
+                                        chassis = value
+                                        year = yearOptionsFor(make, model, value).firstOrNull()?.toString().orEmpty()
+                                        engine = engineOptionsFor(make, model, value).firstOrNull()?.name.orEmpty()
+                                        ecu = ecuOptionsFor(make, model, value, engine).firstOrNull().orEmpty()
+                                    },
+                                    year = year,
+                                    onYear = { year = it },
+                                    engine = engine,
+                                    onEngine = {
+                                        engine = it
+                                        ecu = ecuOptionsFor(make, model, chassis, it).firstOrNull().orEmpty()
+                                    },
+                                    ecu = ecu,
+                                    onEcu = { ecu = it },
+                                    petrol = petrol,
+                                    onPetrol = { petrol = it },
+                                    lpg = lpg,
+                                    onLpg = { lpg = it }
+                                )
                                 Button(
                                     onClick = {
                                         viewModel.updateVehicle(

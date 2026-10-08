@@ -38,7 +38,13 @@ class DiagnosticIntelligenceEngine:
         self._annotate_scores(session)
         self._add_missing_questions(session)
         session.state = SessionState.QUESTIONS_PENDING if session.audit_log and session.audit_log[-1].get("event") == "QUESTIONS_IDENTIFIED" else SessionState.INITIAL_ANALYSIS
+        rule_recommendations = list(session.recommendations)
         self.decision.refresh_recommendations(session)
+        if not session.recommendations and rule_recommendations:
+            completed_ids = {str(item.test_id) for item in session.test_results}
+            session.recommendations = [
+                item for item in rule_recommendations if str(item.id) not in completed_ids
+            ]
         if session.recommendations:
             session.state = SessionState.TESTING
         elif any(x.get("event") == "QUESTIONS_IDENTIFIED" for x in session.audit_log[-3:]):

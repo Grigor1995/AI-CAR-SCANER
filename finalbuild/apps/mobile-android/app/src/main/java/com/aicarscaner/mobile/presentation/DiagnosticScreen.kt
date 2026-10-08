@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -412,22 +409,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 onClick = { settingsOpen = true },
                                 enabled = !state.loading
                             ) {
-                                Icon(
-                                    imageVector = Settings,
-                                    contentDescription = text.settings,
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
+                                Text("⚙", style = MaterialTheme.typography.titleLarge)
                             }
                             if (state.session != null) {
                                 IconButton(
                                     onClick = { newSessionConfirmOpen = true },
                                     enabled = !state.loading
                                 ) {
-                                    Icon(
-                                        imageVector = AddCircleOutline,
-                                        contentDescription = text.newSession,
-                                        tint = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Text("+", style = MaterialTheme.typography.titleLarge)
                                 }
                             }
                         }

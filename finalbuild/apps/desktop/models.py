@@ -6,6 +6,7 @@ from typing import Any
 class Vehicle:
     make: str
     model: str
+    chassis: str = ""
     year: int | None = None
     engine: str = ""
     fuel: list[str] = field(default_factory=list)

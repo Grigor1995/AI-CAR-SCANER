@@ -318,7 +318,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         )
                         state.session?.let {
                             Text(
-                                "Session ${it.session_id.take(8)}…",
+                                "${text.extra.session} ${it.session_id.take(8)}…",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -654,7 +654,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         Text("${text.year}: ${session.vehicle?.year ?: "—"}")
                                         Text("${text.engine}: ${session.vehicle?.engine ?: "—"}")
                                         Text("${text.fuel}: ${session.vehicle?.fuel?.joinToString(" + ") { fuel -> when (fuel.lowercase()) { "petrol" -> text.petrol; "lpg" -> text.lpg; else -> fuel } }.orEmpty()}")
-                                        Text("ECU: ${session.vehicle?.ecu ?: "—"}")
+                                        Text("${extra.ecu}: ${session.vehicle?.ecu ?: "—"}")
                                     }
                                 }
                             }

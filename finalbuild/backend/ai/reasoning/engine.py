@@ -57,10 +57,14 @@ class DiagnosticIntelligenceEngine:
             status=EvidenceStatus.MEASURED, confidence=0.95, metadata={"test_id": str(test_id), "measurements": measurements}
         ))
         selected_test = next((x for x in session.recommendations if x.id == test_id), None)
-        self.decision.update_hypotheses_from_result(session, selected_test, result)
+        # Free-form technician notes are part of the result evidence. This lets
+        # entries such as "pressure drops" or "no leak, stable" affect the
+        # targeted hypotheses even when the UI outcome is left inconclusive.
+        interpretation_text = " ".join(x for x in (result, notes or "") if x)
+        self.decision.update_hypotheses_from_result(session, selected_test, interpretation_text)
         analyzed = self.analyze(session)
         # Re-apply the test interpretation after re-analysis so regenerated hypotheses retain the measured-result effect.
-        supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, result)
+        supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, interpretation_text)
         analyzed.audit_log.append({"event": "TEST_RESULT_INTERPRETED", "test_id": str(test_id), "supported_hypotheses": supported})
         analyzed.state = SessionState.HYPOTHESIS_VALIDATION
         return analyzed

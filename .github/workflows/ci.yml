@@ -20,7 +20,7 @@ jobs:
       - run: pytest -q
       - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=60
       - run: python -m compileall backend
-      - run: python tools/import_check.py
+      - run: python backend/tools/import_check.py
 
   desktop:
     runs-on: ubuntu-latest

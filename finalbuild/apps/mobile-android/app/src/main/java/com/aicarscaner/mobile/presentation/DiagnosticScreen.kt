@@ -108,6 +108,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var settingsOpen by remember { mutableStateOf(false) }
     var newSessionConfirmOpen by remember { mutableStateOf(false) }
     val text = strings(appSettings.language)
+    val extra = text.extra
 
     val bluetoothClient = remember { BluetoothObdClient() }
     val wifiClient = remember { WifiObdClient() }
@@ -240,7 +241,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     it.engineLoadPct == null
                 ) text.noLiveData else null
             }.onFailure {
-                liveDataError = it.message ?: "Live Data read failed"
+                liveDataError = it.message ?: extra.liveDataReadFailed
             }
             delay(1200)
         }
@@ -407,8 +408,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     ) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(text.session, style = MaterialTheme.typography.labelLarge)
-                            Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: "Vehicle not identified")
-                            Text("State: ${session.state}", style = MaterialTheme.typography.bodySmall)
+                            Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: extra.vehicleNotIdentified)
+                            Text("${extra.state}: ${session.state}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
 
@@ -432,7 +433,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 minLines = 3,
                                 maxLines = 5,
                                 label = { Text(text.driverSymptom) },
-                                placeholder = { Text("Example: Shakes on LPG below 2000 RPM under load; petrol is normal") },
+                                placeholder = { Text(extra.symptomExample) },
                                 supportingText = { Text("${symptom.length}/500") }
                             )
 
@@ -475,7 +476,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         )
                                     ) {
                                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        Text("Symptom ${index + 1}", style = MaterialTheme.typography.labelLarge)
+                                        Text("${extra.symptomItem} ${index + 1}", style = MaterialTheme.typography.labelLarge)
                                         Text(item.raw_text)
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Button(
@@ -509,7 +510,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 value = dtc,
                                 onValueChange = { dtc = it.uppercase() },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Diagnostic trouble code") },
+                                label = { Text(extra.diagnosticTroubleCode) },
                                 placeholder = { Text("P0302") }
                             )
 
@@ -650,9 +651,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text(text.vehicle, style = MaterialTheme.typography.labelLarge)
                                         Text("${session.vehicle?.make.orEmpty()} ${session.vehicle?.model.orEmpty()}")
-                                        Text("Year: ${session.vehicle?.year ?: "—"}")
-                                        Text("Engine: ${session.vehicle?.engine ?: "—"}")
-                                        Text("Fuel: ${session.vehicle?.fuel?.joinToString(" + ").orEmpty()}")
+                                        Text("${text.year}: ${session.vehicle?.year ?: "—"}")
+                                        Text("${text.engine}: ${session.vehicle?.engine ?: "—"}")
+                                        Text("${text.fuel}: ${session.vehicle?.fuel?.joinToString(" + ").orEmpty()}")
                                         Text("ECU: ${session.vehicle?.ecu ?: "—"}")
                                     }
                                 }
@@ -667,7 +668,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                         2 -> {
                             Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
-                            Text("Bluetooth + Wi-Fi + USB OBD adapters")
+                            Text(extra.obdAdapters)
                             Text("${text.obdConnection}: ${obdStatus}", fontWeight = FontWeight.Medium)
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -703,10 +704,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                             scope.launch {
                                                                 closeAllObd()
                                                                 obdTransport = "bluetooth"
-                                                                obdStatus = "Connecting Bluetooth..."
+                                                                obdStatus = extra.connectingBluetooth
                                                                 bluetoothClient.connect(device)
                                                                     .onSuccess { obdStatus = it }
-                                                                    .onFailure { obdStatus = "Bluetooth error: ${it.message ?: "unknown"}" }
+                                                                    .onFailure { obdStatus = "${extra.bluetoothError}: ${it.message ?: extra.unknownError}" }
                                                             }
                                                         },
                                                         enabled = !bluetoothClient.isConnected
@@ -739,12 +740,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 obdTransport = "wifi"
                                                 val port = wifiPort.toIntOrNull() ?: 35000
                                                 if (wifiHost.isBlank()) {
-                                                    obdStatus = "Enter Wi-Fi host"
+                                                    obdStatus = extra.enterWifiHost
                                                 } else {
-                                                    obdStatus = "Connecting Wi-Fi..."
+                                                    obdStatus = extra.connectingWifi
                                                     wifiClient.connect(wifiHost, port)
                                                         .onSuccess { obdStatus = it }
-                                                        .onFailure { obdStatus = "Wi-Fi error: ${it.message ?: "unknown"}" }
+                                                        .onFailure { obdStatus = "${extra.wifiError}: ${it.message ?: extra.unknownError}" }
                                                 }
                                             }
                                         },
@@ -786,7 +787,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                                     PendingIntent.FLAG_IMMUTABLE
                                                                 )
                                                                 manager.requestPermission(device, pending)
-                                                                obdStatus = "USB permission requested"
+                                                                obdStatus = extra.usbPermissionRequested
                                                             }
                                                         }) { Text(text.requestUsbAccess) }
                                                         Button(
@@ -794,14 +795,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                                 scope.launch {
                                                                     val manager = context.getSystemService(UsbManager::class.java)
                                                                     if (manager == null) {
-                                                                        obdStatus = "USB manager unavailable"
+                                                                        obdStatus = extra.usbManagerUnavailable
                                                                     } else {
                                                                         closeAllObd()
                                                                         obdTransport = "usb"
-                                                                        obdStatus = "Connecting USB..."
+                                                                        obdStatus = extra.connectingUsb
                                                                         usbClient.connect(manager, device)
                                                                             .onSuccess { obdStatus = it }
-                                                                            .onFailure { obdStatus = "USB error: ${it.message ?: "unknown"}" }
+                                                                            .onFailure { obdStatus = "${extra.usbError}: ${it.message ?: extra.unknownError}" }
                                                                     }
                                                                 }
                                                             },
@@ -823,8 +824,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 "bluetooth" -> bluetoothClient.command("010C")
                                                 "wifi" -> wifiClient.readRpm()
                                                 else -> usbClient.readRpm()
-                                            }.onSuccess { obdResponse = "RPM: ${it}" }
-                                                .onFailure { obdResponse = "RPM read failed: ${it.message ?: "unknown"}" }
+                                            }.onSuccess { obdResponse = "${extra.rpmValue}: ${it}" }
+                                                .onFailure { obdResponse = "${extra.rpmReadFailed}: ${it.message ?: extra.unknownError}" }
                                         }
                                     }) { Text(text.readRpm) }
                                     Button(onClick = {
@@ -833,8 +834,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 "bluetooth" -> bluetoothClient.command("03")
                                                 "wifi" -> wifiClient.readDtcs()
                                                 else -> usbClient.readDtcs()
-                                            }.onSuccess { obdResponse = "DTC: ${it}" }
-                                                .onFailure { obdResponse = "DTC read failed: ${it.message ?: "unknown"}" }
+                                            }.onSuccess { obdResponse = "${extra.dtcValue}: ${it}" }
+                                                .onFailure { obdResponse = "${extra.dtcReadFailed}: ${it.message ?: extra.unknownError}" }
                                         }
                                     }) { Text(text.readDtcs) }
                                     Button(onClick = { closeAllObd() }) { Text(text.disconnect) }
@@ -1121,7 +1122,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     ) {
                                         Column(Modifier.padding(12.dp)) {
                                             Text(event.event, style = MaterialTheme.typography.labelLarge)
-                                            event.hypotheses?.let { Text("Hypotheses: ${it}", style = MaterialTheme.typography.bodySmall) }
+                                            event.hypotheses?.let { Text("${extra.hypotheses}: ${it}", style = MaterialTheme.typography.bodySmall) }
                                         }
                                     }
                                 }

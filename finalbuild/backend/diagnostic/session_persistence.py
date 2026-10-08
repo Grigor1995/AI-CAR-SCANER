@@ -72,6 +72,20 @@ class DiagnosticSessionPersistence:
             log.exception("Failed to load persisted diagnostic sessions")
         return loaded
 
+    def save_one(self, session_id: str, session: DiagnosticSession) -> None:
+        """Persist one session immediately for cross-process/client visibility."""
+        if not self.enabled or self.engine is None:
+            return
+        with DbSession(self.engine) as db:
+            payload = session.model_dump(mode="json")
+            row = db.get(DiagnosticSessionStateRow, session_id)
+            if row is None:
+                db.add(DiagnosticSessionStateRow(session_id=session_id, payload=payload))
+            else:
+                row.payload = payload
+                row.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
     def save_all(self, sessions: dict[str, DiagnosticSession]) -> None:
         if not self.enabled or self.engine is None:
             return

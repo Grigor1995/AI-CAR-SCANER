@@ -1,5 +1,9 @@
 name: CI
-on:\n  push:\n  pull_request:\n  workflow_dispatch:
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   python:
@@ -11,11 +15,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
       - run: pip install -r backend/requirements-dev.txt
       - run: pytest -q
+      - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml --cov-fail-under=60
       - run: python -m compileall backend
-      - run: python tools/import_check.py
+      - run: python backend/tools/import_check.py
 
   desktop:
     runs-on: ubuntu-latest
@@ -26,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
       - run: pip install -r apps/desktop/requirements.txt
       - run: python -m py_compile apps/desktop/ui.py
       - run: python -m py_compile apps/desktop/main.py
@@ -41,6 +46,6 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
       - run: chmod +x gradlew
       - run: ./gradlew assembleDebug

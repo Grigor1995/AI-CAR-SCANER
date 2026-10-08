@@ -153,3 +153,21 @@ The final system should preserve this invariant:
 > **No AI component is allowed to manufacture vehicle evidence. AI may interpret, retrieve, rank, explain or suggest; measurements and confirmed conclusions must remain traceable to evidence and diagnostic tests.**
 
 That invariant is the architectural identity of the product.
+
+
+## Implemented remediation
+
+The previously identified issues have now been addressed in the implementation:
+
+- **Shared session state:** the API session registry is now backed by shared persistence. With DATABASE_URL, PostgreSQL is the source of truth rather than a desktop/mobile-local store.
+- **Single-session persistence:** persistence exposes save_one() so new sessions are immediately durable and visible to other API processes/clients.
+- **Client-independent global data:** canonical vehicle/test data lives under data/global/ and is exposed through /api/v1/global-data. Desktop and Android are consumers, not owners.
+- **Test harness:** global-data contract tests, golden diagnostic cases and deterministic performance tests were added.
+- **Coverage:** CI now runs pytest-cov and enforces a whole-backend minimum line coverage gate of 60%.
+- **Performance:** the deterministic reasoning harness measures p50/p95 and enforces a p95 budget of 100 ms.
+
+## Remaining deliberate limitations
+
+- Concurrent writes to the same diagnostic session are still last-write-wins. A future optimistic version column/ETag can provide conflict detection.
+- Physical VCI transports remain phase-dependent; the simulator remains the deterministic integration adapter.
+- RAG currently has a lexical active path; vector/embedding infrastructure remains an extension point.

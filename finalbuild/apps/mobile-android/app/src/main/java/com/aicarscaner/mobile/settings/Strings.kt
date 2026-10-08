@@ -120,7 +120,10 @@ data class AppExtraStrings(
     val dtcReadFailed: String = "DTC read failed",
     val hypotheses: String = "Hypotheses",
     val unknownError: String = "unknown",
-    val liveDataReadFailed: String = "Live Data read failed"
+    val liveDataReadFailed: String = "Live Data read failed",
+    val low: String = "LOW",
+    val medium: String = "MEDIUM",
+    val high: String = "HIGH"
 )
 
 private val ruExtra = AppExtraStrings(
@@ -145,7 +148,10 @@ private val ruExtra = AppExtraStrings(
     dtcReadFailed = "Не удалось прочитать DTC",
     hypotheses = "Гипотезы",
     unknownError = "неизвестная ошибка",
-    liveDataReadFailed = "Не удалось прочитать Live Data"
+    liveDataReadFailed = "Не удалось прочитать Live Data",
+    low = "НИЗКИЙ",
+    medium = "СРЕДНИЙ",
+    high = "ВЫСОКИЙ"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -170,7 +176,10 @@ private val hyExtra = AppExtraStrings(
     dtcReadFailed = "Չհաջողվեց կարդալ DTC-ները",
     hypotheses = "Հիպոթեզներ",
     unknownError = "անհայտ սխալ",
-    liveDataReadFailed = "Live Data-ի ընթերցումը ձախողվեց"
+    liveDataReadFailed = "Live Data-ի ընթերցումը ձախողվեց",
+    low = "ՑԱԾՐ",
+    medium = "ՄԻՋԻՆ",
+    high = "ԲԱՐՁՐ"
 )
 
 fun strings(language: AppLanguage): AppStrings = when (language) {

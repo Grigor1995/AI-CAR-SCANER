@@ -530,7 +530,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
             onChanged:(v)=>setState(()=>year=v),
           )),
           _select('Engine',engine,engineOptions,_selectEngine),
-          SizedBox(width:210,child:TextFormField(initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU'))),
+          SizedBox(width:210,child:TextFormField(key:ValueKey(ecu),initialValue:ecu,readOnly:true,decoration:const InputDecoration(labelText:'ECU'))),
           SizedBox(width:220,child:TextField(controller:fuel,decoration:const InputDecoration(labelText:'Fuel modes'))),
         ]),
         const SizedBox(height:18),

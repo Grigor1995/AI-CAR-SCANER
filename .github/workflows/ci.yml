@@ -64,13 +64,17 @@ jobs:
           --cov-report=term-missing
           --cov-report=xml:desktop-coverage.xml
           --cov-fail-under=95
-      - name: Generate full desktop coverage report
+      - name: Generate desktop logic coverage report
         if: always()
         run: >-
           pytest -q apps/desktop/tests
-          --cov=apps.desktop
+          --cov=apps.desktop.api_client
+          --cov=apps.desktop.models
+          --cov=apps.desktop.storage
+          --cov=apps.desktop.main
+          --cov=apps.desktop.backend_worker
           --cov-report=term-missing
-          --cov-report=xml:desktop-full-coverage.xml
+          --cov-report=xml:desktop-logic-coverage.xml
       - name: Upload desktop coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,7 +82,7 @@ jobs:
           name: desktop-coverage-reports
           path: |
             finalbuild/desktop-coverage.xml
-            finalbuild/desktop-full-coverage.xml
+            finalbuild/desktop-logic-coverage.xml
           if-no-files-found: ignore
 
   android:

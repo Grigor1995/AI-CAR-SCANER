@@ -24,6 +24,11 @@ struct DiagnosticScreen: View {
 
     private var t:T { T(language:viewModel.settings.language) }
 
+    init(viewModel: DiagnosticViewModel, initialTab: Int = 0) {
+        self.viewModel = viewModel
+        self._tab = State(initialValue: initialTab)
+    }
+
     var body:some View {
         NavigationStack {
             ScrollView {

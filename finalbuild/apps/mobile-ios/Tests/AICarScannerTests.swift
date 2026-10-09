@@ -68,6 +68,30 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(object["count"] as? Int, 2)
     }
 
+    func testScreenLocalizationCoversEnglishRussianAndArmenianLabels() {
+        func labels(_ t: T) -> [String] {
+            [
+                t.vehicle, t.inputs, t.analysis, t.obd, t.activity, t.make, t.model,
+                t.chassis, t.year, t.engine, t.petrol, t.lpg, t.create, t.save,
+                t.symptoms, t.symptom, t.driverSymptom, t.analyze, t.evidence,
+                t.hypotheses, t.nextTests, t.record, t.state, t.noSession,
+                t.activityEmpty, t.settings, t.languageLabel, t.theme, t.dark,
+                t.close, t.newSession, t.start, t.cancel, t.confirm, t.scan,
+                t.editSymptom
+            ]
+        }
+        let english = labels(T(language: .en))
+        let russian = labels(T(language: .ru))
+        let armenian = labels(T(language: .hy))
+        XCTAssertEqual(english.count, 36)
+        XCTAssertEqual(russian.count, english.count)
+        XCTAssertEqual(armenian.count, english.count)
+        XCTAssertTrue((english + russian + armenian).allSatisfy { !$0.isEmpty })
+        XCTAssertEqual(T(language: .ru).tr("Engine", "Двигатель", "Շարժիչ"), "Двигатель")
+        XCTAssertEqual(T(language: .hy).tr("Engine", "Двигатель", "Շարժիչ"), "Շարժիչ")
+        XCTAssertEqual(T(language: .en).tr("Engine", "Двигатель", "Շարժիչ"), "Engine")
+    }
+
     func testLanguages() {
         XCTAssertEqual(AppLanguage.en.label, "EN")
         XCTAssertEqual(AppLanguage.ru.label, "RU")

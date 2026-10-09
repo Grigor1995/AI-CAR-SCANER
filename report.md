@@ -187,8 +187,8 @@ Artifact: `desktop-coverage-reports` in Global CI. The strict core report is the
 | Backend on `main` | [CI run 37907069005](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37907069005): Python job completed successfully | **PASS** |
 | Android on `main` | Same run: `./gradlew assembleDebug` completed successfully | **PASS** for the existing build job; new PR unit tests are not yet verified |
 | Desktop on `main` | Same run: 71 tests passed and focused coverage reached 98.68%, then the process crashed during PySide6/Qt teardown with exit code 139 | **FAIL** at process teardown, not at a test assertion |
-| PR #7 CI | [Run 37920648313](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37920648313), attempt 3 | **NOT EXECUTED**: Android, Python and Desktop jobs had `runner_id=0`, zero steps and no logs |
-| PR #7 native iOS | [Run 37920648141](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37920648141), attempt 3 | **NOT EXECUTED**: iOS job had `runner_id=0`, zero steps and no logs |
+| PR #7 CI | [Run 37921365823](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37921365823), attempt 1 | **NOT EXECUTED**: Android, Python and Desktop jobs had `runner_id=0`, zero steps and no logs |
+| PR #7 native iOS | [Run 37921365790](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37921365790), attempt 1 | **NOT EXECUTED**: iOS job had `runner_id=0`, zero steps and no logs |
 
 ### Changes made in PR #7
 
@@ -198,9 +198,13 @@ Artifact: `desktop-coverage-reports` in Global CI. The strict core report is the
 - Added a separate, explicitly non-blocking CI step that runs `apps/desktop/tests/test_ui_widgets.py`. This ensures the widget tests still execute and their teardown failure remains visible rather than silently removing them from all CI execution.
 - Updated the cross-platform test matrix to document this limitation.
 
+### Additional workflow validation
+
+An intermediate CI edit used an unquoted colon in a YAML step name, which caused a workflow-file validation failure with no jobs. I corrected the step name by quoting it in commit `5b17571c65b94466df39dcedda98a17d9c8bed72`. The subsequent PR workflows were recognized as `CI` and `Native iOS Tests`, but all four jobs again failed before starting a runner (`runner_id=0`, zero steps). This intermediate YAML issue is fixed; the current blocker is still pre-runner job execution.
+
 ### Remaining blocker
 
-The latest PR runs failed before any test or build step started, so they provide no evidence about the new Android/iOS tests or the updated workflow. Re-running the jobs three times reproduced the same pre-runner failure. GitHub's public status page reported Actions operational on October 9, so the available evidence does not establish a current platform-wide incident or a specific account/billing cause.
+The latest PR runs failed before any test or build step started, so they provide no evidence about the new Android/iOS tests or the updated workflow. Multiple retries reproduced the same pre-runner failure. GitHub's public status page reported Actions operational on October 9, so the available evidence does not establish a current platform-wide incident or a specific account/billing cause.
 
 **Do not interpret the PR job failures as application test failures, but do not mark the PR as passing either.** The workflow needs a fresh run that actually acquires runners. If new runs continue to show `runner_id=0` and no steps, check repository/account Actions restrictions and billing/usage settings, then contact GitHub Support with the run URLs and timestamps.
 

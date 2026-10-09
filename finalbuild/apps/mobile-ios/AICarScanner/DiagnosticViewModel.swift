@@ -40,7 +40,7 @@ final class DiagnosticViewModel: ObservableObject {
     }
 
     func saveSettings() {
-        let defaults = UserDefaults.standard
+        let defaults = self.defaults
         defaults.set(settings.language.rawValue, forKey: "language")
         defaults.set(settings.darkTheme, forKey: "darkTheme")
         defaults.set(settings.apiURL, forKey: "apiURL")

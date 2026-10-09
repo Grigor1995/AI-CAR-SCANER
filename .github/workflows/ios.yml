@@ -1,5 +1,9 @@
 name: Native iOS Tests
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:

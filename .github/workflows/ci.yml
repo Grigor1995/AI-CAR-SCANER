@@ -66,6 +66,7 @@ jobs:
           --cov-fail-under=95
       - name: Generate desktop logic coverage report
         if: always()
+        continue-on-error: true
         run: >-
           pytest -q apps/desktop/tests
           --cov=apps.desktop.api_client

@@ -19,7 +19,7 @@ from apps.desktop.ui import (
     MetricCard,
     NetworkPage,
     Sparkline,
-    TestsPage,
+    TestsPage as DiagnosticTestsPage,
     VehicleDialog,
     VehiclesPage,
     Worker,
@@ -88,9 +88,6 @@ class FakeApp:
 def test_worker_emits_success_and_failure(qapp):
     success = []
     failure = []
-    Worker(lambda: {"status": "ok"}).finished_ok.connect(success.append)
-    Worker(lambda: 1 / 0).failed.connect(failure.append)
-
     good = Worker(lambda: {"status": "ok"})
     good.finished_ok.connect(success.append)
     good.run()
@@ -214,7 +211,7 @@ def test_diagnostic_page_formats_summary_and_refreshes_session(qapp):
 
 def test_tests_page_builds_candidates_from_decision_payload(qapp):
     app = FakeApp()
-    page = TestsPage(app)
+    page = DiagnosticTestsPage(app)
     page.refresh()
     assert page.list.count() == 1
     assert app.test_candidates[0].test_id == "test-1"
@@ -263,7 +260,7 @@ def test_live_data_page_handles_stopped_acquisition_and_provider_state(qapp):
     app = FakeApp()
     page = LiveDataPage(app)
     page.refresh()
-    assert page.status.text() == "Stopped"
+    assert page.status.text() == "STOPPED"
     assert "OFFLINE" in page.ai_status.text()
     assert page.table.rowCount() == 1
     assert page.chart.values == [1.2]

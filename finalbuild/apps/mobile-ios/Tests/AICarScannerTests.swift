@@ -18,6 +18,98 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(decoded.fuel, ["petrol", "lpg"])
     }
 
+    func testVehicleCatalogIdentityIncludesVehicleVariant() {
+        let entry = VehicleCatalogEntry(
+            make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006,
+            engine: "M272", ecu: "ME9.7", fuel: ["petrol", "lpg"], source: "fixture", scope: "exact"
+        )
+        XCTAssertEqual(entry.id, "Mercedes-Benz|E-Class|W211|2006|M272")
+    }
+
+    func testAppLanguageCasesAreStableAndIdentifiable() {
+        XCTAssertEqual(AppLanguage.allCases.map(\.rawValue), ["en", "ru", "hy"])
+        XCTAssertEqual(AppLanguage.allCases.map(\.id), ["en", "ru", "hy"])
+        XCTAssertEqual(AppLanguage.en.label, "EN")
+        XCTAssertEqual(AppLanguage.ru.label, "RU")
+        XCTAssertEqual(AppLanguage.hy.label, "ARM")
+    }
+
+    func testDiagnosticModelsDecodeOptionalAndNestedFields() throws {
+        let json = Data("""
+        {
+          "session_id":"s-2","state":"ANALYSIS_READY",
+          "vehicle":{"make":"Kia","model":"Forte","chassis":null,"year":2017,"engine":"2.0","fuel":["petrol"],"ecu":null},
+          "symptoms":[{"id":"sym-1","raw_text":"Hard cold start","normalized":{"condition":"cold"}}],
+          "dtcs":[{"id":null,"code":"P0302","description":null,"source":"manual"}],
+          "evidence":[{"id":"e-1","fact":"Only cold","source":"driver","status":"reported","confidence":0.8}],
+          "hypotheses":[{"id":"h-1","category":"fuel","statement":"Check pressure","supporting_evidence_ids":["e-1"],"contradicting_evidence_ids":[],"status":"possible"}],
+          "recommendations":[{"id":"t-1","name":"Fuel pressure","purpose":"Check it","priority_score":0.7,"expected_observation":"Stable","expected_information_gain":0.6,"estimated_cost":0.0,"risk_level":"LOW","prerequisites":[],"target_hypotheses":["h-1"],"safety_notes":[]}],
+          "test_results":[{"test_id":"t-1","result":"PASS","measurements":{"bar":"3.5"},"notes":null,"test_name":"Fuel pressure"}],
+          "audit_log":[{"event":"analysis","hypotheses":1,"evidence_count":1,"hypothesis_count":1,"questions":["Check pressure"]}]
+        }
+        """.utf8)
+        let session = try JSONDecoder().decode(DiagnosticSession.self, from: json)
+        XCTAssertEqual(session.session_id, "s-2")
+        XCTAssertNil(session.vehicle?.chassis)
+        XCTAssertEqual(session.symptoms.first?.normalized["condition"], "cold")
+        XCTAssertNil(session.dtcs.first?.id)
+        XCTAssertEqual(session.evidence.first?.confidence, 0.8)
+        XCTAssertEqual(session.hypotheses.first?.supporting_evidence_ids, ["e-1"])
+        XCTAssertEqual(session.recommendations.first?.expected_information_gain, 0.6)
+        XCTAssertEqual(session.test_results.first?.id, "t-1")
+        XCTAssertTrue(session.audit_log.first?.id.contains("analysis") == true)
+    }
+
+    func testAnyEncodableForwardsUnderlyingEncodable() throws {
+        struct Payload: Encodable { let code: String; let count: Int }
+        let data = try JSONEncoder().encode(AnyEncodable(Payload(code: "P0302", count: 2)))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["code"] as? String, "P0302")
+        XCTAssertEqual(object["count"] as? Int, 2)
+    }
+
+    @MainActor
+    func testDiagnosticScreenBuildsAllPrimaryTabsWithAndWithoutSession() throws {
+        let defaults = UserDefaults(suiteName: "AICarScannerScreenTests-\(UUID().uuidString)")!
+        let viewModel = DiagnosticViewModel(defaults: defaults, loadCatalogOnInit: false)
+
+        for tab in 0...4 {
+            let screen = DiagnosticScreen(viewModel: viewModel, initialTab: tab)
+            _ = screen.body
+        }
+
+        viewModel.session = try JSONDecoder().decode(DiagnosticSession.self, from: Self.sessionJSON)
+        for tab in 0...4 {
+            let screen = DiagnosticScreen(viewModel: viewModel, initialTab: tab)
+            _ = screen.body
+        }
+        XCTAssertEqual(viewModel.session?.session_id, "golden-session")
+    }
+
+    func testScreenLocalizationCoversEnglishRussianAndArmenianLabels() {
+        func labels(_ t: T) -> [String] {
+            [
+                t.vehicle, t.inputs, t.analysis, t.obd, t.activity, t.make, t.model,
+                t.chassis, t.year, t.engine, t.petrol, t.lpg, t.create, t.save,
+                t.symptoms, t.symptom, t.driverSymptom, t.analyze, t.evidence,
+                t.hypotheses, t.nextTests, t.record, t.state, t.noSession,
+                t.activityEmpty, t.settings, t.languageLabel, t.theme, t.dark,
+                t.close, t.newSession, t.start, t.cancel, t.confirm, t.scan,
+                t.editSymptom
+            ]
+        }
+        let english = labels(T(language: .en))
+        let russian = labels(T(language: .ru))
+        let armenian = labels(T(language: .hy))
+        XCTAssertEqual(english.count, 36)
+        XCTAssertEqual(russian.count, english.count)
+        XCTAssertEqual(armenian.count, english.count)
+        XCTAssertTrue((english + russian + armenian).allSatisfy { !$0.isEmpty })
+        XCTAssertEqual(T(language: .ru).tr("Engine", "Двигатель", "Շարժիչ"), "Двигатель")
+        XCTAssertEqual(T(language: .hy).tr("Engine", "Двигатель", "Շարժիչ"), "Շարժիչ")
+        XCTAssertEqual(T(language: .en).tr("Engine", "Двигатель", "Շարժիչ"), "Engine")
+    }
+
     func testLanguages() {
         XCTAssertEqual(AppLanguage.en.label, "EN")
         XCTAssertEqual(AppLanguage.ru.label, "RU")
@@ -108,6 +200,210 @@ final class AICarScannerTests: XCTestCase {
         }
     }
 
+    func testUpdateVehicleUsesPUTAndEncodesPayload() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "PUT")
+            XCTAssertEqual(request.url?.path, "/api/v1/sessions/golden-session/vehicle")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["model"] as? String, "W211 E350")
+            return (200, Self.sessionJSON)
+        }
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211 E350", chassis: "W211", year: 2006, engine: "M272", fuel: ["lpg"], ecu: "ME9.7")
+        _ = try await makeAPI().updateVehicle("golden-session", vehicle)
+    }
+
+    func testSymptomCreateUpdateAndDeleteRoutes() async throws {
+        let api = makeAPI()
+        MockURLProtocol.handler = { request in
+            switch (request.httpMethod, request.url?.path) {
+            case ("POST", "/api/v1/sessions/s1/symptoms"):
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["raw_text"] as? String, "Shakes on LPG")
+                XCTAssertEqual(json["symptom"] as? String, "Shakes on LPG")
+            case ("PUT", "/api/v1/sessions/s1/symptoms/sym-1"):
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["raw_text"] as? String, "Updated symptom")
+            case ("DELETE", "/api/v1/sessions/s1/symptoms/sym-1"):
+                XCTAssertNil(request.httpBody)
+            default:
+                XCTFail("Unexpected request: \(request.httpMethod ?? "?") \(request.url?.path ?? "?")")
+            }
+            return (200, Self.sessionJSON)
+        }
+        _ = try await api.addSymptom("s1", "Shakes on LPG")
+        _ = try await api.updateSymptom("s1", "sym-1", "Updated symptom")
+        _ = try await api.deleteSymptom("s1", "sym-1")
+    }
+
+    func testDTCAddUppercasesCodeAndDeleteUsesIdentifier() async throws {
+        let api = makeAPI()
+        MockURLProtocol.handler = { request in
+            if request.httpMethod == "POST" {
+                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs")
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["code"] as? String, "P0302")
+            } else {
+                XCTAssertEqual(request.httpMethod, "DELETE")
+                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs/dtc-1")
+            }
+            return (200, Self.sessionJSON)
+        }
+        _ = try await api.addDTC("s1", "p0302")
+        _ = try await api.deleteDTC("s1", "dtc-1")
+    }
+
+    func testRecordTestSendsResultNotesAndLanguage() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/v1/intelligence/sessions/s1/test-results")
+            XCTAssertEqual(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "language" })?.value, "hy")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["test_id"] as? String, "test-1")
+            XCTAssertEqual(json["result"] as? String, "FAIL")
+            XCTAssertEqual(json["notes"] as? String, "Pressure out of range")
+            XCTAssertNotNil(json["measurements"] as? [String: String])
+            return (200, Self.sessionJSON)
+        }
+        let recommendation = Recommendation(
+            id: "test-1", name: "Check LPG pressure", purpose: "Validate delivery pressure",
+            priority_score: 1, expected_observation: nil, expected_information_gain: 0.8,
+            estimated_cost: 0, risk_level: "LOW", prerequisites: [], target_hypotheses: [],
+            safety_notes: []
+        )
+        _ = try await makeAPI().recordTest("s1", recommendation, "FAIL", "Pressure out of range", .hy)
+    }
+
+    func testInvalidJSONResponseThrowsDecodingError() async {
+        MockURLProtocol.handler = { _ in (200, Data("{invalid".utf8)) }
+        do {
+            _ = try await makeAPI().vehicleCatalog()
+            XCTFail("Expected JSON decoding to fail")
+        } catch {
+            XCTAssertNotNil(error)
+        }
+    }
+
+    func testAPIBasePathIsPreserved() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/proxy/api/v1/vehicle-catalog/entries")
+            return (200, Data("[]".utf8))
+        }
+        let api = DiagnosticAPI(baseURL: "https://unit.test/proxy", session: URLSession(configuration: {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [MockURLProtocol.self]
+            return configuration
+        }()))
+        let entries = try await api.vehicleCatalog()
+        XCTAssertTrue(entries.isEmpty)
+    }
+
+    @MainActor
+    func testViewModelSettingsLoadSaveAndSessionGuards() async {
+        let defaults = UserDefaults(suiteName: "AICarScannerTests-\(UUID().uuidString)")!
+        defaults.set("ru", forKey: "language")
+        defaults.set(false, forKey: "darkTheme")
+        defaults.set("https://unit.test", forKey: "apiURL")
+        let viewModel = DiagnosticViewModel(defaults: defaults, loadCatalogOnInit: false)
+        XCTAssertEqual(viewModel.settings.language, .ru)
+        XCTAssertFalse(viewModel.settings.darkTheme)
+        XCTAssertEqual(viewModel.settings.apiURL, "https://unit.test")
+
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211", chassis: "W211", year: 2006, engine: "M272", fuel: ["lpg"], ecu: "ME9.7")
+        await viewModel.updateVehicle(vehicle)
+        await viewModel.addSymptom("test")
+        await viewModel.updateSymptom(Symptom(id: "s1", raw_text: "old", normalized: [:]), "new")
+        await viewModel.deleteSymptom(Symptom(id: "s1", raw_text: "old", normalized: [:]))
+        await viewModel.addDTC("P0302")
+        await viewModel.deleteDTC(DTC(id: "d1", code: "P0302", description: nil, source: nil))
+        await viewModel.analyze()
+        let recommendation = Recommendation(
+            id: "t1", name: "Check", purpose: "Verify", priority_score: 1,
+            expected_observation: nil, expected_information_gain: 0.5, estimated_cost: 0,
+            risk_level: "LOW", prerequisites: [], target_hypotheses: [], safety_notes: []
+        )
+        await viewModel.recordTest(recommendation, "INCOMPLETE", nil)
+        XCTAssertNil(viewModel.session)
+        XCTAssertFalse(viewModel.loading)
+
+        viewModel.settings.language = .hy
+        viewModel.settings.darkTheme = true
+        viewModel.settings.apiURL = "https://saved.test"
+        viewModel.saveSettings()
+        XCTAssertEqual(defaults.string(forKey: "language"), "hy")
+        XCTAssertEqual(defaults.object(forKey: "darkTheme") as? Bool, true)
+        XCTAssertEqual(defaults.string(forKey: "apiURL"), "https://saved.test")
+        viewModel.clearSession()
+        XCTAssertNil(viewModel.session)
+    }
+
+    @MainActor
+    func testViewModelRunsSessionWorkflowAndClearsLoadingOnSuccess() async throws {
+        let requests = RequestRecorder()
+        MockURLProtocol.handler = { request in
+            requests.paths.append(request.url?.path ?? "")
+            return (200, Self.sessionJSON)
+        }
+        let viewModel = makeViewModel()
+        await viewModel.loadCatalog()
+        XCTAssertTrue(viewModel.catalog.isEmpty)
+
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211 E350", chassis: "W211", year: 2006, engine: "M272", fuel: ["petrol", "lpg"], ecu: "ME9.7")
+        await viewModel.newSession(vehicle)
+        XCTAssertEqual(viewModel.session?.session_id, "golden-session")
+        await viewModel.updateVehicle(vehicle)
+        await viewModel.addSymptom("LPG misfire")
+        await viewModel.updateSymptom(Symptom(id: "symptom-1", raw_text: "old", normalized: [:]), "updated")
+        await viewModel.deleteSymptom(Symptom(id: "symptom-1", raw_text: "old", normalized: [:]))
+        await viewModel.addDTC("p0302")
+        await viewModel.deleteDTC(DTC(id: "dtc-1", code: "P0302", description: nil, source: nil))
+        await viewModel.analyze()
+        let recommendation = Recommendation(
+            id: "test-1", name: "Check mixture", purpose: "Check LPG pressure",
+            priority_score: 1, expected_observation: nil, expected_information_gain: 0.7,
+            estimated_cost: 0, risk_level: "LOW", prerequisites: [], target_hypotheses: [],
+            safety_notes: []
+        )
+        await viewModel.recordTest(recommendation, "PASS", "Within range")
+
+        XCTAssertEqual(requests.paths.count, 10)
+        XCTAssertTrue(requests.paths.contains("/api/v1/vehicle-catalog/entries"))
+        XCTAssertTrue(requests.paths.contains("/api/v1/sessions"))
+        XCTAssertTrue(requests.paths.contains("/api/v1/analysis/golden-session"))
+        XCTAssertNil(viewModel.error)
+        XCTAssertFalse(viewModel.loading)
+        viewModel.clearSession()
+        XCTAssertNil(viewModel.session)
+    }
+
+    @MainActor
+    func testViewModelStoresAPIErrorAndResetsLoading() async {
+        MockURLProtocol.handler = { _ in (503, Data("backend offline".utf8)) }
+        let viewModel = makeViewModel()
+        await viewModel.newSession(Vehicle(make: "Kia", model: "Forte", chassis: nil, year: 2017, engine: "2.0", fuel: ["petrol"], ecu: nil))
+        XCTAssertNil(viewModel.session)
+        XCTAssertTrue(viewModel.error?.contains("503") == true)
+        XCTAssertFalse(viewModel.loading)
+    }
+
+    @MainActor
+    private func makeViewModel() -> DiagnosticViewModel {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let defaults = UserDefaults(suiteName: "AICarScannerTests-\(UUID().uuidString)")!
+        defaults.set("https://unit.test", forKey: "apiURL")
+        return DiagnosticViewModel(
+            apiSession: URLSession(configuration: configuration),
+            defaults: defaults,
+            loadCatalogOnInit: false
+        )
+    }
+
     private func makeAPI() -> DiagnosticAPI {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
@@ -169,6 +465,8 @@ final class AICarScannerTests: XCTestCase {
     }
     """.utf8)
 }
+
+final class RequestRecorder { var paths: [String] = [] }
 
 final class MockURLProtocol: URLProtocol {
     typealias Handler = (URLRequest) throws -> (statusCode: Int, data: Data)

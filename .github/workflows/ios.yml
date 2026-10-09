@@ -1,5 +1,9 @@
 name: Native iOS Tests
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:
@@ -35,10 +39,19 @@ jobs:
         run: |
           xcodebuild test             -project AICarScanner.xcodeproj             -scheme AICarScanner             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'             CODE_SIGNING_ALLOWED=NO             -enableCodeCoverage YES             -resultBundlePath TestResults.xcresult
 
-      - name: Upload XCTest result bundle
+      - name: Generate iOS code coverage report
+        if: success()
+        run: |
+          xcrun xccov view --report TestResults.xcresult | tee coverage-report.txt
+          xcrun xccov view --report --json TestResults.xcresult > coverage-report.json
+
+      - name: Upload XCTest and coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-xctest-results
-          path: finalbuild/apps/mobile-ios/TestResults.xcresult
+          name: ios-test-and-coverage-reports
+          path: |
+            finalbuild/apps/mobile-ios/TestResults.xcresult
+            finalbuild/apps/mobile-ios/coverage-report.txt
+            finalbuild/apps/mobile-ios/coverage-report.json
           if-no-files-found: ignore

@@ -35,6 +35,8 @@ class Session:
 
 @dataclass
 class TestCandidate:
+    __test__ = False  # Prevent pytest from treating this data model as a test class.
+
     test_id: str
     name: str
     purpose: str

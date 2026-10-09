@@ -117,3 +117,45 @@ The CI result confirms the Android debug build compiles; it does not replace emu
 2. Raise whole-backend coverage over time, starting with the low-coverage modules listed above, while retaining the 90% focused gate.
 3. Add/retain separate integration tests for a running backend and live model provider so unit-test success is not mistaken for live-service availability.
 4. Add emulator-based Android UI checks to complement the successful debug compilation.
+
+
+---
+
+## Coverage Expansion Report — PR #6 (2026-10-09)
+
+This section records the latest measured results from the coverage-expansion changes. These measurements are from the CI run on commit `a7d25bd3e00f2c5421cc736b53913372f4ba950e`.
+
+### Native iOS
+
+| Metric | Result |
+|---|---:|
+| XCTest | **22 passed, 0 failed** |
+| Whole iOS app target line coverage | **79.61% (617/775)** |
+| `DiagnosticAPI.swift` | **96.77%** |
+| `DiagnosticScreen.swift` | **72.42%** |
+| `AICarScannerApp.swift` | **100%** |
+| `OBDService.swift` | **28.21%** |
+
+The tests now cover the main diagnostic API methods and payloads, API errors/decoding failures, diagnostic data models, settings persistence, view-model success/error handling, golden-case uncertainty preservation, and screen-tab/localization branches. XCTest coverage output is uploaded as the `ios-test-and-coverage-reports` artifact.
+
+### Desktop
+
+| Metric | Result |
+|---|---:|
+| Desktop pytest suite | **72 passed** |
+| Core desktop coverage gate | **98.68%** |
+| `api_client.py` | **98%** |
+| `models.py` | **100%** |
+| `storage.py` | **100%** |
+| Whole desktop package coverage | **64%** |
+| `ui.py` | **69%** |
+| `main.py` | **36%** |
+
+The 95% CI gate applies to the focused, testable desktop core modules (`api_client.py`, `models.py`, and `storage.py`). A separate full-package report includes UI/startup modules and is uploaded as the `desktop-coverage-reports` artifact.
+
+### Remaining coverage gaps
+
+- iOS BLE adapter scanning/discovery in `OBDService.swift` is not yet covered by deterministic hardware-independent tests.
+- Desktop `main.py` process orchestration and `backend_worker.py` still have low/no direct test coverage.
+- Whole-package desktop coverage is informational at 64%; it is not represented as 100% or as meeting the focused 95% gate.
+- CI run links: [Global CI](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37905440045) · [Native iOS Tests](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37905440281)

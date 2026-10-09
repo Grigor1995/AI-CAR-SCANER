@@ -100,4 +100,11 @@ jobs:
           distribution: temurin
           java-version: "17"
       - run: chmod +x gradlew
-      - run: ./gradlew testDebugUnitTest assembleDebug
+      - run: ./gradlew testDebugUnitTest createDebugUnitTestCoverageReport assembleDebug
+      - name: Upload Android unit-test coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-unit-test-coverage
+          path: finalbuild/apps/mobile-android/app/build/reports/coverage/test/debug/
+          if-no-files-found: ignore

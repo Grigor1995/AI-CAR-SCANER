@@ -43,4 +43,4 @@ Wi-Fi/TCP OBD is the preferred generic iOS transport path. BLE discovery is impl
 
 The latest validated simulator run is documented in [TEST_REPORT.md](TEST_REPORT.md).
 
-The native iOS CI workflow runs on macOS with XcodeGen + Xcode and executes XCTest on an iOS Simulator. The test result bundle is uploaded as a GitHub Actions artifact.
+The native iOS CI workflow runs on macOS with XcodeGen + Xcode and executes XCTest on an iOS Simulator. API tests use URLProtocol mocks and do not require a live backend. The test result bundle is uploaded as a GitHub Actions artifact. See [TEST_REPORT.md](TEST_REPORT.md) for the test matrix and known coverage limits.

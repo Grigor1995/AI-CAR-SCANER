@@ -27,7 +27,14 @@ from apps.desktop.ui import (
 
 @pytest.fixture(scope="session")
 def qapp():
-    return QApplication.instance() or QApplication([])
+    app = QApplication.instance() or QApplication([])
+    yield app
+    app.closeAllWindows()
+    app.processEvents()
+    # Keep Qt-owned wrappers alive until pending events and deferred deletes drain.
+    from PySide6.QtCore import QCoreApplication, QEvent
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
 
 
 class FakeApp:

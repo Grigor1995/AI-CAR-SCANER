@@ -1,18 +1,11 @@
 name: Native iOS Tests
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - "finalbuild/apps/mobile-ios/**"
-      - ".github/workflows/ios.yml"
-  pull_request:
-    paths:
-      - "finalbuild/apps/mobile-ios/**"
-      - ".github/workflows/ios.yml"
+  workflow_dispatch:
 
 jobs:
   ios-tests:

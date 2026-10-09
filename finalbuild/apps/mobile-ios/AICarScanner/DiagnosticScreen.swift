@@ -24,6 +24,11 @@ struct DiagnosticScreen: View {
 
     private var t:T { T(language:viewModel.settings.language) }
 
+    init(viewModel: DiagnosticViewModel, initialTab: Int = 0) {
+        self.viewModel = viewModel
+        self._tab = State(initialValue: initialTab)
+    }
+
     var body:some View {
         NavigationStack {
             ScrollView {
@@ -159,7 +164,7 @@ private struct TestSheet:View{
     let test:Recommendation;@Binding var result:String;@Binding var notes:String;let save:()->Void
     var body:some View{NavigationStack{Form{Text(test.name).font(.headline);Picker("Result",selection:$result){Text("PASS").tag("PASS");Text("FAIL").tag("FAIL");Text("INCOMPLETE").tag("INCOMPLETE")};TextField("Diagnostic notes",text:$notes,axis:.vertical).lineLimit(3...7)}.navigationTitle("Test result").toolbar{ToolbarItem(placement:.confirmationAction){Button("Record",action:save)}}}}
 }
-private struct T{
+struct T{
     let language:AppLanguage
     func tr(_ e:String,_ r:String,_ h:String)->String{language == .en ? e : language == .ru ? r:h}
     var vehicle:String{tr("Vehicle","Автомобиль","Մեքենա")};var inputs:String{tr("Inputs","Ввод","Մուտքեր")};var analysis:String{tr("Analysis","Анализ","Վերլուծություն")};var obd:String{"OBD"};var activity:String{tr("Activity","Журнал","Գործունեություն")}

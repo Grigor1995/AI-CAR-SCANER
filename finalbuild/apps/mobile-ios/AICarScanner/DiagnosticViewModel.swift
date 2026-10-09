@@ -9,17 +9,28 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var error: String?
     @Published var settings = AppSettings()
 
+    private let apiSession: URLSession?
+    private let defaults: UserDefaults
+
     private var api: DiagnosticAPI {
-        DiagnosticAPI(baseURL: settings.apiURL)
+        DiagnosticAPI(baseURL: settings.apiURL, session: apiSession ?? .shared)
     }
 
-    init() {
+    init(
+        apiSession: URLSession? = nil,
+        defaults: UserDefaults = .standard,
+        loadCatalogOnInit: Bool = true
+    ) {
+        self.apiSession = apiSession
+        self.defaults = defaults
         loadSettings()
-        Task { await loadCatalog() }
+        if loadCatalogOnInit {
+            Task { await loadCatalog() }
+        }
     }
 
     func loadSettings() {
-        let defaults = UserDefaults.standard
+        let defaults = self.defaults
         if let raw = defaults.string(forKey: "language"),
            let language = AppLanguage(rawValue: raw) {
             settings.language = language
@@ -29,7 +40,7 @@ final class DiagnosticViewModel: ObservableObject {
     }
 
     func saveSettings() {
-        let defaults = UserDefaults.standard
+        let defaults = self.defaults
         defaults.set(settings.language.rawValue, forKey: "language")
         defaults.set(settings.darkTheme, forKey: "darkTheme")
         defaults.set(settings.apiURL, forKey: "apiURL")

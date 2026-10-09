@@ -16,8 +16,10 @@ class VehicleStore:
             return []
         try:
             data = json.loads(VEHICLES_FILE.read_text(encoding="utf-8"))
+            if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
+                return []
             return [Vehicle.from_json(item) for item in data]
-        except (OSError, ValueError, TypeError):
+        except (OSError, ValueError, TypeError, AttributeError):
             return []
 
     def save(self, vehicles: list[Vehicle]) -> None:

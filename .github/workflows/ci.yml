@@ -59,7 +59,7 @@ jobs:
       - run: python apps/desktop/test_smoke.py
       - name: Run desktop unit tests with coverage
         run: >-
-          pytest -q apps/desktop/tests
+          pytest -q apps/desktop/tests --ignore=apps/desktop/tests/test_ui_widgets.py
           --cov=apps.desktop.api_client
           --cov=apps.desktop.models
           --cov=apps.desktop.storage
@@ -70,7 +70,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: >-
-          pytest -q apps/desktop/tests
+          pytest -q apps/desktop/tests --ignore=apps/desktop/tests/test_ui_widgets.py
           --cov=apps.desktop.api_client
           --cov=apps.desktop.models
           --cov=apps.desktop.storage

@@ -16,10 +16,11 @@ enum APIError: LocalizedError {
 
 final class DiagnosticAPI {
     var baseURL: String
-    private let session = URLSession.shared
+    private let session: URLSession
 
-    init(baseURL: String) {
+    init(baseURL: String, session: URLSession = .shared) {
         self.baseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        self.session = session
     }
 
     private func request<T: Decodable>(

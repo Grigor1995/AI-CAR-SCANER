@@ -45,9 +45,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install -r apps/desktop/requirements.txt
+      - run: pip install -r apps/desktop/requirements-dev.txt
       - run: python -m py_compile apps/desktop/ui.py
       - run: python -m py_compile apps/desktop/main.py
+      - run: python apps/desktop/test_smoke.py
+      - name: Run desktop unit tests with coverage
+        run: >-
+          pytest -q apps/desktop/tests
+          --cov=apps.desktop.api_client
+          --cov=apps.desktop.models
+          --cov=apps.desktop.storage
+          --cov-report=term-missing
+          --cov-report=xml:desktop-coverage.xml
+          --cov-fail-under=95
+      - name: Upload desktop coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-coverage-report
+          path: finalbuild/desktop-coverage.xml
+          if-no-files-found: ignore
 
   android:
     runs-on: ubuntu-latest

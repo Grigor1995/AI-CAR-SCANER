@@ -108,5 +108,5 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 struct AppSettings {
     var language: AppLanguage = .en
     var darkTheme = true
-    var apiURL = "http://127.0.0.1:8001"
+    var apiURL = "https://ai-car-scaner.onrender.com"
 }

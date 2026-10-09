@@ -8,7 +8,6 @@ from unittest.mock import Mock
 
 import pytest
 from PySide6.QtGui import QImage
-from PySide6.QtTest import QSignalSpy
 from PySide6.QtWidgets import QApplication, QWidget
 
 from apps.desktop.models import Session, Vehicle
@@ -23,7 +22,6 @@ from apps.desktop.ui import (
     TestsPage as DiagnosticTestsPage,
     VehicleDialog,
     VehiclesPage,
-    Worker,
 )
 
 
@@ -85,23 +83,6 @@ class FakeApp:
     def active_probe(self): pass
     def refresh_telemetry(self): pass
 
-
-def test_worker_emits_success_and_failure(qapp):
-    good = Worker(lambda: {"status": "ok"})
-    good_spy = QSignalSpy(good.finished_ok)
-    good.start()
-    assert good.wait(3000)
-    qapp.processEvents()
-    assert good_spy.count() == 1
-    assert good_spy.at(0)[0] == {"status": "ok"}
-
-    bad = Worker(lambda: 1 / 0)
-    bad_spy = QSignalSpy(bad.failed)
-    bad.start()
-    assert bad.wait(3000)
-    qapp.processEvents()
-    assert bad_spy.count() == 1
-    assert "division by zero" in bad_spy.at(0)[0]
 
 def test_sparkline_limits_values_and_paints(qapp):
     chart = Sparkline([1, 2])

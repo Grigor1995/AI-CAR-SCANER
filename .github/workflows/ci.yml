@@ -58,7 +58,7 @@ jobs:
       - run: python -m py_compile apps/desktop/ui.py
       - run: python -m py_compile apps/desktop/main.py
       - run: python apps/desktop/test_smoke.py
-      - name: Run Qt widget tests (non-blocking: known PySide6 teardown crash)
+      - name: "Run Qt widget tests (non-blocking: known PySide6 teardown crash)"
         continue-on-error: true
         run: pytest -q apps/desktop/tests/test_ui_widgets.py
       - name: Run desktop unit tests with coverage

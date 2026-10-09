@@ -29,11 +29,16 @@ final class DiagnosticAPI {
         body: Encodable? = nil,
         query: [URLQueryItem] = []
     ) async throws -> T {
-        guard var components = URLComponents(string: baseURL + path),
-              components.url != nil else {
+        guard var components = URLComponents(string: baseURL),
+              let scheme = components.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              components.host != nil else {
             throw APIError.invalidURL
         }
 
+        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let endpointPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        components.path = "/" + [basePath, endpointPath].filter { !$0.isEmpty }.joined(separator: "/")
         components.queryItems = query.isEmpty ? nil : query
 
         guard let url = components.url else {

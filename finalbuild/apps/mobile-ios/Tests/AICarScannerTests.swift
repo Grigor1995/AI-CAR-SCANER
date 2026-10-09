@@ -207,7 +207,8 @@ final class AICarScannerTests: XCTestCase {
             configuration.protocolClasses = [MockURLProtocol.self]
             return configuration
         }()))
-        XCTAssertTrue(try await api.vehicleCatalog().isEmpty)
+        let entries = try await api.vehicleCatalog()
+        XCTAssertTrue(entries.isEmpty)
     }
 
     @MainActor
@@ -278,7 +279,7 @@ final class AICarScannerTests: XCTestCase {
         )
         await viewModel.recordTest(recommendation, "PASS", "Within range")
 
-        XCTAssertEqual(requests.paths.count, 9)
+        XCTAssertEqual(requests.paths.count, 10)
         XCTAssertTrue(requests.paths.contains("/api/v1/vehicle-catalog/entries"))
         XCTAssertTrue(requests.paths.contains("/api/v1/sessions"))
         XCTAssertTrue(requests.paths.contains("/api/v1/analysis/golden-session"))

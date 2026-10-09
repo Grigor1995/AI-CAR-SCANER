@@ -1,0 +1,51 @@
+workflows:
+  ios-simulator:
+    name: AI-CAR-SCANER iOS Simulator
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: disabled
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Inspect iOS project
+        script: |
+          echo "Checking iOS project files"
+          ls -la finalbuild/apps/mobile-ios
+          find finalbuild/apps/mobile-ios -maxdepth 3 \( -name "*.xcodeproj" -o -name "*.xcworkspace" -o -name "project.yml" \)
+
+      - name: Generate Xcode project if needed
+        script: |
+          cd finalbuild/apps/mobile-ios
+          if [ ! -d "AICarScanner.xcodeproj" ] && [ -f "project.yml" ]; then
+            brew install xcodegen
+            xcodegen generate
+          fi
+
+      - name: Build iOS Simulator app
+        script: |
+          set -e
+          PROJECT_DIR="finalbuild/apps/mobile-ios"
+          PROJECT="$PROJECT_DIR/AICarScanner.xcodeproj"
+          if [ ! -d "$PROJECT" ]; then
+            echo "Expected Xcode project not found: $PROJECT"
+            find "$PROJECT_DIR" -maxdepth 4 \( -name "*.xcodeproj" -o -name "*.xcworkspace" \)
+            exit 1
+          fi
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme AICarScanner \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          APP_PATH="build/DerivedData/Build/Products/Debug-iphonesimulator/AICarScanner.app"
+          test -d "$APP_PATH"
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/AI-CAR-SCANER-iOS-Simulator.zip
+
+    artifacts:
+      - build/AI-CAR-SCANER-iOS-Simulator.zip

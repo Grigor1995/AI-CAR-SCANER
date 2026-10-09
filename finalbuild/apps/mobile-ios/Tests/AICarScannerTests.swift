@@ -1,7 +1,14 @@
+import Foundation
 import XCTest
 @testable import AICarScanner
 
 final class AICarScannerTests: XCTestCase {
+    override func tearDown() {
+        MockURLProtocol.handler = nil
+        MockURLProtocol.lastRequest = nil
+        super.tearDown()
+    }
+
     func testVehicleRoundTrip() throws {
         let value = Vehicle(make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006, engine: "M272 E35 3.5", fuel: ["petrol", "lpg"], ecu: "ME9.7")
         let data = try JSONEncoder().encode(value)
@@ -16,4 +23,159 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(AppLanguage.ru.label, "RU")
         XCTAssertEqual(AppLanguage.hy.label, "ARM")
     }
+
+    func testVehicleCatalogRequestAndDecode() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.path, "/api/v1/vehicle-catalog/entries")
+            return (200, Data("[]".utf8))
+        }
+
+        let api = makeAPI()
+        let entries = try await api.vehicleCatalog()
+        XCTAssertTrue(entries.isEmpty)
+        XCTAssertEqual(MockURLProtocol.lastRequest?.url?.path, "/api/v1/vehicle-catalog/entries")
+    }
+
+    func testCreateSessionSendsVehiclePayload() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/v1/sessions")
+            let body = try XCTUnwrap(request.httpBody)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["make"] as? String, "Mercedes-Benz")
+            XCTAssertEqual(json["year"] as? Int, 2006)
+            XCTAssertEqual(json["fuel"] as? [String], ["petrol", "lpg"])
+            return (201, Self.sessionJSON)
+        }
+
+        let vehicle = Vehicle(
+            make: "Mercedes-Benz", model: "W211 E350", chassis: "W211",
+            year: 2006, engine: "M272 3.5", fuel: ["petrol", "lpg"], ecu: "ME 9.7"
+        )
+        let session = try await makeAPI().createSession(vehicle)
+        XCTAssertEqual(session.session_id, "golden-session")
+        XCTAssertEqual(session.vehicle?.make, "Mercedes-Benz")
+    }
+
+    func testGoldenCaseAnalysisUsesSelectedLanguageAndPreservesUncertainty() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/v1/analysis/golden-session")
+            XCTAssertEqual(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "language" })?.value, "ru")
+            return (200, Self.goldenAnalysisJSON)
+        }
+
+        let session = try await makeAPI().analyze("golden-session", .ru)
+        XCTAssertEqual(session.dtcs.map(\.code), ["P0302"])
+        XCTAssertTrue(session.hypotheses.contains { $0.category.localizedCaseInsensitiveContains("LPG") })
+        XCTAssertTrue(session.hypotheses.allSatisfy { $0.status.lowercased() != "confirmed" })
+        XCTAssertFalse(session.hypotheses.contains {
+            let text = ($0.category + " " + $0.statement).lowercased()
+            return text.contains("confirmed coil failure")
+                || text.contains("confirmed injector failure")
+                || text.contains("confirmed mechanical failure")
+        })
+    }
+
+    func testHTTPErrorIsSurfaced() async {
+        MockURLProtocol.handler = { _ in (503, Data("service unavailable".utf8)) }
+        do {
+            _ = try await makeAPI().vehicleCatalog()
+            XCTFail("Expected HTTP 503 to throw")
+        } catch let error as APIError {
+            guard case let .server(code, body) = error else {
+                return XCTFail("Expected server error, got \(error)")
+            }
+            XCTAssertEqual(code, 503)
+            XCTAssertEqual(body, "service unavailable")
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testInvalidBaseURLThrows() async {
+        do {
+            _ = try await DiagnosticAPI(baseURL: "://invalid").vehicleCatalog()
+            XCTFail("Expected invalid URL to throw")
+        } catch let error as APIError {
+            guard case .invalidURL = error else {
+                return XCTFail("Expected invalidURL, got \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    private func makeAPI() -> DiagnosticAPI {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        return DiagnosticAPI(
+            baseURL: "https://unit.test",
+            session: URLSession(configuration: configuration)
+        )
+    }
+
+    private static let sessionJSON = Data("""
+    {
+      "session_id":"golden-session",
+      "state":"COLLECTING_EVIDENCE",
+      "vehicle":{"make":"Mercedes-Benz","model":"W211 E350","chassis":"W211","year":2006,"engine":"M272 3.5","fuel":["petrol","lpg"],"ecu":"ME 9.7"},
+      "symptoms":[{"id":"symptom-1","raw_text":"Misfire on LPG below 2000 RPM","normalized":{}}],
+      "dtcs":[{"id":"dtc-1","code":"P0302","description":"Cylinder 2 misfire","source":"manual"}],
+      "evidence":[],
+      "hypotheses":[],
+      "recommendations":[],
+      "test_results":[],
+      "audit_log":[]
+    }
+    """.utf8)
+
+    private static let goldenAnalysisJSON = Data("""
+    {
+      "session_id":"golden-session",
+      "state":"ANALYSIS_READY",
+      "vehicle":{"make":"Mercedes-Benz","model":"W211 E350","chassis":"W211","year":2006,"engine":"M272 3.5","fuel":["petrol","lpg"],"ecu":"ME 9.7"},
+      "symptoms":[{"id":"symptom-1","raw_text":"Runs smoothly on petrol; shakes on LPG under low-RPM load","normalized":{}}],
+      "dtcs":[{"id":"dtc-1","code":"P0302","description":"Cylinder 2 misfire","source":"manual"}],
+      "evidence":[{"id":"e1","fact":"Misfire is reported only in LPG mode","source":"driver report","status":"reported","confidence":0.9}],
+      "hypotheses":[
+        {"id":"h1","category":"LPG fuel delivery / mixture","statement":"Verify LPG injector delivery and calibration","supporting_evidence_ids":["e1"],"contradicting_evidence_ids":[],"status":"possible"},
+        {"id":"h2","category":"ignition / combustion","statement":"Compare ignition performance under both fuel modes","supporting_evidence_ids":["e1"],"contradicting_evidence_ids":[],"status":"possible"}
+      ],
+      "recommendations":[],
+      "test_results":[],
+      "audit_log":[]
+    }
+    """.utf8)
+}
+
+final class MockURLProtocol: URLProtocol {
+    typealias Handler = (URLRequest) throws -> (statusCode: Int, data: Data)
+    static var handler: Handler?
+    static var lastRequest: URLRequest?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        Self.lastRequest = request
+        do {
+            let result = try XCTUnwrap(Self.handler)(request)
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: result.statusCode,
+                httpVersion: "HTTP/1.1",
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: result.data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
 }

@@ -47,6 +47,12 @@ Workflow: `.github/workflows/ios.yml`.
 
 Coverage is collected and the result bundle is retained, but a numeric iOS coverage gate is not yet enforced. The suite is still being expanded; a percentage threshold should be introduced after API, ViewModel, golden-case, OBD transport and UI tests cover meaningful behavior. Do not infer a coverage percentage from the test count.
 
+## Issues found and fixes in expanded API tests
+
+- The first expanded run exposed that invalid URL bases were not rejected early enough. URL validation now requires an explicit `http` or `https` scheme and a host before building the endpoint.
+- The URLProtocol POST test now reads request payloads from either `httpBody` or `httpBodyStream`, because URLSession may surface streamed request bodies in the protocol layer.
+- The latest CI result is the source of truth for whether these fixes pass; do not mark this branch green until the workflow completes successfully.
+
 ## Remaining phases
 
 - ViewModel lifecycle tests using injectable API dependencies.

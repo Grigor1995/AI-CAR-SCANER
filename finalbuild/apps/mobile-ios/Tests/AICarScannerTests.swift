@@ -68,6 +68,24 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(object["count"] as? Int, 2)
     }
 
+    @MainActor
+    func testDiagnosticScreenBuildsAllPrimaryTabsWithAndWithoutSession() throws {
+        let defaults = UserDefaults(suiteName: "AICarScannerScreenTests-\(UUID().uuidString)")!
+        let viewModel = DiagnosticViewModel(defaults: defaults, loadCatalogOnInit: false)
+
+        for tab in 0...4 {
+            let screen = DiagnosticScreen(viewModel: viewModel, initialTab: tab)
+            _ = screen.body
+        }
+
+        viewModel.session = try JSONDecoder().decode(DiagnosticSession.self, from: Self.sessionJSON)
+        for tab in 0...4 {
+            let screen = DiagnosticScreen(viewModel: viewModel, initialTab: tab)
+            _ = screen.body
+        }
+        XCTAssertEqual(viewModel.session?.session_id, "golden-session")
+    }
+
     func testScreenLocalizationCoversEnglishRussianAndArmenianLabels() {
         func labels(_ t: T) -> [String] {
             [

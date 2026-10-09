@@ -5,15 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "finalbuild/apps/mobile-ios/**"
-      - ".github/workflows/ios.yml"
-  pull_request:
-    paths:
-      - "finalbuild/apps/mobile-ios/**"
-      - ".github/workflows/ios.yml"
+  workflow_dispatch:
 
 jobs:
   ios-tests:

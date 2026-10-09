@@ -6,7 +6,7 @@
 **Validated merge commit:** `7edbac2a37f1f2428daa82bedd2108d482bea0ef`  
 **Merged PR:** [#5 — Expand native iOS diagnostic API and golden-case coverage](https://github.com/Grigor1995/AI-CAR-SCANER/pull/5)
 
-> This report records the post-merge CI evidence for the merge commit above. The main-branch Global CI workflow was still running its Android build when this report was written; therefore Android is explicitly marked **PENDING**, not PASS.
+> This report records the completed post-merge CI evidence for the merge commit above. Global CI #74 and Native iOS Tests #30 both completed successfully. The report file was committed to `main` after collecting the results.
 
 ## Executive summary
 
@@ -20,7 +20,7 @@
 | Internal import graph | **PASS** | `backend/tools/import_check.py` returned OK |
 | Desktop CI checks | **PASS** | Desktop dependencies installed; `apps/desktop/ui.py` and `apps/desktop/main.py` compiled |
 | Native iOS tests | **PASS** | 7 tests executed, 0 failures; Xcode reported TEST SUCCEEDED |
-| Android debug build | **PENDING at report time** | `./gradlew assembleDebug` was still running |
+| Android debug build | **PASS** | `./gradlew assembleDebug` completed successfully |
 | Live LLM / live-backend integration | **NOT VERIFIED by this CI run** | The iOS test log shows a localhost:8001 connection attempt; the unit tests themselves passed |
 
 ## CI workflow links
@@ -94,11 +94,9 @@ These are dependency and Python syntax checks. They do not constitute a full int
 
 ## Android checks
 
-**Status at report generation: PENDING.**
+**Final status: PASS.** The Android job completed successfully, including `./gradlew assembleDebug`. The debug APK build therefore passed in GitHub Actions for the validated merge commit.
 
-The Android job had successfully checked out the repository, configured Java, and made `gradlew` executable. The step `./gradlew assembleDebug` was still running. No successful build result is claimed here.
-
-Check [Global CI #74](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37903207441) for the final Android result. Update this report after the job completes if the final status differs.
+The CI result confirms the Android debug build compiles; it does not replace emulator-based UI or end-to-end backend testing.
 
 ## Warnings and limitations
 
@@ -115,7 +113,7 @@ Check [Global CI #74](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/3
 
 ## Recommended follow-up
 
-1. Confirm the final Android `assembleDebug` result in Global CI #74.
-2. Investigate and close SQLite connections that trigger resource warnings.
-3. Raise whole-backend coverage over time, starting with the low-coverage modules listed above, while retaining the 90% focused gate.
-4. Add/retain separate integration tests for a running backend and live model provider so unit-test success is not mistaken for live-service availability.
+1. Investigate and close SQLite connections that trigger resource warnings.
+2. Raise whole-backend coverage over time, starting with the low-coverage modules listed above, while retaining the 90% focused gate.
+3. Add/retain separate integration tests for a running backend and live model provider so unit-test success is not mistaken for live-service availability.
+4. Add emulator-based Android UI checks to complement the successful debug compilation.

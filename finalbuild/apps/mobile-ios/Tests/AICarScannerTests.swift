@@ -210,6 +210,107 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertTrue(try await api.vehicleCatalog().isEmpty)
     }
 
+    @MainActor
+    func testViewModelSettingsLoadSaveAndSessionGuards() async {
+        let defaults = UserDefaults(suiteName: "AICarScannerTests-\(UUID().uuidString)")!
+        defaults.set("ru", forKey: "language")
+        defaults.set(false, forKey: "darkTheme")
+        defaults.set("https://unit.test", forKey: "apiURL")
+        let viewModel = DiagnosticViewModel(defaults: defaults, loadCatalogOnInit: false)
+        XCTAssertEqual(viewModel.settings.language, .ru)
+        XCTAssertFalse(viewModel.settings.darkTheme)
+        XCTAssertEqual(viewModel.settings.apiURL, "https://unit.test")
+
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211", chassis: "W211", year: 2006, engine: "M272", fuel: ["lpg"], ecu: "ME9.7")
+        await viewModel.updateVehicle(vehicle)
+        await viewModel.addSymptom("test")
+        await viewModel.updateSymptom(Symptom(id: "s1", raw_text: "old", normalized: [:]), "new")
+        await viewModel.deleteSymptom(Symptom(id: "s1", raw_text: "old", normalized: [:]))
+        await viewModel.addDTC("P0302")
+        await viewModel.deleteDTC(DTC(id: "d1", code: "P0302", description: nil, source: nil))
+        await viewModel.analyze()
+        let recommendation = Recommendation(
+            id: "t1", name: "Check", purpose: "Verify", priority_score: 1,
+            expected_observation: nil, expected_information_gain: 0.5, estimated_cost: 0,
+            risk_level: "LOW", prerequisites: [], target_hypotheses: [], safety_notes: []
+        )
+        await viewModel.recordTest(recommendation, "INCOMPLETE", nil)
+        XCTAssertNil(viewModel.session)
+        XCTAssertFalse(viewModel.loading)
+
+        viewModel.settings.language = .hy
+        viewModel.settings.darkTheme = true
+        viewModel.settings.apiURL = "https://saved.test"
+        viewModel.saveSettings()
+        XCTAssertEqual(defaults.string(forKey: "language"), "hy")
+        XCTAssertEqual(defaults.object(forKey: "darkTheme") as? Bool, true)
+        XCTAssertEqual(defaults.string(forKey: "apiURL"), "https://saved.test")
+        viewModel.clearSession()
+        XCTAssertNil(viewModel.session)
+    }
+
+    @MainActor
+    func testViewModelRunsSessionWorkflowAndClearsLoadingOnSuccess() async throws {
+        let requests = RequestRecorder()
+        MockURLProtocol.handler = { request in
+            requests.paths.append(request.url?.path ?? "")
+            return (200, Self.sessionJSON)
+        }
+        let viewModel = makeViewModel()
+        await viewModel.loadCatalog()
+        XCTAssertTrue(viewModel.catalog.isEmpty)
+
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211 E350", chassis: "W211", year: 2006, engine: "M272", fuel: ["petrol", "lpg"], ecu: "ME9.7")
+        await viewModel.newSession(vehicle)
+        XCTAssertEqual(viewModel.session?.session_id, "golden-session")
+        await viewModel.updateVehicle(vehicle)
+        await viewModel.addSymptom("LPG misfire")
+        await viewModel.updateSymptom(Symptom(id: "symptom-1", raw_text: "old", normalized: [:]), "updated")
+        await viewModel.deleteSymptom(Symptom(id: "symptom-1", raw_text: "old", normalized: [:]))
+        await viewModel.addDTC("p0302")
+        await viewModel.deleteDTC(DTC(id: "dtc-1", code: "P0302", description: nil, source: nil))
+        await viewModel.analyze()
+        let recommendation = Recommendation(
+            id: "test-1", name: "Check mixture", purpose: "Check LPG pressure",
+            priority_score: 1, expected_observation: nil, expected_information_gain: 0.7,
+            estimated_cost: 0, risk_level: "LOW", prerequisites: [], target_hypotheses: [],
+            safety_notes: []
+        )
+        await viewModel.recordTest(recommendation, "PASS", "Within range")
+
+        XCTAssertEqual(requests.paths.count, 9)
+        XCTAssertTrue(requests.paths.contains("/api/v1/vehicle-catalog/entries"))
+        XCTAssertTrue(requests.paths.contains("/api/v1/sessions"))
+        XCTAssertTrue(requests.paths.contains("/api/v1/analysis/golden-session"))
+        XCTAssertNil(viewModel.error)
+        XCTAssertFalse(viewModel.loading)
+        viewModel.clearSession()
+        XCTAssertNil(viewModel.session)
+    }
+
+    @MainActor
+    func testViewModelStoresAPIErrorAndResetsLoading() async {
+        MockURLProtocol.handler = { _ in (503, Data("backend offline".utf8)) }
+        let viewModel = makeViewModel()
+        await viewModel.newSession(Vehicle(make: "Kia", model: "Forte", chassis: nil, year: 2017, engine: "2.0", fuel: ["petrol"], ecu: nil))
+        XCTAssertNil(viewModel.session)
+        XCTAssertTrue(viewModel.error?.contains("503") == true)
+        XCTAssertFalse(viewModel.loading)
+    }
+
+    @MainActor
+    private func makeViewModel() -> DiagnosticViewModel {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let defaults = UserDefaults(suiteName: "AICarScannerTests-\(UUID().uuidString)")!
+        defaults.set("https://unit.test", forKey: "apiURL")
+        return DiagnosticViewModel(
+            apiSession: URLSession(configuration: configuration),
+            defaults: defaults,
+            loadCatalogOnInit: false
+        )
+    }
+
     private func makeAPI() -> DiagnosticAPI {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
@@ -271,6 +372,8 @@ final class AICarScannerTests: XCTestCase {
     }
     """.utf8)
 }
+
+final class RequestRecorder { var paths: [String] = [] }
 
 final class MockURLProtocol: URLProtocol {
     typealias Handler = (URLRequest) throws -> (statusCode: Int, data: Data)

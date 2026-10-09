@@ -41,7 +41,7 @@ final class AICarScannerTests: XCTestCase {
         MockURLProtocol.handler = { request in
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.url?.path, "/api/v1/sessions")
-            let body = try XCTUnwrap(request.httpBody)
+            let body = try XCTUnwrap(Self.bodyData(from: request))
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
             XCTAssertEqual(json["make"] as? String, "Mercedes-Benz")
             XCTAssertEqual(json["year"] as? Int, 2006)
@@ -115,6 +115,25 @@ final class AICarScannerTests: XCTestCase {
             baseURL: "https://unit.test",
             session: URLSession(configuration: configuration)
         )
+    }
+
+    private static func bodyData(from request: URLRequest) -> Data? {
+        if let body = request.httpBody { return body }
+        guard let stream = request.httpBodyStream else { return nil }
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        let bufferSize = 4096
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate() }
+        while stream.hasBytesAvailable {
+            let count = stream.read(buffer, maxLength: bufferSize)
+            if count < 0 { return nil }
+            if count == 0 { break }
+            data.append(buffer, count: count)
+        }
+        return data.isEmpty ? nil : data
     }
 
     private static let sessionJSON = Data("""

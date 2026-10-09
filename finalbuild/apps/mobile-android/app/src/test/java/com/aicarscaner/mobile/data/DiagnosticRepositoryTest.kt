@@ -4,6 +4,7 @@ import com.aicarscaner.mobile.data.api.DiagnosticApi
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.DtcRequest
 import com.aicarscaner.mobile.data.api.SymptomRequest
+import com.aicarscaner.mobile.data.api.TestResultRequest
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import io.mockk.coEvery

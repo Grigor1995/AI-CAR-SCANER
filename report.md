@@ -123,7 +123,13 @@ The CI result confirms the Android debug build compiles; it does not replace emu
 
 ## Coverage Expansion Report — PR #6 (2026-10-09)
 
-This section records the latest measured results from the coverage-expansion changes. These measurements are from the CI run on commit `a7d25bd3e00f2c5421cc736b53913372f4ba950e`.
+**Status:** PR #6 is merged into `main`. The final coverage-expansion commit tested by CI was `7c8b359a2bb2a5e25670ae67497035ee66ca226e`; merge commit is `22c1b6e1925b2b5468e4c18c3b244090412079cb`.
+
+### CI validation
+
+- [Native iOS Tests #62](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37906368063) — **PASS**
+- [Global CI #130](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37906368080) — **PASS** (desktop, Android, Python jobs all succeeded)
+- [PR #6](https://github.com/Grigor1995/AI-CAR-SCANER/pull/6) — **MERGED**
 
 ### Native iOS
 
@@ -131,31 +137,36 @@ This section records the latest measured results from the coverage-expansion cha
 |---|---:|
 | XCTest | **22 passed, 0 failed** |
 | Whole iOS app target line coverage | **79.61% (617/775)** |
-| `DiagnosticAPI.swift` | **96.77%** |
+| `DiagnosticAPI.swift` | **96.77% (120/124)** |
 | `DiagnosticScreen.swift` | **72.42%** |
-| `AICarScannerApp.swift` | **100%** |
-| `OBDService.swift` | **28.21%** |
+| `AICarScannerApp.swift` | **100% (11/11)** |
+| `OBDService.swift` | **28.21% (11/39)** |
 
-The tests now cover the main diagnostic API methods and payloads, API errors/decoding failures, diagnostic data models, settings persistence, view-model success/error handling, golden-case uncertainty preservation, and screen-tab/localization branches. XCTest coverage output is uploaded as the `ios-test-and-coverage-reports` artifact.
+Tests cover diagnostic API routes/payloads, HTTP and decoding errors, model decoding, settings persistence, view-model success/error flows, golden-case uncertainty, screen tabs, and English/Russian/Armenian labels. The remaining major iOS gap is hardware-independent testing for BLE scan/discovery paths in `OBDService.swift`.
+
+Artifact: `ios-test-and-coverage-reports` in the Native iOS Tests workflow.
 
 ### Desktop
 
 | Metric | Result |
 |---|---:|
-| Desktop pytest suite | **72 passed** |
-| Core desktop coverage gate | **98.68%** |
-| `api_client.py` | **98%** |
+| Desktop pytest suite | **71 passed** |
+| Focused core coverage | **98.68% (149/151 statements)** |
+| Required core coverage gate | **95% — PASS** |
+| `api_client.py` | **97.87%** |
 | `models.py` | **100%** |
 | `storage.py` | **100%** |
-| Whole desktop package coverage | **64%** |
-| `ui.py` | **69%** |
-| `main.py` | **36%** |
+| Supplemental whole-logic scope | **61.13% (228/373 statements)** |
+| `main.py` | **35.59%** |
+| `backend_worker.py` | **Not imported in supplemental run; direct coverage remains unverified** |
 
-The 95% CI gate applies to the focused, testable desktop core modules (`api_client.py`, `models.py`, and `storage.py`). A separate full-package report includes UI/startup modules and is uploaded as the `desktop-coverage-reports` artifact.
+The blocking gate applies to the testable core modules (`api_client.py`, `models.py`, and `storage.py`) and passed. The supplemental run generated its coverage XML and completed all 71 tests, but the Python process then segfaulted during Qt/PySide6 teardown. That supplemental step is deliberately non-blocking; therefore the report is useful for gap analysis, but it is not a clean process-exit validation of the full GUI/startup scope.
 
-### Remaining coverage gaps
+Artifact: `desktop-coverage-reports` in Global CI. The strict core report is the authoritative desktop coverage gate.
 
-- iOS BLE adapter scanning/discovery in `OBDService.swift` is not yet covered by deterministic hardware-independent tests.
-- Desktop `main.py` process orchestration and `backend_worker.py` still have low/no direct test coverage.
-- Whole-package desktop coverage is informational at 64%; it is not represented as 100% or as meeting the focused 95% gate.
-- CI run links: [Global CI](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37905440045) · [Native iOS Tests](https://github.com/Grigor1995/AI-CAR-SCANER/actions/runs/37905440281)
+### Known remaining gaps / caveats
+
+- Neither platform has 100% whole-application coverage; the measured iOS target is 79.61%, and the supplemental desktop logic scope is 61.13%.
+- iOS BLE scanning/discovery needs injectable abstractions or mocks for deterministic tests.
+- Desktop startup/process orchestration (`main.py` and `backend_worker.py`) needs additional isolated tests; the Qt teardown segfault should be investigated rather than hidden by the non-blocking supplemental step.
+- The CI green status means all configured required jobs/gates passed. It does not prove live LLM availability, physical OBD/BLE connectivity, or full end-to-end behavior against a running backend.

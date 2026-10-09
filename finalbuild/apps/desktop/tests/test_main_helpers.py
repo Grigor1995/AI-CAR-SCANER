@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from urllib.error import URLError
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
@@ -33,7 +33,7 @@ def test_is_port_open_closes_socket(monkeypatch):
 
 
 def test_json_health_returns_status_and_handles_network_errors(monkeypatch):
-    response = Mock()
+    response = MagicMock()
     response.status = 200
     response.__enter__ = Mock(return_value=response)
     response.__exit__ = Mock(return_value=False)

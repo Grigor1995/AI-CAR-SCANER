@@ -18,6 +18,56 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(decoded.fuel, ["petrol", "lpg"])
     }
 
+    func testVehicleCatalogIdentityIncludesVehicleVariant() {
+        let entry = VehicleCatalogEntry(
+            make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006,
+            engine: "M272", ecu: "ME9.7", fuel: ["petrol", "lpg"], source: "fixture", scope: "exact"
+        )
+        XCTAssertEqual(entry.id, "Mercedes-Benz|E-Class|W211|2006|M272")
+    }
+
+    func testAppLanguageCasesAreStableAndIdentifiable() {
+        XCTAssertEqual(AppLanguage.allCases.map(\.rawValue), ["en", "ru", "hy"])
+        XCTAssertEqual(AppLanguage.allCases.map(\.id), ["en", "ru", "hy"])
+        XCTAssertEqual(AppLanguage.en.label, "EN")
+        XCTAssertEqual(AppLanguage.ru.label, "RU")
+        XCTAssertEqual(AppLanguage.hy.label, "ARM")
+    }
+
+    func testDiagnosticModelsDecodeOptionalAndNestedFields() throws {
+        let json = Data("""
+        {
+          "session_id":"s-2","state":"ANALYSIS_READY",
+          "vehicle":{"make":"Kia","model":"Forte","chassis":null,"year":2017,"engine":"2.0","fuel":["petrol"],"ecu":null},
+          "symptoms":[{"id":"sym-1","raw_text":"Hard cold start","normalized":{"condition":"cold"}}],
+          "dtcs":[{"id":null,"code":"P0302","description":null,"source":"manual"}],
+          "evidence":[{"id":"e-1","fact":"Only cold","source":"driver","status":"reported","confidence":0.8}],
+          "hypotheses":[{"id":"h-1","category":"fuel","statement":"Check pressure","supporting_evidence_ids":["e-1"],"contradicting_evidence_ids":[],"status":"possible"}],
+          "recommendations":[{"id":"t-1","name":"Fuel pressure","purpose":"Check it","priority_score":0.7,"expected_observation":"Stable","expected_information_gain":0.6,"estimated_cost":0.0,"risk_level":"LOW","prerequisites":[],"target_hypotheses":["h-1"],"safety_notes":[]}],
+          "test_results":[{"test_id":"t-1","result":"PASS","measurements":{"bar":"3.5"},"notes":null,"test_name":"Fuel pressure"}],
+          "audit_log":[{"event":"analysis","hypotheses":1,"evidence_count":1,"hypothesis_count":1,"questions":["Check pressure"]}]
+        }
+        """.utf8)
+        let session = try JSONDecoder().decode(DiagnosticSession.self, from: json)
+        XCTAssertEqual(session.session_id, "s-2")
+        XCTAssertNil(session.vehicle?.chassis)
+        XCTAssertEqual(session.symptoms.first?.normalized["condition"], "cold")
+        XCTAssertNil(session.dtcs.first?.id)
+        XCTAssertEqual(session.evidence.first?.confidence, 0.8)
+        XCTAssertEqual(session.hypotheses.first?.supporting_evidence_ids, ["e-1"])
+        XCTAssertEqual(session.recommendations.first?.expected_information_gain, 0.6)
+        XCTAssertEqual(session.test_results.first?.id, "t-1")
+        XCTAssertTrue(session.audit_log.first?.id.contains("analysis") == true)
+    }
+
+    func testAnyEncodableForwardsUnderlyingEncodable() throws {
+        struct Payload: Encodable { let code: String; let count: Int }
+        let data = try JSONEncoder().encode(AnyEncodable(Payload(code: "P0302", count: 2)))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["code"] as? String, "P0302")
+        XCTAssertEqual(object["count"] as? Int, 2)
+    }
+
     func testLanguages() {
         XCTAssertEqual(AppLanguage.en.label, "EN")
         XCTAssertEqual(AppLanguage.ru.label, "RU")

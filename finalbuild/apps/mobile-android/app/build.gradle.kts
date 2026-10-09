@@ -8,6 +8,12 @@ android {
     namespace = "com.aicarscaner.mobile"
     compileSdk = 36
 
+    buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
+    }
+
     defaultConfig {
         applicationId = "com.aicarscaner.mobile"
         minSdk = 26

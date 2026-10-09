@@ -108,6 +108,15 @@ class DiagnosticRepositoryTest {
     }
 
     @Test
+    fun deleteDtcDelegatesToApi() = runTest {
+        coEvery { api.deleteDtc("session-1", "dtc-1") } returns session
+
+        assertEquals(session, repository.deleteDtc("session-1", "dtc-1"))
+
+        coVerify(exactly = 1) { api.deleteDtc("session-1", "dtc-1") }
+    }
+
+    @Test
     fun recordTestResultForwardsResultNotesAndLanguage() = runTest {
         coEvery { api.recordTestResult("session-1", any<TestResultRequest>(), "hy") } returns session
 

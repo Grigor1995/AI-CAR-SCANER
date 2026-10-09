@@ -108,6 +108,108 @@ final class AICarScannerTests: XCTestCase {
         }
     }
 
+    func testUpdateVehicleUsesPUTAndEncodesPayload() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "PUT")
+            XCTAssertEqual(request.url?.path, "/api/v1/sessions/golden-session/vehicle")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["model"] as? String, "W211 E350")
+            return (200, Self.sessionJSON)
+        }
+        let vehicle = Vehicle(make: "Mercedes-Benz", model: "W211 E350", chassis: "W211", year: 2006, engine: "M272", fuel: ["lpg"], ecu: "ME9.7")
+        _ = try await makeAPI().updateVehicle("golden-session", vehicle)
+    }
+
+    func testSymptomCreateUpdateAndDeleteRoutes() async throws {
+        let api = makeAPI()
+        MockURLProtocol.handler = { request in
+            switch (request.httpMethod, request.url?.path) {
+            case ("POST", "/api/v1/sessions/s1/symptoms"):
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["raw_text"] as? String, "Shakes on LPG")
+                XCTAssertEqual(json["symptom"] as? String, "Shakes on LPG")
+            case ("PUT", "/api/v1/sessions/s1/symptoms/sym-1"):
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["raw_text"] as? String, "Updated symptom")
+            case ("DELETE", "/api/v1/sessions/s1/symptoms/sym-1"):
+                XCTAssertNil(request.httpBody)
+            default:
+                XCTFail("Unexpected request: \(request.httpMethod ?? "?") \(request.url?.path ?? "?")")
+            }
+            return (200, Self.sessionJSON)
+        }
+        _ = try await api.addSymptom("s1", "Shakes on LPG")
+        _ = try await api.updateSymptom("s1", "sym-1", "Updated symptom")
+        _ = try await api.deleteSymptom("s1", "sym-1")
+    }
+
+    func testDTCAddUppercasesCodeAndDeleteUsesIdentifier() async throws {
+        let api = makeAPI()
+        MockURLProtocol.handler = { request in
+            if request.httpMethod == "POST" {
+                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs")
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["code"] as? String, "P0302")
+            } else {
+                XCTAssertEqual(request.httpMethod, "DELETE")
+                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs/dtc-1")
+            }
+            return (200, Self.sessionJSON)
+        }
+        _ = try await api.addDTC("s1", "p0302")
+        _ = try await api.deleteDTC("s1", "dtc-1")
+    }
+
+    func testRecordTestSendsResultNotesAndLanguage() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/v1/intelligence/sessions/s1/test-results")
+            XCTAssertEqual(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "language" })?.value, "hy")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["test_id"] as? String, "test-1")
+            XCTAssertEqual(json["result"] as? String, "FAIL")
+            XCTAssertEqual(json["notes"] as? String, "Pressure out of range")
+            XCTAssertNotNil(json["measurements"] as? [String: String])
+            return (200, Self.sessionJSON)
+        }
+        let recommendation = Recommendation(
+            id: "test-1", name: "Check LPG pressure", purpose: "Validate delivery pressure",
+            priority_score: 1, expected_observation: nil, expected_information_gain: 0.8,
+            estimated_cost: 0, risk_level: "LOW", prerequisites: [], target_hypotheses: [],
+            safety_notes: []
+        )
+        _ = try await makeAPI().recordTest("s1", recommendation, "FAIL", "Pressure out of range", .hy)
+    }
+
+    func testInvalidJSONResponseThrowsDecodingError() async {
+        MockURLProtocol.handler = { _ in (200, Data("{invalid".utf8)) }
+        do {
+            _ = try await makeAPI().vehicleCatalog()
+            XCTFail("Expected JSON decoding to fail")
+        } catch {
+            XCTAssertNotNil(error)
+        }
+    }
+
+    func testAPIBasePathIsPreserved() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/proxy/api/v1/vehicle-catalog/entries")
+            return (200, Data("[]".utf8))
+        }
+        let api = DiagnosticAPI(baseURL: "https://unit.test/proxy", session: URLSession(configuration: {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [MockURLProtocol.self]
+            return configuration
+        }()))
+        XCTAssertTrue(try await api.vehicleCatalog().isEmpty)
+    }
+
     private func makeAPI() -> DiagnosticAPI {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]

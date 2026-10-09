@@ -80,6 +80,7 @@ def test_request_exception_is_wrapped(client, monkeypatch):
         (lambda c: c.network_map("s-1"), "GET", "/api/v1/network-discovery/sessions/s-1/map"),
         (lambda c: c.ingest_can_frames("s-1", "can0", []), "POST", "/api/v1/network-discovery/sessions/s-1/frames"),
         (lambda c: c.active_probe("s-1", ["ecu-1"]), "POST", "/api/v1/network-discovery/sessions/s-1/active-probe"),
+        (lambda c: c.active_probe("s-1"), "POST", "/api/v1/network-discovery/sessions/s-1/active-probe"),
         (lambda c: c.list_devices(), "GET", "/api/v1/devices"),
         (lambda c: c.scan_devices("ble"), "POST", "/api/v1/devices/scan/ble"),
         (lambda c: c.probe_wifi("192.0.2.2"), "POST", "/api/v1/devices/wifi/probe"),
@@ -103,7 +104,7 @@ def test_public_api_methods_route_correctly(client, monkeypatch, invoke, method,
     args, kwargs = request.call_args
     assert args[0] == method
     assert args[1] == "http://backend.test" + path
-    assert kwargs["timeout"] == 4
+    assert kwargs["timeout"] == (300.0 if path.endswith("/ai-analyze-live") else 4)
     if path.endswith("/records"):
         assert kwargs["params"] == {"limit": 1000}
     if path.endswith("/ai-analyze-live"):

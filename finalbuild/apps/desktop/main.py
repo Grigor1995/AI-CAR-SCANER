@@ -22,11 +22,13 @@ if str(ROOT) not in sys.path:
 
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
+BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", "https://ai-car-scaner.onrender.com").rstrip("/")
+LOCAL_BACKEND = BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost"))
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))
 LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/")
 LLM_MODEL = os.environ.get("LOCAL_LLM_SERVER_MODEL", "Qwen3-8B-Q4_K_M.gguf")
-HEALTH_URL = f"http://{HOST}:{PORT}/health"
+HEALTH_URL = f"{BACKEND_URL}/health"
 LLM_HEALTH_URL = f"{LLM_BASE_URL}/health"
 _STARTUP_TIMEOUT = float(os.environ.get("AI_CAR_BACKEND_STARTUP_TIMEOUT", "15"))
 _LLM_STARTUP_TIMEOUT = float(os.environ.get("LOCAL_LLM_SERVER_STARTUP_TIMEOUT_S", "180"))
@@ -212,6 +214,10 @@ def _backend_log_path() -> Path:
 
 def start_backend() -> subprocess.Popen[bytes] | None:
     global _backend_process, _backend_log
+    if not LOCAL_BACKEND:
+        # The default is the shared cloud API. Do not spawn an unused local API
+        # process when Desktop is configured for Render or another remote host.
+        return None
     if _backend_healthy():
         return None
     if _is_port_open(HOST, PORT):
@@ -299,10 +305,11 @@ def run() -> None:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
-    try:
-        start_llama_server()
-    except Exception as exc:
-        print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
+    if LOCAL_BACKEND:
+        try:
+            start_llama_server()
+        except Exception as exc:
+            print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
 
     try:
         start_backend()

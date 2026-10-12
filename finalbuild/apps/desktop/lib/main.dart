@@ -227,6 +227,110 @@ class _DesktopShellState extends State<DesktopShell> {
     }
   }
 
+  Future<void> addSymptom(String text) async {
+    final id = activeSession?.id;
+    if (id == null || !online || text.trim().isEmpty) {
+      _showError('Create a session and enter a symptom first.');
+      return;
+    }
+    try {
+      final updated = await api.addSymptom(id, text.trim());
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom added');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> updateSymptom(String symptomId, String text) async {
+    final id = activeSession?.id;
+    if (id == null || !online || text.trim().isEmpty) return;
+    try {
+      final updated = await api.updateSymptom(id, symptomId, text.trim());
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom updated');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> deleteSymptom(String symptomId) async {
+    final id = activeSession?.id;
+    if (id == null || !online) return;
+    try {
+      final updated = await api.deleteSymptom(id, symptomId);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom deleted');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> updateDtc(String dtcId, String code, String? description, String? source) async {
+    final id = activeSession?.id;
+    if (id == null || !online || code.trim().isEmpty) return;
+    try {
+      final updated = await api.updateDtc(id, dtcId, code.trim(), description: description, source: source);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('DTC updated');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> deleteDtc(String dtcId) async {
+    final id = activeSession?.id;
+    if (id == null || !online) return;
+    try {
+      final updated = await api.deleteDtc(id, dtcId);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('DTC deleted');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> recordTestResult(TestCandidateModel candidate, String result, String notes) async {
+    final id = activeSession?.id;
+    if (id == null || !online) {
+      _showError('Create a session and connect to the backend first.');
+      return;
+    }
+    try {
+      final updated = await api.recordTestResult(id, candidate.id, result, notes: notes);
+      final plan = await api.decisionPlan(id);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+        decisionJson = plan;
+      });
+      _snack('Test result recorded: $result');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
   Future<void> toggleAcquisition() async {
     final id = activeSession?.id;
     if (id == null || !online) {
@@ -349,6 +453,11 @@ class _DesktopShellState extends State<DesktopShell> {
           sessionJson: sessionJson,
           onAnalyze: ingestAndAnalyze,
           onAddDtc: addDtc,
+          onAddSymptom: addSymptom,
+          onUpdateSymptom: updateSymptom,
+          onDeleteSymptom: deleteSymptom,
+          onUpdateDtc: updateDtc,
+          onDeleteDtc: deleteDtc,
           onOpenTests: () => setState(() => selectedIndex = 5),
         );
       case 3:
@@ -363,11 +472,11 @@ class _DesktopShellState extends State<DesktopShell> {
       case 4:
         return NetworkPage(session: activeSession, network: networkJson, onDemo: loadDemoNetwork);
       case 5:
-        return TestsPage(session: activeSession, decision: decisionJson, onRefresh: _refreshSessionData);
+        return TestsPage(session: activeSession, sessionJson: sessionJson, decision: decisionJson, onRefresh: _refreshSessionData, onRecordTest: recordTestResult);
       case 6:
         return ReportsPage(session: activeSession, sessionJson: sessionJson, telemetry: telemetryJson);
       default:
-        return SettingsPage(online: online, apiUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:8000'));
+        return SettingsPage(online: online, apiUrl: const String.fromEnvironment('API_URL', defaultValue: 'https://ai-car-scaner.onrender.com'));
     }
   }
 }
@@ -710,11 +819,16 @@ class _VehiclesPageState extends State<VehiclesPage> {
 }
 
 class DiagnosticPage extends StatefulWidget {
-  const DiagnosticPage({super.key, this.session, required this.sessionJson, required this.onAnalyze, required this.onAddDtc, required this.onOpenTests});
+  const DiagnosticPage({super.key, this.session, required this.sessionJson, required this.onAnalyze, required this.onAddDtc, required this.onAddSymptom, required this.onUpdateSymptom, required this.onDeleteSymptom, required this.onUpdateDtc, required this.onDeleteDtc, required this.onOpenTests});
   final DiagnosticSessionModel? session;
   final Map<String, dynamic> sessionJson;
   final Future<void> Function(String text) onAnalyze;
   final Future<void> Function(String code) onAddDtc;
+  final Future<void> Function(String text) onAddSymptom;
+  final Future<void> Function(String symptomId, String text) onUpdateSymptom;
+  final Future<void> Function(String symptomId) onDeleteSymptom;
+  final Future<void> Function(String dtcId, String code, String? description, String? source) onUpdateDtc;
+  final Future<void> Function(String dtcId) onDeleteDtc;
   final VoidCallback onOpenTests;
 
   @override
@@ -724,17 +838,22 @@ class DiagnosticPage extends StatefulWidget {
 class _DiagnosticPageState extends State<DiagnosticPage> {
   final controller = TextEditingController(text: 'Engine shakes below 2000 RPM during acceleration on LPG; petrol operation is normal.');
   final dtcController = TextEditingController(text: 'P0302');
+  final symptomController = TextEditingController();
+  final editDtcController = TextEditingController();
+  String? editingSymptomId;
+  String? editingDtcId;
   bool busy = false;
   bool dtcBusy = false;
 
   @override
-  void dispose() { controller.dispose(); dtcController.dispose(); super.dispose(); }
+  void dispose() { controller.dispose(); dtcController.dispose(); symptomController.dispose(); editDtcController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     final evidence = ((widget.sessionJson['evidence'] as List?) ?? const []).map((e) => EvidenceModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     final hypotheses = ((widget.sessionJson['hypotheses'] as List?) ?? const []).map((e) => HypothesisModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     final dtcs = ((widget.sessionJson['dtcs'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    final symptoms = ((widget.sessionJson['symptoms'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
     return ListView(padding: const EdgeInsets.all(26), children: [
       _PageTitle(title: 'Diagnostic', subtitle: widget.session == null ? 'Create a session first.' : 'Current evidence, hypotheses and next actions.'),
@@ -753,7 +872,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             Row(children: [
               SizedBox(width: 150, child: TextField(controller: dtcController, decoration: const InputDecoration(labelText: 'DTC'))),
               const SizedBox(width: 10),
-              OutlinedButton.icon(onPressed: dtcBusy ? null : () async { if (dtcController.text.trim().isEmpty) return; setState(() => dtcBusy = true); await widget.onAddDtc(dtcController.text.trim().toUpperCase()); if (mounted) setState(() => dtcBusy = false); }, icon: const Icon(Icons.add_alert_outlined), label: Text(dtcBusy ? 'Adding…' : 'Add DTC')),
+              OutlinedButton.icon(onPressed: dtcBusy ? null : () async { if (dtcController.text.trim().isEmpty) return; setState(() => dtcBusy = true); await widget.onAddDtc(dtcController.text.trim().toUpperCase()); if (mounted) setState(() { dtcBusy = false; dtcController.clear(); }); }, icon: const Icon(Icons.add_alert_outlined), label: Text(dtcBusy ? 'Adding…' : 'Add DTC')),
             ]),
             const SizedBox(height: 14),
             Row(children: [
@@ -771,9 +890,131 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             const Text('DTCs', style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             if (dtcs.isEmpty) const Text('No DTCs recorded yet.', style: TextStyle(color: Colors.white60)),
-            for (final dtc in dtcs) Text('${dtc['code'] ?? '—'}  ${dtc['description'] ?? ''}'),
+            for (final dtc in dtcs) ...[
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(dtc['code']?.toString() ?? '—'),
+                subtitle: Text(dtc['description']?.toString() ?? ''),
+                trailing: Wrap(
+                  spacing: 2,
+                  children: [
+                    IconButton(
+                      tooltip: 'Edit DTC',
+                      onPressed: () => setState(() {
+                        editingDtcId = dtc['id']?.toString();
+                        editDtcController.text = dtc['code']?.toString() ?? '';
+                      }),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Delete DTC',
+                      onPressed: () {
+                        final id = dtc['id']?.toString();
+                        if (id != null && id.isNotEmpty) widget.onDeleteDtc(id);
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              ),
+              if (editingDtcId != null && editingDtcId == dtc['id']?.toString())
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: editDtcController, decoration: const InputDecoration(labelText: 'Edit DTC code'))),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Save DTC',
+                      onPressed: () async {
+                        final id = editingDtcId;
+                        if (id == null || editDtcController.text.trim().isEmpty) return;
+                        await widget.onUpdateDtc(id, editDtcController.text.trim(), dtc['description']?.toString(), dtc['source']?.toString());
+                        if (mounted) setState(() => editingDtcId = null);
+                      },
+                      icon: const Icon(Icons.check),
+                    ),
+                    IconButton(
+                      tooltip: 'Cancel edit',
+                      onPressed: () => setState(() => editingDtcId = null),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+            ],
           ])))),
         ]),
+        const SizedBox(height: 18),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Structured symptoms', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: TextField(
+                      controller: symptomController,
+                      minLines: 1,
+                      maxLines: 3,
+                      decoration: InputDecoration(labelText: editingSymptomId == null ? 'Add symptom' : 'Edit symptom'),
+                    )),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () async {
+                        final value = symptomController.text.trim();
+                        if (value.isEmpty) return;
+                        final id = editingSymptomId;
+                        if (id == null) {
+                          await widget.onAddSymptom(value);
+                        } else {
+                          await widget.onUpdateSymptom(id, value);
+                        }
+                        if (mounted) setState(() { editingSymptomId = null; symptomController.clear(); });
+                      },
+                      child: Text(editingSymptomId == null ? 'Add' : 'Save'),
+                    ),
+                    if (editingSymptomId != null)
+                      IconButton(
+                        tooltip: 'Cancel edit',
+                        onPressed: () => setState(() { editingSymptomId = null; symptomController.clear(); }),
+                        icon: const Icon(Icons.close),
+                      ),
+                  ],
+                ),
+                if (symptoms.isEmpty)
+                  const Padding(padding: EdgeInsets.only(top: 10), child: Text('No structured symptoms recorded yet.', style: TextStyle(color: Colors.white60))),
+                for (final symptom in symptoms)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(symptom['raw_text']?.toString() ?? ''),
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit symptom',
+                          onPressed: () => setState(() {
+                            editingSymptomId = symptom['id']?.toString();
+                            symptomController.text = symptom['raw_text']?.toString() ?? '';
+                          }),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        IconButton(
+                          tooltip: 'Delete symptom',
+                          onPressed: () {
+                            final id = symptom['id']?.toString();
+                            if (id != null && id.isNotEmpty) widget.onDeleteSymptom(id);
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 18),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: _EvidenceCard(evidence: evidence)),
@@ -860,14 +1101,71 @@ class NetworkPage extends StatelessWidget {
 }
 
 class TestsPage extends StatelessWidget {
-  const TestsPage({super.key, this.session, required this.decision, required this.onRefresh});
+  const TestsPage({super.key, this.session, required this.sessionJson, required this.decision, required this.onRefresh, required this.onRecordTest});
   final DiagnosticSessionModel? session;
+  final Map<String, dynamic> sessionJson;
   final Map<String, dynamic> decision;
   final Future<void> Function({bool silent}) onRefresh;
+  final Future<void> Function(TestCandidateModel candidate, String result, String notes) onRecordTest;
+
+  Future<void> _showRecordDialog(BuildContext context, TestCandidateModel candidate) async {
+    var selectedResult = 'INCOMPLETE';
+    final notesController = TextEditingController();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(candidate.name),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Test result'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedResult,
+                  items: const [
+                    DropdownMenuItem(value: 'PASS', child: Text('PASS')),
+                    DropdownMenuItem(value: 'FAIL', child: Text('FAIL')),
+                    DropdownMenuItem(value: 'INCOMPLETE', child: Text('INCOMPLETE')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => selectedResult = value);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesController,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: const InputDecoration(labelText: 'Measurements / notes'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () async {
+                  final notes = notesController.text.trim();
+                  Navigator.of(dialogContext).pop();
+                  await onRecordTest(candidate, selectedResult, notes);
+                },
+                child: const Text('Record result'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      notesController.dispose();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final candidates = ((decision['candidates'] as List?) ?? const []).map((e) => TestCandidateModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    final results = ((sessionJson['test_results'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
     return ListView(padding: const EdgeInsets.all(26), children: [
       _PageTitle(title: 'Recommended Tests', subtitle: 'Decision engine balances information gain, evidence fit, cost and risk.'),
       const SizedBox(height: 20),
@@ -895,9 +1193,36 @@ class TestsPage extends StatelessWidget {
                 _ScoreChip(label: 'Risk ${candidate.risk}'),
                 for (final r in candidate.rationale.take(2)) _ScoreChip(label: r),
               ]),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _showRecordDialog(context, candidate),
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('Record result'),
+              ),
             ])),
           ])));
         }),
+        if (results.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Recent test results', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  for (final result in results.reversed.take(10))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(result['test_name']?.toString() ?? result['test_id']?.toString() ?? 'Diagnostic test'),
+                      subtitle: Text([result['result']?.toString() ?? 'INCOMPLETE', result['notes']?.toString() ?? ''].where((value) => value.isNotEmpty).join(' • ')),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     ]);
   }

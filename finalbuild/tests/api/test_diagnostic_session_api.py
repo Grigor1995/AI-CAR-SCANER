@@ -220,7 +220,7 @@ def test_recommendations_and_test_result_follow_requested_language():
     assert all(item["id"] != test_id for item in localized["recommendations"])
     assert any("Թեստի արդյունք" in item["fact"] for item in localized["evidence"])
     assert any(item.get("test_name") for item in localized["test_results"])
-    assert any(item["result"] in {"ԱՆՑԱՎ", "ՉԱՆՑԱՎ", "ԱՆՀԱՅՏ"} for item in localized["test_results"])
+    assert any(item["result"] in {"ԱՆՑԱՎ", "ՉԱՆՑԱՎ", "ԱՆԱՎԱՐՏ"} for item in localized["test_results"])
 
     after_statuses = {item["category"]: item["status"] for item in localized["hypotheses"]}
     assert any(
@@ -262,3 +262,24 @@ def test_non_lpg_analysis_keeps_rule_recommendations():
     assert response.status_code == 200, response.text
     ru_names = {item["name"] for item in response.json()["recommendations"]}
     assert "Проверить подсос неучтённого воздуха" in ru_names
+
+def test_test_result_status_contract_normalizes_legacy_unknown_and_rejects_other_values():
+    client = TestClient(app)
+    created = client.post("/api/v1/sessions", json={})
+    assert created.status_code == 200, created.text
+    session_id = created.json()["session_id"]
+    test_id = "00000000-0000-0000-0000-000000000001"
+
+    legacy = client.post(
+        f"/api/v1/intelligence/sessions/{session_id}/test-results",
+        json={"test_id": test_id, "result": "UNKNOWN"},
+    )
+    assert legacy.status_code == 200, legacy.text
+    assert legacy.json()["test_results"][-1]["result"] == "INCOMPLETE"
+
+    invalid = client.post(
+        f"/api/v1/intelligence/sessions/{session_id}/test-results",
+        json={"test_id": test_id, "result": "SKIPPED"},
+    )
+    assert invalid.status_code == 422, invalid.text
+

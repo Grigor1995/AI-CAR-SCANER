@@ -113,6 +113,18 @@ final class DiagnosticAPI {
         )
     }
 
+    func updateDTC(_ id: String, _ dtcID: String, _ code: String, _ description: String?, _ source: String?) async throws -> DiagnosticSession {
+        try await request(
+            "/api/v1/sessions/\(id)/dtcs/\(dtcID)",
+            method: "PUT",
+            body: DTCUpdateRequest(
+                code: code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+                description: description,
+                source: source ?? "USER_REPORTED"
+            )
+        )
+    }
+
     func deleteDTC(_ id: String, _ dtcID: String) async throws -> DiagnosticSession {
         try await request(
             "/api/v1/sessions/\(id)/dtcs/\(dtcID)",

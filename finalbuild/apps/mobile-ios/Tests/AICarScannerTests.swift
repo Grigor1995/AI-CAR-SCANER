@@ -238,21 +238,32 @@ final class AICarScannerTests: XCTestCase {
         _ = try await api.deleteSymptom("s1", "sym-1")
     }
 
-    func testDTCAddUppercasesCodeAndDeleteUsesIdentifier() async throws {
+    func testDTCAddUpdateAndDeleteUseCanonicalEndpoints() async throws {
         let api = makeAPI()
         MockURLProtocol.handler = { request in
-            if request.httpMethod == "POST" {
-                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs")
+            if request.httpMethod == "DELETE" {
+                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs/dtc-1")
+                XCTAssertNil(request.httpBody)
+            } else {
                 let body = try XCTUnwrap(Self.bodyData(from: request))
                 let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
-                XCTAssertEqual(json["code"] as? String, "P0302")
-            } else {
-                XCTAssertEqual(request.httpMethod, "DELETE")
-                XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs/dtc-1")
+                switch request.httpMethod {
+                case "POST":
+                    XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs")
+                    XCTAssertEqual(json["code"] as? String, "P0302")
+                case "PUT":
+                    XCTAssertEqual(request.url?.path, "/api/v1/sessions/s1/dtcs/dtc-1")
+                    XCTAssertEqual(json["code"] as? String, "P0171")
+                    XCTAssertEqual(json["description"] as? String, "System too lean")
+                    XCTAssertEqual(json["source"] as? String, "USER_REPORTED")
+                default:
+                    XCTFail("Unexpected request: \(request.httpMethod ?? "?")")
+                }
             }
             return (200, Self.sessionJSON)
         }
         _ = try await api.addDTC("s1", "p0302")
+        _ = try await api.updateDTC("s1", "dtc-1", "p0171", "System too lean", "USER_REPORTED")
         _ = try await api.deleteDTC("s1", "dtc-1")
     }
 

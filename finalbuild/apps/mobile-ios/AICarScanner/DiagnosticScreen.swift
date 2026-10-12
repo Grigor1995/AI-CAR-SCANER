@@ -17,6 +17,8 @@ struct DiagnosticScreen: View {
     @State private var settingsOpen = false
     @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
+    @State private var editDTC:DTC?
+    @State private var editDTCText=""
     @State private var editText=""
     @State private var test:Recommendation?
     @State private var testResult = "INCOMPLETE"
@@ -88,7 +90,7 @@ struct DiagnosticScreen: View {
             Text("DTC").font(.title3.bold())
             HStack{TextField("P0302",text:$dtc).textFieldStyle(.roundedBorder).textInputAutocapitalization(.characters)
                 Button("＋"){let x=dtc;dtc="";Task{await viewModel.addDTC(x)}}.disabled(viewModel.session == nil || dtc.isEmpty)}
-            ForEach(viewModel.session?.dtcs ?? []){x in InputRow(title:x.code,subtitle:x.description ?? x.source ?? "",edit:{},delete:{Task{await viewModel.deleteDTC(x)}})}
+            ForEach(viewModel.session?.dtcs ?? []){x in VStack(alignment:.leading,spacing:6){InputRow(title:x.code,subtitle:x.description ?? x.source ?? "",edit:{editDTC=x;editDTCText=x.code},delete:{Task{await viewModel.deleteDTC(x)}});if editDTC?.id == x.id {HStack{TextField("DTC",text:$editDTCText).textInputAutocapitalization(.characters).textFieldStyle(.roundedBorder);Button(t.save){Task{await viewModel.updateDTC(x,editDTCText);editDTC=nil}}.disabled(editDTCText.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty);Button(t.cancel){editDTC=nil}}}}}
             Button(t.analyze){Task{await viewModel.analyze()}}.buttonStyle(.borderedProminent).frame(maxWidth:.infinity)
         }
     }

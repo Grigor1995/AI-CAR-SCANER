@@ -94,6 +94,11 @@ struct SymptomRequest: Encodable {
     let symptom: String
 }
 struct DTCRequest: Encodable { let code: String }
+struct DTCUpdateRequest: Encodable {
+    let code: String
+    let description: String?
+    let source: String
+}
 struct TestResultRequest: Encodable {
     let test_id: String
     let result: String

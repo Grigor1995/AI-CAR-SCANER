@@ -3,10 +3,10 @@ import 'package:dio/dio.dart';
 class DiagnosticApiClient {
   DiagnosticApiClient({String? baseUrl})
       : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:8000'),
-          connectTimeout: const Duration(seconds: 2),
-          receiveTimeout: const Duration(seconds: 8),
-          sendTimeout: const Duration(seconds: 8),
+          baseUrl: baseUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'https://ai-car-scaner.onrender.com'),
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 15),
           headers: {'Content-Type': 'application/json'},
         ));
 
@@ -86,6 +86,29 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Future<Map<String, dynamic>> addSymptom(String id, String text) async {
+    final response = await _dio.post('/api/v1/sessions/$id/symptoms', data: {
+      'raw_text': text,
+      'symptom': text,
+      'normalized': <String, String>{},
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> updateSymptom(String id, String symptomId, String text) async {
+    final response = await _dio.put('/api/v1/sessions/$id/symptoms/$symptomId', data: {
+      'raw_text': text,
+      'symptom': text,
+      'normalized': <String, String>{},
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> deleteSymptom(String id, String symptomId) async {
+    final response = await _dio.delete('/api/v1/sessions/$id/symptoms/$symptomId');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> addDtc(String id, String code, {String? description}) async {
     final response = await _dio.post('/api/v1/sessions/$id/dtcs', data: {
       'code': code,
@@ -111,10 +134,37 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Future<Map<String, dynamic>> updateDtc(String id, String dtcId, String code, {String? description, String? source}) async {
+    final response = await _dio.put('/api/v1/sessions/$id/dtcs/$dtcId', data: {
+      'code': code.trim().toUpperCase(),
+      'description': description,
+      'source': source ?? 'USER_REPORTED',
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> deleteDtc(String id, String dtcId) async {
+    final response = await _dio.delete('/api/v1/sessions/$id/dtcs/$dtcId');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> analyze(String id, {String language = 'en'}) async {
     final response = await _dio.post(
       '/api/v1/analysis/$id',
       queryParameters: {'language': language},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> recordTestResult(String id, String testId, String result, {String notes = ''}) async {
+    final response = await _dio.post(
+      '/api/v1/intelligence/sessions/$id/test-results',
+      data: {
+        'test_id': testId,
+        'result': result,
+        'measurements': <String, dynamic>{},
+        'notes': notes,
+      },
     );
     return Map<String, dynamic>.from(response.data as Map);
   }

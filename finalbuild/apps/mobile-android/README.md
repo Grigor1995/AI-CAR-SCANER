@@ -1,12 +1,19 @@
-# AI CAR SCANER — Android Mobile
+# AI CAR SCANER — Native Android
 
-Native Android client built with Kotlin and Jetpack Compose.
+Native Kotlin + Jetpack Compose client.
 
-## Architecture
+Use the shared cross-platform feature contract in [PLATFORM_FEATURE_PARITY.md](../../PLATFORM_FEATURE_PARITY.md) as the canonical feature list and parity tracker.
 
-- Presentation: Jetpack Compose + ViewModel
-- Domain: diagnostic session use cases and models
-- Data: REST API, local persistence, repositories
-- Device: BLE / USB / OBD / future VCI integration
+## Build
 
-The existing Flutter client is intentionally preserved during migration until the Kotlin client is verified.
+Open this directory in Android Studio, sync Gradle, then run the app configuration on an emulator or device.
+
+## Backend
+
+The default API is `https://ai-car-scaner.onrender.com`. It is configured in `app/src/main/java/com/aicarscaner/mobile/data/api/ApiClient.kt`.
+
+For local emulator development only, use `http://10.0.2.2:8001/` when the FastAPI backend is running on the development host.
+
+## Diagnostic result contract
+
+Test results sent to the API must be exactly `PASS`, `FAIL`, or `INCOMPLETE`. Legacy `UNKNOWN` is accepted by the backend only for compatibility and normalized to `INCOMPLETE`.

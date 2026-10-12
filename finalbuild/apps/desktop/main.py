@@ -97,8 +97,8 @@ def _resolve_model_path() -> Path:
     return (ROOT / "models" / LLM_MODEL).resolve()
 
 
-def start_llama_server() -> subprocess.Popen[bytes] | None:
-    """Start llama-server when it is not already healthy; return only an owned process."""
+def start_llama_server(wait_for_ready: bool = True) -> subprocess.Popen[bytes] | None:
+    """Start llama-server; optionally return immediately while the model loads."""
     global _llm_process, _llm_log
 
     if os.environ.get("AI_CAR_DISABLE_LLM_AUTOSTART", "0").lower() in {"1", "true", "yes"}:
@@ -158,6 +158,10 @@ def start_llama_server() -> subprocess.Popen[bytes] | None:
         _llm_log = None
         print(f"[AI-Car-Scanner] Could not start llama-server.exe: {exc}", file=sys.stderr)
         return None
+
+    if not wait_for_ready:
+        # Model loading can take minutes; keep the desktop UI responsive while it loads.
+        return _llm_process
 
     deadline = time.monotonic() + _LLM_STARTUP_TIMEOUT
     while time.monotonic() < deadline:
@@ -307,7 +311,7 @@ def run() -> None:
     backend_error: str | None = None
     if LOCAL_BACKEND:
         try:
-            start_llama_server()
+            start_llama_server(wait_for_ready=False)
         except Exception as exc:
             print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
 

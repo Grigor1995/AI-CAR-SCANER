@@ -30,4 +30,4 @@ The Python test suite covers the API client, models, persistence, main-window he
 
 ## Shared backend
 
-The desktop client uses the shared FastAPI diagnostic API. Configure the backend URL with AI_CAR_BACKEND_URL when a non-default endpoint is required. The backend's deterministic analysis remains authoritative; optional LLM output must preserve uncertainty and evidence provenance.
+The Desktop client defaults to the local FastAPI service at `http://127.0.0.1:8001` and starts it automatically when needed. Set `AI_CAR_BACKEND_URL=https://ai-car-scaner.onrender.com` to use the hosted API instead. Standard API requests use an 8-second timeout so unavailable endpoints fail promptly; live AI analysis has its own longer timeout. The backend's deterministic analysis remains authoritative; optional LLM output must preserve uncertainty and evidence provenance.

@@ -233,10 +233,10 @@ def _translate_known_ui_line(line: str, language: str) -> str:
         for mapping in all_maps:
             localized = mapping.get(label)
             if localized and localized != label:
-                translated = re.sub(r"(?<!\\w)" + re.escape(localized), label, translated)
+                translated = re.sub(r"(?<!\w)" + re.escape(localized), label, translated)
     for label in sorted(label_keys, key=len, reverse=True):
         translated = re.sub(
-            r"(?<!\\w)" + re.escape(label),
+            r"(?<!\w)" + re.escape(label),
             _translate_ui_text(label, language),
             translated,
         )

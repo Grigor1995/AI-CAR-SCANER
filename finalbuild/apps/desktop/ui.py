@@ -395,7 +395,7 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); bar.addStretch(); lay.addLayout(bar)
-        split=QSplitter(); self.list=QListWidget(); self.details=QPlainTextEdit(); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
+        split=QSplitter(); self.list=QListWidget(); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
         self.list.itemSelectionChanged.connect(self.show_selected)
     def refresh(self):
         self.list.clear()
@@ -683,11 +683,24 @@ class MainWindow(QMainWindow):
             elif isinstance(widget, QPlainTextEdit):
                 widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
                 if widget.isReadOnly():
-                    widget.setPlainText(self.tr_text(widget.toPlainText()))
+                    if widget.objectName() == "vehicleDetails":
+                        lines = widget.toPlainText().splitlines()
+                        label_keys = ("Make:", "Model:", "Chassis:", "Year:", "Engine:", "Fuel:", "ECU:")
+                        translated_lines = []
+                        for line in lines:
+                            for label in label_keys:
+                                if line.startswith(label):
+                                    line = self.tr_text(label) + line[len(label):]
+                                    break
+                            translated_lines.append(line)
+                        widget.setPlainText("\\n".join(translated_lines))
+                    else:
+                        widget.setPlainText(self.tr_text(widget.toPlainText()))
             elif isinstance(widget, QListWidget):
-                for index in range(widget.count()):
-                    item = widget.item(index)
-                    item.setText(self.tr_text(item.text()))
+                if widget is self.nav or (len(self.pages) > 6 and widget is self.pages[6].list):
+                    for index in range(widget.count()):
+                        item = widget.item(index)
+                        item.setText(self.tr_text(item.text()))
             elif isinstance(widget, QComboBox):
                 for index in range(widget.count()):
                     widget.setItemText(index, self.tr_text(widget.itemText(index)))

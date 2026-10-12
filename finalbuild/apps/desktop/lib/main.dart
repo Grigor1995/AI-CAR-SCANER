@@ -476,7 +476,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case 6:
         return ReportsPage(session: activeSession, sessionJson: sessionJson, telemetry: telemetryJson);
       default:
-        return SettingsPage(online: online, apiUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:8000'));
+        return SettingsPage(online: online, apiUrl: const String.fromEnvironment('API_URL', defaultValue: 'https://ai-car-scaner.onrender.com'));
     }
   }
 }
@@ -827,7 +827,7 @@ class DiagnosticPage extends StatefulWidget {
   final Future<void> Function(String text) onAddSymptom;
   final Future<void> Function(String symptomId, String text) onUpdateSymptom;
   final Future<void> Function(String symptomId) onDeleteSymptom;
-  final Future<void> Function(String dtcId, String code) onUpdateDtc;
+  final Future<void> Function(String dtcId, String code, String? description, String? source) onUpdateDtc;
   final Future<void> Function(String dtcId) onDeleteDtc;
   final VoidCallback onOpenTests;
 

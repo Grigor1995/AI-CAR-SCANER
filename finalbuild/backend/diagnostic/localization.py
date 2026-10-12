@@ -270,11 +270,13 @@ def _localized_test_result_fact(fact: str, language: str) -> str:
             "PASS": "ПРОЙДЕН",
             "FAIL": "НЕ ПРОЙДЕН",
             "UNKNOWN": "НЕИЗВЕСТНО",
+            "INCOMPLETE": "НЕ ЗАВЕРШЁН",
         },
         "hy": {
             "PASS": "ԱՆՑԱՎ",
             "FAIL": "ՉԱՆՑԱՎ",
             "UNKNOWN": "ԱՆՀԱՅՏ",
+            "INCOMPLETE": "ԱՆԱՎԱՐՏ",
         },
     }
     prefix = {"ru": "Результат теста", "hy": "Թեստի արդյունք"}.get(language, "Test result")
@@ -431,8 +433,8 @@ for _lang, _entries in {
     RECOMMENDATION_TRANSLATIONS[_lang].update(_entries)
 
 RECOMMENDATION_STATUS_TRANSLATIONS = {
-    "ru": {"PASS": "ПРОЙДЕН", "FAIL": "НЕ ПРОЙДЕН", "INCONCLUSIVE": "НЕОДНОЗНАЧНО", "NOT_TESTED": "НЕ ТЕСТИРОВАЛОСЬ"},
-    "hy": {"PASS": "ԱՆՑԱՎ", "FAIL": "ՉԱՆՑԱՎ", "INCONCLUSIVE": "ԱՆՈՐՈՇ", "NOT_TESTED": "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ"},
+    "ru": {"PASS": "ПРОЙДЕН", "FAIL": "НЕ ПРОЙДЕН", "INCONCLUSIVE": "НЕОДНОЗНАЧНО", "NOT_TESTED": "НЕ ТЕСТИРОВАЛОСЬ", "INCOMPLETE": "НЕ ЗАВЕРШЁН"},
+    "hy": {"PASS": "ԱՆՑԱՎ", "FAIL": "ՉԱՆՑԱՎ", "INCONCLUSIVE": "ԱՆՈՐՈՇ", "NOT_TESTED": "ՉԻ ԹԵՍՏԱՎՈՐՎԵԼ", "INCOMPLETE": "ԱՆԱՎԱՐՏ"},
 }
 
 def _localized_safety_note(note: str, language: str) -> str:

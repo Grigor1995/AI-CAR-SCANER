@@ -453,6 +453,11 @@ class _DesktopShellState extends State<DesktopShell> {
           sessionJson: sessionJson,
           onAnalyze: ingestAndAnalyze,
           onAddDtc: addDtc,
+          onAddSymptom: addSymptom,
+          onUpdateSymptom: updateSymptom,
+          onDeleteSymptom: deleteSymptom,
+          onUpdateDtc: updateDtc,
+          onDeleteDtc: deleteDtc,
           onOpenTests: () => setState(() => selectedIndex = 5),
         );
       case 3:
@@ -814,11 +819,16 @@ class _VehiclesPageState extends State<VehiclesPage> {
 }
 
 class DiagnosticPage extends StatefulWidget {
-  const DiagnosticPage({super.key, this.session, required this.sessionJson, required this.onAnalyze, required this.onAddDtc, required this.onOpenTests});
+  const DiagnosticPage({super.key, this.session, required this.sessionJson, required this.onAnalyze, required this.onAddDtc, required this.onAddSymptom, required this.onUpdateSymptom, required this.onDeleteSymptom, required this.onUpdateDtc, required this.onDeleteDtc, required this.onOpenTests});
   final DiagnosticSessionModel? session;
   final Map<String, dynamic> sessionJson;
   final Future<void> Function(String text) onAnalyze;
   final Future<void> Function(String code) onAddDtc;
+  final Future<void> Function(String text) onAddSymptom;
+  final Future<void> Function(String symptomId, String text) onUpdateSymptom;
+  final Future<void> Function(String symptomId) onDeleteSymptom;
+  final Future<void> Function(String dtcId, String code) onUpdateDtc;
+  final Future<void> Function(String dtcId) onDeleteDtc;
   final VoidCallback onOpenTests;
 
   @override
@@ -828,17 +838,22 @@ class DiagnosticPage extends StatefulWidget {
 class _DiagnosticPageState extends State<DiagnosticPage> {
   final controller = TextEditingController(text: 'Engine shakes below 2000 RPM during acceleration on LPG; petrol operation is normal.');
   final dtcController = TextEditingController(text: 'P0302');
+  final symptomController = TextEditingController();
+  final editDtcController = TextEditingController();
+  String? editingSymptomId;
+  String? editingDtcId;
   bool busy = false;
   bool dtcBusy = false;
 
   @override
-  void dispose() { controller.dispose(); dtcController.dispose(); super.dispose(); }
+  void dispose() { controller.dispose(); dtcController.dispose(); symptomController.dispose(); editDtcController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     final evidence = ((widget.sessionJson['evidence'] as List?) ?? const []).map((e) => EvidenceModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     final hypotheses = ((widget.sessionJson['hypotheses'] as List?) ?? const []).map((e) => HypothesisModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     final dtcs = ((widget.sessionJson['dtcs'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    final symptoms = ((widget.sessionJson['symptoms'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
     return ListView(padding: const EdgeInsets.all(26), children: [
       _PageTitle(title: 'Diagnostic', subtitle: widget.session == null ? 'Create a session first.' : 'Current evidence, hypotheses and next actions.'),

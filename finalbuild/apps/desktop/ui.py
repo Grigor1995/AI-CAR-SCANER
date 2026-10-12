@@ -77,7 +77,7 @@ _UI_TRANSLATIONS = {
         "PID / Channel": "PID / Канал", "Count": "Количество", "Min": "Мин.", "Max": "Макс.", "Mean": "Среднее", "Events": "События",
         "AI live-data interpretation will appear here...": "Здесь появится интерпретация текущих данных ИИ...",
         "Technician notes / measurements": "Заметки техника / измерения", "Record selected result": "Сохранить результат",
-        "PASS": "PASS", "FAIL": "FAIL", "INCOMPLETE": "INCOMPLETE",
+        "PASS": "Пройден", "FAIL": "Не пройден", "INCOMPLETE": "Неполно",
         "VCI / Adapter Connection": "Подключение VCI / адаптера",
         "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Найдите USB/BLE-адаптеры или подключитесь к Wi-Fi OBD. Запись и программирование блоков здесь недоступны.",
         "Scan USB": "Поиск USB", "Scan BLE": "Поиск BLE", "Add Simulator": "Добавить симулятор", "Probe Wi-Fi": "Проверить Wi-Fi",
@@ -143,7 +143,7 @@ _UI_TRANSLATIONS = {
         "PID / Channel": "PID / ալիք", "Count": "Քանակ", "Min": "Նվազագույն", "Max": "Առավելագույն", "Mean": "Միջին", "Events": "Իրադարձություններ",
         "AI live-data interpretation will appear here...": "Այստեղ կհայտնվի ընթացիկ տվյալների AI մեկնաբանությունը...",
         "Technician notes / measurements": "Տեխնիկի նշումներ / չափումներ", "Record selected result": "Գրանցել արդյունքը",
-        "PASS": "PASS", "FAIL": "FAIL", "INCOMPLETE": "INCOMPLETE",
+        "PASS": "Անցավ", "FAIL": "Չանցավ", "INCOMPLETE": "Անորոշ",
         "VCI / Adapter Connection": "VCI / ադապտերի միացում",
         "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Գտեք USB/BLE ադապտերներ կամ միացեք Wi-Fi OBD-ին։ Կառավարման բլոկների գրանցումն ու ծրագրավորումն այստեղ հասանելի չեն։",
         "Scan USB": "Փնտրել USB", "Scan BLE": "Փնտրել BLE", "Add Simulator": "Ավելացնել սիմուլյատոր", "Probe Wi-Fi": "Ստուգել Wi-Fi",
@@ -503,7 +503,7 @@ class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); self.list=QListWidget(); lay.addWidget(self.list)
-        bar=QHBoxLayout(); self.result=QComboBox(); self.result.addItems(["PASS","FAIL","INCOMPLETE"]); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+        bar=QHBoxLayout(); self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", app.language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", app.language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", app.language), "INCOMPLETE"); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
     def refresh(self):
         self.list.clear(); self.app.test_candidates=[]
         for item in self.app.decision.get("candidates",[]):
@@ -909,7 +909,7 @@ class MainWindow(QMainWindow):
         if not self.session: self.show_error("No active session."); return
         item=self.pages[6].list.currentItem()
         if not item: self.show_error("Select a diagnostic test first."); return
-        tid=str(item.data(Qt.UserRole)); result=self.pages[6].result.currentText(); notes=self.pages[6].notes.text().strip()
+        tid=str(item.data(Qt.UserRole)); result=str(self.pages[6].result.currentData() or self.pages[6].result.currentText()); notes=self.pages[6].notes.text().strip()
         def work():
             data=self.api.record_test_result(self.session.session_id, tid, result, notes=notes, language=self.language); self.api.analyze(self.session.session_id, language=self.language); return self.api.decision_plan(self.session.session_id)
         self.run_worker(work,self._decision_done)

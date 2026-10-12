@@ -975,7 +975,7 @@ def run() -> None:
             pass
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
-    icon_path = _resource_path("assets/AI-Car-Scanner.webp")
+    icon_path = _resource_path("assets/AI-Car-Scanner-mobile.png")
     if icon_path.is_file():
         app.setWindowIcon(QIcon(str(icon_path)))
     win = MainWindow()

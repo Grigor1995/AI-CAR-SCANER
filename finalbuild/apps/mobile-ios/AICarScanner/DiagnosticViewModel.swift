@@ -36,7 +36,15 @@ final class DiagnosticViewModel: ObservableObject {
             settings.language = language
         }
         settings.darkTheme = defaults.object(forKey: "darkTheme") as? Bool ?? true
-        settings.apiURL = defaults.string(forKey: "apiURL") ?? settings.apiURL
+        let savedAPIURL = defaults.string(forKey: "apiURL")
+        if let savedAPIURL,
+           !savedAPIURL.contains("127.0.0.1:8001"),
+           !savedAPIURL.contains("localhost:8001") {
+            settings.apiURL = savedAPIURL
+        } else {
+            // Upgrade existing installs that persisted the simulator-only URL.
+            settings.apiURL = "https://ai-car-scaner.onrender.com"
+        }
     }
 
     func saveSettings() {

@@ -599,7 +599,46 @@ class _VehiclesPageState extends State<VehiclesPage> {
   String ecu = 'ME9.7';
   final fuel = TextEditingController(text: 'Petrol,LPG');
 
-  List<Map<String, dynamic>> get _catalog => widget.catalog;
+  // Merge the backend catalog with the bundled catalog instead of treating the
+  // backend response as the only source. This keeps Desktop's model list useful
+  // when the server catalog is sparse or temporarily missing vehicle variants.
+  List<Map<String, dynamic>> get _catalog {
+    final bundled = <Map<String, dynamic>>[
+      for (final makeOption in vehicleCatalog)
+        for (final modelOption in makeOption.models)
+          for (final chassisOption in modelOption.chassisOptions)
+            for (final yearOption in chassisOption.years)
+              for (final engineOption in chassisOption.engines)
+                for (final ecuOption in engineOption.ecus)
+                  <String, dynamic>{
+                    'make': makeOption.name,
+                    'model': modelOption.name,
+                    'chassis': chassisOption.chassis,
+                    'year': yearOption,
+                    'engine': engineOption.name,
+                    'ecu': ecuOption,
+                    'fuel': const <String>[],
+                    'source': 'bundled',
+                    'scope': 'fallback',
+                  },
+    ];
+
+    // Keep remote rows first so their authoritative fitment details win when
+    // a matching bundled variant exists, while preserving additional local rows.
+    final merged = <String, Map<String, dynamic>>{};
+    for (final row in <Map<String, dynamic>>[...widget.catalog, ...bundled]) {
+      final key = [
+        row['make'] ?? '',
+        row['model'] ?? '',
+        row['chassis'] ?? '',
+        row['year'] ?? '',
+        row['engine'] ?? '',
+        row['ecu'] ?? '',
+      ].join('|');
+      merged.putIfAbsent(key, () => row);
+    }
+    return merged.values.toList();
+  }
 
   List<Map<String, dynamic>> _filtered({
     String? selectedMake,

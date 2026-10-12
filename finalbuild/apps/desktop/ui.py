@@ -693,7 +693,7 @@ class MainWindow(QMainWindow):
                                     line = self.tr_text(label) + line[len(label):]
                                     break
                             translated_lines.append(line)
-                        widget.setPlainText("\\n".join(translated_lines))
+                        widget.setPlainText("\n".join(translated_lines))
                     else:
                         widget.setPlainText(self.tr_text(widget.toPlainText()))
             elif isinstance(widget, QListWidget):

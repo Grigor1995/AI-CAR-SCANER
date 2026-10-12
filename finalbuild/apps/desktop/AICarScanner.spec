@@ -16,7 +16,8 @@ a = Analysis(
     pathex=[str(project_root)],
     binaries=binaries,
     datas=[(str(project_root / "assets" / "AI-Car-Scanner.ico"), "assets"),
-           (str(project_root / "assets" / "ai-car-scanner-icon.png"), "assets")],
+           (str(project_root / "assets" / "ai-car-scanner-icon.png"), "assets"),
+           (str(project_root / "shared" / "vehicle_catalog.json"), "shared")],
     hiddenimports=[
         "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
         "requests", "apps.desktop.ui", "apps.desktop.api_client",

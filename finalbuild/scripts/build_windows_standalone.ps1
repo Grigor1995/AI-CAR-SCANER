@@ -11,6 +11,7 @@ if (Test-Path (Join-Path $root '.venv\Scripts\python.exe')) {
 
 & $py -m pip install --upgrade pip setuptools wheel
 & $py -m pip install -r requirements.txt
+& $py -m pip install -r apps\desktop\requirements.txt
 & $py -m pip install pyinstaller
 
 if (Test-Path 'build') { Remove-Item -Recurse -Force 'build' }

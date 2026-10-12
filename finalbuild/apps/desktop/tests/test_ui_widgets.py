@@ -22,6 +22,7 @@ from apps.desktop.ui import (
     TestsPage as DiagnosticTestsPage,
     VehicleDialog,
     VehiclesPage,
+    _translate_ui_text,
 )
 
 
@@ -90,6 +91,17 @@ class FakeApp:
     def active_probe(self): pass
     def refresh_telemetry(self): pass
 
+
+
+def test_ui_translation_covers_pages_and_switches_languages(qapp):
+    assert _translate_ui_text("Dashboard", "ru") == "Обзор"
+    assert _translate_ui_text("Dashboard", "hy") == "Գլխավոր"
+    assert _translate_ui_text("Session state: ANALYSIS_READY", "ru").startswith("Состояние сеанса:")
+    russian = _translate_ui_text("Session state: ANALYSIS_READY", "ru")
+    armenian = _translate_ui_text(russian, "hy")
+    assert armenian.startswith("Սեսիայի վիճակ՝")
+    assert _translate_ui_text(russian, "en") == "Session state: ANALYSIS_READY"
+    assert _translate_ui_text("PASS", "hy") == "PASS"
 
 def test_sparkline_limits_values_and_paints(qapp):
     chart = Sparkline([1, 2])

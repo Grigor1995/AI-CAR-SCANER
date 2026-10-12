@@ -10,7 +10,8 @@ if (Test-Path (Join-Path $root '.venv\Scripts\python.exe')) {
 }
 
 & $py -m pip install -r requirements.txt
-& $py -m pip install pyinstaller
+& $py -m pip install pyinstaller pillow
+& $py apps\desktop\prepare_windows_icon.py
 $pyinstaller = Join-Path (Split-Path $py) 'pyinstaller.exe'
 & $pyinstaller --noconfirm --clean apps\desktop\specs\backend_service.spec
 & $pyinstaller --noconfirm --clean apps\desktop\specs\AICarScanner.spec

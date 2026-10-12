@@ -84,6 +84,8 @@ def test_start_llama_server_can_return_while_model_loads(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "_resolve_llama_server", lambda: server)
     monkeypatch.setattr(main, "_is_port_open", lambda *_: False)
     monkeypatch.setattr(main, "_appdata_log", lambda name: tmp_path / name)
+    monkeypatch.setattr(main, "_llm_process", None)
+    monkeypatch.setattr(main, "_llm_log", None)
     process = Mock()
     monkeypatch.setattr(main.subprocess, "Popen", Mock(return_value=process))
 

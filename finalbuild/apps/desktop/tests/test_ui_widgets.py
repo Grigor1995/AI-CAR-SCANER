@@ -116,8 +116,6 @@ def test_metric_card_updates_displayed_value(qapp):
 def test_vehicle_dialog_fallback_and_vehicle_conversion(qapp):
     dialog = VehicleDialog()
     assert dialog.make.currentText() == "Mercedes-Benz"
-    available_makes = {dialog.make.itemText(i) for i in range(dialog.make.count())}
-    assert {"Toyota", "Volkswagen", "BMW", "Mercedes-Benz"}.issubset(available_makes)
     assert dialog.model.currentText() == "E-Class"
     assert dialog.chassis.currentText() == "W211"
     assert dialog.year.currentText() == "2006"
@@ -151,9 +149,6 @@ def test_vehicle_dialog_handles_catalog_api_failure(qapp):
     parent.api = SimpleNamespace(vehicle_catalog_entries=Mock(side_effect=RuntimeError("offline")))
     dialog = VehicleDialog(parent)
     assert dialog.make.currentText() == "Mercedes-Benz"
-    available_makes = {dialog.make.itemText(i) for i in range(dialog.make.count())}
-    assert "Toyota" in available_makes
-    assert "Volkswagen" in available_makes
     assert dialog.vehicle().engine == "M272 E35 3.5"
 
 

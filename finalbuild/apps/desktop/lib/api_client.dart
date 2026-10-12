@@ -119,6 +119,19 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Future<Map<String, dynamic>> recordTestResult(String id, String testId, String result, {String notes = ''}) async {
+    final response = await _dio.post(
+      '/api/v1/intelligence/sessions/$id/test-results',
+      data: {
+        'test_id': testId,
+        'result': result,
+        'measurements': <String, dynamic>{},
+        'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> decisionPlan(String id) async {
     final response = await _dio.get('/api/v1/decision/sessions/$id/plan');
     return Map<String, dynamic>.from(response.data as Map);

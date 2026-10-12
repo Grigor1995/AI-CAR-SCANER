@@ -134,10 +134,11 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> updateDtc(String id, String dtcId, String code) async {
+  Future<Map<String, dynamic>> updateDtc(String id, String dtcId, String code, {String? description, String? source}) async {
     final response = await _dio.put('/api/v1/sessions/$id/dtcs/$dtcId', data: {
       'code': code.trim().toUpperCase(),
-      'source': 'USER_REPORTED',
+      'description': description,
+      'source': source ?? 'USER_REPORTED',
     });
     return Map<String, dynamic>.from(response.data as Map);
   }

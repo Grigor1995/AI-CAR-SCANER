@@ -113,11 +113,15 @@ final class DiagnosticAPI {
         )
     }
 
-    func updateDTC(_ id: String, _ dtcID: String, _ code: String) async throws -> DiagnosticSession {
+    func updateDTC(_ id: String, _ dtcID: String, _ code: String, _ description: String?, _ source: String?) async throws -> DiagnosticSession {
         try await request(
             "/api/v1/sessions/\\(id)/dtcs/\\(dtcID)",
             method: "PUT",
-            body: DTCRequest(code: code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased())
+            body: DTCUpdateRequest(
+                code: code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+                description: description,
+                source: source ?? "USER_REPORTED"
+            )
         )
     }
 

@@ -14,6 +14,10 @@ The repository uses native client implementations. The legacy Flutter client sou
 
 See [Windows setup](finalbuild/START_HERE_WINDOWS.md) for the local desktop/AI runtime and [project overview](finalbuild/README.md) for backend setup, tests, and architecture.
 
+## Shared client behavior
+
+The three native clients share the backend vehicle catalog and DiagnosticSession API. Language codes are English (en), Russian (ru), and Armenian (hy); theme modes are dark/light; diagnostic result values are PASS/FAIL/INCOMPLETE. See [the machine-readable client contract](finalbuild/config/client_contract.json) and [platform feature contract](finalbuild/PLATFORM_FEATURE_PARITY.md).
+
 ## Architecture and quality reports
 
 - [Architecture documentation](finalbuild/docs/README.md)

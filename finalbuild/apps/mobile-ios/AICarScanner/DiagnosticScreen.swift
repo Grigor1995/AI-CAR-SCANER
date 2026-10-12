@@ -71,6 +71,15 @@ struct DiagnosticScreen: View {
     private var vehicleView:some View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.vehicle).font(.title3.bold())
+            if viewModel.catalog.isEmpty {
+                Text(t.tr(
+                    "Offline catalog: options may differ from the server catalog.",
+                    "Офлайн-каталог: список может отличаться от серверного каталога.",
+                    "Օֆլայն կատալոգ․ ցանկը կարող է տարբերվել սերվերի կատալոգից։"
+                ))
+                .font(.footnote)
+                .foregroundStyle(.orange)
+            }
             PickerField(t.make,$make,makes);PickerField(t.model,$model,models);PickerField(t.chassis,$chassis,chassisOptions)
             PickerField(t.year,$year,years);PickerField(t.engine,$engine,engines);PickerField("ECU",$ecu,ecus)
             HStack{Toggle(t.petrol,isOn:$petrol);Toggle(t.lpg,isOn:$lpg)}

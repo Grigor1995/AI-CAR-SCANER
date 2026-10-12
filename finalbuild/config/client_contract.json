@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "api": {
+    "default_base_url": "https://ai-car-scaner.onrender.com",
+    "vehicle_catalog_endpoint": "/api/v1/vehicle-catalog/entries",
+    "diagnostic_analysis_endpoint": "/api/v1/analysis/{session_id}",
+    "language_query_parameter": "language"
+  },
+  "vehicle_catalog": {
+    "source_of_truth": "backend_api",
+    "fields": [
+      "make",
+      "model",
+      "chassis",
+      "year",
+      "engine",
+      "ecu"
+    ],
+    "selection_order": [
+      "make",
+      "model",
+      "chassis",
+      "year",
+      "engine",
+      "ecu"
+    ],
+    "offline_fallback_must_be_labeled": true,
+    "fitment_warning": "Catalog matches are candidates only; confirm exact fitment using VIN and ECU identification."
+  },
+  "languages": [
+    {
+      "code": "en",
+      "label": "English"
+    },
+    {
+      "code": "ru",
+      "label": "Русский"
+    },
+    {
+      "code": "hy",
+      "label": "Հայերեն"
+    }
+  ],
+  "themes": [
+    {
+      "code": "dark",
+      "label": "Dark"
+    },
+    {
+      "code": "light",
+      "label": "Light"
+    }
+  ],
+  "diagnostic_workflow": [
+    "select_vehicle",
+    "create_or_open_session",
+    "collect_symptoms_and_dtcs",
+    "analyze_evidence",
+    "review_hypotheses_and_missing_information",
+    "run_recommended_test",
+    "record_pass_fail_incomplete",
+    "reanalyze",
+    "review_activity_and_close"
+  ],
+  "test_result_statuses": [
+    "PASS",
+    "FAIL",
+    "INCOMPLETE"
+  ],
+  "safety_invariants": [
+    "Do not present a hypothesis as a confirmed component failure without supporting test evidence.",
+    "Do not label simulated telemetry as real vehicle data.",
+    "A missing or failed catalog request must not be represented as an authoritative vehicle fitment result."
+  ]
+}

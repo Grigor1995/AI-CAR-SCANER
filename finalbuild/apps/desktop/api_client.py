@@ -47,14 +47,32 @@ class DiagnosticApiClient:
     def ingest_evidence(self, session_id: str, text: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/intelligence/sessions/{session_id}/evidence/text", json={"text": text})
 
-    def analyze(self, session_id: str) -> dict[str, Any]:
-        return self._request("POST", f"/api/v1/analysis/{session_id}")
+    def analyze(self, session_id: str, language: str = "en") -> dict[str, Any]:
+        normalized_language = language if language in {"en", "ru", "hy"} else "en"
+        return self._request(
+            "POST", f"/api/v1/analysis/{session_id}",
+            params={"language": normalized_language},
+        )
 
     def decision_plan(self, session_id: str) -> dict[str, Any]:
         return self._request("GET", f"/api/v1/decision/sessions/{session_id}/plan")
 
-    def record_test_result(self, session_id: str, test_id: str, result: str, measurements: dict[str, Any] | None = None, notes: str = "") -> dict[str, Any]:
-        return self._request("POST", f"/api/v1/intelligence/sessions/{session_id}/test-results", json={"test_id": test_id, "result": result, "measurements": measurements or {}, "notes": notes})
+    def record_test_result(
+        self,
+        session_id: str,
+        test_id: str,
+        result: str,
+        measurements: dict[str, Any] | None = None,
+        notes: str = "",
+        language: str = "en",
+    ) -> dict[str, Any]:
+        normalized_language = language if language in {"en", "ru", "hy"} else "en"
+        return self._request(
+            "POST",
+            f"/api/v1/intelligence/sessions/{session_id}/test-results",
+            params={"language": normalized_language},
+            json={"test_id": test_id, "result": result, "measurements": measurements or {}, "notes": notes},
+        )
 
     def start_simulator(self, session_id: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/acquisition/sessions/{session_id}/start", json={"adapter": "simulator"})

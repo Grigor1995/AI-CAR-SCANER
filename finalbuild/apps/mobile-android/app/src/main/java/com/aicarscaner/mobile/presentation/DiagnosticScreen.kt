@@ -489,6 +489,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold
                     )
+                    if (state.vehicleCatalog.isEmpty()) {
+                        Text(
+                            when (appSettings.language) {
+                                AppLanguage.RU -> "Офлайн-каталог: список может отличаться от серверного каталога."
+                                AppLanguage.HY -> "Օֆլայն կատալոգ․ ցանկը կարող է տարբերվել սերվերի կատալոգից։"
+                                else -> "Offline catalog: options may differ from the server catalog."
+                            },
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                     VehicleFields(
                         text = text,
                         catalog = state.vehicleCatalog,
@@ -804,6 +815,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             if (editingVehicle) {
+                                if (state.vehicleCatalog.isEmpty()) {
+                                    Text(
+                                        when (appSettings.language) {
+                                            AppLanguage.RU -> "Офлайн-каталог: список может отличаться от серверного каталога."
+                                            AppLanguage.HY -> "Օֆլայն կատալոգ․ ցանկը կարող է տարբերվել սերվերի կատալոգից։"
+                                            else -> "Offline catalog: options may differ from the server catalog."
+                                        },
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                                 VehicleFields(
                                     text = text,
                                     catalog = state.vehicleCatalog,

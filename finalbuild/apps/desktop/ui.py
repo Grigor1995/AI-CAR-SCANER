@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer
+from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
@@ -37,6 +37,17 @@ QLabel#muted { color: #8e9bab; }
 QLabel#ok { color: #6ed0a4; font-weight: 600; }
 QLabel#warn { color: #e6be6c; font-weight: 600; }
 """
+
+APP_QSS_LIGHT = (
+    APP_QSS.replace("#0b0f14", "#f4f6f8").replace("#e9eef5", "#18212b")
+    .replace("#111720", "#ffffff").replace("#202a36", "#d9e0e7")
+    .replace("#a9b8c8", "#526170").replace("#1c2a39", "#e6edf3")
+    .replace("#304155", "#c6d0da").replace("#24374a", "#d8e3ec")
+    .replace("#172330", "#edf1f5").replace("#173b5d", "#d7eaff")
+    .replace("#0f141c", "#ffffff").replace("#263243", "#c6d0da")
+    .replace("#1e3348", "#d7eaff").replace("#d9e3ee", "#18212b")
+    .replace("#5595d9", "#3978b8").replace("#8e9bab", "#526170")
+)
 
 class Worker(QThread):
     finished_ok = Signal(object)
@@ -87,6 +98,13 @@ class VehicleDialog(QDialog):
                 self._catalog = []
 
         form = QFormLayout(self)
+        if not self._catalog:
+            language = getattr(parent, "language", "en")
+            fallback_notice = {
+                "ru": "Офлайн-каталог: список может отличаться от серверного каталога.",
+                "hy": "Օֆլայն կատալոգ․ ցանկը կարող է տարբերվել սերվերի կատալոգից։",
+            }.get(language, "Offline catalog: options may differ from the server catalog.")
+            form.addRow(QLabel(fallback_notice))
         self.make = QComboBox()
         self.model = QComboBox()
         self.chassis = QComboBox()
@@ -328,7 +346,7 @@ class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); self.list=QListWidget(); lay.addWidget(self.list)
-        bar=QHBoxLayout(); self.result=QComboBox(); self.result.addItems(["PASS","FAIL","INCONCLUSIVE","NOT_TESTED"]); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+        bar=QHBoxLayout(); self.result=QComboBox(); self.result.addItems(["PASS","FAIL","INCOMPLETE"]); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
     def refresh(self):
         self.list.clear(); self.app.test_candidates=[]
         for item in self.app.decision.get("candidates",[]):
@@ -423,11 +441,70 @@ class NetworkPage(QWidget):
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
-        super().__init__(); self.setWindowTitle("AI Auto Diagnostic Workstation"); self.resize(1440,900); self.setStyleSheet(APP_QSS)
-        self.api=DiagnosticApiClient(); self.store=VehicleStore(); self.vehicles=self.store.load(); self.active_vehicle=None; self.session=None; self.session_json={}; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.devices=[]; self.selected_device_id=None; self.test_candidates=[]; self.online=False; self._workers=[]
-        self.stack=QStackedWidget(); self.pages=[]
-        self._build_pages(); self._build_menu(); self.setCentralWidget(self.stack); self.statusBar().showMessage("Ready")
+        super().__init__()
+        self.settings_store = QSettings("AI-CAR-SCANER", "Desktop")
+        self.language = self.settings_store.value("language", "en", type=str)
+        if self.language not in {"en", "ru", "hy"}:
+            self.language = "en"
+        self.dark_theme = self.settings_store.value("dark_theme", True, type=bool)
+        self.setWindowTitle("AI Auto Diagnostic Workstation")
+        self.resize(1440, 900)
+        self._apply_theme()
+        self.api = DiagnosticApiClient()
+        self.store = VehicleStore()
+        self.vehicles = self.store.load()
+        self.active_vehicle = None
+        self.session = None
+        self.session_json = {}
+        self.decision = {}
+        self.telemetry = {}
+        self.network = {}
+        self.active_network = {}
+        self.devices = []
+        self.selected_device_id = None
+        self.test_candidates = []
+        self.online = False
+        self._workers = []
+        self.stack = QStackedWidget()
+        self.pages = []
+        self._build_pages()
+        self._build_menu()
+        self.setCentralWidget(self.stack)
+        self.statusBar().showMessage("Ready")
         self.refresh_all()
+
+    def _apply_theme(self) -> None:
+        self.setStyleSheet(APP_QSS if self.dark_theme else APP_QSS_LIGHT)
+
+    def _open_settings(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Application settings")
+        dialog.setMinimumWidth(360)
+        form = QFormLayout(dialog)
+        language = QComboBox(dialog)
+        language.addItem("English", "en")
+        language.addItem("Русский", "ru")
+        language.addItem("Հայերեն", "hy")
+        language.setCurrentIndex(max(0, language.findData(self.language)))
+        theme = QComboBox(dialog)
+        theme.addItem("Dark", True)
+        theme.addItem("Light", False)
+        theme.setCurrentIndex(max(0, theme.findData(self.dark_theme)))
+        form.addRow("Language", language)
+        form.addRow("Theme", theme)
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=dialog)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        self.language = str(language.currentData())
+        self.dark_theme = bool(theme.currentData())
+        self.settings_store.setValue("language", self.language)
+        self.settings_store.setValue("dark_theme", self.dark_theme)
+        self._apply_theme()
+        self.statusBar().showMessage("Settings saved • language=" + self.language + " • theme=" + ("dark" if self.dark_theme else "light"))
+
     def _build_pages(self):
         container=QWidget(); root=QHBoxLayout(container); root.setContentsMargins(0,0,0,0)
         nav=QListWidget(); nav.setFixedWidth(210); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage)]
@@ -440,8 +517,20 @@ class MainWindow(QMainWindow):
         nav.currentRowChanged.connect(content.setCurrentIndex); nav.setCurrentRow(0)
         self.stack.addWidget(container)
     def _build_menu(self):
-        menu=self.menuBar().addMenu("Application"); quit_action=QAction("Exit",self); quit_action.triggered.connect(self.close); menu.addAction(quit_action)
-        helpm=self.menuBar().addMenu("Help"); about=QAction("About",self); about.triggered.connect(lambda: QMessageBox.information(self,"About","AI Auto Diagnostic Workstation\nEvidence-driven automotive diagnostics.")); helpm.addAction(about)
+        menu = self.menuBar().addMenu("Application")
+        settings_action = QAction("Settings…", self)
+        settings_action.triggered.connect(self._open_settings)
+        menu.addAction(settings_action)
+        menu.addSeparator()
+        quit_action = QAction("Exit", self)
+        quit_action.triggered.connect(self.close)
+        menu.addAction(quit_action)
+        helpm = self.menuBar().addMenu("Help")
+        about = QAction("About", self)
+        about.triggered.connect(lambda: QMessageBox.information(
+            self, "About", "AI Auto Diagnostic Workstation\nEvidence-driven automotive diagnostics."
+        ))
+        helpm.addAction(about)
     def run_worker(self,fn:Callable[[],Any],done:Callable[[Any],None]) -> None:
         worker=Worker(fn); self._workers.append(worker); worker.finished_ok.connect(done); worker.failed.connect(self.show_error); worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None); worker.start()
     def show_error(self,msg:str): QMessageBox.critical(self,"Error",msg); self.statusBar().showMessage(msg)
@@ -561,7 +650,7 @@ class MainWindow(QMainWindow):
         def work():
             if text: self.api.ingest_evidence(self.session.session_id,text)
             if dtc: self.api.add_dtc(self.session.session_id,dtc)
-            return self.api.analyze(self.session.session_id)
+            return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)
     def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id),self._decision_done)
     def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage("Diagnostic reasoning updated")
@@ -614,7 +703,7 @@ class MainWindow(QMainWindow):
         if not item: self.show_error("Select a diagnostic test first."); return
         tid=str(item.data(Qt.UserRole)); result=self.pages[6].result.currentText(); notes=self.pages[6].notes.text().strip()
         def work():
-            data=self.api.record_test_result(self.session.session_id,tid,result,notes=notes); self.api.analyze(self.session.session_id); return self.api.decision_plan(self.session.session_id)
+            data=self.api.record_test_result(self.session.session_id, tid, result, notes=notes, language=self.language); self.api.analyze(self.session.session_id, language=self.language); return self.api.decision_plan(self.session.session_id)
         self.run_worker(work,self._decision_done)
 
 

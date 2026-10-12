@@ -7,6 +7,7 @@
 <key>CFBundleName</key><string>AICarScanner</string>
 <key>CFBundleShortVersionString</key><string>0.1.0</string>
 <key>CFBundleVersion</key><string>1</string>
+<key>CFBundleIconName</key><string>AppIcon</string>
 <key>NSLocalNetworkUsageDescription</key><string>AI CAR SCANER communicates with the diagnostic backend and Wi-Fi OBD adapters.</string>
 <key>NSBluetoothAlwaysUsageDescription</key><string>AI CAR SCANER discovers compatible BLE diagnostic adapters.</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>

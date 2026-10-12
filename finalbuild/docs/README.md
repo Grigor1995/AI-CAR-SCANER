@@ -14,6 +14,10 @@ This documentation describes the implemented architecture of the finalbuild/ pro
 | [Phase architecture](architecture/) | Historical phase-by-phase architecture decisions |
 | [Device architecture](device/) | Device/VCI evolution and transport documentation |
 
+## Shared client contract
+
+The [shared client contract](../PLATFORM_FEATURE_PARITY.md) and [machine-readable options/workflow](../config/client_contract.json) define the common vehicle catalog source, language codes, theme modes, diagnostic workflow, and test-result statuses across Desktop, Android, and iOS.
+
 ## Architecture principle
 
 The platform is **evidence-driven first, AI-assisted second**. Deterministic diagnostic logic is responsible for facts, hypothesis categories, test planning, and evidence state. Retrieval and LLM components provide contextual knowledge and explanations; they are not the source of truth for vehicle measurements.

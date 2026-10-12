@@ -14,7 +14,7 @@
     <application
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.AICarScaner"
-        android:label="D&amp;A TOOL"
+        android:label="AI CAR SCANER"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:allowBackup="true">

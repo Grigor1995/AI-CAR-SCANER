@@ -95,6 +95,10 @@ The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1
 Adaptive llama-server context handling was added. The client reads `/props`, compacts live diagnostic context to fit the actual server limit, and defaults the managed server to 8192 context.
 
 
+## Shared native-client contract
+
+The shared options and workflow are specified in [config/client_contract.json](config/client_contract.json). The backend vehicle catalog is the online source of truth for Desktop, Android, and iOS. Language codes are en, ru, and hy; theme modes are dark and light; diagnostic results use PASS, FAIL, and INCOMPLETE. Platform-specific feature gaps are documented in [PLATFORM_FEATURE_PARITY.md](PLATFORM_FEATURE_PARITY.md).
+
 ## Architecture documentation
 
 The implementation is documented from high level to code-level responsibility:

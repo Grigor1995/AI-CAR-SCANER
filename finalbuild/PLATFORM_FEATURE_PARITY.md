@@ -1,53 +1,76 @@
 # AI CAR SCANER — Native Client Feature Contract
 
-This document records the intended shared feature contract for the native PySide6 Desktop, Kotlin/Jetpack Compose Android, and SwiftUI iOS clients. It distinguishes shared backend behavior from platform-specific capabilities and gaps.
+This document records the shared contract for PySide6 Desktop, Kotlin/Jetpack Compose Android, and SwiftUI iOS. The machine-readable contract is [client_contract.json](config/client_contract.json); update it when shared options or workflow semantics change.
+
+## Shared source of truth
+
+| Concern | Shared contract | Runtime rule |
+|---|---|---|
+| Vehicle make/model/chassis/year/engine/ECU | `config/client_contract.json` + backend catalog | Online clients request `GET /api/v1/vehicle-catalog/entries`. Backend data is authoritative; any offline fallback must be visibly identified as fallback and never treated as verified fitment. |
+| Languages | `en`, `ru`, `hy` | Use the same language codes for UI selection and backend analysis/test-result requests. |
+| Theme | `dark`, `light` | Theme is a local presentation preference; native UI controls may differ, but semantic modes must match. |
+| Diagnostic workflow | Ordered workflow in JSON | Vehicle → session → symptoms/DTCs → analysis → hypotheses/missing information → tests → PASS/FAIL/INCOMPLETE → re-analysis → activity/close. |
+| Test result status | `PASS`, `FAIL`, `INCOMPLETE` | Do not use `INCONCLUSIVE`, `NOT_TESTED`, or `UNKNOWN` as client-facing canonical values. Normalize legacy backend values if needed. |
+| Backend | `https://ai-car-scaner.onrender.com` by default | A client may override the URL for local development; use the same API/data contract. |
+| App icon | `assets/AI-Car-Scanner.webp` (desktop/mobile WebP) and `assets/ai-car-scanner-icon.png` (iOS source) | All platforms must use the same artwork. Desktop packages `AI-Car-Scanner.ico`; Android launcher WebP is byte-identical to the shared WebP asset; iOS AppIcon uses the PNG artwork. |
 
 ## Shared core contract
 
 | Feature | PySide6 Desktop | Native Android | Native iOS | Shared API/data contract |
 |---|---|---|---|---|
-| Backend connectivity | Yes; configurable backend URL | Yes; shared HTTPS default | Yes; shared HTTPS default and editable URL | Same FastAPI service and session IDs |
-| Vehicle catalog and profile | Yes | Yes | Yes | Vehicle catalog and DiagnosticSession |
-| Diagnostic session create/read | Create/read active session | Create session; history/reload remains incomplete | Create session; history/reload remains incomplete | POST/GET /api/v1/sessions |
+| Backend connectivity | Configurable backend URL | Shared HTTPS default | Shared HTTPS default and editable URL | Same FastAPI service and session IDs |
+| Vehicle catalog and profile | Backend catalog | Backend catalog with a local fallback when the remote catalog is unavailable | Backend catalog | `GET /api/v1/vehicle-catalog/entries` and `DiagnosticSession` |
+| Diagnostic session create/read | Create/read active session | Create session; history/reload remains incomplete | Create session; history/reload remains incomplete | `POST/GET /api/v1/sessions` |
 | Symptoms add/edit/delete | Yes | Yes | Yes | Session symptom endpoints |
 | DTC add/edit/delete | Yes | Yes | Yes | Session DTC endpoints |
-| Deterministic analysis | Yes | Yes | Yes | POST /api/v1/analysis/{session_id}?language=... |
-| Evidence, hypotheses, recommendations | Yes | Yes | Yes | Shared DiagnosticSession response |
-| Record diagnostic test outcome | Yes | Yes | Yes | PASS, FAIL, INCOMPLETE |
-| Activity/audit history | Yes | Yes | Yes | Session audit_log |
-| English, Russian, Armenian | Localization parity needs further audit | Localized result labels | Primary labels localized | Backend language codes: en, ru, hy |
-| Theme | Dark theme is primary | Light/dark | Light/dark | Client-specific presentation preference |
+| Deterministic analysis | Passes selected language (`en`/`ru`/`hy`) | Passes selected language | Passes selected language | `POST /api/v1/analysis/{session_id}?language=...` |
+| Evidence, hypotheses, recommendations | Yes | Yes | Yes | Shared diagnostic response |
+| Record diagnostic test outcome | Yes | Yes | Yes | `PASS`, `FAIL`, `INCOMPLETE` |
+| Activity/audit history | Yes | Current session audit log only; full session history/reopen incomplete | Current session audit log only; full session history/reopen incomplete | Session `audit_log` |
+| Language options | English, Russian, Armenian | English, Russian, Armenian | English, Russian, Armenian | Language codes `en`, `ru`, `hy` |
+| Theme | Persistent dark/light preference | Persistent dark/light preference | Persistent dark/light preference | Platform-specific presentation preference, same semantic modes |
 
-## Platform-specific capabilities and gaps
+## Known parity gaps — do not mark full parity yet
 
-| Capability | PySide6 Desktop | Native Android | Native iOS |
-|---|---|---|---|
-| Live data | Backend telemetry panels and simulator workflow | BLE/Wi-Fi/USB OBD client foundations and Live Data UI | Live OBD data screen not implemented |
-| Adapter discovery/connection | Backend device APIs; validate against physical adapters | BLE, Wi-Fi/TCP and USB host code | BLE discovery foundation only; adapter connection and live stream incomplete |
-| ECU/network discovery | ECU Network panel and CAN frame/map API calls | Not yet at Desktop parity | Not implemented |
-| Reports/export | Reports panel | Not yet at Desktop parity | Not implemented |
-| Local AI model runtime | Can use a separately managed local llama-server when configured | Not bundled | Not bundled |
+| Capability | Desktop | Android | iOS | Work still required |
+|---|---|---|---|---|
+| Live telemetry and simulator | UI and backend workflows | Local OBD reader foundations; remote telemetry/simulator parity incomplete | BLE foundation only; live stream/telemetry UI incomplete | Shared telemetry view, simulator controls, connection states, and evidence-source labels |
+| Adapter lifecycle | Backend device discovery/connect/reconnect/status and OBD reads | BLE/Wi-Fi/USB client foundations; not all desktop backend device workflows exposed | BLE discovery foundation; connection and streaming incomplete | Same discovery, connect/disconnect/reconnect, VIN, DTC and live-data states |
+| ECU/CAN network discovery | Network map, frame ingestion, active probe | Not at Desktop parity | Not implemented | Shared network-discovery screen and safe operation controls |
+| Session history and reopen | Local store and session reads | Not implemented end-to-end | Not implemented end-to-end | Persist session IDs, list/reopen sessions, refresh server state, and close/archive consistently |
+| Reports/export | Reports panel | Not at Desktop parity | Not implemented | Common report schema and export/share on each platform |
+| Local AI provider status/live-data AI | Provider status and live-data AI endpoint | Not exposed in app UI | Not exposed in app UI | Provider availability/error state, timeout handling and AI result display |
+| UI localization completeness | Settings persist language, but the full Desktop UI is not translated | English/Russian/Armenian strings available | English/Russian/Armenian strings available | Complete and test all Desktop strings; audit terminology across platforms |
+| Vehicle catalog parity offline | Backend catalog | Local fallback may differ from backend catalog | No matching offline catalog guarantee | Shared catalog snapshot/versioning and visible stale/offline state |
+
+**Definition of done for full functional parity:** each row above must be implemented on all three platforms, use the same API semantics and status values, have automated contract/UI tests, and pass the release matrix on actual build runners. A matching feature label or shared API alone is not proof of parity.
 
 ## Result-status contract
 
 - **PASS** — test completed and passed.
 - **FAIL** — test completed and failed.
 - **INCOMPLETE** — test was not completed or evidence was insufficient.
-- New clients must not emit UNKNOWN. The backend temporarily accepts legacy UNKNOWN and normalizes it to INCOMPLETE.
+- Legacy backend `UNKNOWN` values must be normalized to `INCOMPLETE` at the client boundary.
 - Armenian labels: ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆԱՎԱՐՏ.
 - Russian labels: ПРОЙДЕН / НЕ ПРОЙДЕН / НЕ ЗАВЕРШЁН.
 
 ## API URL contract
 
-Default shared API: https://ai-car-scaner.onrender.com
+- Default shared API: `https://ai-car-scaner.onrender.com`
+- Desktop: `AI_CAR_BACKEND_URL=https://your-api-host`
+- Android emulator local backend: `http://10.0.2.2:8001/`
+- iOS physical device: configure a reachable Mac/LAN backend URL in Settings.
 
-- Desktop: AI_CAR_BACKEND_URL=https://your-api-host
-- Android emulator local backend: http://10.0.2.2:8001/ when the backend runs on the development computer.
-- iOS: use the API URL setting; for a physical iPhone, configure a reachable Mac/LAN backend URL.
+## Icon implementation
+
+- Desktop executable: `assets/AI-Car-Scanner.ico` (packaged by PyInstaller specs).
+- Android launcher: `apps/mobile-android/app/src/main/res/mipmap/ic_launcher.webp`; its Git blob is identical to `assets/AI-Car-Scanner.webp`.
+- iOS: `apps/mobile-ios/AICarScanner/Assets.xcassets/AppIcon.appiconset`, configured as `AppIcon` in XcodeGen.
+- The source art is shared; platform-specific file formats and required icon packaging are expected.
 
 ## Release gate
 
-A feature listed in the table is not automatically proof of end-to-end completeness. Before release, test the corresponding UI flow against the configured backend. Simulator/mock telemetry must never be presented as real vehicle/OBD data.
+A feature listed here is not proof of end-to-end completeness. Test the corresponding UI flow against the configured backend before release. Simulated/mock telemetry must never be presented as real vehicle/OBD data. CI/builds must execute on real runners; a job with no runner and zero steps is not a passing test.
 
 ## Client documentation
 

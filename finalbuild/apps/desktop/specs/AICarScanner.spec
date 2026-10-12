@@ -10,6 +10,8 @@ project_root = next(
 server = which("llama-server.exe")
 binaries = [(server, ".")] if server else []
 icon_file = project_root / "assets" / "AI-Car-Scanner.ico"
+if not icon_file.is_file():
+    raise FileNotFoundError(f"Required application icon not found: {icon_file}")
 
 a = Analysis(
     [str(project_root / "apps" / "desktop" / "main.py")],
@@ -26,4 +28,4 @@ a = Analysis(
     excludes=["tkinter"], noarchive=False,
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="AICarScanner", console=False, icon=str(icon_file) if icon_file.is_file() else None)
+exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="AICarScanner", console=False, icon=str(icon_file))

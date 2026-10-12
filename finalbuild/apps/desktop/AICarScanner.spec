@@ -21,6 +21,7 @@ a = Analysis(
            (str(project_root / "assets" / "AI-Car-Scanner.webp"), "assets"),
            (str(project_root / "assets" / "AI-Car-Scanner-mobile.png"), "assets"),
            (str(project_root / "assets" / "ai-car-scanner-icon.png"), "assets"),
+           (str(project_root / "shared" / "vehicle_catalog.json"), "shared"),
           ],
     hiddenimports=[
         "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",

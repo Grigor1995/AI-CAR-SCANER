@@ -86,6 +86,29 @@ class DiagnosticApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Future<Map<String, dynamic>> addSymptom(String id, String text) async {
+    final response = await _dio.post('/api/v1/sessions/$id/symptoms', data: {
+      'raw_text': text,
+      'symptom': text,
+      'normalized': <String, String>{},
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> updateSymptom(String id, String symptomId, String text) async {
+    final response = await _dio.put('/api/v1/sessions/$id/symptoms/$symptomId', data: {
+      'raw_text': text,
+      'symptom': text,
+      'normalized': <String, String>{},
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> deleteSymptom(String id, String symptomId) async {
+    final response = await _dio.delete('/api/v1/sessions/$id/symptoms/$symptomId');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> addDtc(String id, String code, {String? description}) async {
     final response = await _dio.post('/api/v1/sessions/$id/dtcs', data: {
       'code': code,
@@ -108,6 +131,19 @@ class DiagnosticApiClient {
 
   Future<Map<String, dynamic>> ingestEvidence(String id, String text) async {
     final response = await _dio.post('/api/v1/intelligence/sessions/$id/evidence/text', data: {'text': text});
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> updateDtc(String id, String dtcId, String code) async {
+    final response = await _dio.put('/api/v1/sessions/$id/dtcs/$dtcId', data: {
+      'code': code.trim().toUpperCase(),
+      'source': 'USER_REPORTED',
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> deleteDtc(String id, String dtcId) async {
+    final response = await _dio.delete('/api/v1/sessions/$id/dtcs/$dtcId');
     return Map<String, dynamic>.from(response.data as Map);
   }
 

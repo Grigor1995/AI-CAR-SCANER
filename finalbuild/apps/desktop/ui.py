@@ -728,12 +728,15 @@ class MainWindow(QMainWindow):
         helpm = self.menuBar().addMenu("Help")
         about = QAction("About", self)
         about.triggered.connect(lambda: QMessageBox.information(
-            self, "About", "AI Auto Diagnostic Workstation\nEvidence-driven automotive diagnostics."
+            self, self.tr_text("About"), self.tr_text("AI Auto Diagnostic Workstation") + "\n" + self.tr_text("Evidence-driven automotive diagnostics.")
         ))
         helpm.addAction(about)
     def run_worker(self,fn:Callable[[],Any],done:Callable[[Any],None]) -> None:
         worker=Worker(fn); self._workers.append(worker); worker.finished_ok.connect(done); worker.failed.connect(self.show_error); worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None); worker.start()
-    def show_error(self,msg:str):\n        translated = self.tr_text(msg)\n        QMessageBox.critical(self, self.tr_text("Error"), translated)\n        self.statusBar().showMessage(translated)
+    def show_error(self,msg:str):
+        translated = self.tr_text(msg)
+        QMessageBox.critical(self, self.tr_text("Error"), translated)
+        self.statusBar().showMessage(translated)
     def refresh_health(self):
         def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage("Backend online" if self.online else "Backend offline"); self.refresh_pages()
         self.run_worker(self.api.health,done)
@@ -761,8 +764,8 @@ class MainWindow(QMainWindow):
         label=f"{vehicle.make} {vehicle.model} ({vehicle.year or '—'})"
         answer=QMessageBox.question(
             self,
-            "Delete vehicle",
-            f"Delete {label} from local vehicle profiles?\n\nExisting diagnostic sessions are not deleted.",
+            self.tr_text("Delete vehicle"),
+            self.tr_text(f"Delete {label} from local vehicle profiles?\n\nExisting diagnostic sessions are not deleted."),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )

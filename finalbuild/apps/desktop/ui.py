@@ -1,6 +1,5 @@
 from __future__ import annotations
 from pathlib import Path
-import json
 import re
 import sys
 from typing import Any, Callable
@@ -182,6 +181,22 @@ _UI_TRANSLATIONS = {
     }
 }
 
+
+def _translate_ui_text(text: str, language: str) -> str:
+    if not isinstance(text, str) or language == "en":
+        return text
+    # Normalize all known translations back to English first, including phrases
+    # inside dynamic status messages and multiline diagnostic summaries.
+    canonical = text
+    for translations in _UI_TRANSLATIONS.values():
+        for source, translated in sorted(translations.items(), key=lambda item: len(item[1]), reverse=True):
+            canonical = re.sub(r"(?<!\\w)" + re.escape(translated) + r"(?!\\w)", source, canonical)
+    translations = _UI_TRANSLATIONS.get(language, {})
+    for source in sorted(translations, key=len, reverse=True):
+        canonical = re.sub(r"(?<!\\w)" + re.escape(source) + r"(?!\\w)", translations[source], canonical)
+    return canonical
+
+
 class Worker(QThread):
     finished_ok = Signal(object)
     failed = Signal(str)
@@ -228,21 +243,6 @@ class VehicleDialog(QDialog):
             try:
                 self._catalog = list(api.vehicle_catalog_entries())
             except Exception:
-                self._catalog = []
-
-        # Use the shared multi-brand seed catalog when the API is unavailable.
-        # The server catalog remains authoritative whenever it can be reached.
-        if not self._catalog:
-            try:
-                if getattr(sys, "frozen", False):
-                    catalog_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-                else:
-                    catalog_root = Path(__file__).resolve().parents[2]
-                catalog_path = catalog_root / "shared" / "vehicle_catalog.json"
-                payload = json.loads(catalog_path.read_text(encoding="utf-8"))
-                rows = payload.get("vehicles", []) if isinstance(payload, dict) else []
-                self._catalog = [row for row in rows if isinstance(row, dict)]
-            except (OSError, ValueError, TypeError):
                 self._catalog = []
 
         form = QFormLayout(self)
@@ -658,21 +658,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(self.tr_text("Settings saved") + " • " + self.tr_text("Language") + "=" + self.language + " • " + self.tr_text("Theme") + "=" + self.tr_text("Dark" if self.dark_theme else "Light"))
 
     def tr_text(self, text: str) -> str:
-        if not isinstance(text, str) or self.language == "en":
-            return text
-        # Normalize translated text back to its English key first, so switching
-        # directly between Russian and Armenian never leaves mixed languages.
-        canonical = text
-        for translations in _UI_TRANSLATIONS.values():
-            for source, translated in translations.items():
-                if canonical == translated:
-                    canonical = source
-                    break
-        translations = _UI_TRANSLATIONS.get(self.language, {})
-        for source in sorted(translations, key=len, reverse=True):
-            if source in canonical:
-                canonical = re.sub(r"(?<!\\w)" + re.escape(source) + r"(?!\\w)", translations[source], canonical)
-        return canonical
+        return _translate_ui_text(text, self.language)
 
     def _apply_language(self) -> None:
         self.setWindowTitle(self.tr_text("AI Auto Diagnostic Workstation"))

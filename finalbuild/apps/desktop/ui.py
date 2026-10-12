@@ -194,12 +194,12 @@ def _translate_ui_text(text: str, language: str) -> str:
     canonical = text
     for translations in _UI_TRANSLATIONS.values():
         for source, translated in sorted(translations.items(), key=lambda item: len(item[1]), reverse=True):
-            canonical = re.sub(r"(?<!\\w)" + re.escape(translated) + r"(?!\\w)", source, canonical)
+            canonical = re.sub(r"(?<!\w)" + re.escape(translated) + r"(?!\w)", source, canonical)
     if language == "en":
         return canonical
     translations = _UI_TRANSLATIONS.get(language, {})
     for source in sorted(translations, key=len, reverse=True):
-        canonical = re.sub(r"(?<!\\w)" + re.escape(source) + r"(?!\\w)", translations[source], canonical)
+        canonical = re.sub(r"(?<!\w)" + re.escape(source) + r"(?!\w)", translations[source], canonical)
     return canonical
 
 

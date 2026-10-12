@@ -8,7 +8,7 @@ Native SwiftUI client for the existing diagnostic platform. No Flutter is used.
 - Vehicle catalog and cascading vehicle selection.
 - Create and update vehicle.
 - Add, edit and delete symptoms.
-- Add and delete DTCs.
+- Add, edit and delete DTCs.
 - Deterministic analysis results: evidence, hypotheses and next diagnostic tests.
 - PASS / FAIL / INCOMPLETE test recording.
 - Activity and audit log.
@@ -16,6 +16,8 @@ Native SwiftUI client for the existing diagnostic platform. No Flutter is used.
 - Dark and light theme.
 - Backend URL setting.
 - Native CoreBluetooth BLE adapter discovery foundation.
+
+See the shared cross-platform feature contract in [`../../PLATFORM_FEATURE_PARITY.md`](../../PLATFORM_FEATURE_PARITY.md).
 
 ## Build
 
@@ -30,7 +32,7 @@ Install XcodeGen and generate the Xcode project:
 
 ## Backend
 
-Default URL: http://127.0.0.1:8001
+Default URL: https://ai-car-scaner.onrender.com
 
 For a physical iPhone, set the backend to the Mac LAN address from Settings.
 

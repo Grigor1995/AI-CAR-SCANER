@@ -1,3 +1,31 @@
+# Current Main Audit — 2026-10-12
+
+**Audited source commit:** [`dc1b93d542109e888f17aea87cc18fc98086b798`](https://github.com/Grigor1995/AI-CAR-SCANER/commit/dc1b93d542109e888f17aea87cc18fc98086b798)  
+**Scope:** repository structure, documentation, ignore rules, and available commit-status metadata only.  
+**CI policy:** No workflow was started or rerun for this audit.
+
+## Current revision checks
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Flutter/Dart source cleanup | **PASS — static tree check** | No `.dart`, `pubspec.yaml`, `pubspec.lock`, Flutter runner/configuration, or legacy `apps/mobile/` paths remained in the inspected main tree |
+| Gradle cache cleanup | **PASS — static tree check** | No tracked `finalbuild/apps/mobile-android/.gradle/` paths remained |
+| Ignore rules | **PASS — file inspection** | `finalbuild/.gitignore` includes `.gradle/`, `**/.gradle/`, and `**/build/` |
+| Native client source presence | **PASS — static tree check** | PySide6 Desktop, native Android Gradle project, and native iOS project files are present |
+| README / architecture docs | **PASS — file inspection** | Root README, client docs, platform contract, and architecture docs are present |
+| Commit status checks | **NOT AVAILABLE** | GitHub combined commit status returned an empty status list for this commit |
+| Backend pytest on this commit | **NOT RUN** | No local test execution was performed during this repository-only audit |
+| Android build on this commit | **NOT RUN** | No Gradle build was started |
+| iOS build/tests on this commit | **NOT RUN** | No Xcode build or XCTest was started |
+| Desktop runtime / packaged executable | **NOT VERIFIED** | Explicitly out of scope for this audit; existing crash remains unresolved |
+| Live backend / LLM / physical OBD | **NOT VERIFIED** | Not exercised |
+
+## Current conclusion
+
+The cleanup is present in the repository tree, and the ignore rules and documentation were inspected. **This is not a green CI or full test report.** No new automated tests, platform builds, or live integration checks were run for commit `dc1b93d542109e888f17aea87cc18fc98086b798`. Historical results below apply only to the older commits and workflow runs explicitly named in those sections; do not transfer those results to this revision.
+
+---
+
 # CI & Quality Report — AI-CAR-SCANER
 
 **Report date:** 2026-10-09  

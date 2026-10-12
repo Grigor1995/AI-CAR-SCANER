@@ -1016,7 +1016,10 @@ class MainWindow(QMainWindow):
     def refresh_telemetry(self):
         if not self.session: return
         def work(): return {"summary":self.api.telemetry_summary(self.session.session_id),"records":self.api.acquisition_records(self.session.session_id)}
-        def done(data): self.telemetry=data["summary"]; self.refresh_pages()
+        def done(data):
+            self.telemetry = data["summary"]
+            self.pages[4]._records_data = LiveDataPage._records_data_from(data.get("records", {}))
+            self.refresh_pages()
         self.run_worker(work,done)
     def analyze_telemetry(self):
         if not self.session: return

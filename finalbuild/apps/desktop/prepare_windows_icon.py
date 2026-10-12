@@ -7,6 +7,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 ANDROID_ICON = ROOT / "apps" / "mobile-android" / "app" / "src" / "main" / "res" / "mipmap" / "ic_launcher.webp"
 DESKTOP_WEBP = ROOT / "assets" / "AI-Car-Scanner.webp"
+DESKTOP_PNG = ROOT / "assets" / "AI-Car-Scanner-mobile.png"
 DESKTOP_ICO = ROOT / "assets" / "AI-Car-Scanner.ico"
 
 
@@ -24,6 +25,7 @@ def main() -> None:
                 "Android launcher icon and assets/AI-Car-Scanner.webp differ. "
                 "Refusing to generate a mismatched Desktop icon."
             )
+        android_rgba.save(DESKTOP_PNG, format="PNG", optimize=True)
         android_rgba.save(
             DESKTOP_ICO,
             format="ICO",

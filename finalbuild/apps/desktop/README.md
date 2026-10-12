@@ -2,6 +2,8 @@
 
 `apps/desktop` is the canonical Flutter client for the shared diagnostic platform.
 
+See [`../PLATFORM_FEATURE_PARITY.md`](../PLATFORM_FEATURE_PARITY.md) for the single cross-platform feature contract and platform-specific limits.
+
 ## Supported client targets
 
 - Windows
@@ -56,10 +58,10 @@ Do not replace `lib/`; that is the shared application code.
 Override the backend URL at build/run time:
 
 ```bash
-flutter run -d windows --dart-define=API_URL=http://127.0.0.1:8000
+flutter run -d windows --dart-define=API_URL=https://ai-car-scaner.onrender.com
 ```
 
-For a phone or simulator, use the reachable FastAPI host instead of `127.0.0.1`.
+For local development, override `API_URL` with your local FastAPI URL. The default is the shared Render backend so Desktop, Android, and iOS use the same service.
 
 ## Legacy Python desktop
 

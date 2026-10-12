@@ -227,6 +227,27 @@ class _DesktopShellState extends State<DesktopShell> {
     }
   }
 
+  Future<void> recordTestResult(TestCandidateModel candidate, String result, String notes) async {
+    final id = activeSession?.id;
+    if (id == null || !online) {
+      _showError('Create a session and connect to the backend first.');
+      return;
+    }
+    try {
+      final updated = await api.recordTestResult(id, candidate.id, result, notes: notes);
+      final plan = await api.decisionPlan(id);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+        decisionJson = plan;
+      });
+      _snack('Test result recorded: $result');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
   Future<void> toggleAcquisition() async {
     final id = activeSession?.id;
     if (id == null || !online) {
@@ -363,7 +384,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case 4:
         return NetworkPage(session: activeSession, network: networkJson, onDemo: loadDemoNetwork);
       case 5:
-        return TestsPage(session: activeSession, decision: decisionJson, onRefresh: _refreshSessionData);
+        return TestsPage(session: activeSession, decision: decisionJson, onRefresh: _refreshSessionData, onRecordTest: recordTestResult);
       case 6:
         return ReportsPage(session: activeSession, sessionJson: sessionJson, telemetry: telemetryJson);
       default:
@@ -860,10 +881,65 @@ class NetworkPage extends StatelessWidget {
 }
 
 class TestsPage extends StatelessWidget {
-  const TestsPage({super.key, this.session, required this.decision, required this.onRefresh});
+  const TestsPage({super.key, this.session, required this.decision, required this.onRefresh, required this.onRecordTest});
   final DiagnosticSessionModel? session;
   final Map<String, dynamic> decision;
   final Future<void> Function({bool silent}) onRefresh;
+  final Future<void> Function(TestCandidateModel candidate, String result, String notes) onRecordTest;
+
+  Future<void> _showRecordDialog(BuildContext context, TestCandidateModel candidate) async {
+    var selectedResult = 'INCOMPLETE';
+    final notesController = TextEditingController();
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(candidate.name),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Test result'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedResult,
+                  items: const [
+                    DropdownMenuItem(value: 'PASS', child: Text('PASS')),
+                    DropdownMenuItem(value: 'FAIL', child: Text('FAIL')),
+                    DropdownMenuItem(value: 'INCOMPLETE', child: Text('INCOMPLETE')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => selectedResult = value);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesController,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: const InputDecoration(labelText: 'Measurements / notes'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () {
+                  final notes = notesController.text.trim();
+                  Navigator.of(dialogContext).pop();
+                  onRecordTest(candidate, selectedResult, notes);
+                },
+                child: const Text('Record result'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      notesController.dispose();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -895,6 +971,12 @@ class TestsPage extends StatelessWidget {
                 _ScoreChip(label: 'Risk ${candidate.risk}'),
                 for (final r in candidate.rationale.take(2)) _ScoreChip(label: r),
               ]),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _showRecordDialog(context, candidate),
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('Record result'),
+              ),
             ])),
           ])));
         }),

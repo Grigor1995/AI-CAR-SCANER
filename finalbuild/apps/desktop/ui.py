@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import json
 import sys
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
@@ -95,6 +96,21 @@ class VehicleDialog(QDialog):
             try:
                 self._catalog = list(api.vehicle_catalog_entries())
             except Exception:
+                self._catalog = []
+
+        # Use the shared multi-brand seed catalog when the API is unavailable.
+        # The server catalog remains authoritative whenever it can be reached.
+        if not self._catalog:
+            try:
+                if getattr(sys, "frozen", False):
+                    catalog_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+                else:
+                    catalog_root = Path(__file__).resolve().parents[2]
+                catalog_path = catalog_root / "shared" / "vehicle_catalog.json"
+                payload = json.loads(catalog_path.read_text(encoding="utf-8"))
+                rows = payload.get("vehicles", []) if isinstance(payload, dict) else []
+                self._catalog = [row for row in rows if isinstance(row, dict)]
+            except (OSError, ValueError, TypeError):
                 self._catalog = []
 
         form = QFormLayout(self)

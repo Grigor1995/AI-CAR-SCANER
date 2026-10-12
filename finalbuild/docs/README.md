@@ -1,6 +1,6 @@
 # AI Auto Diagnostic Platform — Documentation
 
-This documentation describes the implemented architecture of the `finalbuild/` product as it exists in the repository.
+This documentation describes the implemented architecture of the finalbuild/ product.
 
 ## Documentation map
 
@@ -16,28 +16,19 @@ This documentation describes the implemented architecture of the `finalbuild/` p
 
 ## Architecture principle
 
-The platform is **evidence-driven first, AI-assisted second**.
-
-The deterministic diagnostic domain is responsible for facts, hypothesis categories, test planning and evidence state. Retrieval and LLM components provide contextual knowledge, explanations and orchestration; they are not the source of truth for vehicle measurements.
+The platform is **evidence-driven first, AI-assisted second**. Deterministic diagnostic logic is responsible for facts, hypothesis categories, test planning, and evidence state. Retrieval and LLM components provide contextual knowledge and explanations; they are not the source of truth for vehicle measurements.
 
 ## Implemented product shape
 
-- FastAPI modular-monolith backend.
-- Pydantic domain/session models.
-- SQLAlchemy persistence foundations.
-- PostgreSQL/pgvector Docker deployment.
-- Deterministic diagnostic rules.
-- Information-gain/cost/safety based test selection.
-- Local LLM boundary through standalone `llama-server.exe`.
+- FastAPI modular-monolith backend and Pydantic session models.
+- SQLAlchemy persistence foundations and PostgreSQL/pgvector Docker deployment.
+- Deterministic diagnostic rules and information-gain/cost/safety-based test selection.
+- Optional local LLM through standalone llama-server.exe.
 - RAG foundation with metadata filtering and reranking seams.
-- OBD/VCI abstraction and simulator.
-- Telemetry/acquisition services.
-- Vehicle/network discovery foundations.
-- Desktop workstation plus Android/mobile foundations.
-- Automated unit/API/integration/regression coverage and CI.
+- OBD/VCI abstraction, simulator, telemetry/acquisition services, and vehicle/network discovery foundations.
+- Native PySide6 Desktop, Kotlin/Jetpack Compose Android, and SwiftUI iOS clients.
+- Unit/API/integration/regression tests and CI workflows.
 
 ## Important implementation note
 
-The repository contains both a normalized SQLAlchemy schema (`vehicles`, `diagnostic_sessions`, `evidence`, `vehicle_catalog_entries`) and the current complete-session snapshot persistence mechanism (`diagnostic_session_state`). The API keeps `DiagnosticSession` objects in an in-process registry for fast reasoning and persists snapshots when `DATABASE_URL` is configured.
-
-This documentation intentionally describes that **current implementation**, rather than presenting a future repository pattern as if it were already complete.
+The repository contains both a normalized SQLAlchemy schema and complete-session snapshot persistence (diagnostic_session_state). The API keeps DiagnosticSession objects in an in-process registry for fast reasoning and persists snapshots when DATABASE_URL is configured. This documentation describes the current implementation rather than presenting future architecture as complete.

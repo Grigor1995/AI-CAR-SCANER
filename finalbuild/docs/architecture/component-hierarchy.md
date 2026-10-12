@@ -2,45 +2,26 @@
 
 ## 1. Repository hierarchy
 
-The product lives under `finalbuild/`.
+The product lives under finalbuild/.
 
 ~~~text
 finalbuild/
 ├── apps/
-│   ├── desktop/                  # Current Windows desktop workstation
-│   ├── desktop_flutter_legacy/   # Legacy desktop Flutter implementation
-│   ├── mobile/                   # Flutter/mobile foundation
-│   ├── mobile-android/           # Native Android implementation
+│   ├── desktop/                  # Python / PySide6 workstation
+│   ├── mobile-android/           # Native Kotlin / Jetpack Compose app
+│   ├── mobile-ios/               # Native Swift / SwiftUI app
 │   └── web/                      # Web foundation
-│
-├── backend/
-│   ├── api/                      # HTTP routes and request boundary
-│   ├── diagnostic/               # Core diagnostic domain
-│   ├── ai/                       # AI, ML, RAG, reasoning and LLM adapters
-│   ├── device/                   # VCI/device abstraction
-│   ├── acquisition/              # Telemetry acquisition
-│   ├── telemetry/                # Telemetry models/services
-│   ├── vehicle/                  # Vehicle-domain capabilities
-│   ├── multi_ecu/                # Multi-ECU coordination
-│   ├── multi_bus/                # Multi-bus capabilities
-│   ├── network_discovery/        # Passive/active network discovery
-│   ├── platform/                 # Platform/tenant capabilities
-│   ├── professional_platform/   # Professional diagnostic platform seams
-│   ├── security/                 # Security foundations
-│   └── observability/            # Observability foundations
-│
+├── backend/                      # API, diagnostic domain, AI, devices and telemetry
 ├── device/                       # Device-side / future hardware boundary
 ├── vehicle/                      # Vehicle protocol/domain resources
 ├── models/                       # Local AI model documentation/resources
 ├── datasets/                     # Golden/test/dataset assets
-├── data/                         # Runtime/data assets
-├── tests/                        # Unit/API/integration/regression suites
-├── infrastructure/              # Docker/Postgres/monitoring
-├── scripts/                      # Local runtime and installation scripts
-├── assets/                       # Application icons/assets
-└── docs/
-    ├── architecture/             # Architecture decisions and views
-    └── device/                   # Device architecture
+├── data/                          # Runtime/data assets
+├── tests/                         # Unit/API/integration/regression suites
+├── infrastructure/               # Docker/Postgres/monitoring
+├── scripts/                       # Local runtime and installation scripts
+├── assets/                        # Application icons/assets
+└── docs/                          # Architecture and device documentation
 ~~~
 
 ## 2. Backend hierarchy
@@ -79,44 +60,15 @@ backend/ai/
 ├── interfaces.py
 ├── live_analysis.py
 ├── embeddings/
-│   └── providers.py
 ├── evaluation/
-│   ├── golden.py
-│   └── grounding.py
 ├── ingestion/
-│   ├── chunker.py
-│   ├── dataset.py
-│   ├── models.py
-│   └── parsers.py
 ├── llm/
-│   ├── factory.py
-│   ├── llama_server.py
-│   ├── openai_compatible.py
-│   └── interfaces_guard.py
 ├── ml/
-│   └── anomaly.py
 ├── rag/
-│   ├── store.py
-│   └── reranker.py
 └── reasoning/
-    ├── engine.py
-    ├── evidence_extractor.py
-    └── pipeline.py
 ~~~
 
-### Responsibility
-
-- `interfaces.py`: provider contracts.
-- `reasoning/engine.py`: deterministic + AI-assisted reasoning loop.
-- `reasoning/evidence_extractor.py`: converts natural language into structured evidence.
-- `reasoning/pipeline.py`: deterministic reasoning → retrieval → safe prompt context.
-- `rag/store.py`: knowledge document store/search abstraction.
-- `rag/reranker.py`: retrieval ranking.
-- `llm/*`: runtime provider adapters.
-- `ml/*`: numeric anomaly detection.
-- `evaluation/*`: golden/grounding evaluation.
-- `ingestion/*`: knowledge ingestion pipeline.
-- `embeddings/*`: embedding provider seam.
+The AI layer provides contextual knowledge and explanations. Deterministic diagnostics remain the authority for evidence state and supported conclusions.
 
 ## 4. Diagnostic hierarchy
 
@@ -125,20 +77,9 @@ DiagnosticSession
 ├── Vehicle
 ├── Symptoms
 ├── DTCs
-├── Evidence[]
-│   ├── provenance/source
-│   ├── status
-│   ├── confidence
-│   └── metadata
-├── Hypotheses[]
-│   ├── supporting evidence
-│   ├── contradicting evidence
-│   └── status
-├── Recommendations[]
-│   ├── information gain
-│   ├── cost
-│   ├── safety/risk
-│   └── target hypotheses
+├── Evidence[] (provenance, status, confidence, metadata)
+├── Hypotheses[] (supporting/contradicting evidence, status)
+├── Recommendations[] (information gain, cost, safety, target hypotheses)
 ├── TestResults[]
 ├── Measurements[]
 ├── LiveData[]
@@ -146,43 +87,33 @@ DiagnosticSession
 └── Audit log
 ~~~
 
-## 5. Client hierarchy
+## 5. Native client hierarchy
 
-### Desktop
+### Desktop — Python / PySide6
 
-The current desktop workstation contains both Python/PySide6 and Flutter-era source artifacts. The Python/PySide6 path is the current standalone workstation/runtime path, while `desktop_flutter_legacy` is retained as legacy source.
+The desktop workstation includes the API client, domain models, persistence helpers, UI, worker/runtime orchestration, and standalone packaging specifications.
 
-### Android
+### Android — Kotlin / Jetpack Compose
 
-The native Android source contains:
+The native Android client includes the API client, diagnostic API, BLE/Wi-Fi/USB OBD transport foundations, repository, ViewModel, diagnostic screen, vehicle catalog, settings, and localization.
 
-- API client,
-- diagnostic API,
-- OBD clients for Bluetooth/Wi-Fi/USB,
-- repository,
-- ViewModel,
-- diagnostic screen,
-- vehicle catalog,
-- settings/localization.
+### iOS — Swift / SwiftUI
 
-### Flutter/mobile
-
-`apps/mobile` is a smaller cross-platform foundation containing device/OBD abstractions and shared vehicle catalog code.
+The native iOS client includes API/model layers, diagnostic screens, settings, localization, and a CoreBluetooth BLE discovery foundation. Adapter connection and live OBD streaming remain incomplete.
 
 ## 6. Device hierarchy
 
 ~~~text
 Diagnostic domain
-      │
-      ▼
+      |
+      v
 Device abstraction
-      │
       ├── Simulator
       ├── BLE transport
       ├── Wi-Fi transport
       ├── USB/serial transport
       ├── J2534 seam
-      └── Future custom Android diagnostic device
+      └── Future custom diagnostic device
 ~~~
 
 The domain should consume normalized diagnostic operations rather than transport-specific implementation details.

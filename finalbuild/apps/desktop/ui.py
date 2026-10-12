@@ -614,6 +614,11 @@ class LiveDataPage(QWidget):
             self.table.setRowCount(0)
             self.chart.set_values([])
             return
+        if self._status_data.get("_error"):
+            self.status.setText("Backend unavailable")
+        else:
+            state = self._status_data.get("state", "STOPPED")
+            self.status.setText("RUNNING" if state == "RUNNING" else state)
         provider = self._provider_data
         available = bool(provider.get("available"))
         model = provider.get("model", "—")

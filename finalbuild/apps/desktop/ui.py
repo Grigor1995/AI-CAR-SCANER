@@ -227,9 +227,16 @@ def _translate_known_ui_line(line: str, language: str) -> str:
         "DTCs:", "Make:", "Model:", "Year:", "Fuel:", "ECU:", "VIN:", "ID:",
     )
     translated = body
+    # Normalize translated labels back to their English keys before applying the
+    # selected language, allowing RU ↔ HY ↔ EN switching without touching values.
+    for label in sorted(label_keys, key=len, reverse=True):
+        for mapping in all_maps:
+            localized = mapping.get(label)
+            if localized and localized != label:
+                translated = re.sub(r"(?<!\\w)" + re.escape(localized), label, translated)
     for label in sorted(label_keys, key=len, reverse=True):
         translated = re.sub(
-            r"(?<!\w)" + re.escape(label),
+            r"(?<!\\w)" + re.escape(label),
             _translate_ui_text(label, language),
             translated,
         )

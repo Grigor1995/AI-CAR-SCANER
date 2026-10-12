@@ -38,7 +38,7 @@ For a physical iPhone, set the backend to the Mac LAN address from Settings.
 
 ## Adapter note
 
-Wi-Fi/TCP OBD is the preferred generic iOS transport path. BLE discovery is implemented through CoreBluetooth. Generic USB access is handled separately because iOS accessory support differs from Android.
+Current iOS code supports BLE adapter discovery only; it does not yet connect to the discovered adapter or stream live OBD data. Wi-Fi/TCP OBD is the preferred planned transport, but its connection and ELM327 command flow are not implemented yet. Generic USB OBD is not implemented; iOS accessory access differs from Android and may require supported external-accessory hardware.
 
 
 ## Test report

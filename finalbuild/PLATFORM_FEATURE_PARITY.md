@@ -56,8 +56,9 @@ This document records the shared contract for PySide6 Desktop, Kotlin/Jetpack Co
 
 ## API URL contract
 
-- Default shared API: `https://ai-car-scaner.onrender.com`
-- Desktop: `AI_CAR_BACKEND_URL=https://your-api-host`
+- Android/iOS default shared API: `https://ai-car-scaner.onrender.com`
+- Desktop default local FastAPI: `http://127.0.0.1:8001`
+- Desktop hosted override: `AI_CAR_BACKEND_URL=https://ai-car-scaner.onrender.com` or another reachable API URL
 - Android emulator local backend: `http://10.0.2.2:8001/`
 - iOS physical device: configure a reachable Mac/LAN backend URL in Settings.
 

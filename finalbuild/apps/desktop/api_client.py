@@ -8,7 +8,7 @@ class ApiError(RuntimeError):
 
 class DiagnosticApiClient:
     def __init__(self, base_url: str | None = None, timeout: float = 30.0) -> None:
-        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL", "http://127.0.0.1:8001")).rstrip("/")
+        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL", "https://ai-car-scaner.onrender.com")).rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
@@ -48,7 +48,7 @@ class DiagnosticApiClient:
         return self._request("POST", f"/api/v1/intelligence/sessions/{session_id}/evidence/text", json={"text": text})
 
     def analyze(self, session_id: str) -> dict[str, Any]:
-        return self._request("POST", f"/api/v1/intelligence/sessions/{session_id}/analyze")
+        return self._request("POST", f"/api/v1/analysis/{session_id}")
 
     def decision_plan(self, session_id: str) -> dict[str, Any]:
         return self._request("GET", f"/api/v1/decision/sessions/{session_id}/plan")

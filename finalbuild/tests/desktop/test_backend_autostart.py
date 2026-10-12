@@ -12,6 +12,12 @@ def test_start_backend_reuses_healthy_backend(monkeypatch):
     assert desktop_main.start_backend() is None
 
 
+def test_start_backend_skips_local_process_for_remote_backend(monkeypatch):
+    monkeypatch.setattr(desktop_main, "LOCAL_BACKEND", False)
+    monkeypatch.setattr(desktop_main.subprocess, "Popen", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not spawn local backend")))
+    assert desktop_main.start_backend() is None
+
+
 def test_start_backend_uses_current_python_and_backend_path(monkeypatch, tmp_path):
     monkeypatch.setattr(desktop_main, "LOCAL_BACKEND", True)
     calls = {}

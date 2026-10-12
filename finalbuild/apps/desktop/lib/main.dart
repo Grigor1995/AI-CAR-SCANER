@@ -278,11 +278,11 @@ class _DesktopShellState extends State<DesktopShell> {
     }
   }
 
-  Future<void> updateDtc(String dtcId, String code) async {
+  Future<void> updateDtc(String dtcId, String code, String? description, String? source) async {
     final id = activeSession?.id;
     if (id == null || !online || code.trim().isEmpty) return;
     try {
-      final updated = await api.updateDtc(id, dtcId, code.trim());
+      final updated = await api.updateDtc(id, dtcId, code.trim(), description: description, source: source);
       if (!mounted) return;
       setState(() {
         sessionJson = updated;
@@ -928,7 +928,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
                       onPressed: () async {
                         final id = editingDtcId;
                         if (id == null || editDtcController.text.trim().isEmpty) return;
-                        await widget.onUpdateDtc(id, editDtcController.text.trim());
+                        await widget.onUpdateDtc(id, editDtcController.text.trim(), dtc['description']?.toString(), dtc['source']?.toString());
                         if (mounted) setState(() => editingDtcId = null);
                       },
                       icon: const Icon(Icons.check),

@@ -19,6 +19,7 @@ a = Analysis(
     binaries=binaries,
     datas=[(str(project_root / "assets" / "AI-Car-Scanner.ico"), "assets"),
            (str(project_root / "assets" / "AI-Car-Scanner.webp"), "assets"),
+           (str(project_root / "assets" / "AI-Car-Scanner-mobile.png"), "assets"),
            (str(project_root / "assets" / "ai-car-scanner-icon.png"), "assets"),
           ],
     hiddenimports=[

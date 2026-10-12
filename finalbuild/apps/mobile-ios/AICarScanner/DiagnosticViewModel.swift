@@ -94,7 +94,7 @@ final class DiagnosticViewModel: ObservableObject {
     func updateDTC(_ dtc: DTC, _ code: String) async {
         guard let id = session?.session_id, let dtcID = dtc.id else { return }
         await execute {
-            try await self.api.updateDTC(id, dtcID, code)
+            try await self.api.updateDTC(id, dtcID, code, dtc.description, dtc.source)
         }
     }
 

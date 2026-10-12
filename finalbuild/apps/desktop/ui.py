@@ -54,7 +54,7 @@ APP_QSS_LIGHT = (
 _UI_TRANSLATIONS = {
     "ru": {
         "AI Auto Diagnostic Workstation": "Рабочая станция диагностики автомобилей с ИИ",
-        "Add Vehicle": "Добавить автомобиль", "Make": "Марка", "Model": "Модель",
+        "Add Vehicle": "Добавить автомобиль", "OK": "ОК", "Make": "Марка", "Model": "Модель",
         "Chassis": "Кузов", "Year": "Год", "Engine": "Двигатель", "Fuel": "Топливо", "ECU": "ЭБУ",
         "Dashboard": "Обзор", "Vehicles": "Автомобили", "VCI / Devices": "VCI / Устройства",
         "Diagnostic": "Диагностика", "Live Data": "Текущие данные", "ECU Network": "Сеть ЭБУ", "Tests": "Тесты",
@@ -93,7 +93,7 @@ _UI_TRANSLATIONS = {
         "Save": "Сохранить", "Cancel": "Отмена", "Ready": "Готово", "Error": "Ошибка",
         "Select a vehicle to delete.": "Выберите автомобиль для удаления.",
         "Selected vehicle is no longer available.": "Выбранный автомобиль больше недоступен.",
-        "Delete vehicle": "Удалить автомобиль", "from local vehicle profiles?": "из локальных профилей автомобилей?",
+        "Delete vehicle": "Удалить автомобиль", "Delete": "Удалить", "from local vehicle profiles?": "из локальных профилей автомобилей?",
         "Existing diagnostic sessions are not deleted.": "Существующие диагностические сеансы не удаляются.",
         "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Введите адрес Wi-Fi OBD-адаптера, например 192.168.0.10.",
         "Select a VCI/device first.": "Сначала выберите VCI/устройство.", "Device connected": "Устройство подключено",
@@ -120,7 +120,7 @@ _UI_TRANSLATIONS = {
     },
     "hy": {
         "AI Auto Diagnostic Workstation": "Ավտոմեքենաների AI ախտորոշման աշխատակայան",
-        "Add Vehicle": "Ավելացնել մեքենա", "Make": "Արտադրող", "Model": "Մոդել",
+        "Add Vehicle": "Ավելացնել մեքենա", "OK": "Լավ", "Make": "Արտադրող", "Model": "Մոդել",
         "Chassis": "Թափք", "Year": "Տարի", "Engine": "Շարժիչ", "Fuel": "Վառելիք", "ECU": "ԷԿՀ",
         "Dashboard": "Գլխավոր", "Vehicles": "Մեքենաներ", "VCI / Devices": "VCI / Սարքեր",
         "Diagnostic": "Ախտորոշում", "Live Data": "Ընթացիկ տվյալներ", "ECU Network": "ԷԿՀ ցանց", "Tests": "Թեստեր",
@@ -159,7 +159,7 @@ _UI_TRANSLATIONS = {
         "Save": "Պահպանել", "Cancel": "Չեղարկել", "Ready": "Պատրաստ է", "Error": "Սխալ",
         "Select a vehicle to delete.": "Ընտրեք ջնջվող մեքենան։",
         "Selected vehicle is no longer available.": "Ընտրված մեքենան այլևս հասանելի չէ։",
-        "Delete vehicle": "Ջնջել մեքենան", "from local vehicle profiles?": "տեղական մեքենաների պրոֆիլներից՞",
+        "Delete vehicle": "Ջնջել մեքենան", "Delete": "Ջնջել", "from local vehicle profiles?": "տեղական մեքենաների պրոֆիլներից՞",
         "Existing diagnostic sessions are not deleted.": "Գոյություն ունեցող ախտորոշիչ սեսիաները չեն ջնջվի։",
         "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Մուտքագրեք Wi-Fi OBD ադապտերի հասցեն, օրինակ՝ 192.168.0.10։",
         "Select a VCI/device first.": "Նախ ընտրեք VCI/սարքը։", "Device connected": "Սարքը միացված է",
@@ -241,7 +241,8 @@ class MetricCard(QGroupBox):
 class VehicleDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Add Vehicle")
+        language = getattr(parent, "language", "en")
+        self.setWindowTitle(_translate_ui_text("Add Vehicle", language))
         self.resize(520, 440)
         self._catalog: list[dict[str, Any]] = []
         api = getattr(parent, "api", None)
@@ -270,13 +271,13 @@ class VehicleDialog(QDialog):
         for combo in (self.make, self.model, self.chassis, self.year, self.engine, self.ecu):
             combo.setEditable(False)
 
-        form.addRow("Make", self.make)
-        form.addRow("Model", self.model)
-        form.addRow("Chassis", self.chassis)
-        form.addRow("Year", self.year)
-        form.addRow("Engine", self.engine)
-        form.addRow("Fuel", self.fuel)
-        form.addRow("ECU", self.ecu)
+        form.addRow(_translate_ui_text("Make", language), self.make)
+        form.addRow(_translate_ui_text("Model", language), self.model)
+        form.addRow(_translate_ui_text("Chassis", language), self.chassis)
+        form.addRow(_translate_ui_text("Year", language), self.year)
+        form.addRow(_translate_ui_text("Engine", language), self.engine)
+        form.addRow(_translate_ui_text("Fuel", language), self.fuel)
+        form.addRow(_translate_ui_text("ECU", language), self.ecu)
 
         self.make.currentTextChanged.connect(self._refresh_models)
         self.model.currentTextChanged.connect(self._refresh_chassis)
@@ -286,6 +287,8 @@ class VehicleDialog(QDialog):
 
         self._refresh_makes()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setText(_translate_ui_text("OK", language))
+        buttons.button(QDialogButtonBox.Cancel).setText(_translate_ui_text("Cancel", language))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)

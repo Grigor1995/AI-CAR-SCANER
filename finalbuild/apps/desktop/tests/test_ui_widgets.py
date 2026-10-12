@@ -22,6 +22,8 @@ from apps.desktop.ui import (
     TestsPage as DiagnosticTestsPage,
     VehicleDialog,
     VehiclesPage,
+    _translate_ui_text,
+    _translate_ui_block,
 )
 
 
@@ -90,6 +92,20 @@ class FakeApp:
     def active_probe(self): pass
     def refresh_telemetry(self): pass
 
+
+
+def test_ui_translation_covers_pages_and_switches_languages(qapp):
+    assert _translate_ui_text("Dashboard", "ru") == "Обзор"
+    assert _translate_ui_text("Dashboard", "hy") == "Գլխավոր"
+    assert _translate_ui_text("Session state: ANALYSIS_READY", "ru").startswith("Состояние сеанса:")
+    russian = _translate_ui_text("Session state: ANALYSIS_READY", "ru")
+    armenian = _translate_ui_text(russian, "hy")
+    assert armenian.startswith("Սեսիայի վիճակ՝")
+    assert _translate_ui_text(russian, "en") == "Session state: ANALYSIS_READY"
+    assert _translate_ui_text("PASS", "ru") == "Пройден"
+    assert _translate_ui_text("FAIL", "hy") == "Չանցավ"
+    assert _translate_ui_text("INCOMPLETE", "hy") == "Անորոշ"
+    assert _translate_ui_block("Model: Tesla Model S", "ru") == "Модель: Tesla Model S"
 
 def test_sparkline_limits_values_and_paints(qapp):
     chart = Sparkline([1, 2])
@@ -212,6 +228,16 @@ def test_tests_page_builds_candidates_from_decision_payload(qapp):
     assert page.list.count() == 0
     assert app.test_candidates == []
 
+
+
+def test_test_result_labels_are_localized_but_keep_canonical_values(qapp):
+    app = FakeApp()
+    app.language = "ru"
+    page = DiagnosticTestsPage(app)
+    assert page.result.itemText(0) == "Пройден"
+    assert page.result.itemData(0) == "PASS"
+    assert page.result.itemText(2) == "Неполно"
+    assert page.result.itemData(2) == "INCOMPLETE"
 
 def test_devices_page_refresh_config_and_selection(qapp):
     app = FakeApp()

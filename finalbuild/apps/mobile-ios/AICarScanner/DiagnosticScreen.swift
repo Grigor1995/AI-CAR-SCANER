@@ -17,6 +17,8 @@ struct DiagnosticScreen: View {
     @State private var settingsOpen = false
     @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
+    @State private var editDTC:DTC?
+    @State private var editDTCText=""
     @State private var editText=""
     @State private var test:Recommendation?
     @State private var testResult = "INCOMPLETE"
@@ -61,6 +63,11 @@ struct DiagnosticScreen: View {
                 Button(t.cancel,role:.cancel){editSymptom=nil}
                 Button(t.save){ if let s=editSymptom { Task{ await updateSymptomLocally(s); editSymptom=nil } } }
             }
+            .alert(t.editDTC,isPresented:Binding(get:{editDTC != nil},set:{if !$0{editDTC=nil}})){
+                TextField("DTC",text:$editDTCText).textInputAutocapitalization(.characters)
+                Button(t.cancel,role:.cancel){editDTC=nil}
+                Button(t.save){if let item=editDTC{Task{await viewModel.updateDTC(item,editDTCText);editDTC=nil}}}
+            }
             .alert("Error",isPresented:Binding(get:{viewModel.error != nil},set:{if !$0{viewModel.error=nil}})){Button("OK"){}}
             .preferredColorScheme(viewModel.settings.darkTheme ? .dark:.light)
         }
@@ -88,7 +95,7 @@ struct DiagnosticScreen: View {
             Text("DTC").font(.title3.bold())
             HStack{TextField("P0302",text:$dtc).textFieldStyle(.roundedBorder).textInputAutocapitalization(.characters)
                 Button("＋"){let x=dtc;dtc="";Task{await viewModel.addDTC(x)}}.disabled(viewModel.session == nil || dtc.isEmpty)}
-            ForEach(viewModel.session?.dtcs ?? []){x in InputRow(title:x.code,subtitle:x.description ?? x.source ?? "",edit:{},delete:{Task{await viewModel.deleteDTC(x)}})}
+            ForEach(viewModel.session?.dtcs ?? []){x in InputRow(title:x.code,subtitle:x.description ?? x.source ?? "",edit:{editDTC=x;editDTCText=x.code},delete:{Task{await viewModel.deleteDTC(x)}})}
             Button(t.analyze){Task{await viewModel.analyze()}}.buttonStyle(.borderedProminent).frame(maxWidth:.infinity)
         }
     }
@@ -171,7 +178,7 @@ struct T{
     var make:String{tr("Make","Марка","Մակնիշ")};var model:String{tr("Model","Модель","Մոդել")};var chassis:String{tr("Chassis","Кузов","Թափք")};var year:String{tr("Year","Год","Տարի")};var engine:String{tr("Engine","Двигатель","Շարժիչ")};var petrol:String{tr("Petrol","Бензин","Բենզին")};var lpg:String{tr("LPG","Газ","Գազ")}
     var create:String{tr("Create diagnostic session","Создать диагностическую сессию","Ստեղծել դիագնոստիկ սեսիա")};var save:String{tr("Save","Сохранить","Պահպանել")};var symptoms:String{tr("Symptoms","Симптомы","Ախտանիշներ")};var symptom:String{tr("Symptom","Симптом","Ախտանիշ")};var driverSymptom:String{tr("Driver symptom","Симптом водителя","Վարորդի ախտանիշը")};var analyze:String{tr("Analyze session","Анализировать","Վերլուծել սեսիան")}
     var evidence:String{tr("Evidence","Доказательства","Ապացույցներ")};var hypotheses:String{tr("Hypotheses","Гипотезы","Հիպոթեզներ")};var nextTests:String{tr("Next diagnostic tests","Следующие тесты","Հաջորդ թեստերը")};var record:String{tr("Record result","Записать результат","Գրանցել արդյունքը")};var state:String{tr("State","Состояние","Կարգավիճակ")};var noSession:String{tr("Create a session first.","Сначала создайте сессию.","Սկզբում ստեղծեք սեսիա։")};var activityEmpty:String{tr("No activity yet.","Журнал пуст.","Գործունեություն չկա։")}
-    var settings:String{tr("Settings","Настройки","Կարգավորումներ")};var languageLabel:String{tr("Language","Язык","Լեզու")};var theme:String{tr("Theme","Тема","Թեմա")};var dark:String{tr("Dark","Тёмная","Մուգ")};var close:String{tr("Close","Закрыть","Փակել")};var newSession:String{tr("New session","Новая сессия","Նոր սեսիա")};var start:String{tr("Start","Начать","Սկսել")};var cancel:String{tr("Cancel","Отмена","Չեղարկել")};var confirm:String{tr("Current session data will be cleared from this screen.","Данные текущей сессии будут очищены с экрана.","Ընթացիկ սեսիայի տվյալները կմաքրվեն էկրանից։")};var scan:String{tr("Scan BLE adapters","Сканировать BLE","Սկանավորել BLE")};var editSymptom:String{tr("Edit symptom","Изменить симптом","Խմբագրել ախտանիշը")}
+    var settings:String{tr("Settings","Настройки","Կարգավորումներ")};var languageLabel:String{tr("Language","Язык","Լեզու")};var theme:String{tr("Theme","Тема","Թեմա")};var dark:String{tr("Dark","Тёмная","Մուգ")};var close:String{tr("Close","Закрыть","Փակել")};var newSession:String{tr("New session","Новая сессия","Նոր սեսիա")};var start:String{tr("Start","Начать","Սկսել")};var cancel:String{tr("Cancel","Отмена","Չեղարկել")};var confirm:String{tr("Current session data will be cleared from this screen.","Данные текущей сессии будут очищены с экрана.","Ընթացիկ սեսիայի տվյալները կմաքրվեն էկրանից։")};var scan:String{tr("Scan BLE adapters","Сканировать BLE","Սկանավորել BLE")};var editSymptom:String{tr("Edit symptom","Изменить симптом","Խմբագրել ախտանիշը")};var editDTC:String{tr("Edit DTC","Изменить DTC","Խմբագրել DTC")}
 }
 private extension Array where Element:Hashable{
     func unique()->[Element]{Array(Set(self))}

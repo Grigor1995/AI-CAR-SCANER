@@ -940,7 +940,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                                 obdStatus = extra.connectingBluetooth
                                                                 bluetoothClient.connect(device)
                                                                     .onSuccess { obdStatus = it }
-                                                                    .onFailure { obdStatus = "${extra.bluetoothError}: ${it.message ?: extra.unknownError}" }
+                                                                    .onFailure { obdStatus = "${extra.bluetoothError}: ${it.message ?: extra.incompleteError}" }
                                                             }
                                                         },
                                                         enabled = !bluetoothClient.isConnected
@@ -978,7 +978,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     obdStatus = extra.connectingWifi
                                                     wifiClient.connect(wifiHost, port)
                                                         .onSuccess { obdStatus = it }
-                                                        .onFailure { obdStatus = "${extra.wifiError}: ${it.message ?: extra.unknownError}" }
+                                                        .onFailure { obdStatus = "${extra.wifiError}: ${it.message ?: extra.incompleteError}" }
                                                 }
                                             }
                                         },
@@ -1035,7 +1035,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                                         obdStatus = extra.connectingUsb
                                                                         usbClient.connect(manager, device)
                                                                             .onSuccess { obdStatus = it }
-                                                                            .onFailure { obdStatus = "${extra.usbError}: ${it.message ?: extra.unknownError}" }
+                                                                            .onFailure { obdStatus = "${extra.usbError}: ${it.message ?: extra.incompleteError}" }
                                                                     }
                                                                 }
                                                             },
@@ -1058,7 +1058,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 "wifi" -> wifiClient.readRpm()
                                                 else -> usbClient.readRpm()
                                             }.onSuccess { obdResponse = "${extra.rpmValue}: ${it}" }
-                                                .onFailure { obdResponse = "${extra.rpmReadFailed}: ${it.message ?: extra.unknownError}" }
+                                                .onFailure { obdResponse = "${extra.rpmReadFailed}: ${it.message ?: extra.incompleteError}" }
                                         }
                                     }) { Text(text.readRpm) }
                                     Button(onClick = {
@@ -1068,7 +1068,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 "wifi" -> wifiClient.readDtcs()
                                                 else -> usbClient.readDtcs()
                                             }.onSuccess { obdResponse = "${extra.dtcValue}: ${it}" }
-                                                .onFailure { obdResponse = "${extra.dtcReadFailed}: ${it.message ?: extra.unknownError}" }
+                                                .onFailure { obdResponse = "${extra.dtcReadFailed}: ${it.message ?: extra.incompleteError}" }
                                         }
                                     }) { Text(text.readDtcs) }
                                     Button(onClick = { closeAllObd() }) { Text(text.disconnect) }
@@ -1399,7 +1399,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                         onClick = {
                                                             selectedTestId = recommendation.id
                                                             selectedTestTitle = recommendation.title
-                                                            testOutcome = "UNKNOWN"
+                                                            testOutcome = "INCOMPLETE"
                                                             testNotes = ""
                                                             testResultDialogOpen = true
                                                         },

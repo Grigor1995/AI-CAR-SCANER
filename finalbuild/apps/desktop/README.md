@@ -1,68 +1,33 @@
-# AI CAR SCANER — Cross-platform Flutter client
+# AI CAR SCANER — Native Desktop Client
 
-`apps/desktop` is the canonical Flutter client for the shared diagnostic platform.
+The canonical desktop workstation is implemented in **Python + PySide6**. It uses the shared FastAPI backend and the same diagnostic-session contract as the native Android and iOS clients.
 
-See [`../PLATFORM_FEATURE_PARITY.md`](../PLATFORM_FEATURE_PARITY.md) for the single cross-platform feature contract and platform-specific limits.
+## Run from the repository
 
-## Supported client targets
+From the finalbuild/ directory, activate your Python environment, install the relevant dependencies, and run:
 
-- Windows
-- Linux
-- macOS
-- Android
-- iOS
+~~~powershell
+python -m pip install -r apps\desktop\requirements.txt
+python -m apps.desktop.main
+~~~
 
-Android currently has a dedicated native Compose client under `apps/mobile-android`. The Flutter client uses the same backend REST contracts and the same server-side diagnostic session/database.
+The launcher can use or start the configured local backend and local llama-server.exe according to the runtime settings. See [Windows setup](../../START_HERE_WINDOWS.md) for the complete local setup.
 
-## Shared data architecture
+## Standalone Windows package
 
-All clients communicate with the same FastAPI backend:
+See [README_STANDALONE.md](README_STANDALONE.md) for the PyInstaller build and launch instructions. The desktop GUI and backend service are packaged separately.
 
-`POST/GET /api/v1/sessions`
+## Tests
 
-The backend persists complete `DiagnosticSession` snapshots to the configured `DATABASE_URL`.
+From finalbuild/:
 
-With the repository Docker setup:
+~~~bash
+python -m pytest -p no:benchmark -p no:asyncio apps/desktop/tests
+python -m pytest -p no:benchmark -p no:asyncio apps/desktop/test_smoke.py
+~~~
 
-`Android / Desktop / iOS -> FastAPI -> PostgreSQL + pgvector`
+The Python test suite covers the API client, models, persistence, main-window helpers, and selected UI behavior. A passing unit test suite does not by itself prove that a packaged Windows executable runs correctly.
 
-This means the session, vehicle, symptoms, DTCs, evidence, hypotheses, recommendations, test results and audit history can be shared between devices.
+## Shared backend
 
-The clients should not maintain an independent authoritative diagnostic database.
-
-## Desktop development
-
-From `finalbuild/apps/desktop`:
-
-```bash
-flutter pub get
-flutter run -d windows
-```
-
-Linux and macOS use the corresponding Flutter target.
-
-## iOS development
-
-The iOS runner has not been committed to this repository yet. On a macOS development machine with Xcode and Flutter installed, generate the platform runner once from this directory:
-
-```bash
-flutter create --platforms=ios .
-flutter pub get
-flutter run -d ios
-```
-
-Do not replace `lib/`; that is the shared application code.
-
-## API configuration
-
-Override the backend URL at build/run time:
-
-```bash
-flutter run -d windows --dart-define=API_URL=https://ai-car-scaner.onrender.com
-```
-
-For local development, override `API_URL` with your local FastAPI URL. The default is the shared Render backend so Desktop, Android, and iOS use the same service.
-
-## Legacy Python desktop
-
-The repository also contains the older PySide6 client files (`main.py`, `ui.py`, etc.). They are legacy/standalone tooling and are not the cross-platform Flutter client.
+The desktop client uses the shared FastAPI diagnostic API. Configure the backend URL with AI_CAR_BACKEND_URL when a non-default endpoint is required. The backend's deterministic analysis remains authoritative; optional LLM output must preserve uncertainty and evidence provenance.

@@ -211,3 +211,12 @@ The latest PR runs failed before any test or build step started, so they provide
 ### Validation boundary
 
 No merge to `main` was performed. New Android contract/repository tests, iOS tests, and the updated Desktop widget-test step remain unverified until the PR workflow can execute its steps. The Desktop Qt teardown crash is still a known limitation; the separate widget step is non-blocking, not a claim that the crash itself has been fixed.
+
+
+---
+
+## Native-client cleanup note — 2026-10-12
+
+The cleanup branch removes the legacy Flutter/Dart client sources and generated Windows Flutter runner scaffolding. The documented active clients are now PySide6 Desktop, native Kotlin/Jetpack Compose Android, and native Swift/SwiftUI iOS. Tracked Android Gradle cache files are removed and ignore rules are added for local Gradle caches.
+
+**Validation status for this cleanup:** documentation and repository-tree changes only; no new CI, build, or runtime test was run as part of preparing this change. The historical test results above apply only to the specific older commits and workflow runs cited in their sections; they do not validate this cleanup commit or the current main revision.

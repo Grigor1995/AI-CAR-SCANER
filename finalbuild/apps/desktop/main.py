@@ -305,10 +305,11 @@ def run() -> None:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
-    try:
-        start_llama_server()
-    except Exception as exc:
-        print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
+    if LOCAL_BACKEND:
+        try:
+            start_llama_server()
+        except Exception as exc:
+            print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
 
     try:
         start_backend()

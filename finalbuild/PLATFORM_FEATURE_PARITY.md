@@ -9,13 +9,13 @@ This is the canonical feature list for Flutter Desktop, native Android, and nati
 | Backend connectivity | Yes; HTTPS Render default, API_URL override | Yes; HTTPS Render default | Yes; HTTPS Render default, editable in Settings | Same FastAPI service and session IDs |
 | Vehicle catalog and vehicle profile | Yes | Yes | Yes | GET vehicle catalog; create/update vehicle in DiagnosticSession |
 | Diagnostic session create/read | Yes | Yes | Yes | POST/GET /api/v1/sessions |
-| Symptoms add/edit/delete | Yes in the client workflow | Yes | Yes | POST/PUT/DELETE /api/v1/sessions/{id}/symptoms |
-| DTC add/edit/delete | Add supported; edit/delete parity should be completed in Flutter UI | Yes | Yes | POST/PUT/DELETE /api/v1/sessions/{id}/dtcs |
+| Symptoms add/edit/delete | Partial in canonical Flutter UI; legacy Python UI is separate | Yes | Yes | POST/PUT/DELETE /api/v1/sessions/{id}/symptoms |
+| DTC add/edit/delete | Partial in canonical Flutter UI; legacy Python UI is separate | Yes | Yes | POST/PUT/DELETE /api/v1/sessions/{id}/dtcs |
 | Deterministic analysis | Yes | Yes | Yes | POST /api/v1/analysis/{session_id}?language=... |
 | Evidence, hypotheses, recommendations | Yes | Yes | Yes | Shared DiagnosticSession response |
 | Record diagnostic test outcome | Yes | Yes | Yes | Canonical values are PASS, FAIL, INCOMPLETE |
 | Activity/audit history | Yes | Yes | Yes | Shared session audit_log |
-| English, Russian, Armenian | UI coverage varies by client; verify before release | Yes | Yes | Backend language codes: en, ru, hy |
+| English, Russian, Armenian | Not yet at native-client localization parity | Yes | Yes | Backend language codes: en, ru, hy |
 | Light/dark theme | Dark theme currently the primary Flutter theme | Yes | Yes | Presentation preference is client-specific |
 
 ## Platform-specific capabilities and known gaps

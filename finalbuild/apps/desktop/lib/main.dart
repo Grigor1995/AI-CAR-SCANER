@@ -472,7 +472,7 @@ class _DesktopShellState extends State<DesktopShell> {
       case 4:
         return NetworkPage(session: activeSession, network: networkJson, onDemo: loadDemoNetwork);
       case 5:
-        return TestsPage(session: activeSession, decision: decisionJson, onRefresh: _refreshSessionData, onRecordTest: recordTestResult);
+        return TestsPage(session: activeSession, sessionJson: sessionJson, decision: decisionJson, onRefresh: _refreshSessionData, onRecordTest: recordTestResult);
       case 6:
         return ReportsPage(session: activeSession, sessionJson: sessionJson, telemetry: telemetryJson);
       default:
@@ -1101,8 +1101,9 @@ class NetworkPage extends StatelessWidget {
 }
 
 class TestsPage extends StatelessWidget {
-  const TestsPage({super.key, this.session, required this.decision, required this.onRefresh, required this.onRecordTest});
+  const TestsPage({super.key, this.session, required this.sessionJson, required this.decision, required this.onRefresh, required this.onRecordTest});
   final DiagnosticSessionModel? session;
+  final Map<String, dynamic> sessionJson;
   final Map<String, dynamic> decision;
   final Future<void> Function({bool silent}) onRefresh;
   final Future<void> Function(TestCandidateModel candidate, String result, String notes) onRecordTest;
@@ -1145,10 +1146,10 @@ class TestsPage extends StatelessWidget {
             actions: [
               TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
               FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final notes = notesController.text.trim();
                   Navigator.of(dialogContext).pop();
-                  onRecordTest(candidate, selectedResult, notes);
+                  await onRecordTest(candidate, selectedResult, notes);
                 },
                 child: const Text('Record result'),
               ),
@@ -1164,6 +1165,7 @@ class TestsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final candidates = ((decision['candidates'] as List?) ?? const []).map((e) => TestCandidateModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    final results = ((sessionJson['test_results'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
     return ListView(padding: const EdgeInsets.all(26), children: [
       _PageTitle(title: 'Recommended Tests', subtitle: 'Decision engine balances information gain, evidence fit, cost and risk.'),
       const SizedBox(height: 20),
@@ -1200,6 +1202,27 @@ class TestsPage extends StatelessWidget {
             ])),
           ])));
         }),
+        if (results.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Recent test results', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  for (final result in results.reversed.take(10))
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(result['test_name']?.toString() ?? result['test_id']?.toString() ?? 'Diagnostic test'),
+                      subtitle: Text([result['result']?.toString() ?? 'INCOMPLETE', result['notes']?.toString() ?? ''].where((value) => value.isNotEmpty).join(' • ')),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     ]);
   }

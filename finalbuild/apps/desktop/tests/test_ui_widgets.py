@@ -227,6 +227,16 @@ def test_tests_page_builds_candidates_from_decision_payload(qapp):
     assert app.test_candidates == []
 
 
+
+def test_test_result_labels_are_localized_but_keep_canonical_values(qapp):
+    app = FakeApp()
+    app.language = "ru"
+    page = DiagnosticTestsPage(app)
+    assert page.result.itemText(0) == "Пройден"
+    assert page.result.itemData(0) == "PASS"
+    assert page.result.itemText(2) == "Неполно"
+    assert page.result.itemData(2) == "INCOMPLETE"
+
 def test_devices_page_refresh_config_and_selection(qapp):
     app = FakeApp()
     page = DevicesPage(app)

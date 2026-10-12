@@ -26,7 +26,7 @@ This is the canonical feature list for Flutter Desktop, native Android, and nati
 | OBD adapter discovery/connection | Uses backend device APIs in the Python legacy client; Flutter parity is incomplete | BLE, Wi-Fi/TCP and USB host code | BLE discovery only; connection and Wi-Fi/TCP OBD transport are incomplete; generic USB is not implemented |
 | ECU/network discovery | ECU Network panel and CAN frame/map API calls | Not at Flutter Desktop feature parity | Not implemented |
 | Reports/export | Reports panel | Not at Flutter Desktop feature parity | Not implemented |
-| Local AI model runtime | Python legacy Desktop can start local llama-server when configured | Not included in native app | Not included in native app |
+| Local AI model runtime | Python legacy Desktop can start local llama-server when local backend mode is explicitly configured | Not included in native app | Not included in native app |
 
 ## Result-status contract
 

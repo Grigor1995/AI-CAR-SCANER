@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import json
+import re
 import sys
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
@@ -49,6 +50,137 @@ APP_QSS_LIGHT = (
     .replace("#1e3348", "#d7eaff").replace("#d9e3ee", "#18212b")
     .replace("#5595d9", "#3978b8").replace("#8e9bab", "#526170")
 )
+
+
+_UI_TRANSLATIONS = {
+    "ru": {
+        "AI Auto Diagnostic Workstation": "Рабочая станция диагностики автомобилей с ИИ",
+        "Add Vehicle": "Добавить автомобиль", "Make": "Марка", "Model": "Модель",
+        "Chassis": "Кузов", "Year": "Год", "Engine": "Двигатель", "Fuel": "Топливо", "ECU": "ЭБУ",
+        "Dashboard": "Обзор", "Vehicles": "Автомобили", "VCI / Devices": "VCI / Устройства",
+        "Diagnostic": "Диагностика", "Live Data": "Текущие данные", "ECU Network": "Сеть ЭБУ", "Tests": "Тесты",
+        "Backend": "Сервер", "Vehicle": "Автомобиль", "Session": "Сеанс", "ECUs": "ЭБУ",
+        "Diagnostic workflow": "Процесс диагностики",
+        "Evidence → Reasoning → Next Test → Result → Re-analysis": "Данные → Анализ → Следующий тест → Результат → Повторный анализ",
+        "LLM explains and orchestrates; deterministic rules and measured evidence remain authoritative.": "LLM объясняет и координирует; правила и измеренные данные остаются основой выводов.",
+        "Refresh status": "Обновить статус", "+ Add vehicle": "+ Добавить автомобиль", "Delete selected": "Удалить выбранное",
+        "No active session": "Нет активного сеанса", "New session": "Новый сеанс",
+        "Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal.": "Опишите симптом. Пример: двигатель трясётся ниже 2000 об/мин при разгоне на LPG, на бензине работает нормально.",
+        "Symptoms / observations": "Симптомы / наблюдения", "DTC": "Код неисправности (DTC)",
+        "Add evidence + Analyze": "Добавить данные и анализировать", "Analysis": "Анализ", "Evidence": "Данные", "Hypotheses": "Гипотезы", "Missing info": "Недостающие данные",
+        "No evidence yet.": "Пока нет данных.", "No hypotheses yet.": "Пока нет гипотез.",
+        "No high-value missing information identified.": "Не выявлена критически важная недостающая информация.",
+        "Session state:": "Состояние сеанса:", "Current diagnostic interpretation:": "Текущая диагностическая интерпретация:",
+        "No diagnostic hypotheses generated yet.": "Диагностические гипотезы ещё не сформированы.",
+        "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence.": "Важно: гипотезы не подтверждают неисправность детали. Подтверждение требует измерений или результатов тестов.",
+        "Stopped": "Остановлено", "Start simulator": "Запустить симулятор", "Stop": "Остановить",
+        "Analyze telemetry": "Анализировать телеметрию", "AI Analyze Live Data": "ИИ-анализ текущих данных",
+        "PID / Channel": "PID / Канал", "Count": "Количество", "Min": "Мин.", "Max": "Макс.", "Mean": "Среднее", "Events": "События",
+        "AI live-data interpretation will appear here...": "Здесь появится интерпретация текущих данных ИИ...",
+        "Technician notes / measurements": "Заметки техника / измерения", "Record selected result": "Сохранить результат",
+        "PASS": "PASS", "FAIL": "FAIL", "INCOMPLETE": "INCOMPLETE",
+        "VCI / Adapter Connection": "Подключение VCI / адаптера",
+        "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Найдите USB/BLE-адаптеры или подключитесь к Wi-Fi OBD. Запись и программирование блоков здесь недоступны.",
+        "Scan USB": "Поиск USB", "Scan BLE": "Поиск BLE", "Add Simulator": "Добавить симулятор", "Probe Wi-Fi": "Проверить Wi-Fi",
+        "Selected device": "Выбранное устройство", "Wi-Fi host": "Хост Wi-Fi", "Wi-Fi port": "Порт Wi-Fi",
+        "USB baudrate": "Скорость USB", "BLE TX UUID": "UUID BLE TX", "BLE RX UUID": "UUID BLE RX",
+        "Connect": "Подключить", "Disconnect": "Отключить", "Reconnect": "Переподключить",
+        "Read VIN": "Считать VIN", "Read DTCs": "Считать DTC", "Read Live Data": "Считать текущие данные", "Device result": "Результат устройства",
+        "Refresh network map": "Обновить карту сети", "Active read-only probe": "Активная проверка (только чтение)",
+        "PASSIVE / INFERRED NETWORK": "ПАССИВНАЯ / ПРЕДПОЛАГАЕМАЯ СЕТЬ", "ACTIVE CORRELATION": "АКТИВНАЯ КОРРЕЛЯЦИЯ",
+        "No discovered ECU candidates yet.": "Кандидаты ЭБУ ещё не обнаружены.",
+        "Application": "Приложение", "Settings…": "Настройки…", "Exit": "Выход", "Help": "Справка", "About": "О программе",
+        "Application settings": "Настройки приложения", "Language": "Язык", "Theme": "Тема", "Dark": "Тёмная", "Light": "Светлая",
+        "Save": "Сохранить", "Cancel": "Отмена", "Ready": "Готово", "Error": "Ошибка",
+        "Select a vehicle to delete.": "Выберите автомобиль для удаления.",
+        "Selected vehicle is no longer available.": "Выбранный автомобиль больше недоступен.",
+        "Delete vehicle": "Удалить автомобиль", "from local vehicle profiles?": "из локальных профилей автомобилей?",
+        "Existing diagnostic sessions are not deleted.": "Существующие диагностические сеансы не удаляются.",
+        "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Введите адрес Wi-Fi OBD-адаптера, например 192.168.0.10.",
+        "Select a VCI/device first.": "Сначала выберите VCI/устройство.", "Device connected": "Устройство подключено",
+        "Device disconnected": "Устройство отключено", "Device reconnected": "Устройство переподключено",
+        "No active session.": "Нет активного сеанса.", "Select a diagnostic test first.": "Сначала выберите диагностический тест.",
+        "Backend is offline. Start the FastAPI backend first.": "Сервер недоступен. Сначала запустите FastAPI backend.",
+        "Enter a symptom, observation or DTC.": "Введите симптом, наблюдение или DTC.",
+        "Create a diagnostic session first.": "Сначала создайте диагностический сеанс.",
+        "AI is analyzing live vehicle data...": "ИИ анализирует текущие данные автомобиля...",
+        "Diagnostic session created": "Диагностический сеанс создан", "Diagnostic reasoning updated": "Диагностический анализ обновлён",
+        "Telemetry analysis completed": "Анализ телеметрии завершён", "Network map refreshed": "Карта сети обновлена",
+        "Active read-only ECU probe completed": "Активная проверка ЭБУ завершена", "Live-data AI analysis completed": "ИИ-анализ текущих данных завершён",
+        "Vehicle deleted:": "Автомобиль удалён:", "Backend online": "Сервер доступен", "Backend offline": "Сервер недоступен",
+        "ONLINE": "В СЕТИ", "OFFLINE": "НЕ В СЕТИ", "RUNNING": "РАБОТАЕТ", "Unknown": "Неизвестно",
+        "Make:": "Марка:", "Model:": "Модель:", "Chassis:": "Кузов:", "Year:": "Год:", "Engine:": "Двигатель:", "Fuel:": "Топливо:", "ECU:": "ЭБУ:",
+        "ID:": "ID:", "Manufacturer:": "Производитель:", "Connection:": "Подключение:", "Protocol:": "Протокол:", "Status:": "Статус:",
+        "Firmware:": "Прошивка:", "Capabilities:": "Возможности:", "Metadata:": "Метаданные:", "VIN:": "VIN:",
+        "Not available": "Недоступно", "No stored generic OBD-II DTCs": "Нет сохранённых стандартных OBD-II DTC",
+        "DTCs:": "Коды неисправностей:", "Provider:": "Провайдер:", "Model:": "Модель:", "Available:": "Доступен:",
+        "No AI result.": "Нет результата ИИ.", "Provider error:": "Ошибка провайдера:",
+        "Session": "Сеанс", "Risk": "Риск", "Purpose": "Цель",
+    },
+    "hy": {
+        "AI Auto Diagnostic Workstation": "Ավտոմեքենաների AI ախտորոշման աշխատակայան",
+        "Add Vehicle": "Ավելացնել մեքենա", "Make": "Արտադրող", "Model": "Մոդել",
+        "Chassis": "Թափք", "Year": "Տարի", "Engine": "Շարժիչ", "Fuel": "Վառելիք", "ECU": "ԷԿՀ",
+        "Dashboard": "Գլխավոր", "Vehicles": "Մեքենաներ", "VCI / Devices": "VCI / Սարքեր",
+        "Diagnostic": "Ախտորոշում", "Live Data": "Ընթացիկ տվյալներ", "ECU Network": "ԷԿՀ ցանց", "Tests": "Թեստեր",
+        "Backend": "Սերվեր", "Vehicle": "Մեքենա", "Session": "Սեսիա", "ECUs": "ԷԿՀ-ներ",
+        "Diagnostic workflow": "Ախտորոշման ընթացք",
+        "Evidence → Reasoning → Next Test → Result → Re-analysis": "Տվյալներ → Վերլուծություն → Հաջորդ թեստ → Արդյունք → Կրկնակի վերլուծություն",
+        "LLM explains and orchestrates; deterministic rules and measured evidence remain authoritative.": "LLM-ը բացատրում և համակարգում է, իսկ կանոններն ու չափված տվյալները մնում են հիմնական ապացույցը։",
+        "Refresh status": "Թարմացնել կարգավիճակը", "+ Add vehicle": "+ Ավելացնել մեքենա", "Delete selected": "Ջնջել ընտրվածը",
+        "No active session": "Ակտիվ սեսիա չկա", "New session": "Նոր սեսիա",
+        "Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal.": "Նկարագրեք ախտանիշը։ Օրինակ՝ LPG-ով արագացնելիս շարժիչը դողում է 2000 RPM-ից ցածր, բենզինով՝ նորմալ։",
+        "Symptoms / observations": "Ախտանիշներ / դիտարկումներ", "DTC": "Սխալի կոդ (DTC)",
+        "Add evidence + Analyze": "Ավելացնել տվյալներ և վերլուծել", "Analysis": "Վերլուծություն", "Evidence": "Ապացույցներ", "Hypotheses": "Վարկածներ", "Missing info": "Բացակայող տվյալներ",
+        "No evidence yet.": "Դեռ տվյալներ չկան։", "No hypotheses yet.": "Դեռ վարկածներ չկան։",
+        "No high-value missing information identified.": "Կարևոր բացակայող տեղեկություն չի հայտնաբերվել։",
+        "Session state:": "Սեսիայի վիճակ՝", "Current diagnostic interpretation:": "Ընթացիկ ախտորոշիչ մեկնաբանություն՝",
+        "No diagnostic hypotheses generated yet.": "Ախտորոշիչ վարկածներ դեռ չեն ստեղծվել։",
+        "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence.": "Կարևոր է․ վարկածները մասի խափանման հաստատում չեն։ Հաստատման համար անհրաժեշտ են չափումներ կամ թեստի արդյունքներ։",
+        "Stopped": "Կանգնեցված է", "Start simulator": "Գործարկել սիմուլյատորը", "Stop": "Կանգնեցնել",
+        "Analyze telemetry": "Վերլուծել հեռաչափությունը", "AI Analyze Live Data": "AI վերլուծել ընթացիկ տվյալները",
+        "PID / Channel": "PID / ալիք", "Count": "Քանակ", "Min": "Նվազագույն", "Max": "Առավելագույն", "Mean": "Միջին", "Events": "Իրադարձություններ",
+        "AI live-data interpretation will appear here...": "Այստեղ կհայտնվի ընթացիկ տվյալների AI մեկնաբանությունը...",
+        "Technician notes / measurements": "Տեխնիկի նշումներ / չափումներ", "Record selected result": "Գրանցել արդյունքը",
+        "PASS": "PASS", "FAIL": "FAIL", "INCOMPLETE": "INCOMPLETE",
+        "VCI / Adapter Connection": "VCI / ադապտերի միացում",
+        "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Գտեք USB/BLE ադապտերներ կամ միացեք Wi-Fi OBD-ին։ Կառավարման բլոկների գրանցումն ու ծրագրավորումն այստեղ հասանելի չեն։",
+        "Scan USB": "Փնտրել USB", "Scan BLE": "Փնտրել BLE", "Add Simulator": "Ավելացնել սիմուլյատոր", "Probe Wi-Fi": "Ստուգել Wi-Fi",
+        "Selected device": "Ընտրված սարք", "Wi-Fi host": "Wi-Fi հասցե", "Wi-Fi port": "Wi-Fi պորտ",
+        "USB baudrate": "USB արագություն", "BLE TX UUID": "BLE TX UUID", "BLE RX UUID": "BLE RX UUID",
+        "Connect": "Միացնել", "Disconnect": "Անջատել", "Reconnect": "Կրկին միացնել",
+        "Read VIN": "Կարդալ VIN", "Read DTCs": "Կարդալ DTC-ները", "Read Live Data": "Կարդալ ընթացիկ տվյալները", "Device result": "Սարքի արդյունք",
+        "Refresh network map": "Թարմացնել ցանցի քարտեզը", "Active read-only probe": "Ակտիվ ստուգում (միայն ընթերցում)",
+        "PASSIVE / INFERRED NETWORK": "ՊԱՍԻՎ / ԵՆԹԱԴՐՎՈՂ ՑԱՆՑ", "ACTIVE CORRELATION": "ԱԿՏԻՎ ՀԱՄԱԴՐՈՒՄ",
+        "No discovered ECU candidates yet.": "ԷԿՀ-ի հնարավոր թեկնածուներ դեռ չեն հայտնաբերվել։",
+        "Application": "Հավելված", "Settings…": "Կարգավորումներ…", "Exit": "Ելք", "Help": "Օգնություն", "About": "Մասին",
+        "Application settings": "Հավելվածի կարգավորումներ", "Language": "Լեզու", "Theme": "Թեմա", "Dark": "Մուգ", "Light": "Բաց",
+        "Save": "Պահպանել", "Cancel": "Չեղարկել", "Ready": "Պատրաստ է", "Error": "Սխալ",
+        "Select a vehicle to delete.": "Ընտրեք ջնջվող մեքենան։",
+        "Selected vehicle is no longer available.": "Ընտրված մեքենան այլևս հասանելի չէ։",
+        "Delete vehicle": "Ջնջել մեքենան", "from local vehicle profiles?": "տեղական մեքենաների պրոֆիլներից՞",
+        "Existing diagnostic sessions are not deleted.": "Գոյություն ունեցող ախտորոշիչ սեսիաները չեն ջնջվի։",
+        "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Մուտքագրեք Wi-Fi OBD ադապտերի հասցեն, օրինակ՝ 192.168.0.10։",
+        "Select a VCI/device first.": "Նախ ընտրեք VCI/սարքը։", "Device connected": "Սարքը միացված է",
+        "Device disconnected": "Սարքն անջատված է", "Device reconnected": "Սարքը կրկին միացված է",
+        "No active session.": "Ակտիվ սեսիա չկա։", "Select a diagnostic test first.": "Նախ ընտրեք ախտորոշիչ թեստը։",
+        "Backend is offline. Start the FastAPI backend first.": "Սերվերն անհասանելի է։ Նախ գործարկեք FastAPI backend-ը։",
+        "Enter a symptom, observation or DTC.": "Մուտքագրեք ախտանիշ, դիտարկում կամ DTC։",
+        "Create a diagnostic session first.": "Նախ ստեղծեք ախտորոշիչ սեսիա։",
+        "AI is analyzing live vehicle data...": "AI-ն վերլուծում է մեքենայի ընթացիկ տվյալները...",
+        "Diagnostic session created": "Ախտորոշիչ սեսիան ստեղծվել է", "Diagnostic reasoning updated": "Ախտորոշիչ վերլուծությունը թարմացվել է",
+        "Telemetry analysis completed": "Հեռաչափության վերլուծությունն ավարտվել է", "Network map refreshed": "Ցանցի քարտեզը թարմացվել է",
+        "Active read-only ECU probe completed": "ԷԿՀ-ի ակտիվ ստուգումն ավարտվել է", "Live-data AI analysis completed": "Ընթացիկ տվյալների AI վերլուծությունն ավարտվել է",
+        "Vehicle deleted:": "Մեքենան ջնջվել է՝", "Backend online": "Սերվերը հասանելի է", "Backend offline": "Սերվերն անհասանելի է",
+        "ONLINE": "ՀԱՍԱՆԵԼԻ", "OFFLINE": "ԱՆՀԱՍԱՆԵԼԻ", "RUNNING": "ԱՇԽԱՏՈՒՄ Է", "Unknown": "Անհայտ",
+        "Make:": "Արտադրող՝", "Model:": "Մոդել՝", "Chassis:": "Թափք՝", "Year:": "Տարի՝", "Engine:": "Շարժիչ՝", "Fuel:": "Վառելիք՝", "ECU:": "ԷԿՀ՝",
+        "ID:": "ID:", "Manufacturer:": "Արտադրող՝", "Connection:": "Միացում՝", "Protocol:": "Արձանագրություն՝", "Status:": "Կարգավիճակ՝",
+        "Firmware:": "Ծրագրային ապահովում՝", "Capabilities:": "Հնարավորություններ՝", "Metadata:": "Մետատվյալներ՝", "VIN:": "VIN:",
+        "Not available": "Հասանելի չէ", "No stored generic OBD-II DTCs": "Պահված ստանդարտ OBD-II DTC-ներ չկան",
+        "DTCs:": "Սխալի կոդեր՝", "Provider:": "Մատակարար՝", "Available:": "Հասանելի է՝",
+        "No AI result.": "AI արդյունք չկա։", "Provider error:": "Մատակարարի սխալ՝",
+    }
+}
 
 class Worker(QThread):
     finished_ok = Signal(object)
@@ -494,7 +626,7 @@ class MainWindow(QMainWindow):
 
     def _open_settings(self) -> None:
         dialog = QDialog(self)
-        dialog.setWindowTitle("Application settings")
+        dialog.setWindowTitle(self.tr_text("Application settings"))
         dialog.setMinimumWidth(360)
         form = QFormLayout(dialog)
         language = QComboBox(dialog)
@@ -503,12 +635,14 @@ class MainWindow(QMainWindow):
         language.addItem("Հայերեն", "hy")
         language.setCurrentIndex(max(0, language.findData(self.language)))
         theme = QComboBox(dialog)
-        theme.addItem("Dark", True)
-        theme.addItem("Light", False)
+        theme.addItem(self.tr_text("Dark"), True)
+        theme.addItem(self.tr_text("Light"), False)
         theme.setCurrentIndex(max(0, theme.findData(self.dark_theme)))
-        form.addRow("Language", language)
-        form.addRow("Theme", theme)
+        form.addRow(self.tr_text("Language"), language)
+        form.addRow(self.tr_text("Theme"), theme)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=dialog)
+        buttons.button(QDialogButtonBox.Save).setText(self.tr_text("Save"))
+        buttons.button(QDialogButtonBox.Cancel).setText(self.tr_text("Cancel"))
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         form.addRow(buttons)
@@ -519,7 +653,62 @@ class MainWindow(QMainWindow):
         self.settings_store.setValue("language", self.language)
         self.settings_store.setValue("dark_theme", self.dark_theme)
         self._apply_theme()
-        self.statusBar().showMessage("Settings saved • language=" + self.language + " • theme=" + ("dark" if self.dark_theme else "light"))
+        self._apply_language()
+        self.refresh_pages()
+        self.statusBar().showMessage(self.tr_text("Settings saved") + " • " + self.tr_text("Language") + "=" + self.language + " • " + self.tr_text("Theme") + "=" + self.tr_text("Dark" if self.dark_theme else "Light"))
+
+    def tr_text(self, text: str) -> str:
+        if not isinstance(text, str) or self.language == "en":
+            return text
+        # Normalize translated text back to its English key first, so switching
+        # directly between Russian and Armenian never leaves mixed languages.
+        canonical = text
+        for translations in _UI_TRANSLATIONS.values():
+            for source, translated in translations.items():
+                if canonical == translated:
+                    canonical = source
+                    break
+        translations = _UI_TRANSLATIONS.get(self.language, {})
+        for source in sorted(translations, key=len, reverse=True):
+            if source in canonical:
+                canonical = re.sub(r"(?<!\\w)" + re.escape(source) + r"(?!\\w)", translations[source], canonical)
+        return canonical
+
+    def _apply_language(self) -> None:
+        self.setWindowTitle(self.tr_text("AI Auto Diagnostic Workstation"))
+        for widget in self.findChildren(QWidget):
+            if isinstance(widget, QLabel):
+                widget.setText(self.tr_text(widget.text()))
+            elif isinstance(widget, QPushButton):
+                widget.setText(self.tr_text(widget.text()))
+            elif isinstance(widget, QGroupBox):
+                widget.setTitle(self.tr_text(widget.title()))
+            elif isinstance(widget, QLineEdit):
+                widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
+            elif isinstance(widget, QPlainTextEdit):
+                widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
+                if widget.isReadOnly():
+                    widget.setPlainText(self.tr_text(widget.toPlainText()))
+            elif isinstance(widget, QComboBox):
+                for index in range(widget.count()):
+                    widget.setItemText(index, self.tr_text(widget.itemText(index)))
+            elif isinstance(widget, QTableWidget):
+                for column in range(widget.columnCount()):
+                    item = widget.horizontalHeaderItem(column)
+                    if item:
+                        item.setText(self.tr_text(item.text()))
+        for tab_widget in self.findChildren(QTabWidget):
+            for index in range(tab_widget.count()):
+                tab_widget.setTabText(index, self.tr_text(tab_widget.tabText(index)))
+        for action in self.findChildren(QAction):
+            action.setText(self.tr_text(action.text()))
+        for menu in self.menuBar().findChildren(QWidget):
+            if hasattr(menu, "title") and callable(menu.title):
+                try:
+                    menu.setTitle(self.tr_text(menu.title()))
+                except (AttributeError, TypeError):
+                    pass
+        self.statusBar().showMessage(self.tr_text(self.statusBar().currentMessage()))
 
     def _build_pages(self):
         container=QWidget(); root=QHBoxLayout(container); root.setContentsMargins(0,0,0,0)
@@ -549,7 +738,7 @@ class MainWindow(QMainWindow):
         helpm.addAction(about)
     def run_worker(self,fn:Callable[[],Any],done:Callable[[Any],None]) -> None:
         worker=Worker(fn); self._workers.append(worker); worker.finished_ok.connect(done); worker.failed.connect(self.show_error); worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None); worker.start()
-    def show_error(self,msg:str): QMessageBox.critical(self,"Error",msg); self.statusBar().showMessage(msg)
+    def show_error(self,msg:str):\n        translated = self.tr_text(msg)\n        QMessageBox.critical(self, self.tr_text("Error"), translated)\n        self.statusBar().showMessage(translated)
     def refresh_health(self):
         def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage("Backend online" if self.online else "Backend offline"); self.refresh_pages()
         self.run_worker(self.api.health,done)
@@ -558,6 +747,7 @@ class MainWindow(QMainWindow):
         for p in self.pages:
             try: p.refresh()
             except Exception: pass
+        self._apply_language()
     def add_vehicle(self):
         d=VehicleDialog(self)
         if d.exec()!=QDialog.Accepted: return
@@ -732,6 +922,12 @@ def _resource_path(relative: str) -> Path:
 
 
 def run() -> None:
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AI-CAR-SCANER.Desktop")
+        except (AttributeError, OSError):
+            pass
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
     icon_path = _resource_path("assets/AI-Car-Scanner.ico")
@@ -740,5 +936,6 @@ def run() -> None:
     win = MainWindow()
     if icon_path.is_file():
         win.setWindowIcon(QIcon(str(icon_path)))
+    win._apply_language()
     win.show()
     app.exec()

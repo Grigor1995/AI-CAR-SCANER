@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import json
 import re
 import sys
 from typing import Any, Callable
@@ -291,9 +292,35 @@ class VehicleDialog(QDialog):
                 self._catalog = list(api.vehicle_catalog_entries())
             except Exception:
                 self._catalog = []
+        self._catalog_from_server = bool(self._catalog)
+
+        # Keep the server catalog first (authoritative for exact matches), then
+        # add the curated offline seed so selection still works when the API is
+        # sparse or unavailable. The seed is broad guidance, not VIN-level fitment.
+        try:
+            offline_payload = json.loads(
+                _resource_path("shared/vehicle_catalog.json").read_text(encoding="utf-8")
+            )
+            offline_rows = offline_payload.get("vehicles", [])
+            if not isinstance(offline_rows, list):
+                offline_rows = []
+        except (OSError, ValueError, TypeError):
+            offline_rows = []
+
+        merged: dict[tuple[str, ...], dict[str, Any]] = {}
+        for row in [*self._catalog, *offline_rows]:
+            if not isinstance(row, dict):
+                continue
+            key = tuple(
+                str(row.get(field, "")).strip().casefold()
+                for field in ("make", "model", "chassis", "year", "engine", "ecu")
+            )
+            if all(key):
+                merged.setdefault(key, row)
+        self._catalog = list(merged.values())
 
         form = QFormLayout(self)
-        if not self._catalog:
+        if not self._catalog_from_server:
             language = getattr(parent, "language", "en")
             fallback_notice = {
                 "ru": "Офлайн-каталог: список может отличаться от серверного каталога.",

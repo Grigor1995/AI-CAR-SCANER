@@ -38,6 +38,7 @@ final class DiagnosticViewModel: ObservableObject {
         settings.darkTheme = defaults.object(forKey: "darkTheme") as? Bool ?? true
         let savedAPIURL = defaults.string(forKey: "apiURL")
         if let savedAPIURL,
+           !savedAPIURL.isEmpty,
            !savedAPIURL.contains("127.0.0.1:8001"),
            !savedAPIURL.contains("localhost:8001") {
             settings.apiURL = savedAPIURL

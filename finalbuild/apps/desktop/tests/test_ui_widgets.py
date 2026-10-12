@@ -23,6 +23,7 @@ from apps.desktop.ui import (
     VehicleDialog,
     VehiclesPage,
     _translate_ui_text,
+    _translate_ui_block,
 )
 
 
@@ -104,6 +105,7 @@ def test_ui_translation_covers_pages_and_switches_languages(qapp):
     assert _translate_ui_text("PASS", "ru") == "Пройден"
     assert _translate_ui_text("FAIL", "hy") == "Չանցավ"
     assert _translate_ui_text("INCOMPLETE", "hy") == "Անորոշ"
+    assert _translate_ui_block("Model: Tesla Model S", "ru") == "Модель: Tesla Model S"
 
 def test_sparkline_limits_values_and_paints(qapp):
     chart = Sparkline([1, 2])

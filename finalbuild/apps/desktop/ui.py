@@ -503,7 +503,8 @@ class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); self.list=QListWidget(); lay.addWidget(self.list)
-        bar=QHBoxLayout(); self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", app.language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", app.language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", app.language), "INCOMPLETE"); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+        bar=QHBoxLayout(); language = getattr(app, "language", "en")
+        self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
     def refresh(self):
         self.list.clear(); self.app.test_candidates=[]
         for item in self.app.decision.get("candidates",[]):

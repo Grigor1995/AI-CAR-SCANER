@@ -227,6 +227,89 @@ class _DesktopShellState extends State<DesktopShell> {
     }
   }
 
+  Future<void> addSymptom(String text) async {
+    final id = activeSession?.id;
+    if (id == null || !online || text.trim().isEmpty) {
+      _showError('Create a session and enter a symptom first.');
+      return;
+    }
+    try {
+      final updated = await api.addSymptom(id, text.trim());
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom added');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> updateSymptom(String symptomId, String text) async {
+    final id = activeSession?.id;
+    if (id == null || !online || text.trim().isEmpty) return;
+    try {
+      final updated = await api.updateSymptom(id, symptomId, text.trim());
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom updated');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> deleteSymptom(String symptomId) async {
+    final id = activeSession?.id;
+    if (id == null || !online) return;
+    try {
+      final updated = await api.deleteSymptom(id, symptomId);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('Symptom deleted');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> updateDtc(String dtcId, String code) async {
+    final id = activeSession?.id;
+    if (id == null || !online || code.trim().isEmpty) return;
+    try {
+      final updated = await api.updateDtc(id, dtcId, code.trim());
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('DTC updated');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
+  Future<void> deleteDtc(String dtcId) async {
+    final id = activeSession?.id;
+    if (id == null || !online) return;
+    try {
+      final updated = await api.deleteDtc(id, dtcId);
+      if (!mounted) return;
+      setState(() {
+        sessionJson = updated;
+        activeSession = DiagnosticSessionModel.fromJson(updated);
+      });
+      _snack('DTC deleted');
+    } on DioException catch (e) {
+      _showError(_dioMessage(e));
+    }
+  }
+
   Future<void> recordTestResult(TestCandidateModel candidate, String result, String notes) async {
     final id = activeSession?.id;
     if (id == null || !online) {

@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 class DiagnosticApiClient {
   DiagnosticApiClient({String? baseUrl})
       : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:8000'),
+          baseUrl: baseUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'https://ai-car-scaner.onrender.com'),
           connectTimeout: const Duration(seconds: 2),
           receiveTimeout: const Duration(seconds: 8),
           sendTimeout: const Duration(seconds: 8),

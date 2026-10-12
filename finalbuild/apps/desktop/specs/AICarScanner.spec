@@ -1,11 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
 from shutil import which
+import subprocess
+import sys
 
 spec_path = Path(SPEC).resolve()
 project_root = next(
     (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "main.py").is_file()),
     spec_path.parent,
+)
+# Always regenerate the packaged Windows icon from the Android launcher asset.
+subprocess.run(
+    [sys.executable, str(project_root / "apps" / "desktop" / "prepare_windows_icon.py")],
+    cwd=str(project_root),
+    check=True,
 )
 server = which("llama-server.exe")
 binaries = [(server, ".")] if server else []

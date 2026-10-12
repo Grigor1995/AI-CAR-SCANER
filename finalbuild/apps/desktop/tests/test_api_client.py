@@ -66,7 +66,7 @@ def test_request_exception_is_wrapped(client, monkeypatch):
         (lambda c: c.get_session("s-1"), "GET", "/api/v1/sessions/s-1"),
         (lambda c: c.add_dtc("s-1", "p0302"), "POST", "/api/v1/sessions/s-1/dtcs"),
         (lambda c: c.ingest_evidence("s-1", "shakes on LPG"), "POST", "/api/v1/intelligence/sessions/s-1/evidence/text"),
-        (lambda c: c.analyze("s-1"), "POST", "/api/v1/intelligence/sessions/s-1/analyze"),
+        (lambda c: c.analyze("s-1"), "POST", "/api/v1/analysis/s-1"),
         (lambda c: c.decision_plan("s-1"), "GET", "/api/v1/decision/sessions/s-1/plan"),
         (lambda c: c.record_test_result("s-1", "t-1", "PASS"), "POST", "/api/v1/intelligence/sessions/s-1/test-results"),
         (lambda c: c.start_simulator("s-1"), "POST", "/api/v1/acquisition/sessions/s-1/start"),

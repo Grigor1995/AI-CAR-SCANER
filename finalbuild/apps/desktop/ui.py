@@ -108,6 +108,8 @@ _UI_TRANSLATIONS = {
         "Active read-only ECU probe completed": "Активная проверка ЭБУ завершена", "Live-data AI analysis completed": "ИИ-анализ текущих данных завершён",
         "Vehicle deleted:": "Автомобиль удалён:", "Backend online": "Сервер доступен", "Backend offline": "Сервер недоступен",
         "ONLINE": "В СЕТИ", "OFFLINE": "НЕ В СЕТИ", "RUNNING": "РАБОТАЕТ", "Unknown": "Неизвестно",
+        "AI: checking...": "ИИ: проверка...", "AI: unavailable": "ИИ: недоступен", "AI: READY": "ИИ: ГОТОВ",
+        "AI: OFFLINE": "ИИ: НЕ В СЕТИ", "No active session": "Нет активного сеанса", "Risk": "Риск", "Purpose": "Цель",
         "Make:": "Марка:", "Model:": "Модель:", "Chassis:": "Кузов:", "Year:": "Год:", "Engine:": "Двигатель:", "Fuel:": "Топливо:", "ECU:": "ЭБУ:",
         "ID:": "ID:", "Manufacturer:": "Производитель:", "Connection:": "Подключение:", "Protocol:": "Протокол:", "Status:": "Статус:",
         "Firmware:": "Прошивка:", "Capabilities:": "Возможности:", "Metadata:": "Метаданные:", "VIN:": "VIN:",
@@ -172,6 +174,8 @@ _UI_TRANSLATIONS = {
         "Active read-only ECU probe completed": "ԷԿՀ-ի ակտիվ ստուգումն ավարտվել է", "Live-data AI analysis completed": "Ընթացիկ տվյալների AI վերլուծությունն ավարտվել է",
         "Vehicle deleted:": "Մեքենան ջնջվել է՝", "Backend online": "Սերվերը հասանելի է", "Backend offline": "Սերվերն անհասանելի է",
         "ONLINE": "ՀԱՍԱՆԵԼԻ", "OFFLINE": "ԱՆՀԱՍԱՆԵԼԻ", "RUNNING": "ԱՇԽԱՏՈՒՄ Է", "Unknown": "Անհայտ",
+        "AI: checking...": "AI՝ ստուգվում է...", "AI: unavailable": "AI-ն հասանելի չէ", "AI: READY": "AI՝ ՊԱՏՐԱՍՏ",
+        "AI: OFFLINE": "AI՝ ԱՆՀԱՍԱՆԵԼԻ", "Risk": "Ռիսկ", "Purpose": "Նպատակ",
         "Make:": "Արտադրող՝", "Model:": "Մոդել՝", "Chassis:": "Թափք՝", "Year:": "Տարի՝", "Engine:": "Շարժիչ՝", "Fuel:": "Վառելիք՝", "ECU:": "ԷԿՀ՝",
         "ID:": "ID:", "Manufacturer:": "Արտադրող՝", "Connection:": "Միացում՝", "Protocol:": "Արձանագրություն՝", "Status:": "Կարգավիճակ՝",
         "Firmware:": "Ծրագրային ապահովում՝", "Capabilities:": "Հնարավորություններ՝", "Metadata:": "Մետատվյալներ՝", "VIN:": "VIN:",
@@ -183,7 +187,7 @@ _UI_TRANSLATIONS = {
 
 
 def _translate_ui_text(text: str, language: str) -> str:
-    if not isinstance(text, str) or language == "en":
+    if not isinstance(text, str):
         return text
     # Normalize all known translations back to English first, including phrases
     # inside dynamic status messages and multiline diagnostic summaries.
@@ -191,6 +195,8 @@ def _translate_ui_text(text: str, language: str) -> str:
     for translations in _UI_TRANSLATIONS.values():
         for source, translated in sorted(translations.items(), key=lambda item: len(item[1]), reverse=True):
             canonical = re.sub(r"(?<!\\w)" + re.escape(translated) + r"(?!\\w)", source, canonical)
+    if language == "en":
+        return canonical
     translations = _UI_TRANSLATIONS.get(language, {})
     for source in sorted(translations, key=len, reverse=True):
         canonical = re.sub(r"(?<!\\w)" + re.escape(source) + r"(?!\\w)", translations[source], canonical)

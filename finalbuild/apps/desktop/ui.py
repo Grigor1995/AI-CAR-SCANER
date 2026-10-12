@@ -524,7 +524,7 @@ class LiveDataPage(QWidget):
         self._poll_in_flight = False
         self._details_in_flight = False
         self._status_data = {}
-        self._provider_data = {}
+        self._provider_data = {"available": False, "model": "local"}
         self._records_data = []
 
     def request_refresh(self):
@@ -614,6 +614,13 @@ class LiveDataPage(QWidget):
             self.table.setRowCount(0)
             self.chart.set_values([])
             return
+        provider = self._provider_data
+        available = bool(provider.get("available"))
+        model = provider.get("model", "—")
+        self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
+        self.ai_status.setObjectName("ok" if available else "warn")
+        self.ai_status.style().unpolish(self.ai_status)
+        self.ai_status.style().polish(self.ai_status)
         summary = self.app.telemetry
         stats = summary.get("signals") or summary.get("stats") or []
         self.table.setRowCount(0)

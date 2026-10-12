@@ -101,7 +101,9 @@ def test_ui_translation_covers_pages_and_switches_languages(qapp):
     armenian = _translate_ui_text(russian, "hy")
     assert armenian.startswith("Սեսիայի վիճակ՝")
     assert _translate_ui_text(russian, "en") == "Session state: ANALYSIS_READY"
-    assert _translate_ui_text("PASS", "hy") == "PASS"
+    assert _translate_ui_text("PASS", "ru") == "Пройден"
+    assert _translate_ui_text("FAIL", "hy") == "Չանցավ"
+    assert _translate_ui_text("INCOMPLETE", "hy") == "Անորոշ"
 
 def test_sparkline_limits_values_and_paints(qapp):
     chart = Sparkline([1, 2])

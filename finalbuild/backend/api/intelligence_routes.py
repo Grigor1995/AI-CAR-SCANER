@@ -40,10 +40,17 @@ def add_test_result(
 ):
     if session_id not in sessions:
         raise HTTPException(404, "Session not found")
+    result_status = request.result.strip().upper()
+    # Backward compatibility: older Android builds sent UNKNOWN. Normalize it
+    # to the single cross-platform status instead of persisting a fourth value.
+    if result_status == "UNKNOWN":
+        result_status = "INCOMPLETE"
+    if result_status not in {"PASS", "FAIL", "INCOMPLETE"}:
+        raise HTTPException(422, "Result must be PASS, FAIL, or INCOMPLETE")
     result = engine.record_test_result(
         sessions[session_id],
         request.test_id,
-        request.result,
+        result_status,
         request.measurements,
         request.notes,
     )

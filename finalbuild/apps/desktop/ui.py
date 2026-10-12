@@ -53,7 +53,7 @@ APP_QSS_LIGHT = (
 
 _UI_TRANSLATIONS = {
     "ru": {
-        "AI Auto Diagnostic Workstation": "Рабочая станция диагностики автомобилей с ИИ",
+        "AI Auto Diagnostic Workstation": "Рабочая станция диагностики автомобилей с ИИ", "Evidence-driven automotive diagnostics.": "Диагностика на основе доказательств.", "Settings saved": "Настройки сохранены",
         "Add Vehicle": "Добавить автомобиль", "OK": "ОК", "Make": "Марка", "Model": "Модель",
         "Chassis": "Кузов", "Year": "Год", "Engine": "Двигатель", "Fuel": "Топливо", "ECU": "ЭБУ",
         "Dashboard": "Обзор", "Vehicles": "Автомобили", "VCI / Devices": "VCI / Устройства",
@@ -119,7 +119,7 @@ _UI_TRANSLATIONS = {
         "Session": "Сеанс", "Risk": "Риск", "Purpose": "Цель",
     },
     "hy": {
-        "AI Auto Diagnostic Workstation": "Ավտոմեքենաների AI ախտորոշման աշխատակայան",
+        "AI Auto Diagnostic Workstation": "Ավտոմեքենաների AI ախտորոշման աշխատակայան", "Evidence-driven automotive diagnostics.": "Ապացույցների վրա հիմնված ախտորոշում։", "Settings saved": "Կարգավորումները պահպանվել են",
         "Add Vehicle": "Ավելացնել մեքենա", "OK": "Լավ", "Make": "Արտադրող", "Model": "Մոդել",
         "Chassis": "Թափք", "Year": "Տարի", "Engine": "Շարժիչ", "Fuel": "Վառելիք", "ECU": "ԷԿՀ",
         "Dashboard": "Գլխավոր", "Vehicles": "Մեքենաներ", "VCI / Devices": "VCI / Սարքեր",
@@ -684,6 +684,10 @@ class MainWindow(QMainWindow):
                 widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
                 if widget.isReadOnly():
                     widget.setPlainText(self.tr_text(widget.toPlainText()))
+            elif isinstance(widget, QListWidget):
+                for index in range(widget.count()):
+                    item = widget.item(index)
+                    item.setText(self.tr_text(item.text()))
             elif isinstance(widget, QComboBox):
                 for index in range(widget.count()):
                     widget.setItemText(index, self.tr_text(widget.itemText(index)))

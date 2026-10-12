@@ -203,6 +203,39 @@ def _translate_ui_text(text: str, language: str) -> str:
     return canonical
 
 
+
+def _translate_ui_block(text: str, language: str) -> str:
+    """Translate UI labels/static messages without rewriting vehicle or ECU values."""
+    if not isinstance(text, str):
+        return text
+    return "\n".join(_translate_known_ui_line(line, language) for line in text.splitlines())
+
+
+def _translate_known_ui_line(line: str, language: str) -> str:
+    bullet = ""
+    body = line
+    if body.startswith("• "):
+        bullet, body = "• ", body[2:]
+    all_maps = list(_UI_TRANSLATIONS.values())
+    known = any(body == key or body == value for mapping in all_maps for key, value in mapping.items())
+    if known:
+        return bullet + _translate_ui_text(body, language)
+    label_keys = (
+        "Current diagnostic interpretation:", "Session state:", "Important:",
+        "Manufacturer:", "Capabilities:", "Connection:", "Protocol:", "Metadata:",
+        "Provider:", "Available:", "Firmware:", "Chassis:", "Engine:", "Status:",
+        "DTCs:", "Make:", "Model:", "Year:", "Fuel:", "ECU:", "VIN:", "ID:",
+    )
+    translated = body
+    for label in sorted(label_keys, key=len, reverse=True):
+        translated = re.sub(
+            r"(?<!\w)" + re.escape(label),
+            _translate_ui_text(label, language),
+            translated,
+        )
+    return bullet + translated
+
+
 class Worker(QThread):
     finished_ok = Signal(object)
     failed = Signal(str)
@@ -235,7 +268,7 @@ class Sparkline(QWidget):
 class MetricCard(QGroupBox):
     def __init__(self, title: str, value: str = "—") -> None:
         super().__init__(); self.setTitle(title)
-        layout = QVBoxLayout(self); self.value = QLabel(value); self.value.setStyleSheet("font-size:26px;font-weight:700;"); layout.addWidget(self.value)
+        layout = QVBoxLayout(self); self.value = QLabel(value); self.value.setObjectName("vehicleMetricValue" if title == "Vehicle" else ""); self.value.setStyleSheet("font-size:26px;font-weight:700;"); layout.addWidget(self.value)
     def set_value(self, value: str) -> None: self.value.setText(value)
 
 class VehicleDialog(QDialog):
@@ -674,7 +707,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.tr_text("AI Auto Diagnostic Workstation"))
         for widget in self.findChildren(QWidget):
             if isinstance(widget, QLabel):
-                widget.setText(self.tr_text(widget.text()))
+                if widget.objectName() != "vehicleMetricValue":
+                    widget.setText(self.tr_text(widget.text()))
             elif isinstance(widget, QPushButton):
                 widget.setText(self.tr_text(widget.text()))
             elif isinstance(widget, QGroupBox):
@@ -684,19 +718,7 @@ class MainWindow(QMainWindow):
             elif isinstance(widget, QPlainTextEdit):
                 widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
                 if widget.isReadOnly():
-                    if widget.objectName() == "vehicleDetails":
-                        lines = widget.toPlainText().splitlines()
-                        label_keys = ("Make:", "Model:", "Chassis:", "Year:", "Engine:", "Fuel:", "ECU:")
-                        translated_lines = []
-                        for line in lines:
-                            for label in label_keys:
-                                if line.startswith(label):
-                                    line = self.tr_text(label) + line[len(label):]
-                                    break
-                            translated_lines.append(line)
-                        widget.setPlainText("\n".join(translated_lines))
-                    else:
-                        widget.setPlainText(self.tr_text(widget.toPlainText()))
+                    widget.setPlainText(_translate_ui_block(widget.toPlainText(), self.language))
             elif isinstance(widget, QListWidget):
                 if widget is self.nav or (len(self.pages) > 6 and widget is self.pages[6].list):
                     for index in range(widget.count()):

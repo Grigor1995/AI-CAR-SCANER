@@ -2,7 +2,11 @@
 from pathlib import Path
 from shutil import which
 
-project_root = Path(SPEC).resolve().parents[2]
+spec_path = Path(SPEC).resolve()
+project_root = next(
+    (parent for parent in spec_path.parents if (parent / "assets" / "AI-Car-Scanner.ico").is_file()),
+    spec_path.parent,
+)
 server = which("llama-server.exe")
 binaries = [(server, ".")] if server else []
 icon_file = project_root / "assets" / "AI-Car-Scanner.ico"

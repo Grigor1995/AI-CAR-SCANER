@@ -872,7 +872,7 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             Row(children: [
               SizedBox(width: 150, child: TextField(controller: dtcController, decoration: const InputDecoration(labelText: 'DTC'))),
               const SizedBox(width: 10),
-              OutlinedButton.icon(onPressed: dtcBusy ? null : () async { if (dtcController.text.trim().isEmpty) return; setState(() => dtcBusy = true); await widget.onAddDtc(dtcController.text.trim().toUpperCase()); if (mounted) setState(() => dtcBusy = false); }, icon: const Icon(Icons.add_alert_outlined), label: Text(dtcBusy ? 'Adding…' : 'Add DTC')),
+              OutlinedButton.icon(onPressed: dtcBusy ? null : () async { if (dtcController.text.trim().isEmpty) return; setState(() => dtcBusy = true); await widget.onAddDtc(dtcController.text.trim().toUpperCase()); if (mounted) setState(() { dtcBusy = false; dtcController.clear(); }); }, icon: const Icon(Icons.add_alert_outlined), label: Text(dtcBusy ? 'Adding…' : 'Add DTC')),
             ]),
             const SizedBox(height: 14),
             Row(children: [
@@ -890,9 +890,131 @@ class _DiagnosticPageState extends State<DiagnosticPage> {
             const Text('DTCs', style: TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             if (dtcs.isEmpty) const Text('No DTCs recorded yet.', style: TextStyle(color: Colors.white60)),
-            for (final dtc in dtcs) Text('${dtc['code'] ?? '—'}  ${dtc['description'] ?? ''}'),
+            for (final dtc in dtcs) ...[
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(dtc['code']?.toString() ?? '—'),
+                subtitle: Text(dtc['description']?.toString() ?? ''),
+                trailing: Wrap(
+                  spacing: 2,
+                  children: [
+                    IconButton(
+                      tooltip: 'Edit DTC',
+                      onPressed: () => setState(() {
+                        editingDtcId = dtc['id']?.toString();
+                        editDtcController.text = dtc['code']?.toString() ?? '';
+                      }),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Delete DTC',
+                      onPressed: () {
+                        final id = dtc['id']?.toString();
+                        if (id != null && id.isNotEmpty) widget.onDeleteDtc(id);
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              ),
+              if (editingDtcId != null && editingDtcId == dtc['id']?.toString())
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: editDtcController, decoration: const InputDecoration(labelText: 'Edit DTC code'))),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Save DTC',
+                      onPressed: () async {
+                        final id = editingDtcId;
+                        if (id == null || editDtcController.text.trim().isEmpty) return;
+                        await widget.onUpdateDtc(id, editDtcController.text.trim());
+                        if (mounted) setState(() => editingDtcId = null);
+                      },
+                      icon: const Icon(Icons.check),
+                    ),
+                    IconButton(
+                      tooltip: 'Cancel edit',
+                      onPressed: () => setState(() => editingDtcId = null),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+            ],
           ])))),
         ]),
+        const SizedBox(height: 18),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Structured symptoms', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: TextField(
+                      controller: symptomController,
+                      minLines: 1,
+                      maxLines: 3,
+                      decoration: InputDecoration(labelText: editingSymptomId == null ? 'Add symptom' : 'Edit symptom'),
+                    )),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () async {
+                        final value = symptomController.text.trim();
+                        if (value.isEmpty) return;
+                        final id = editingSymptomId;
+                        if (id == null) {
+                          await widget.onAddSymptom(value);
+                        } else {
+                          await widget.onUpdateSymptom(id, value);
+                        }
+                        if (mounted) setState(() { editingSymptomId = null; symptomController.clear(); });
+                      },
+                      child: Text(editingSymptomId == null ? 'Add' : 'Save'),
+                    ),
+                    if (editingSymptomId != null)
+                      IconButton(
+                        tooltip: 'Cancel edit',
+                        onPressed: () => setState(() { editingSymptomId = null; symptomController.clear(); }),
+                        icon: const Icon(Icons.close),
+                      ),
+                  ],
+                ),
+                if (symptoms.isEmpty)
+                  const Padding(padding: EdgeInsets.only(top: 10), child: Text('No structured symptoms recorded yet.', style: TextStyle(color: Colors.white60))),
+                for (final symptom in symptoms)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(symptom['raw_text']?.toString() ?? ''),
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit symptom',
+                          onPressed: () => setState(() {
+                            editingSymptomId = symptom['id']?.toString();
+                            symptomController.text = symptom['raw_text']?.toString() ?? '';
+                          }),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        IconButton(
+                          tooltip: 'Delete symptom',
+                          onPressed: () {
+                            final id = symptom['id']?.toString();
+                            if (id != null && id.isNotEmpty) widget.onDeleteSymptom(id);
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 18),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: _EvidenceCard(evidence: evidence)),

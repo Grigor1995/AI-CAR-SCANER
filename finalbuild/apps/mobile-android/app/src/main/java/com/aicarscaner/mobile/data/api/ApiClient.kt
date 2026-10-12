@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    private const val BASE_URL = "http://10.0.2.2:8001/"
+    private const val BASE_URL = "https://ai-car-scaner.onrender.com/"
 
     val diagnosticApi: DiagnosticApi by lazy {
         Retrofit.Builder()

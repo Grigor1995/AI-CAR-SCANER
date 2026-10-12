@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
 
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
-BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", "https://ai-car-scaner.onrender.com").rstrip("/")
+BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", "http://127.0.0.1:8001").rstrip("/")
 LOCAL_BACKEND = BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost"))
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))

@@ -4,7 +4,7 @@ from shutil import which
 
 spec_path = Path(SPEC).resolve()
 project_root = next(
-    (parent for parent in spec_path.parents if (parent / "assets" / "AI-Car-Scanner.ico").is_file()),
+    (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "main.py").is_file()),
     spec_path.parent,
 )
 server = which("llama-server.exe")

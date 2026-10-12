@@ -9,29 +9,33 @@ ANDROID_ICON = ROOT / "apps" / "mobile-android" / "app" / "src" / "main" / "res"
 DESKTOP_WEBP = ROOT / "assets" / "AI-Car-Scanner.webp"
 DESKTOP_PNG = ROOT / "assets" / "AI-Car-Scanner-mobile.png"
 DESKTOP_ICO = ROOT / "assets" / "AI-Car-Scanner.ico"
+ICON_SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
 
 
 def main() -> None:
     if not ANDROID_ICON.is_file():
         raise FileNotFoundError(f"Android launcher icon not found: {ANDROID_ICON}")
-    if not DESKTOP_WEBP.is_file():
-        raise FileNotFoundError(f"Desktop icon source not found: {DESKTOP_WEBP}")
 
-    with Image.open(ANDROID_ICON) as android_icon, Image.open(DESKTOP_WEBP) as desktop_copy:
-        android_rgba = android_icon.convert("RGBA")
-        desktop_rgba = desktop_copy.convert("RGBA")
-        if android_rgba.size != desktop_rgba.size or android_rgba.tobytes() != desktop_rgba.tobytes():
-            raise RuntimeError(
-                "Android launcher icon and assets/AI-Car-Scanner.webp differ. "
-                "Refusing to generate a mismatched Desktop icon."
-            )
-        android_rgba.save(DESKTOP_PNG, format="PNG", optimize=True)
-        android_rgba.save(
-            DESKTOP_ICO,
-            format="ICO",
-            sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
-        )
-    print(f"Generated Windows icon from Android launcher asset: {DESKTOP_ICO}")
+    # Android is the single source of truth. Do not compare against a potentially
+    # stale desktop copy: regenerate all Desktop formats from the launcher asset.
+    with Image.open(ANDROID_ICON) as source:
+        icon = source.convert("RGBA")
+        if icon.width < 256 or icon.height < 256:
+            icon = icon.resize((512, 512), Image.Resampling.LANCZOS)
+
+        icon.save(DESKTOP_WEBP, format="WEBP", lossless=True, quality=100, method=6)
+        icon.save(DESKTOP_PNG, format="PNG", optimize=True)
+        icon.save(DESKTOP_ICO, format="ICO", sizes=ICON_SIZES)
+
+    for output in (DESKTOP_WEBP, DESKTOP_PNG, DESKTOP_ICO):
+        if not output.is_file() or output.stat().st_size < 128:
+            raise RuntimeError(f"Generated Desktop icon is missing or invalid: {output}")
+
+    with Image.open(DESKTOP_ICO) as check:
+        if check.format != "ICO" or check.width < 16 or check.height < 16:
+            raise RuntimeError(f"Generated Windows icon failed validation: {DESKTOP_ICO}")
+
+    print(f"Generated Desktop PNG, WEBP, and Windows ICO from Android icon: {DESKTOP_ICO}")
 
 
 if __name__ == "__main__":

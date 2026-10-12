@@ -152,7 +152,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var testResultDialogOpen by remember { mutableStateOf(false) }
     var selectedTestId by remember { mutableStateOf<String?>(null) }
     var selectedTestTitle by remember { mutableStateOf("") }
-    var testOutcome by remember { mutableStateOf("UNKNOWN") }
+    var testOutcome by remember { mutableStateOf("INCOMPLETE") }
     var testNotes by remember { mutableStateOf("") }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -375,7 +375,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             listOf(
                                 "PASS" to extra.pass,
                                 "FAIL" to extra.fail,
-                                "UNKNOWN" to extra.unknown
+                                "INCOMPLETE" to extra.incomplete
                             ).forEach { (value, label) ->
                                 if (testOutcome == value) {
                                     Button(
@@ -1286,7 +1286,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 val resultLabel = when (result.result.uppercase()) {
                                                     "PASS" -> extra.pass
                                                     "FAIL" -> extra.fail
-                                                    "UNKNOWN" -> extra.unknown
+                                                    "INCOMPLETE" -> extra.incomplete
                                                     else -> result.result
                                                 }
                                                 Text(
@@ -1339,7 +1339,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                     onClick = {
                                                         selectedTestId = nextTest.id
                                                         selectedTestTitle = nextTest.title
-                                                        testOutcome = "UNKNOWN"
+                                                        testOutcome = "INCOMPLETE"
                                                         testNotes = ""
                                                         testResultDialogOpen = true
                                                     },

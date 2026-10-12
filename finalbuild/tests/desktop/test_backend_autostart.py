@@ -13,6 +13,7 @@ def test_start_backend_reuses_healthy_backend(monkeypatch):
 
 
 def test_start_backend_uses_current_python_and_backend_path(monkeypatch, tmp_path):
+    monkeypatch.setattr(desktop_main, "LOCAL_BACKEND", True)
     calls = {}
     log_path = tmp_path / "backend.log"
 

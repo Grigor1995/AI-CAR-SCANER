@@ -4,9 +4,9 @@ class DiagnosticApiClient {
   DiagnosticApiClient({String? baseUrl})
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'https://ai-car-scaner.onrender.com'),
-          connectTimeout: const Duration(seconds: 2),
-          receiveTimeout: const Duration(seconds: 8),
-          sendTimeout: const Duration(seconds: 8),
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 15),
           headers: {'Content-Type': 'application/json'},
         ));
 

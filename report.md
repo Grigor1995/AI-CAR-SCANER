@@ -381,3 +381,17 @@ done
 ```
 
 The default Python tests still have a separate successful result reported by the developer: 172 passed, 1 skipped, 61 warnings in 25.59 seconds. PostgreSQL/pgvector was not started, so that integration placeholder was skipped. No cloud CI was run.
+
+
+## Follow-up: pytest-benchmark plugin isolated and disabled — 2026-10-13
+
+The developer isolated the Windows Qt crash by loading plugins one at a time:
+- `-p anyio`: 18 passed.
+- `-p asyncio`: 18 passed.
+- `-p benchmark`: Windows fatal exception/access violation during collection at the PySide6 `QImage` import, process exit code 139.
+- `-p cov`: invalid module name; the pytest-cov entry-point name is `pytest_cov`, not `cov`.
+- With `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`: 18 passed again.
+
+This points to an interaction between the auto-loaded `pytest-benchmark` plugin and the Qt/Python native import path in the developer's environment; it does not prove the root cause inside the plugin or PySide6. Repository search shows no use of the pytest-benchmark fixture/API. The project performance test in `tests/harness/test_performance.py` uses `time.perf_counter` directly.
+
+Change: `finalbuild/pytest.ini` now adds `-p no:benchmark` by default to prevent the unused plugin from loading during this project's tests. This is a targeted workaround based on the reproduced plugin-specific crash; the test suite and UI tests must be rerun after pulling the change. Do not add `-o addopts=""` when verifying that this config works, because that option deliberately overrides the config addopts. No CI was run.

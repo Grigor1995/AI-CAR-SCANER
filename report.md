@@ -360,3 +360,24 @@ The test was updated to:
 - assert that the in-flight flag is cleared, the UI displays `Backend unavailable`, and the timer stops.
 
 This is a test-only correction; the production async worker path was not changed. The updated Qt test has been pushed to main, but has not yet been rerun in the local environment. Run it with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` as a diagnostic if native collection crashes recur, then run the full Qt file normally once the Qt/Python environment is stable. No cloud CI was run.
+
+
+## Follow-up: Qt test succeeds only with plugin autoload disabled — 2026-10-13
+
+Developer-reported latest result:
+- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p no:xdist -q -o addopts="" apps/desktop/tests/test_ui_widgets.py` → **18 passed in 4.74s**.
+- The same UI file with normal plugin autoload → native Windows `access violation` during collection, at `from PySide6.QtGui import QImage`, before tests execute.
+
+This demonstrates that the 18 UI assertions pass under the plugin-autoload-disabled diagnostic invocation; it does not yet identify which plugin or native import interaction triggers the normal-run crash. Do not classify the normal invocation as passing. Next isolate auto-loaded plugins one by one, and inspect that the installed `PySide6`, `PySide6-Essentials`, `PySide6-Addons`, and `shiboken6` versions match.
+
+Git Bash isolation command:
+
+```bash
+for plugin in anyio asyncio benchmark cov; do
+  echo "===== plugin=$plugin ====="
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p "$plugin" -q -o addopts="" apps/desktop/tests/test_ui_widgets.py
+  echo "exit_code=$?"
+done
+```
+
+The default Python tests still have a separate successful result reported by the developer: 172 passed, 1 skipped, 61 warnings in 25.59 seconds. PostgreSQL/pgvector was not started, so that integration placeholder was skipped. No cloud CI was run.

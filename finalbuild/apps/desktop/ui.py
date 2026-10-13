@@ -520,50 +520,122 @@ class LiveDataPage(QWidget):
         bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
         self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); lay.addWidget(self.chart)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
-        self.timer=QTimer(self); self.timer.setInterval(700); self.timer.timeout.connect(self._poll)
+        self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
+        self._poll_in_flight = False
+        self._details_in_flight = False
+        self._status_data = {}
+        self._provider_data = {"available": False, "model": "local"}
+        self._records_data = []
+
+    def request_refresh(self):
+        if not self.app.session or not self.app.online or self._details_in_flight:
+            return
+        self._details_in_flight = True
+        session_id = self.app.session.session_id
+
+        def load():
+            result = {}
+            for key, call in (
+                ("status", lambda: self.app.api.acquisition_status(session_id)),
+                ("provider", self.app.api.ai_provider_info),
+                ("records", lambda: self.app.api.acquisition_records(session_id)),
+            ):
+                try:
+                    result[key] = call()
+                except Exception as exc:
+                    result[key] = {"_error": str(exc)}
+            return result
+
+        self.app.run_worker(load, self._details_loaded)
+
+    def _details_loaded(self, data):
+        self._details_in_flight = False
+        self._status_data = data.get("status", {})
+        self._provider_data = data.get("provider", {})
+        self._records_data = self._records_data_from(data.get("records", {}))
+        status = self._status_data
+        if not status.get("_error"):
+            state = status.get("state", "STOPPED")
+            self.status.setText("RUNNING" if state == "RUNNING" else state)
+            if state == "RUNNING" and not self.timer.isActive():
+                self.timer.start()
+            elif state != "RUNNING":
+                self.timer.stop()
+        provider = self._provider_data
+        if provider and not provider.get("_error"):
+            available = bool(provider.get("available"))
+            model = provider.get("model", "—")
+            reason = provider.get("reason")
+            self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}" + (f" • {reason}" if reason and not available else ""))
+            self.ai_status.setObjectName("ok" if available else "warn")
+            self.ai_status.style().unpolish(self.ai_status)
+            self.ai_status.style().polish(self.ai_status)
+        elif provider.get("_error"):
+            self.ai_status.setText("AI: unavailable")
+        self.refresh()
+
+    @staticmethod
+    def _records_data_from(payload):
+        if isinstance(payload, dict):
+            return payload.get("records", [])
+        return []
+
     def _poll(self):
-        if self.app.session and self.app.online:
+        if not self.app.session or not self.app.online or self._poll_in_flight:
+            return
+        self._poll_in_flight = True
+        session_id = self.app.session.session_id
+
+        def load_status():
             try:
-                status=self.app.api.acquisition_status(self.app.session.session_id)
-                running = status.get("state") == "RUNNING"
-                self.status.setText("RUNNING" if running else status.get("state", "Stopped"))
-                if running:
-                    self.app.refresh_telemetry()
-            except Exception:
-                self.status.setText("Stopped")
+                return self.app.api.acquisition_status(session_id)
+            except Exception as exc:
+                return {"_error": str(exc)}
+
+        self.app.run_worker(load_status, self._poll_done)
+
+    def _poll_done(self, status):
+        self._poll_in_flight = False
+        if status.get("_error"):
+            self.status.setText("Backend unavailable")
+            self.timer.stop()
+            return
+        state = status.get("state", "STOPPED")
+        self.status.setText("RUNNING" if state == "RUNNING" else state)
+        if state == "RUNNING":
+            self.app.refresh_telemetry()
+        else:
+            self.timer.stop()
 
     def refresh(self):
         if not self.app.session:
             self.timer.stop()
+            self.status.setText("STOPPED")
+            self.table.setRowCount(0)
+            self.chart.set_values([])
             return
-        try:
-            status=self.app.api.acquisition_status(self.app.session.session_id); running = status.get("state") == "RUNNING"
-            self.status.setText("RUNNING" if running else status.get("state", "Stopped"))
-            if running and not self.timer.isActive(): self.timer.start()
-            if not running and self.timer.isActive(): self.timer.stop()
-        except ApiError:
-            self.status.setText("Stopped"); self.timer.stop()
-        try:
-            provider=self.app.api.ai_provider_info()
-            available=bool(provider.get("available"))
-            model=provider.get("model", "—")
-            reason=provider.get("reason")
-            self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}" + (f" • {reason}" if reason and not available else ""))
-            self.ai_status.setObjectName("ok" if available else "warn")
-            self.ai_status.style().unpolish(self.ai_status); self.ai_status.style().polish(self.ai_status)
-        except Exception:
-            self.ai_status.setText("AI: unavailable")
-        self.table.setRowCount(0); summary=self.app.telemetry
-        stats=summary.get("signals") or summary.get("stats") or []
-        values=[]
+        if self._status_data.get("_error"):
+            self.status.setText("Backend unavailable")
+        else:
+            state = self._status_data.get("state", "STOPPED")
+            self.status.setText("RUNNING" if state == "RUNNING" else state)
+        provider = self._provider_data
+        available = bool(provider.get("available"))
+        model = provider.get("model", "—")
+        self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
+        self.ai_status.setObjectName("ok" if available else "warn")
+        self.ai_status.style().unpolish(self.ai_status)
+        self.ai_status.style().polish(self.ai_status)
+        summary = self.app.telemetry
+        stats = summary.get("signals") or summary.get("stats") or []
+        self.table.setRowCount(0)
         for st in stats:
-            row=self.table.rowCount(); self.table.insertRow(row)
-            vals=[st.get("pid",""),st.get("count",0),st.get("min_value","—"),st.get("max_value","—"),st.get("mean","—"),st.get("event_count",0)]
-            for c,val in enumerate(vals): self.table.setItem(row,c,QTableWidgetItem(str(val)))
-        try:
-            rec=self.app.api.acquisition_records(self.app.session.session_id).get("records",[])
-            values=[float(r["numeric_value"]) for r in rec if r.get("numeric_value") is not None]
-        except Exception: pass
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            vals = [st.get("pid", ""), st.get("count", 0), st.get("min_value", "—"), st.get("max_value", "—"), st.get("mean", "—"), st.get("event_count", 0)]
+            for column, value in enumerate(vals):
+                self.table.setItem(row, column, QTableWidgetItem(str(value)))
+        values = [float(record["numeric_value"]) for record in self._records_data if record.get("numeric_value") is not None]
         self.chart.set_values(values)
 
 class TestsPage(QWidget):
@@ -788,7 +860,9 @@ class MainWindow(QMainWindow):
         content=QStackedWidget(); root.addWidget(content,1)
         for _text, cls in entries:
             page=cls(self); self.pages.append(page); content.addWidget(page)
-        nav.currentRowChanged.connect(content.setCurrentIndex); nav.setCurrentRow(0)
+        nav.currentRowChanged.connect(content.setCurrentIndex)
+        nav.currentRowChanged.connect(lambda index: self.pages[4].request_refresh() if index == 4 else None)
+        nav.setCurrentRow(0)
         self.stack.addWidget(container)
     def _build_menu(self):
         menu = self.menuBar().addMenu("Application")
@@ -942,7 +1016,10 @@ class MainWindow(QMainWindow):
     def refresh_telemetry(self):
         if not self.session: return
         def work(): return {"summary":self.api.telemetry_summary(self.session.session_id),"records":self.api.acquisition_records(self.session.session_id)}
-        def done(data): self.telemetry=data["summary"]; self.refresh_pages()
+        def done(data):
+            self.telemetry = data["summary"]
+            self.pages[4]._records_data = LiveDataPage._records_data_from(data.get("records", {}))
+            self.refresh_pages()
         self.run_worker(work,done)
     def analyze_telemetry(self):
         if not self.session: return

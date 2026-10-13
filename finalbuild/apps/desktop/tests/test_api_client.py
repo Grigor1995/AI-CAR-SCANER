@@ -34,6 +34,13 @@ def test_request_normalizes_base_url_and_sets_timeout(client, monkeypatch):
     request.assert_called_once_with("GET", "http://backend.test/health", timeout=4)
 
 
+def test_default_backend_uses_local_fastapi_and_short_timeout(monkeypatch):
+    monkeypatch.delenv("AI_CAR_BACKEND_URL", raising=False)
+    client = DiagnosticApiClient()
+    assert client.base_url == "http://127.0.0.1:8001"
+    assert client.timeout == 8.0
+
+
 def test_empty_response_returns_empty_object(client, monkeypatch):
     monkeypatch.setattr(client.session, "request", Mock(return_value=FakeResponse(content=b"")))
     assert client._request("DELETE", "/resource") == {}

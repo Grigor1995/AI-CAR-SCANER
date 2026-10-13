@@ -5,6 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  pull_request:
+    paths:
+      - "finalbuild/**"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 jobs:

@@ -7,8 +7,8 @@ class ApiError(RuntimeError):
     pass
 
 class DiagnosticApiClient:
-    def __init__(self, base_url: str | None = None, timeout: float = 30.0) -> None:
-        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL", "https://ai-car-scaner.onrender.com")).rstrip("/")
+    def __init__(self, base_url: str | None = None, timeout: float = 8.0) -> None:
+        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL", "http://127.0.0.1:8001")).rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
@@ -17,8 +17,22 @@ class DiagnosticApiClient:
         try:
             request_timeout = kwargs.pop("timeout", self.timeout)
             response = self.session.request(method, self.base_url + path, timeout=request_timeout, **kwargs)
+        except requests.ConnectTimeout as exc:
+            raise ApiError(
+                f"Cannot connect to FastAPI at {self.base_url}. Check that the backend is running "
+                "and AI_CAR_BACKEND_URL points to the correct host."
+            ) from exc
+        except requests.ReadTimeout as exc:
+            raise ApiError(
+                f"FastAPI at {self.base_url} did not respond within {request_timeout} seconds."
+            ) from exc
+        except requests.ConnectionError as exc:
+            raise ApiError(
+                f"FastAPI connection failed at {self.base_url}: {exc}. "
+                "Start the backend or set AI_CAR_BACKEND_URL to a reachable API URL."
+            ) from exc
         except requests.RequestException as exc:
-            raise ApiError(str(exc)) from exc
+            raise ApiError(f"API request failed: {exc}") from exc
         if not response.ok:
             try:
                 detail = response.json().get("detail", response.text)

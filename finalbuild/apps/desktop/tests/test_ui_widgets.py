@@ -275,14 +275,17 @@ def test_network_page_formats_inferred_and_active_ecus(qapp):
     assert "No discovered ECU candidates" in page.tree.toPlainText()
 
 
-def test_live_data_page_handles_stopped_acquisition_and_provider_state(qapp):
+def test_live_data_page_refresh_does_not_block_on_api_calls(qapp):
     app = FakeApp()
     page = LiveDataPage(app)
     page.refresh()
     assert page.status.text() == "STOPPED"
     assert "OFFLINE" in page.ai_status.text()
     assert page.table.rowCount() == 1
-    assert page.chart.values == [1.2]
+    assert page.chart.values == []
+    app.api.acquisition_status.assert_not_called()
+    app.api.ai_provider_info.assert_not_called()
+    app.api.acquisition_records.assert_not_called()
     assert not page.timer.isActive()
 
 

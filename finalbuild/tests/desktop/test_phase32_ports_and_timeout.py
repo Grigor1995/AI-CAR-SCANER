@@ -6,10 +6,14 @@ import apps.desktop.main as desktop_main
 from apps.desktop.api_client import DiagnosticApiClient
 
 
-def test_phase32_default_port_split():
+def test_phase32_default_port_split(monkeypatch):
+    # The API client default must be deterministic even when the developer's
+    # shell exports a custom URL for running the application locally/remotely.
+    monkeypatch.delenv("AI_CAR_BACKEND_URL", raising=False)
+
     assert desktop_main.PORT == 8001
     assert desktop_main.LLM_PORT == 8000
-    assert DiagnosticApiClient().base_url == "https://ai-car-scaner.onrender.com"
+    assert DiagnosticApiClient().base_url == "http://127.0.0.1:8001"
     assert LlamaServerConfig.from_env().base_url == "http://127.0.0.1:8000"
 
 

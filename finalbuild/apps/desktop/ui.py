@@ -1103,11 +1103,20 @@ def run() -> None:
     # byte-identical to Android's launcher icon; ICO/PNG are fallbacks.
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
-    icon_candidates = (
-        _resource_path("assets/AI-Car-Scanner.webp"),
-        _resource_path("assets/AI-Car-Scanner.ico"),
-        _resource_path("assets/AI-Car-Scanner-mobile.png"),
-    )
+    # Windows taskbar/window icons are most reliable when loaded from a multi-size ICO.
+    # Keep WEBP first on other platforms; it matches the Android launcher artwork.
+    if sys.platform == "win32":
+        icon_candidates = (
+            _resource_path("assets/AI-Car-Scanner.ico"),
+            _resource_path("assets/AI-Car-Scanner.webp"),
+            _resource_path("assets/AI-Car-Scanner-mobile.png"),
+        )
+    else:
+        icon_candidates = (
+            _resource_path("assets/AI-Car-Scanner.webp"),
+            _resource_path("assets/AI-Car-Scanner.ico"),
+            _resource_path("assets/AI-Car-Scanner-mobile.png"),
+        )
     icon_path = next((candidate for candidate in icon_candidates if candidate.is_file()), None)
     app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
     if not app_icon.isNull():

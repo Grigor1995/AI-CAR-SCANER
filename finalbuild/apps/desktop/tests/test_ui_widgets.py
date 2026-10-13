@@ -351,16 +351,28 @@ def test_refresh_telemetry_deduplicates_requests_and_discards_stale_sessions():
     app.refresh_pages.assert_not_called()
 
 
-def test_live_data_poll_ignores_absent_session(qapp):
+def test_live_data_poll_ignores_absent_session_and_reports_backend_error(qapp):
     app = FakeApp()
     app.session = None
     page = LiveDataPage(app)
+
+    # With no active session, polling must return without starting a worker.
     page._poll()
+    assert page._poll_in_flight is False
+    assert app.api.acquisition_status.call_count == 0
+
+    # Use a deterministic synchronous worker in this unit test. The production
+    # MainWindow schedules this callback on its worker pool.
+    app.run_worker = lambda worker, done: done(worker())
     app.session = Session("s-2", "CREATED")
     app.online = True
     app.api.acquisition_status.side_effect = RuntimeError("backend unavailable")
+
     page._poll()
-    assert page.status.text() == "Stopped"
+
+    assert page._poll_in_flight is False
+    assert page.status.text() == "Backend unavailable"
+    assert not page.timer.isActive()
 
 
 def test_diagnostic_summary_empty_hypotheses_are_explicit():

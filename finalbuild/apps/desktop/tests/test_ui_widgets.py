@@ -16,6 +16,7 @@ from apps.desktop.ui import (
     DevicesPage,
     DiagnosticPage,
     LiveDataPage,
+    MainWindow,
     MetricCard,
     NetworkPage,
     Sparkline,
@@ -287,6 +288,40 @@ def test_live_data_page_refresh_does_not_block_on_api_calls(qapp):
     app.api.ai_provider_info.assert_not_called()
     app.api.acquisition_records.assert_not_called()
     assert not page.timer.isActive()
+
+
+def test_refresh_telemetry_deduplicates_requests_and_discards_stale_sessions():
+    old_session = Session("old-session", "ACQUIRING")
+    new_session = Session("new-session", "ACQUIRING")
+    live_page = SimpleNamespace(_records_data=[])
+    app = SimpleNamespace(
+        session=old_session,
+        api=Mock(),
+        pages=[None, None, None, None, live_page],
+        telemetry={},
+        run_worker=Mock(),
+        refresh_pages=Mock(),
+        statusBar=Mock(return_value=SimpleNamespace(showMessage=Mock())),
+    )
+
+    MainWindow.refresh_telemetry(app)
+    worker, done = app.run_worker.call_args.args
+    assert app._telemetry_refresh_in_flight is True
+
+    # A timer tick while the first request is active must not start another worker.
+    MainWindow.refresh_telemetry(app)
+    assert app.run_worker.call_count == 1
+
+    app.api.telemetry_summary.return_value = {"signals": []}
+    app.api.acquisition_records.return_value = {"records": [{"numeric_value": 3.5}]}
+    result = worker()
+    app.session = new_session
+    done(result)
+
+    assert app._telemetry_refresh_in_flight is False
+    assert app.telemetry == {}
+    assert live_page._records_data == []
+    app.refresh_pages.assert_not_called()
 
 
 def test_live_data_poll_ignores_absent_session(qapp):

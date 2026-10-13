@@ -339,14 +339,12 @@ A subsequent local run of Desktop tests excluding `apps/desktop/tests/test_ui_wi
 
 The separate Qt UI test still crashes during pytest collection with a Windows native `access violation` at the PySide6 `QImage` import. The same interpreter can import `QImage` and `QApplication` in a basic `python -c` command, so the evidence does not yet establish whether the cause is package/DLL version mismatch, pytest/plugin interaction, or a different native initialization issue. This is **not a passing UI test** and it has not been hidden/skipped. Check the exact versions of PySide6, PySide6-Essentials, PySide6-Addons and shiboken6, then isolate pytest plugin autoload; rebuild/reinstall aligned Qt packages only after reviewing those versions.
 
-Useful diagnostics from `finalbuild`:
+Useful diagnostics from `finalbuild` (Git Bash):
 
-```powershell
+```bash
 python -m pip show PySide6 PySide6-Essentials PySide6-Addons shiboken6
 python -c "import pytest; from PySide6.QtGui import QImage; from PySide6.QtWidgets import QApplication, QWidget; print('Qt import with pytest loaded OK')"
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
-python -m pytest -p no:xdist --assert=plain -vv -ra -o addopts="" apps/desktop/tests/test_ui_widgets.py
-Remove-Item Env:PYTEST_DISABLE_PLUGIN_AUTOLOAD
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p no:xdist --assert=plain -vv -ra -o addopts="" apps/desktop/tests/test_ui_widgets.py
 ```
 
 The plugin-disabled UI run is a diagnostic only; it should not replace the regular test suite. No cloud CI was run.

@@ -1091,6 +1091,25 @@ def _resource_path(relative: str) -> Path:
     return base / relative
 
 
+def _prepare_source_application_icon() -> bool:
+    """Regenerate Desktop icon assets from Android's launcher icon for source runs."""
+    if getattr(sys, "frozen", False):
+        # Packaged builds generate the assets in the PyInstaller spec before bundling.
+        return True
+
+    try:
+        from .prepare_windows_icon import main as prepare_windows_icon
+    except ImportError:
+        from apps.desktop.prepare_windows_icon import main as prepare_windows_icon
+
+    try:
+        prepare_windows_icon()
+    except (OSError, RuntimeError) as exc:
+        print(f"[AI-Car-Scanner] Could not refresh Desktop icon from Android: {exc}", file=sys.stderr)
+        return False
+    return True
+
+
 def run() -> None:
     if sys.platform == "win32":
         try:
@@ -1098,12 +1117,20 @@ def run() -> None:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AI-CAR-SCANER.Desktop")
         except (AttributeError, OSError):
             pass
+
+    icon_assets_ready = _prepare_source_application_icon()
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
-    icon_path = _resource_path("assets/AI-Car-Scanner-mobile.png")
-    if not icon_path.is_file():
-        icon_path = _resource_path("assets/AI-Car-Scanner.ico")
-    app_icon = QIcon(str(icon_path)) if icon_path.is_file() else QIcon()
+    icon_candidates = (
+        [_resource_path("assets/AI-Car-Scanner-mobile.png"),
+         _resource_path("assets/AI-Car-Scanner.ico"),
+         _resource_path("assets/AI-Car-Scanner.webp")]
+        if icon_assets_ready else
+        [_resource_path("assets/AI-Car-Scanner.webp"),
+         _resource_path("assets/AI-Car-Scanner.ico")]
+    )
+    icon_path = next((candidate for candidate in icon_candidates if candidate.is_file()), None)
+    app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)
     win = MainWindow()

@@ -1091,6 +1091,67 @@ def _resource_path(relative: str) -> Path:
     return base / relative
 
 
+def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
+    """Apply the Qt artwork as a native Win32 HICON for both taskbar icon sizes."""
+    if sys.platform != "win32" or icon.isNull():
+        return
+
+    import ctypes
+    from ctypes import wintypes
+
+    class ICONINFO(ctypes.Structure):
+        _fields_ = [
+            ("fIcon", wintypes.BOOL),
+            ("xHotspot", wintypes.DWORD),
+            ("yHotspot", wintypes.DWORD),
+            ("hbmMask", wintypes.HBITMAP),
+            ("hbmColor", wintypes.HBITMAP),
+        ]
+
+    image = icon.pixmap(256, 256).toImage().convertToFormat(5)  # QImage.Format_ARGB32
+    width, height = image.width(), image.height()
+    bits = image.bits()
+    bits.setsize(image.sizeInBytes())
+    pixel_bytes = bits.asstring(image.sizeInBytes())
+    pixels = ctypes.create_string_buffer(pixel_bytes)
+
+    gdi32 = ctypes.windll.gdi32
+    user32 = ctypes.windll.user32
+    gdi32.CreateBitmap.restype = wintypes.HBITMAP
+    gdi32.CreateBitmap.argtypes = [
+        ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p
+    ]
+    gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+    user32.CreateIconIndirect.restype = wintypes.HICON
+    user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
+    user32.SendMessageW.argtypes = [
+        wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
+    ]
+    user32.DestroyIcon.argtypes = [wintypes.HICON]
+
+    color_bitmap = gdi32.CreateBitmap(width, height, 1, 32, ctypes.cast(pixels, ctypes.c_void_p))
+    mask_bitmap = gdi32.CreateBitmap(width, height, 1, 1, None)
+    if not color_bitmap or not mask_bitmap:
+        if color_bitmap:
+            gdi32.DeleteObject(color_bitmap)
+        if mask_bitmap:
+            gdi32.DeleteObject(mask_bitmap)
+        return
+
+    info = ICONINFO(True, 0, 0, mask_bitmap, color_bitmap)
+    native_icon = user32.CreateIconIndirect(ctypes.byref(info))
+    gdi32.DeleteObject(color_bitmap)
+    gdi32.DeleteObject(mask_bitmap)
+    if native_icon:
+        # Keep the HICON alive until the application exits.
+        _WINDOWS_TASKBAR_ICONS.append(native_icon)
+        user32.SendMessageW(hwnd, 0x0080, 0, native_icon)  # WM_SETICON / ICON_SMALL
+        user32.SendMessageW(hwnd, 0x0080, 1, native_icon)  # WM_SETICON / ICON_BIG
+
+
+_WINDOWS_TASKBAR_ICONS: list[int] = []
+
+
 def run() -> None:
     if sys.platform == "win32":
         try:
@@ -1129,4 +1190,12 @@ def run() -> None:
         native_window = win.windowHandle()
         if native_window is not None:
             native_window.setIcon(app_icon)
+        if sys.platform == "win32":
+            _set_windows_taskbar_icon(int(win.winId()), app_icon)
+    app.aboutToQuit.connect(
+        lambda: [
+            __import__("ctypes").windll.user32.DestroyIcon(handle)
+            for handle in _WINDOWS_TASKBAR_ICONS
+        ] if sys.platform == "win32" else None
+    )
     app.exec()

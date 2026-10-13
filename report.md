@@ -331,3 +331,22 @@ python -m pytest -n 4 -vv -ra -o addopts="" --durations=20 2>&1 | tee pytest-par
 ```
 
 Expected test count increases from 170 to 173 because the forbidden-claim regression now has four parameterized cases instead of one. This is a count expectation only; the post-fix PASS/FAIL result remains unverified until the command is run locally.
+
+
+## Follow-up: Desktop API contract and Qt native crash — 2026-10-13
+
+A subsequent local run of Desktop tests excluding `apps/desktop/tests/test_ui_widgets.py` reported **60 passed, 1 failed in 5.59 seconds**. The failing full-flow test expected `/api/v1/intelligence/sessions/{session_id}/analyze`, but the current desktop client calls `/api/v1/analysis/{session_id}`, which is implemented in `backend/api/main.py`. The test expectation has been updated to assert the client’s canonical route. This follow-up test change has not yet been run locally.
+
+The separate Qt UI test still crashes during pytest collection with a Windows native `access violation` at the PySide6 `QImage` import. The same interpreter can import `QImage` and `QApplication` in a basic `python -c` command, so the evidence does not yet establish whether the cause is package/DLL version mismatch, pytest/plugin interaction, or a different native initialization issue. This is **not a passing UI test** and it has not been hidden/skipped. Check the exact versions of PySide6, PySide6-Essentials, PySide6-Addons and shiboken6, then isolate pytest plugin autoload; rebuild/reinstall aligned Qt packages only after reviewing those versions.
+
+Useful diagnostics from `finalbuild`:
+
+```powershell
+python -m pip show PySide6 PySide6-Essentials PySide6-Addons shiboken6
+python -c "import pytest; from PySide6.QtGui import QImage; from PySide6.QtWidgets import QApplication, QWidget; print('Qt import with pytest loaded OK')"
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
+python -m pytest -p no:xdist --assert=plain -vv -ra -o addopts="" apps/desktop/tests/test_ui_widgets.py
+Remove-Item Env:PYTEST_DISABLE_PLUGIN_AUTOLOAD
+```
+
+The plugin-disabled UI run is a diagnostic only; it should not replace the regular test suite. No cloud CI was run.

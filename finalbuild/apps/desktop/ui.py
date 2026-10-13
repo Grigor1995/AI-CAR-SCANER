@@ -1092,60 +1092,97 @@ def _resource_path(relative: str) -> Path:
 
 
 def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
-    """Apply the Qt artwork as a native Win32 HICON for both taskbar icon sizes."""
+    """Set native Windows window icons without allowing icon failures to crash startup."""
     if sys.platform != "win32" or icon.isNull():
         return
 
     import ctypes
     from ctypes import wintypes
 
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [
+            ("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG),
+            ("biHeight", wintypes.LONG), ("biPlanes", wintypes.WORD),
+            ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+            ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+            ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+            ("biClrImportant", wintypes.DWORD),
+        ]
+
+    class RGBQUAD(ctypes.Structure):
+        _fields_ = [
+            ("rgbBlue", ctypes.c_ubyte), ("rgbGreen", ctypes.c_ubyte),
+            ("rgbRed", ctypes.c_ubyte), ("rgbReserved", ctypes.c_ubyte),
+        ]
+
+    class BITMAPINFO(ctypes.Structure):
+        _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", RGBQUAD * 1)]
+
     class ICONINFO(ctypes.Structure):
         _fields_ = [
-            ("fIcon", wintypes.BOOL),
-            ("xHotspot", wintypes.DWORD),
-            ("yHotspot", wintypes.DWORD),
-            ("hbmMask", wintypes.HBITMAP),
+            ("fIcon", wintypes.BOOL), ("xHotspot", wintypes.DWORD),
+            ("yHotspot", wintypes.DWORD), ("hbmMask", wintypes.HBITMAP),
             ("hbmColor", wintypes.HBITMAP),
         ]
 
-    image = icon.pixmap(256, 256).toImage().convertToFormat(QImage.Format.Format_ARGB32)
-    width, height = image.width(), image.height()
-    # PySide6 6.11 exposes QImage.bits() as a buffer-compatible memoryview.
-    pixel_bytes = bytes(image.bits())[: image.sizeInBytes()]
-    pixels = ctypes.create_string_buffer(pixel_bytes)
+    color_bitmap = mask_bitmap = native_icon = None
+    gdi32, user32 = ctypes.windll.gdi32, ctypes.windll.user32
+    try:
+        image = icon.pixmap(64, 64).toImage().convertToFormat(QImage.Format.Format_ARGB32)
+        width, height = image.width(), image.height()
+        if width <= 0 or height <= 0:
+            return
 
-    gdi32 = ctypes.windll.gdi32
-    user32 = ctypes.windll.user32
-    gdi32.CreateBitmap.restype = wintypes.HBITMAP
-    gdi32.CreateBitmap.argtypes = [
-        ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p
-    ]
-    gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
-    user32.CreateIconIndirect.restype = wintypes.HICON
-    user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
-    user32.SendMessageW.argtypes = [
-        wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
-    ]
-    user32.DestroyIcon.argtypes = [wintypes.HICON]
+        # Windows expects a top-down 32-bit DIB in BGRA byte order.
+        info = BITMAPINFO()
+        info.bmiHeader = BITMAPINFOHEADER(
+            ctypes.sizeof(BITMAPINFOHEADER), width, -height, 1, 32, 0,
+            image.sizeInBytes(), 0, 0, 0, 0
+        )
+        gdi32.CreateDIBSection.restype = wintypes.HBITMAP
+        gdi32.CreateDIBSection.argtypes = [
+            wintypes.HDC, ctypes.POINTER(BITMAPINFO), wintypes.UINT,
+            ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD
+        ]
+        gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+        user32.CreateIconIndirect.restype = wintypes.HICON
+        user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
+        user32.SendMessageW.argtypes = [
+            wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
+        ]
+        user32.DestroyIcon.argtypes = [wintypes.HICON]
 
-    color_bitmap = gdi32.CreateBitmap(width, height, 1, 32, ctypes.cast(pixels, ctypes.c_void_p))
-    mask_bitmap = gdi32.CreateBitmap(width, height, 1, 1, None)
-    if not color_bitmap or not mask_bitmap:
+        bits = ctypes.c_void_p()
+        color_bitmap = gdi32.CreateDIBSection(
+            None, ctypes.byref(info), 0, ctypes.byref(bits), None, 0
+        )
+        if not color_bitmap or not bits.value:
+            return
+        pixel_bytes = bytes(image.bits())[:image.sizeInBytes()]
+        ctypes.memmove(bits.value, pixel_bytes, len(pixel_bytes))
+        mask_bitmap = gdi32.CreateBitmap(width, height, 1, 1, None)
+        if not mask_bitmap:
+            return
+
+        icon_info = ICONINFO(True, 0, 0, mask_bitmap, color_bitmap)
+        native_icon = user32.CreateIconIndirect(ctypes.byref(icon_info))
+        if not native_icon:
+            return
+
+        # Keep the handle alive while Windows may still display the icon.
+        _WINDOWS_TASKBAR_ICONS.append(native_icon)
+        user32.SendMessageW(hwnd, 0x0080, 0, native_icon)  # WM_SETICON / ICON_SMALL
+        user32.SendMessageW(hwnd, 0x0080, 1, native_icon)  # WM_SETICON / ICON_BIG
+        native_icon = None  # Ownership retained until application shutdown.
+    except Exception as exc:
+        print(f"Windows taskbar icon fallback: {exc}", file=sys.stderr)
+    finally:
+        if native_icon:
+            user32.DestroyIcon(native_icon)
         if color_bitmap:
             gdi32.DeleteObject(color_bitmap)
         if mask_bitmap:
             gdi32.DeleteObject(mask_bitmap)
-        return
-
-    info = ICONINFO(True, 0, 0, mask_bitmap, color_bitmap)
-    native_icon = user32.CreateIconIndirect(ctypes.byref(info))
-    gdi32.DeleteObject(color_bitmap)
-    gdi32.DeleteObject(mask_bitmap)
-    if native_icon:
-        # Keep the HICON alive until the application exits.
-        _WINDOWS_TASKBAR_ICONS.append(native_icon)
-        user32.SendMessageW(hwnd, 0x0080, 0, native_icon)  # WM_SETICON / ICON_SMALL
-        user32.SendMessageW(hwnd, 0x0080, 1, native_icon)  # WM_SETICON / ICON_BIG
 
 
 _WINDOWS_TASKBAR_ICONS: list[int] = []
@@ -1190,7 +1227,10 @@ def run() -> None:
         if native_window is not None:
             native_window.setIcon(app_icon)
         if sys.platform == "win32":
-            _set_windows_taskbar_icon(int(win.winId()), app_icon)
+            try:
+                _set_windows_taskbar_icon(int(win.winId()), app_icon)
+            except Exception as exc:
+                print(f"Windows taskbar icon fallback: {exc}", file=sys.stderr)
     app.aboutToQuit.connect(
         lambda: [
             __import__("ctypes").windll.user32.DestroyIcon(handle)

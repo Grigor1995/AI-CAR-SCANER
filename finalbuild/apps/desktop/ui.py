@@ -5,7 +5,7 @@ import re
 import sys
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -1108,11 +1108,10 @@ def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
             ("hbmColor", wintypes.HBITMAP),
         ]
 
-    image = icon.pixmap(256, 256).toImage().convertToFormat(5)  # QImage.Format_ARGB32
+    image = icon.pixmap(256, 256).toImage().convertToFormat(QImage.Format.Format_ARGB32)
     width, height = image.width(), image.height()
-    bits = image.bits()
-    bits.setsize(image.sizeInBytes())
-    pixel_bytes = bits.asstring(image.sizeInBytes())
+    # PySide6 6.11 exposes QImage.bits() as a buffer-compatible memoryview.
+    pixel_bytes = bytes(image.bits())[: image.sizeInBytes()]
     pixels = ctypes.create_string_buffer(pixel_bytes)
 
     gdi32 = ctypes.windll.gdi32

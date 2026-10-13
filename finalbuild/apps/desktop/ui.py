@@ -1118,5 +1118,15 @@ def run() -> None:
     if not app_icon.isNull():
         win.setWindowIcon(app_icon)
     win._apply_language()
+    # Ensure Windows creates a native top-level window and receives the same icon
+    # through its QWindow handle as well as QWidget/QApplication. This helps the
+    # taskbar use the app artwork instead of the python.exe process icon.
+    if sys.platform == "win32":
+        win.setAttribute(Qt.WA_NativeWindow, True)
     win.show()
+    if not app_icon.isNull():
+        win.setWindowIcon(app_icon)
+        native_window = win.windowHandle()
+        if native_window is not None:
+            native_window.setIcon(app_icon)
     app.exec()

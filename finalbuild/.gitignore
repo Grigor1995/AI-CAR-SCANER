@@ -20,3 +20,14 @@ postgres_data/
 *.gguf
 *.ggml
 *.safetensors
+
+
+# Local SDK configuration and transient Git metadata
+**/local.properties
+**/FETCH_HEAD
+
+# Generated release/build outputs (source tree must not track binaries)
+*.exe
+/dist/
+dist-release/
+build-release/

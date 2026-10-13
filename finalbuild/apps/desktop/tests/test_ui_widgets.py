@@ -123,7 +123,7 @@ def test_desktop_icon_assets_are_generated_from_android_launcher():
     with Image.open(ANDROID_ICON) as android_icon, Image.open(DESKTOP_WEBP) as desktop_icon:
         assert desktop_icon.format == "WEBP"
         assert desktop_icon.size == android_icon.size
-        assert ImageChops.difference(android_icon.convert("RGBA"), desktop_icon.convert("RGBA")).getbbox() is None
+        assert ImageChops.difference(android_icon.convert("RGBA"), desktop_icon.convert("RGBA")).convert("RGB").getbbox() is None
 
     with Image.open(DESKTOP_PNG) as desktop_png:
         assert desktop_png.format == "PNG"

@@ -1,7 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
 
-project_root = Path(SPEC).resolve().parents[2]
+spec_path = Path(SPEC).resolve()
+project_root = next(
+    (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "backend_worker.py").is_file()),
+    spec_path.parent,
+)
 backend_root = project_root / "backend"
 
 a = Analysis(

@@ -1,18 +1,10 @@
 $ErrorActionPreference = 'Stop'
-Set-Location "$PSScriptRoot\..\.."
-$root = Get-Location
-if (Test-Path (Join-Path $root '.venv\Scripts\python.exe')) {
-    $py = Join-Path $root '.venv\Scripts\python.exe'
-} elseif (Test-Path (Join-Path $root '.venv-desktop\Scripts\python.exe')) {
-    $py = Join-Path $root '.venv-desktop\Scripts\python.exe'
-} else {
-    throw 'Python virtual environment not found. Run scripts\bootstrap_desktop.ps1 first.'
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$canonicalBuilder = Join-Path $root 'scripts\build_windows_standalone.ps1'
+
+if (-not (Test-Path $canonicalBuilder)) {
+    throw "Canonical build script was not found: $canonicalBuilder"
 }
 
-& $py -m pip install -r requirements.txt
-& $py -m pip install pyinstaller pillow
-& $py apps\desktop\prepare_windows_icon.py
-$pyinstaller = Join-Path (Split-Path $py) 'pyinstaller.exe'
-& $pyinstaller --noconfirm --clean apps\desktop\specs\backend_service.spec
-& $pyinstaller --noconfirm --clean apps\desktop\specs\AICarScanner.spec
-Write-Host 'Built: dist\AICarScanner'
+# Keep the legacy entry point, but use one maintained packaging implementation.
+& $canonicalBuilder

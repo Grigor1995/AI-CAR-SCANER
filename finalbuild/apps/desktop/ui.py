@@ -5,7 +5,7 @@ import re
 import sys
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -1091,23 +1091,105 @@ def _resource_path(relative: str) -> Path:
     return base / relative
 
 
-def _prepare_source_application_icon() -> bool:
-    """Regenerate Desktop icon assets from Android's launcher icon for source runs."""
-    if getattr(sys, "frozen", False):
-        # Packaged builds generate the assets in the PyInstaller spec before bundling.
-        return True
+def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
+    """Set native Windows window icons without allowing icon failures to crash startup."""
+    if sys.platform != "win32" or icon.isNull():
+        return
 
-    try:
-        from .prepare_windows_icon import main as prepare_windows_icon
-    except ImportError:
-        from apps.desktop.prepare_windows_icon import main as prepare_windows_icon
+    import ctypes
+    from ctypes import wintypes
 
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [
+            ("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG),
+            ("biHeight", wintypes.LONG), ("biPlanes", wintypes.WORD),
+            ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+            ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+            ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+            ("biClrImportant", wintypes.DWORD),
+        ]
+
+    class RGBQUAD(ctypes.Structure):
+        _fields_ = [
+            ("rgbBlue", ctypes.c_ubyte), ("rgbGreen", ctypes.c_ubyte),
+            ("rgbRed", ctypes.c_ubyte), ("rgbReserved", ctypes.c_ubyte),
+        ]
+
+    class BITMAPINFO(ctypes.Structure):
+        _fields_ = [("bmiHeader", BITMAPINFOHEADER), ("bmiColors", RGBQUAD * 1)]
+
+    class ICONINFO(ctypes.Structure):
+        _fields_ = [
+            ("fIcon", wintypes.BOOL), ("xHotspot", wintypes.DWORD),
+            ("yHotspot", wintypes.DWORD), ("hbmMask", wintypes.HBITMAP),
+            ("hbmColor", wintypes.HBITMAP),
+        ]
+
+    color_bitmap = mask_bitmap = native_icon = None
+    gdi32, user32 = ctypes.windll.gdi32, ctypes.windll.user32
     try:
-        prepare_windows_icon()
-    except (OSError, RuntimeError) as exc:
-        print(f"[AI-Car-Scanner] Could not refresh Desktop icon from Android: {exc}", file=sys.stderr)
-        return False
-    return True
+        image = icon.pixmap(64, 64).toImage().convertToFormat(QImage.Format.Format_ARGB32)
+        width, height = image.width(), image.height()
+        if width <= 0 or height <= 0:
+            return
+
+        # Windows expects a top-down 32-bit DIB in BGRA byte order.
+        info = BITMAPINFO()
+        info.bmiHeader = BITMAPINFOHEADER(
+            ctypes.sizeof(BITMAPINFOHEADER), width, -height, 1, 32, 0,
+            image.sizeInBytes(), 0, 0, 0, 0
+        )
+        gdi32.CreateDIBSection.restype = wintypes.HBITMAP
+        gdi32.CreateDIBSection.argtypes = [
+            wintypes.HDC, ctypes.POINTER(BITMAPINFO), wintypes.UINT,
+            ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD
+        ]
+        gdi32.CreateBitmap.restype = wintypes.HBITMAP
+        gdi32.CreateBitmap.argtypes = [
+            ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p
+        ]
+        gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+        user32.CreateIconIndirect.restype = wintypes.HICON
+        user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
+        user32.SendMessageW.argtypes = [
+            wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
+        ]
+        user32.DestroyIcon.argtypes = [wintypes.HICON]
+
+        bits = ctypes.c_void_p()
+        color_bitmap = gdi32.CreateDIBSection(
+            None, ctypes.byref(info), 0, ctypes.byref(bits), None, 0
+        )
+        if not color_bitmap or not bits.value:
+            return
+        pixel_bytes = bytes(image.bits())[:image.sizeInBytes()]
+        ctypes.memmove(bits.value, pixel_bytes, len(pixel_bytes))
+        mask_bitmap = gdi32.CreateBitmap(width, height, 1, 1, None)
+        if not mask_bitmap:
+            return
+
+        icon_info = ICONINFO(True, 0, 0, mask_bitmap, color_bitmap)
+        native_icon = user32.CreateIconIndirect(ctypes.byref(icon_info))
+        if not native_icon:
+            return
+
+        # Keep the handle alive while Windows may still display the icon.
+        _WINDOWS_TASKBAR_ICONS.append(native_icon)
+        user32.SendMessageW(hwnd, 0x0080, 0, native_icon)  # WM_SETICON / ICON_SMALL
+        user32.SendMessageW(hwnd, 0x0080, 1, native_icon)  # WM_SETICON / ICON_BIG
+        native_icon = None  # Ownership retained until application shutdown.
+    except Exception as exc:
+        print(f"Windows taskbar icon fallback: {exc}", file=sys.stderr)
+    finally:
+        if native_icon:
+            user32.DestroyIcon(native_icon)
+        if color_bitmap:
+            gdi32.DeleteObject(color_bitmap)
+        if mask_bitmap:
+            gdi32.DeleteObject(mask_bitmap)
+
+
+_WINDOWS_TASKBAR_ICONS: list[int] = []
 
 
 def run() -> None:
@@ -1118,16 +1200,16 @@ def run() -> None:
         except (AttributeError, OSError):
             pass
 
-    icon_assets_ready = _prepare_source_application_icon()
+    # Runtime startup must not depend on Pillow. The tracked Desktop WEBP is
+    # byte-identical to Android's launcher icon; ICO/PNG are fallbacks.
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
+    # Keep the verified current artwork first on every platform. The ICO is a fallback
+    # only; older ICO artwork must not replace the correct WEBP window icon.
     icon_candidates = (
-        [_resource_path("assets/AI-Car-Scanner-mobile.png"),
-         _resource_path("assets/AI-Car-Scanner.ico"),
-         _resource_path("assets/AI-Car-Scanner.webp")]
-        if icon_assets_ready else
-        [_resource_path("assets/AI-Car-Scanner.webp"),
-         _resource_path("assets/AI-Car-Scanner.ico")]
+        _resource_path("assets/AI-Car-Scanner.webp"),
+        _resource_path("assets/AI-Car-Scanner.ico"),
+        _resource_path("assets/AI-Car-Scanner-mobile.png"),
     )
     icon_path = next((candidate for candidate in icon_candidates if candidate.is_file()), None)
     app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
@@ -1137,5 +1219,26 @@ def run() -> None:
     if not app_icon.isNull():
         win.setWindowIcon(app_icon)
     win._apply_language()
+    # Ensure Windows creates a native top-level window and receives the same icon
+    # through its QWindow handle as well as QWidget/QApplication. This helps the
+    # taskbar use the app artwork instead of the python.exe process icon.
+    if sys.platform == "win32":
+        win.setAttribute(Qt.WA_NativeWindow, True)
     win.show()
+    if not app_icon.isNull():
+        win.setWindowIcon(app_icon)
+        native_window = win.windowHandle()
+        if native_window is not None:
+            native_window.setIcon(app_icon)
+        if sys.platform == "win32":
+            try:
+                _set_windows_taskbar_icon(int(win.winId()), app_icon)
+            except Exception as exc:
+                print(f"Windows taskbar icon fallback: {exc}", file=sys.stderr)
+    app.aboutToQuit.connect(
+        lambda: [
+            __import__("ctypes").windll.user32.DestroyIcon(handle)
+            for handle in _WINDOWS_TASKBAR_ICONS
+        ] if sys.platform == "win32" else None
+    )
     app.exec()

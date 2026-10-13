@@ -1014,13 +1014,34 @@ class MainWindow(QMainWindow):
         self.run_worker(lambda:self.api.stop_acquisition(self.session.session_id),lambda _d:self._sim_changed("Acquisition stopped"))
     def _sim_changed(self,msg): self.statusBar().showMessage(msg); self.refresh_telemetry()
     def refresh_telemetry(self):
-        if not self.session: return
-        def work(): return {"summary":self.api.telemetry_summary(self.session.session_id),"records":self.api.acquisition_records(self.session.session_id)}
+        if not self.session or getattr(self, "_telemetry_refresh_in_flight", False):
+            return
+
+        session_id = self.session.session_id
+        self._telemetry_refresh_in_flight = True
+
+        def work():
+            try:
+                return {
+                    "summary": self.api.telemetry_summary(session_id),
+                    "records": self.api.acquisition_records(session_id),
+                }
+            except Exception as exc:
+                return {"_error": str(exc)}
+
         def done(data):
+            self._telemetry_refresh_in_flight = False
+            if data.get("_error"):
+                self.statusBar().showMessage(f"Live-data refresh failed: {data['_error']}")
+                return
+            # A request for a previous session must not overwrite the current session's UI.
+            if not self.session or self.session.session_id != session_id:
+                return
             self.telemetry = data["summary"]
             self.pages[4]._records_data = LiveDataPage._records_data_from(data.get("records", {}))
             self.refresh_pages()
-        self.run_worker(work,done)
+
+        self.run_worker(work, done)
     def analyze_telemetry(self):
         if not self.session: return
         self.run_worker(lambda:self.api.analyze_telemetry(self.session.session_id),lambda data:self._telemetry_done(data))

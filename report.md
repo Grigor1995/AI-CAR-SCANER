@@ -348,3 +348,15 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p no:xdist --assert=plain -vv
 ```
 
 The plugin-disabled UI run is a diagnostic only; it should not replace the regular test suite. No cloud CI was run.
+
+
+## Follow-up: Qt live-data polling regression — 2026-10-13
+
+A later local run of the Qt UI tests progressed past native collection but reported **17 passed, 1 failed in 4.83 seconds**. The failure was `test_live_data_poll_ignores_absent_session`: after a session was supplied, the test invoked `LiveDataPage._poll()` with a `FakeApp` lacking the production `run_worker` API. The test also expected the stale status `Stopped` after a backend exception, while the UI intentionally reports `Backend unavailable` and stops its polling timer.
+
+The test was updated to:
+- assert that no worker/API call is made when a session is absent;
+- supply a deterministic synchronous `run_worker` stub for the worker-error branch only;
+- assert that the in-flight flag is cleared, the UI displays `Backend unavailable`, and the timer stops.
+
+This is a test-only correction; the production async worker path was not changed. The updated Qt test has been pushed to main, but has not yet been rerun in the local environment. Run it with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` as a diagnostic if native collection crashes recur, then run the full Qt file normally once the Qt/Python environment is stable. No cloud CI was run.

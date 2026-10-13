@@ -9,8 +9,7 @@ import yaml
 
 def _normalize_claim_text(value: str) -> str:
     """Normalize token-like and natural-language claims for robust matching."""
-    return re.sub(r"\\s+", " ", re.sub(r"[\\W_]+", " ", value.casefold())).strip()
-
+    return re.sub(r"\s+", " ", re.sub(r"[\W_]+", " ", value.casefold())).strip()
 
 @dataclass(frozen=True)
 class GoldenCase:

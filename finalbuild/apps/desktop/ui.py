@@ -1144,6 +1144,10 @@ def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
             wintypes.HDC, ctypes.POINTER(BITMAPINFO), wintypes.UINT,
             ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD
         ]
+        gdi32.CreateBitmap.restype = wintypes.HBITMAP
+        gdi32.CreateBitmap.argtypes = [
+            ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p
+        ]
         gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
         user32.CreateIconIndirect.restype = wintypes.HICON
         user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]

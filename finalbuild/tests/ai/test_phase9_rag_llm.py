@@ -1,11 +1,13 @@
 from pathlib import Path
+import asyncio
+
+import pytest
+
 from ai.embeddings.providers import HashEmbeddingProvider
 from ai.rag.reranker import LexicalReranker
 from ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
 from ai.evaluation.grounding import GroundingEvaluator
 from ai.evaluation.golden import GoldenCase, GoldenCaseEvaluator
-
-import asyncio
 
 
 def test_hash_embeddings_are_normalized_and_deterministic():
@@ -13,7 +15,7 @@ def test_hash_embeddings_are_normalized_and_deterministic():
     a = asyncio.run(provider.embed(["P0302 cylinder misfire"]))[0]
     b = asyncio.run(provider.embed(["P0302 cylinder misfire"]))[0]
     assert a == b
-    assert abs(sum(x*x for x in a) - 1.0) < 1e-8
+    assert abs(sum(x * x for x in a) - 1.0) < 1e-8
 
 
 def test_reranker_prioritizes_exact_phrase():
@@ -27,13 +29,37 @@ def test_reranker_prioritizes_exact_phrase():
 
 
 def test_grounding_gate_flags_missing_terms():
-    result = GroundingEvaluator().evaluate("The issue may be related to LPG calibration.", ["LPG calibration"], {"uncertainty", "LPG"})
+    result = GroundingEvaluator().evaluate(
+        "The issue may be related to LPG calibration.",
+        ["LPG calibration"],
+        {"uncertainty", "LPG"},
+    )
     assert not result.grounded
     assert result.unsupported_claims == 0
 
 
-def test_golden_case_evaluator_blocks_forbidden_claim():
+@pytest.mark.parametrize(
+    "generated_text",
+    [
+        pytest.param("confirmed_coil_failure", id="underscore-token"),
+        pytest.param("confirmed coil failure", id="space-separated"),
+        pytest.param("Confirmed coil failure.", id="capitalized-punctuated"),
+        pytest.param("confirmed-coil-failure", id="hyphen-separated"),
+    ],
+)
+def test_golden_case_evaluator_blocks_forbidden_claim(generated_text):
     case = GoldenCase.load(Path("datasets/golden-cases/LPG_MISFIRE_001.yaml"))
-    result = GoldenCaseEvaluator().evaluate({"ignition", "intake", "LPG_calibration"}, "confirmed_coil_failure", case)
-    assert result.forbidden_claims_present
+    categories = {
+        "LPG fuel delivery / mixture",
+        "ignition / combustion",
+        "air-fuel / intake",
+    }
+
+    result = GoldenCaseEvaluator().evaluate(categories, generated_text, case)
+
+    assert any(
+        claim.casefold() == "confirmed coil failure"
+        for claim in result.forbidden_claims_present
+    )
+    assert result.category_coverage == pytest.approx(0.75)
     assert not result.passed

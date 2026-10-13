@@ -46,7 +46,7 @@ def test_diagnostic_happy_path_sends_expected_payloads_and_order():
         "http://backend.test/api/v1/sessions",
         "http://backend.test/api/v1/sessions/s-1/dtcs",
         "http://backend.test/api/v1/intelligence/sessions/s-1/evidence/text",
-        "http://backend.test/api/v1/intelligence/sessions/s-1/analyze",
+        "http://backend.test/api/v1/analysis/s-1",
         "http://backend.test/api/v1/decision/sessions/s-1/plan",
         "http://backend.test/api/v1/intelligence/sessions/s-1/test-results",
     ]

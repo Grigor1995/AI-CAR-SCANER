@@ -309,4 +309,25 @@ Release is still blocked by lack of local tests and platform builds, API securit
 - Coverage/performance: not measured.
 - Windows/Android/iOS builds: not run.
 - Generated executable, local SDK configuration and empty FETCH_HEAD: removed from the current tree; no history rewriting.
-- Commit/push: changes are being recorded as one direct main-branch commit; runtime validation remains explicitly pending.
+- Commit/push: audit and follow-up fixes were committed directly to main in separate commits; runtime validation remains explicitly pending.
+
+
+## Follow-up: local parallel test run and fixes — 2026-10-13
+
+A developer-run local Python suite on the audit baseline reported **170 tests: 167 passed, 2 failed, 1 skipped, 21 warnings in 16.59 seconds**. This is user-provided output, not a run executed by the audit environment.
+
+The two failures were:
+1. `tests/desktop/test_phase32_ports_and_timeout.py::test_phase32_default_port_split`: the assertion expected the remote Render URL while `DiagnosticApiClient` defaults to `http://127.0.0.1:8001`; the developer shell also had `AI_CAR_BACKEND_URL` configured. The test now removes that variable temporarily and validates the intended local default.
+2. `tests/ai/test_phase9_rag_llm.py::test_golden_case_evaluator_blocks_forbidden_claim`: the forbidden-claim evaluator used literal substring matching, which did not detect the token `confirmed_coil_failure` when the golden case says `confirmed coil failure`. The evaluator now normalizes underscores, punctuation, whitespace and case before matching; the regression covers four text forms and canonical golden-case categories.
+
+The initial collection delay was traced to `DATABASE_URL` being set in the developer's environment. Importing the session-persistence singleton can initialize PostgreSQL schema immediately. The test `conftest.py` now removes `DATABASE_URL` for the default isolated unit/regression suite. A database-backed test run can opt in explicitly with `AI_CAR_TEST_USE_DATABASE=1`.
+
+**Validation status after these source changes:** the updated files were written to and fetched back from GitHub main, but the Python suite has not yet been rerun against these follow-up fixes. No cloud CI was triggered.
+
+Recommended next local command from `finalbuild`:
+
+```bash
+python -m pytest -n 4 -vv -ra -o addopts="" --durations=20 2>&1 | tee pytest-parallel.log
+```
+
+Expected test count increases from 170 to 173 because the forbidden-claim regression now has four parameterized cases instead of one. This is a count expectation only; the post-fix PASS/FAIL result remains unverified until the command is run locally.

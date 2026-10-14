@@ -15,8 +15,8 @@ def test_uds_simulator_positive_negative_and_unsupported_services():
     assert vin == b"\x62\xF1\x90VIN12345678901234"
     assert ecu._response_payload(0x22, b"\xF1\x99") == b"\x7F\x22\x31"
     dtcs = ecu._response_payload(0x19, b"\x02")
-    assert dtcs[:4] == b"\x59\x02\xFF"
-    assert len(dtcs) == 4 + 8
+    assert dtcs[:3] == b"\x59\x02\xFF"
+    assert len(dtcs) == 3 + 8
     assert ecu._response_payload(0x19, b"\x01") == b"\x7F\x19\x12"
     assert ecu._response_payload(0x11, b"") == b"\x7F\x11\x11"
 

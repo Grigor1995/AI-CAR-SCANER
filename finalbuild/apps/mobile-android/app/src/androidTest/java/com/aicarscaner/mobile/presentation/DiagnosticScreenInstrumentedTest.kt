@@ -311,7 +311,11 @@ class DiagnosticScreenInstrumentedTest {
         launchScreen()
         createSession()
 
-        composeRule.onNodeWithText("OBD").performClick()
+        composeRule.onNodeWithText("OBD").performScrollTo().performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("OBD Connection")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText("Wi-Fi").performScrollTo().performClick()
 
         composeRule.onNodeWithText("Connect Wi-Fi").assertIsNotEnabled()

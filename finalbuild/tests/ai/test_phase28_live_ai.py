@@ -5,9 +5,9 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.ai.live_analysis import _recent_signal_context, analyze_live_session
-from backend.diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Vehicle
-from backend.telemetry.models import TelemetrySample
+from ai.live_analysis import _recent_signal_context, analyze_live_session
+from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Vehicle
+from telemetry.models import TelemetrySample
 
 
 def test_recent_signal_context_groups_latest_samples():
@@ -26,7 +26,7 @@ def test_recent_signal_context_groups_latest_samples():
 
 def test_live_context_contains_measurement_provenance():
     session = DiagnosticSession(vehicle=Vehicle(make="Mercedes-Benz", model="W211", year=2006, engine="M272 3.5", fuel=["Petrol", "LPG"]))
-    session.evidence.append(__import__("backend.diagnostic.models", fromlist=["Evidence"]).Evidence(
+    session.evidence.append(__import__("diagnostic.models", fromlist=["Evidence"]).Evidence(
         fact="LPG only", source=EvidenceSource.USER_REPORTED, status=EvidenceStatus.REPORTED
     ))
     assert session.vehicle.engine == "M272 3.5"
@@ -35,7 +35,7 @@ def test_live_context_contains_measurement_provenance():
 def test_phase28_telemetry_ai_route_accepts_live_analysis(monkeypatch):
     import api.main as main
     from api.state import sessions
-    from backend.telemetry.models import TelemetrySummary
+    from telemetry.models import TelemetrySummary
 
     sid = str(uuid4())
     session = DiagnosticSession(session_id=sid, vehicle=Vehicle(make="Demo", model="Live", year=2026))
@@ -54,10 +54,10 @@ def test_phase28_telemetry_ai_route_accepts_live_analysis(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_live_ai_provider_receives_current_telemetry(monkeypatch):
-    from backend.telemetry.models import TelemetrySummary, SignalStats
-    from backend.ai.interfaces import LLMResponse
-    from backend.diagnostic.models import DiagnosticSession, Vehicle
-    import backend.ai.live_analysis as live
+    from telemetry.models import TelemetrySummary, SignalStats
+    from ai.interfaces import LLMResponse
+    from diagnostic.models import DiagnosticSession, Vehicle
+    import ai.live_analysis as live
 
     class FakeProvider:
         config = type("Config", (), {"model": "fake-live"})()

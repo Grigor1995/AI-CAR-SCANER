@@ -674,15 +674,13 @@ def test_refresh_telemetry_reports_api_error_and_releases_in_flight_flag(
     window = window_factory()
     window.session = Session("session-error", "ACQUIRING", window.active_vehicle)
     jobs = []
-    messages = []
     monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
-    monkeypatch.setattr(window.statusBar(), "showMessage", messages.append)
     fake_api.telemetry_summary.side_effect = RuntimeError("telemetry unavailable")
     window.refresh_telemetry()
     worker, done = jobs[0]
     done(worker())
     assert window._telemetry_refresh_in_flight is False
-    assert messages[-1] == "Live-data refresh failed: telemetry unavailable"
+    assert window.statusBar().currentMessage() == "Live-data refresh failed: telemetry unavailable"
 
 
 def test_record_selected_test_posts_result_notes_then_reanalyzes(

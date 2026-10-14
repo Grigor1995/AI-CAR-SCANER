@@ -13,7 +13,7 @@ from unittest.mock import Mock
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QDialog, QListWidget, QPlainTextEdit
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
 from apps.desktop import ui
 from apps.desktop.models import Session, Vehicle
@@ -84,12 +84,7 @@ class DiagnosticPO:
         self.page.dtc.setText(code)
 
     def submit(self):
-        self.page.findChild(type(self.page.dtc.parent().findChild(
-            __import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton
-        )), "missing") if False else None
-        for button in self.page.findChildren(__import__(
-            "PySide6.QtWidgets", fromlist=["QPushButton"]
-        ).QPushButton):
+        for button in self.page.findChildren(QPushButton):
             if button.text() in ("Add evidence + Analyze", "Ավելացնել տվյալներ և վերլուծել"):
                 button.click()
                 return
@@ -366,7 +361,9 @@ def test_vehicles_page_object_lists_selects_and_displays_vehicle(window_factory,
 
 
 def test_vehicle_dialog_page_object_filters_catalog_and_converts_form(qapp, fake_api):
-    parent = type("DialogParent", (), {"api": fake_api, "language": "en"})()
+    parent = QWidget()
+    parent.api = fake_api
+    parent.language = "en"
     dialog = ui.VehicleDialog(parent)
     assert dialog.make.count() == 2
     dialog.make.setCurrentText("Kia")
@@ -550,6 +547,50 @@ def test_main_window_selected_device_validation_does_not_start_worker(window_fac
     assert window._selected_device() is None
     assert errors == ["Select a VCI/device first."]
     assert jobs == []
+
+
+def test_worker_run_emits_success_and_failure_signals(qapp):
+    successful = ui.Worker(lambda: {"ok": True})
+    success_values = []
+    failure_values = []
+    successful.finished_ok.connect(success_values.append)
+    successful.failed.connect(failure_values.append)
+    successful.run()
+    assert success_values == [{"ok": True}]
+    assert failure_values == []
+
+    def explode():
+        raise RuntimeError("controlled worker error")
+
+    failing = ui.Worker(explode)
+    failing.finished_ok.connect(success_values.append)
+    failing.failed.connect(failure_values.append)
+    failing.run()
+    assert failure_values == ["controlled worker error"]
+
+
+def test_sparkline_handles_empty_constant_and_long_series(qapp):
+    chart = ui.Sparkline()
+    chart.resize(320, 100)
+    chart.set_values(list(range(150)))
+    assert chart.values == list(range(30, 150))
+    chart.show()
+    qapp.processEvents()
+    chart.set_values([5, 5, 5])
+    qapp.processEvents()
+    chart.set_values([])
+    qapp.processEvents()
+    assert chart.values == []
+    chart.close()
+
+
+def test_metric_card_initial_and_updated_values(qapp):
+    card = ui.MetricCard("Vehicle", "Mercedes-Benz")
+    assert card.title() == "Vehicle"
+    assert card.value.text() == "Mercedes-Benz"
+    assert card.value.objectName() == "vehicleMetricValue"
+    card.set_value("E350")
+    assert card.value.text() == "E350"
 
 
 def test_translation_round_trips_dynamic_session_state_between_languages():

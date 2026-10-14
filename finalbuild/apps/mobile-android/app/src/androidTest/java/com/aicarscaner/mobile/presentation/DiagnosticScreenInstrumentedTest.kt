@@ -26,6 +26,7 @@ import com.aicarscaner.mobile.data.api.TestResultRequest
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -260,12 +261,12 @@ class DiagnosticScreenInstrumentedTest {
             composeRule.onAllNodesWithText("LPG injector imbalance could explain load misfire")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onAllNodesWithText("Petrol runs normally")
-            .fetchSemanticsNodes().isNotEmpty()
-        composeRule.onAllNodesWithText("Check LPG injector balance")
-            .fetchSemanticsNodes().isNotEmpty()
-        composeRule.onAllNodesWithText("Does misfire disappear on petrol?")
-            .fetchSemanticsNodes().isNotEmpty()
+        assertTrue(composeRule.onAllNodesWithText("Petrol runs normally", substring = true)
+            .fetchSemanticsNodes().isNotEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Check LPG injector balance", substring = true)
+            .fetchSemanticsNodes().isNotEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Does misfire disappear on petrol?", substring = true)
+            .fetchSemanticsNodes().isNotEmpty())
 
         composeRule.onAllNodesWithText("Record result").onFirst().performScrollTo().performClick()
         composeRule.onNodeWithText("FAIL").performClick()
@@ -287,7 +288,7 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.onNodeWithText("Live Data").performClick()
         composeRule.waitForIdle()
 
-        assert(composeRule.onAllNodesWithText("OBD is not connected")
+        assertTrue(composeRule.onAllNodesWithText("OBD is not connected")
             .fetchSemanticsNodes().isNotEmpty())
     }
 

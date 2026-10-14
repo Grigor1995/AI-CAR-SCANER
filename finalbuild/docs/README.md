@@ -13,6 +13,8 @@ This documentation describes the implemented architecture of the finalbuild/ pro
 | [Visualizations](architecture/visualization.md) | Mermaid diagrams for system, data, sequence, deployment and dependency views |
 | [Phase architecture](architecture/) | Historical phase-by-phase architecture decisions |
 | [Device architecture](device/) | Device/VCI evolution and transport documentation |
+| [Local coverage audit](testing/coverage-audit.md) | Staged local Python coverage, per-file low coverage and report generation |
+| [Cross-platform test matrix](testing/full-flow-coverage.md) | End-to-end workflow test coverage and platform verification |
 
 ## Shared client contract
 

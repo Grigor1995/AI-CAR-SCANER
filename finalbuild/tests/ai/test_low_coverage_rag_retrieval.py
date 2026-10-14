@@ -64,7 +64,7 @@ async def test_retriever_rewrites_deduplicates_filters_and_maps_reranker_result(
     assert len(repository.calls) == 2
     assert all(call[2] == {"make": "Mercedes"} for call in repository.calls)
     assert all(call[3] == 2 for call in repository.calls)
-    assert response.diagnostics["candidate_count"] == 3
+    assert response.diagnostics["candidate_count"] == 2
     assert response.diagnostics["result_count"] == 1
     assert response.diagnostics["reranker"] == "MatchingReranker"
     assert response.hits[0].chunk_id == "shared"

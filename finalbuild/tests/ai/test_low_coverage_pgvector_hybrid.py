@@ -142,3 +142,32 @@ def test_hybrid_search_fuses_vector_and_lexical_candidates(monkeypatch):
         "filters": {},
         "top_k": 3,
     }
+
+
+@pytest.mark.parametrize(
+    ("use_hnsw", "expected_index"),
+    [(True, "USING hnsw"), (False, "USING ivfflat")],
+)
+def test_ensure_schema_creates_vector_and_text_indexes(monkeypatch, use_hnsw, expected_index):
+    connection = FakeConnection()
+    engine = FakeEngine(connection)
+    monkeypatch.setattr(pgvector, "create_engine", lambda *args, **kwargs: engine)
+    config = pgvector.PgVectorConfig(
+        "postgresql://unused",
+        dimensions=32,
+        index_lists=8,
+        hnsw_m=12,
+        hnsw_ef_construction=40,
+        use_hnsw=use_hnsw,
+    )
+    repo = pgvector.PgVectorHybridRepository(config)
+
+    repo.ensure_schema()
+
+    sql_calls = [sql for sql, _params in connection.calls]
+    assert any("CREATE EXTENSION IF NOT EXISTS vector" in sql for sql in sql_calls)
+    assert any("vector(32)" in sql for sql in sql_calls)
+    assert any("ix_rag_chunks_metadata" in sql for sql in sql_calls)
+    assert any("ix_rag_chunks_tsv" in sql for sql in sql_calls)
+    assert any(expected_index in sql for sql in sql_calls)
+    assert engine.transactions == 1

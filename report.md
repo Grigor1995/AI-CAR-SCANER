@@ -598,9 +598,19 @@ The developer's next attempt failed before useful instrumentation results were a
 
 This is an Android test-runner output/lock-file access error, distinct from the earlier `ComposeNotIdleException`. The log does not establish whether the revised UI tests pass or fail. Recommended remediation is to stop Gradle, force-stop the instrumentation/app processes or restart the emulator, remove only the generated connected-test results/report directories, then run one smoke test before the complete suite. Do not interpret coverage as updated from this failed run.
 
-### Follow-up smoke-test result — 2026-10-14
+### Latest full instrumentation result — 2026-10-14
 
-After restarting ADB, removing stale generated connected-test results, and running the focused `screenShowsInitialVehicleForm` instrumentation smoke test, the developer reported **BUILD SUCCESSFUL in 3m 6s** (69 actionable tasks). This confirms that the test runner can launch and complete at least the initial-screen test after the cleanup and startup changes. The full 13-test instrumentation suite has not yet been rerun, so its status and refreshed coverage remain pending.
+After the successful one-test smoke run, the developer ran all 13 instrumentation tests. **11 passed and 2 failed**. The test runner and Compose idling setup now work well enough to reach the test assertions; these were specific selector/visibility issues rather than the earlier shared `ComposeNotIdleException`.
+
+Failures reported:
+- `wifiConnectButtonRequiresANonBlankHost`: could not find the `Wi-Fi` text node before tapping it.
+- `vehicleCanEnterEditModeAndSave`: `E-Class` substring assertion found two valid UI nodes; the test incorrectly required exactly one.
+
+Commit `ec64041` addresses both:
+- scrolls the `Wi-Fi` transport option into view before tapping it;
+- checks that at least one `E-Class` node exists instead of using a singular selector that fails on duplicate labels.
+
+The updated tests have not been run after this commit. The previous 55% instruction / 22% branch coverage report remains the latest successful coverage measurement; rerun the tests and reports before recording new figures.
 
 ### Coverage target and next steps
 

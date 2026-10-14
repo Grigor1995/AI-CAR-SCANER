@@ -159,7 +159,11 @@ Added focused test modules on `main` for the first low-coverage targets:
 - `tests/ai/test_low_coverage_rag_retrieval.py`: query expansion, multi-query aggregation/deduplication, reranker mapping/fallback, filters, empty results, and candidate sizing.
 - `tests/ai/test_low_coverage_pgvector_hybrid.py`: config, vector serialization, dimension validation, upsert parameters, vector/lexical queries, hybrid fusion, and HNSW/IVFFlat schema configuration using a fake SQLAlchemy engine (no live PostgreSQL needed).
 
-These tests have been committed, but **they have not been executed in the user's local environment yet**. Run the targeted batch first; only update the coverage baseline after the tests pass and the combined coverage command is rerun.
+The first developer-provided targeted run reported **40 passed, 7 failed**. The failures were confined to two test-design issues:
+- The LLM factory tests patched a classmethod with a lambda that incorrectly expected a bound `cls` argument. The mocks were corrected to zero-argument lambdas.
+- The pgvector upsert test expected no transaction to start on dimension validation failure. The implementation opens a transaction before checking each vector; the assertion now verifies the actual contract: no SQL is executed for the invalid embedding.
+
+These corrections are committed, but **the corrected targeted suite still needs to be rerun locally**. Do not record a new coverage percentage until that rerun passes and the combined coverage command is rerun.
 
 ### Validate the new tests
 

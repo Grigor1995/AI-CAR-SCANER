@@ -202,21 +202,41 @@ Added the following additional focused test modules on `main`:
 - `tests/ai/test_low_coverage_openai_compatible.py`: request URL/body/headers, optional authorization, successful response parsing, network/HTTP/timeout/invalid JSON errors.
 - `tests/api/test_state_registry_low_coverage.py`: cache/mapping operations, persisted lookup/refresh, writes, and persistence-disabled branches.
 
-The developer's first run of batch 2 reported **32 passed, 1 failed**. The failure was a test assertion using `ParsedPage.number`, but the actual model field is `ParsedPage.page_number`. The assertion has now been corrected. A rerun is required to confirm the whole batch passes.
+The developer's first run of batch 2 reported **32 passed, 1 failed**. The failure was a test assertion using `ParsedPage.number`, but the actual model field is `ParsedPage.page_number`. The assertion was corrected, and the developer subsequently confirmed the batch **passes** (exact count/time were not provided).
 
-### Validate batch 2 tests
+### Batch 2 validation command
 
 From `finalbuild/`:
 
 ```bash
 python -m pytest -q \
-  tests/ai/test_low_coverage_embedding_providers.py \
+  tests/ai/test_low-coverage_embedding_providers.py \
   tests/ai/test_low_coverage_document_parsers.py \
   tests/ai/test_low_coverage_openai_compatible.py \
   tests/api/test_state_registry_low_coverage.py
 ```
 
-If the targeted batch passes, rerun the main scoped coverage command in Step 1 followed by the Desktop command in Step 2, then capture the fresh combined total and below-70% file list from Step 3.
+
+## Low-coverage test expansion — batch 3 (2026-10-14)
+
+Added four more focused test modules to `main`, with no requirement for a live LLM server, real VCI hardware, or a live database:
+
+- `tests/ai/test_low_coverage_llama_server.py`: configuration clamps, auth headers, HTTP/URL errors, model resolution, server context fallback, health/availability, context compaction, generation payloads and malformed/empty inference responses.
+- `tests/vehicle/devices/test_low_coverage_connection_manager.py`: USB/BLE discovery via fakes, Wi-Fi probe success/failure, transport factory validation, connection status/error/reconnect and unknown-device paths.
+- `tests/vehicle/isotp/test_low_coverage_stack.py`: malformed frames, timeouts, sequence validation, payload constraints, flow-control overflow/wait/block-size, and extended-frame sending.
+- `tests/api/test_low_coverage_vehicle_catalog_routes.py`: catalog filtering/facets, resolve queries, blank make/model errors and database-unavailable translation, using mocked query results.
+
+These batch 3 tests are committed but have **not yet been run locally**.
+
+### Validate batch 3
+
+```bash
+python -m pytest -q \
+  tests/ai/test_low_coverage_llama_server.py \
+  tests/vehicle/devices/test_low_coverage_connection_manager.py \
+  tests/vehicle/isotp/test_low_coverage_stack.py \
+  tests/api/test_low_coverage_vehicle_catalog_routes.py
+```
 
 ## How to interpret the result
 

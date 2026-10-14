@@ -120,7 +120,7 @@ async def test_active_probe_validates_session_runtime_and_returns_correlation(mo
     assert response == {"session_id": "s1", "results": [], "correlation": {"active_probe_count": 0, "candidates": []}}
     active.probe_candidates.assert_awaited_once()
     args = active.probe_candidates.await_args.args
-    assert args[0] == passive.ecu_candidates[0] or args[0] is not None
+    assert args[0] == session.session_id
 
 
 def test_active_map_validates_runtime_and_returns_correlation(monkeypatch):

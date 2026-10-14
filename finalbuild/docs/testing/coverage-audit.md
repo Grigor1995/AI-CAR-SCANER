@@ -340,3 +340,28 @@ JSON: coverage-python-audit.json
 Compared with the preceding 88.46% snapshot, combined scoped coverage increased to **88.90%** and the number of measured files below 70% decreased from 9 to **2**. The count and percentage are scoped to the configured Python production roots; this is not native iOS/Android coverage or whole-repository coverage.
 
 The names of the remaining two files were not included in the supplied output. Use the JSON report to print their names, exact percentages and uncovered lines before choosing the next test batch.
+
+
+## Desktop UI/startup coverage expansion — batch 5 (2026-10-14; awaiting local validation)
+
+The last combined JSON report identified only these two files below 70%:
+
+- `apps/desktop/main.py`: 57.03%, 110/256 statements missed.
+- `apps/desktop/ui.py`: 68.00%, 273/853 statements missed.
+
+Added test coverage for their untested runtime paths:
+
+- New `apps/desktop/tests/test_main_lifecycle.py`: local backend health/startup and stop behavior; remote-backend startup bypass; occupied ports; source vs frozen startup path; subprocess creation failures; child-process early exit and timeout; log handle cleanup; LLM server health, timeout and early-exit paths; and app-run cleanup after UI close or backend startup failure.
+- Expanded `apps/desktop/tests/test_ui_pom.py`: settings save/cancel; add/delete vehicle outcomes; translation and offline catalog fallback; health/device actions and callbacks; DTC-only analysis; session reset; simulator and telemetry guards; AI live-data available/unavailable/error states; device read-outs; live-data polling/refresh and duplicate-request protection; active ECU probe IDs; and source/frozen resource resolution.
+
+Also corrected a behavior surfaced while testing the live-data provider error path: `LiveDataPage.refresh()` now preserves the “AI: unavailable” message when provider status fetch fails, instead of immediately overwriting it with a generic offline message.
+
+These additions have been pushed to `main` but have **not yet been confirmed by a local test run**. From `finalbuild/`, first run the focused tests:
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m pytest -q \
+  apps/desktop/tests/test_main_lifecycle.py \
+  apps/desktop/tests/test_ui_pom.py
+```
+
+If they pass, rerun the existing clean Step 1 → append Step 2 → Step 3 coverage workflow. In Step 1, `tests/` will include the new backend test suite. In Step 2, `apps/desktop/tests/` will include the new startup/UI cases while continuing to ignore the known native Qt teardown case `test_ui_widgets.py`. Report the new percentage and remaining source files below 70%; do not assume either file passed 70% until measured.

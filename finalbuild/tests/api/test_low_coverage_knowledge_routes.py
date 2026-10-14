@@ -73,7 +73,7 @@ async def test_ingest_file_uses_upload_suffix_and_filename_stem(monkeypatch):
 
     monkeypatch.setattr(routes.pipeline, "ingest_file", fake_ingest)
     upload = UploadFile(filename="engine_notes.md", file=BytesIO(b"note body"))
-    response = await routes.ingest_file(upload)
+    response = await routes.ingest_file(upload, metadata_json="{}", title=None)
 
     assert observed["suffix"] == ".md"
     assert observed["bytes"] == b"note body"
@@ -92,7 +92,7 @@ async def test_ingest_file_prefers_explicit_title(monkeypatch):
         ),
     )
     upload = UploadFile(filename="engine_notes.txt", file=BytesIO(b"note"))
-    await routes.ingest_file(upload, title="Curated vehicle case")
+    await routes.ingest_file(upload, metadata_json="{}", title="Curated vehicle case")
     assert titles == ["Curated vehicle case"]
 
 
@@ -107,7 +107,7 @@ async def test_ingest_file_defaults_suffix_and_title_for_missing_filename(monkey
 
     monkeypatch.setattr(routes.pipeline, "ingest_file", fake_ingest)
     upload = UploadFile(filename=None, file=BytesIO(b"fallback"))
-    await routes.ingest_file(upload)
+    await routes.ingest_file(upload, metadata_json="{}", title=None)
     assert observed == {"suffix": ".txt", "title": "upload"}
 
 

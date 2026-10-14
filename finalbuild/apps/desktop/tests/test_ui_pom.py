@@ -764,3 +764,466 @@ def test_device_action_callback_replaces_device_and_updates_status(window_factor
     window._device_action_done(result, "Device connected")
     assert window.devices == [result]
     assert window.statusBar().currentMessage() == "Device connected"
+
+
+
+# ------------------------- Additional branch coverage -------------------------
+
+def test_translation_helpers_preserve_non_string_values_and_unknown_language():
+    assert ui._translate_ui_text(None, "hy") is None
+    assert ui._translate_ui_block(123, "ru") == 123
+    assert ui._translate_ui_text("Dashboard", "fr") == "Dashboard"
+
+
+def test_vehicle_dialog_falls_back_when_offline_catalog_is_unreadable(qapp, monkeypatch, tmp_path):
+    monkeypatch.setattr(ui, "_resource_path", lambda _name: tmp_path / "catalog-missing.json")
+    parent = QWidget()
+    parent.language = "hy"
+    parent.api = type("OfflineApi", (), {"vehicle_catalog_entries": lambda self: []})()
+    dialog = ui.VehicleDialog(parent)
+    assert dialog.make.currentText() == "Mercedes-Benz"
+    assert dialog.model.currentText() == "E-Class"
+    assert dialog.chassis.currentText() == "W211"
+    assert "Օֆլայն կատալոգ" in dialog.findChildren(ui.QLabel)[0].text()
+    dialog.close()
+
+
+def test_vehicle_dialog_ignores_invalid_offline_rows_and_non_list_payload(qapp, monkeypatch, tmp_path):
+    catalog = tmp_path / "catalog.json"
+    catalog.write_text('{"vehicles": {"not": "a list"}}', encoding="utf-8")
+    monkeypatch.setattr(ui, "_resource_path", lambda _name: catalog)
+    parent = QWidget()
+    parent.api = type("SparseApi", (), {
+        "vehicle_catalog_entries": lambda self: [
+            None, {"make": "Kia", "model": "Forte"}
+        ]
+    })()
+    dialog = ui.VehicleDialog(parent)
+    assert dialog.make.currentText() == "Mercedes-Benz"
+    assert dialog.vehicle().engine == "M272 E35 3.5"
+    dialog.close()
+
+
+def test_settings_dialog_saves_language_and_theme(window_factory, monkeypatch):
+    window = window_factory()
+    def accept_with_new_values(dialog):
+        combos = dialog.findChildren(ui.QComboBox)
+        language = next(c for c in combos if c.findData("ru") >= 0)
+        theme = next(c for c in combos if c.findData(False) >= 0)
+        language.setCurrentIndex(language.findData("ru"))
+        theme.setCurrentIndex(theme.findData(False))
+        return ui.QDialog.Accepted
+    monkeypatch.setattr(ui.QDialog, "exec", accept_with_new_values)
+    window._open_settings()
+    assert window.language == "ru"
+    assert window.dark_theme is False
+    assert window.settings_store.value("language") == "ru"
+    assert window.settings_store.value("dark_theme") is False
+    assert window.statusBar().currentMessage().startswith("Настройки сохранены")
+
+
+def test_settings_dialog_cancel_does_not_change_preferences(window_factory, monkeypatch):
+    window = window_factory()
+    monkeypatch.setattr(ui.QDialog, "exec", lambda _dialog: ui.QDialog.Rejected)
+    window._open_settings()
+    assert window.language == "en"
+    assert window.dark_theme is True
+    assert window.settings_store.value("language") == "en"
+
+
+def test_add_vehicle_cancel_does_not_persist_or_start_session(window_factory, monkeypatch):
+    window = window_factory()
+    before = list(window.vehicles)
+    class CancelDialog:
+        def __init__(self, _parent):
+            pass
+        def exec(self):
+            return ui.QDialog.Rejected
+    monkeypatch.setattr(ui, "VehicleDialog", CancelDialog)
+    window.add_vehicle()
+    assert window.vehicles == before
+    assert window._test_store.saved == []
+
+
+def test_add_vehicle_replaces_duplicate_profile_and_starts_new_session(window_factory, monkeypatch, vehicle):
+    window = window_factory()
+    new_vehicle = Vehicle(vehicle.make, vehicle.model, vehicle.chassis, vehicle.year, "M272 upgraded", ["LPG"], vehicle.ecu)
+    class AcceptedDialog:
+        def __init__(self, _parent):
+            pass
+        def exec(self):
+            return ui.QDialog.Accepted
+        def vehicle(self):
+            return new_vehicle
+    monkeypatch.setattr(ui, "VehicleDialog", AcceptedDialog)
+    start = Mock()
+    monkeypatch.setattr(window, "new_session", start)
+    window.add_vehicle()
+    assert window.vehicles == [new_vehicle]
+    assert window.active_vehicle is new_vehicle
+    assert window._test_store.saved[-1] == [new_vehicle]
+    start.assert_called_once()
+
+
+def test_delete_vehicle_reports_missing_selection_and_stale_index(window_factory, monkeypatch):
+    window = window_factory()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.delete_selected_vehicle()
+    assert errors == ["Select a vehicle to delete."]
+
+    page = window.pages[1]
+    page.refresh()
+    page.list.setCurrentRow(0)
+    window.vehicles.clear()
+    window.delete_selected_vehicle()
+    assert errors[-1] == "Selected vehicle is no longer available."
+
+
+def test_delete_vehicle_respects_cancel_confirmation(window_factory, monkeypatch):
+    window = window_factory()
+    window.pages[1].refresh()
+    window.pages[1].list.setCurrentRow(0)
+    monkeypatch.setattr(ui.QMessageBox, "question", lambda *_args, **_kwargs: ui.QMessageBox.No)
+    original = list(window.vehicles)
+    window.delete_selected_vehicle()
+    assert window.vehicles == original
+    assert window._test_store.saved == []
+
+
+def test_delete_vehicle_removes_confirmed_profile_and_clears_active_vehicle(window_factory, monkeypatch):
+    window = window_factory()
+    window.pages[1].refresh()
+    window.pages[1].list.setCurrentRow(0)
+    monkeypatch.setattr(ui.QMessageBox, "question", lambda *_args, **_kwargs: ui.QMessageBox.Yes)
+    window.delete_selected_vehicle()
+    assert window.vehicles == []
+    assert window.active_vehicle is None
+    assert window._test_store.saved[-1] == []
+    assert window.statusBar().currentMessage().startswith("Vehicle deleted:")
+
+
+def test_refresh_health_success_and_offline_callbacks(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend online"
+
+    fake_api.health.return_value = {"status": "starting"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is False
+    assert window.statusBar().currentMessage() == "Backend offline"
+
+
+def test_refresh_pages_isolates_a_page_refresh_failure(window_factory, monkeypatch):
+    window = window_factory()
+    monkeypatch.setattr(window.pages[2], "refresh", Mock(side_effect=RuntimeError("broken page")))
+    language = Mock()
+    monkeypatch.setattr(window, "_apply_language", language)
+    window.refresh_pages()
+    language.assert_called_once()
+
+
+def test_scan_devices_and_device_added_callbacks(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.scan_devices.return_value = {"devices": [{"device_id": "usb-1"}]}
+    window.scan_devices("usb")
+    work, done = jobs.pop(0)
+    done(work())
+    assert window.devices == [{"device_id": "usb-1"}]
+    assert window.statusBar().currentMessage() == "VCI devices: 1"
+
+    jobs.clear()
+    fake_api.add_simulator_device.return_value = {"device_id": "sim-1"}
+    fake_api.list_devices.return_value = {"devices": [{"device_id": "sim-1"}]}
+    window.add_simulator_device()
+    work, done = jobs.pop(0)
+    done(work())
+    assert window.selected_device_id == "sim-1"
+    assert len(jobs) == 1
+    refresh_work, refresh_done = jobs.pop(0)
+    refresh_done(refresh_work())
+    assert window.devices == [{"device_id": "sim-1"}]
+
+
+def test_probe_wifi_rejects_blank_host_and_runs_with_trimmed_host(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    errors = []
+    jobs = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    window.probe_wifi()
+    assert errors == ["Enter the Wi-Fi OBD adapter host, for example 192.168.0.10."]
+    assert jobs == []
+
+    page = window.pages[2]
+    page.host.setText(" 192.0.2.44 ")
+    page.port.setValue(35001)
+    fake_api.probe_wifi.return_value = {"device_id": "wifi-1"}
+    window.probe_wifi()
+    work, done = jobs.pop(0)
+    assert work() == {"device_id": "wifi-1"}
+    fake_api.probe_wifi.assert_called_once_with("192.0.2.44", 35001)
+    done({"device_id": "wifi-1"})
+    assert window.selected_device_id == "wifi-1"
+
+
+@pytest.mark.parametrize(
+    ("action_name", "api_name", "result", "message"),
+    [
+        ("connect_selected_device", "connect_device", {"device_id": "dev-1", "status": "connected"}, "Device connected"),
+        ("disconnect_selected_device", "disconnect_device", {"device_id": "dev-1", "status": "disconnected"}, "Device disconnected"),
+        ("reconnect_selected_device", "reconnect_device", {"device_id": "dev-1", "status": "connected"}, "Device reconnected"),
+    ],
+)
+def test_device_connection_actions_dispatch_and_refresh(window_factory, monkeypatch, fake_api, action_name, api_name, result, message):
+    window = window_factory()
+    window.devices = [{"device_id": "dev-1", "status": "disconnected", "connection_type": "USB", "metadata": {}}]
+    window.selected_device_id = "dev-1"
+    window.pages[2].refresh()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    getattr(fake_api, api_name).return_value = result
+    getattr(window, action_name)()
+    assert len(jobs) == 1
+    work, done = jobs.pop(0)
+    assert work() == result
+    done(result)
+    assert window.devices == [result]
+    assert window.statusBar().currentMessage() == message
+
+
+@pytest.mark.parametrize(
+    ("action_name", "api_name", "payload", "expected"),
+    [
+        ("read_device_vin", "device_vin", {"vin": "WDD2110801A123456"}, "VIN: WDD2110801A123456"),
+        ("read_device_dtcs", "device_dtcs", {"dtcs": ["P0102", "P0302"]}, "DTCs:\nP0102\nP0302"),
+        ("read_device_dtcs", "device_dtcs", {"dtcs": []}, "No stored generic OBD-II DTCs"),
+        ("read_device_live_data", "device_live_data", {"values": {"rpm": 900}}, "{'rpm': 900}"),
+    ],
+)
+def test_device_read_callbacks_render_results(window_factory, monkeypatch, fake_api, action_name, api_name, payload, expected):
+    window = window_factory()
+    window.devices = [{"device_id": "dev-1", "status": "connected", "connection_type": "USB", "metadata": {}}]
+    window.selected_device_id = "dev-1"
+    window.pages[2].refresh()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    getattr(fake_api, api_name).return_value = payload
+    getattr(window, action_name)()
+    work, done = jobs.pop()
+    done(work())
+    assert expected in window.pages[2].result.toPlainText()
+
+
+def test_session_created_resets_analysis_state_and_opens_diagnostic_page(window_factory, monkeypatch):
+    window = window_factory()
+    window.telemetry = {"old": True}
+    window.network = {"ecus": [{"id": "old"}]}
+    window.active_network = {"old": True}
+    refresh = Mock()
+    monkeypatch.setattr(window, "refresh_pages", refresh)
+    window._session_created({"session_id": "s-new", "state": "CREATED", "evidence": []})
+    assert window.session.session_id == "s-new"
+    assert window.session_json["evidence"] == []
+    assert window.decision == {}
+    assert window.telemetry == {}
+    assert window.network == {}
+    assert window.active_network == {}
+    assert window.nav.currentRow() == 3
+    refresh.assert_called_once()
+    assert window.statusBar().currentMessage() == "Diagnostic session created"
+
+
+def test_analyze_input_supports_dtc_only_and_decision_callback(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    window.session = Session("s-dtc", "READY", window.active_vehicle)
+    window.pages[3].dtc.setText("P0302")
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.analyze.return_value = {"session_id": "s-dtc", "state": "ANALYZED"}
+    window.analyze_input()
+    work, done = jobs.pop()
+    done(work())
+    fake_api.add_dtc.assert_called_once_with("s-dtc", "P0302")
+    fake_api.ingest_evidence.assert_not_called()
+    assert window.session.state == "ANALYZED"
+    decision_work, decision_done = jobs.pop()
+    fake_api.decision_plan.return_value = {"candidates": []}
+    decision_done(decision_work())
+    assert window.decision == {"candidates": []}
+    assert window.statusBar().currentMessage() == "Diagnostic reasoning updated"
+
+
+def test_new_session_without_profiles_opens_vehicle_dialog(window_factory, monkeypatch):
+    window = window_factory(vehicles=[])
+    add = Mock()
+    monkeypatch.setattr(window, "add_vehicle", add)
+    window.new_session()
+    add.assert_called_once()
+
+
+def test_simulator_and_telemetry_actions_are_guarded_by_session(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    errors = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    monkeypatch.setattr(window, "show_error", errors.append)
+
+    window.start_simulator()
+    assert errors == ["Backend is offline. Start the FastAPI backend first."]
+    assert jobs == []
+    window.stop_simulator()
+    window.analyze_telemetry()
+    window.refresh_network()
+    window.active_probe()
+    assert jobs == []
+
+    window.session = Session("s-live", "READY", window.active_vehicle)
+    fake_api.start_simulator.return_value = {"state": "RUNNING"}
+    window.start_simulator()
+    work, done = jobs.pop()
+    assert work() == {"state": "RUNNING"}
+    callback = Mock()
+    monkeypatch.setattr(window, "_sim_changed", callback)
+    done({"state": "RUNNING"})
+    callback.assert_called_once_with("Simulator acquisition started")
+
+    fake_api.stop_acquisition.return_value = {"state": "STOPPED"}
+    window.stop_simulator()
+    work, done = jobs.pop()
+    done(work())
+    callback.assert_called_with("Acquisition stopped")
+
+    fake_api.analyze_telemetry.return_value = {"signals": []}
+    window.analyze_telemetry()
+    work, done = jobs.pop()
+    done(work())
+    assert window.telemetry == {"signals": []}
+    assert window.statusBar().currentMessage() == "Telemetry analysis completed"
+
+
+def test_live_ai_success_and_defaults_update_page(window_factory, monkeypatch):
+    window = window_factory()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.ai_analyze_live_data()
+    assert errors == ["Create a diagnostic session first."]
+
+    window.session = Session("s-ai", "READY", window.active_vehicle)
+    window._live_ai_done({"ai": {"available": True, "provider": "cloud", "model": "model-x", "text": "Evidence-based summary"}})
+    text = window.pages[4].ai_box.toPlainText()
+    assert "Provider: cloud | Model: model-x | Available: True" in text
+    assert "Evidence-based summary" in text
+    assert "Provider error:" not in text
+    assert window.statusBar().currentMessage() == "Live-data AI analysis completed"
+
+
+@pytest.mark.parametrize(
+    ("network", "expected_ids"),
+    [
+        ({"ecus": [{"id": "ecu-id"}, {"ecu_id": "engine"}, {"name": "skip"}, {"id": 0, "ecu_id": "backup"}]}, ["ecu-id", "engine", "backup"]),
+        ({}, None),
+    ],
+)
+def test_active_probe_only_sends_known_ecu_identifiers(window_factory, monkeypatch, fake_api, network, expected_ids):
+    window = window_factory()
+    window.session = Session("s-net", "READY", window.active_vehicle)
+    window.network = network
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.active_probe.return_value = {"responding": expected_ids or []}
+    window.active_probe()
+    work, done = jobs.pop()
+    assert work() == {"responding": expected_ids or []}
+    fake_api.active_probe.assert_called_once_with("s-net", expected_ids)
+    done({"responding": expected_ids or []})
+    assert window.active_network == {"responding": expected_ids or []}
+    assert window.statusBar().currentMessage() == "Active read-only ECU probe completed"
+
+
+def test_live_data_request_refresh_gates_and_loads_details(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    page = window.pages[4]
+    page.request_refresh()
+    assert page._details_in_flight is False
+    assert fake_api.acquisition_status.call_count == 0
+
+    window.online = True
+    window.session = Session("s-live", "READY", window.active_vehicle)
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.acquisition_status.return_value = {"state": "RUNNING"}
+    fake_api.ai_provider_info.return_value = {"available": True, "model": "test-model"}
+    fake_api.acquisition_records.return_value = {"records": [{"numeric_value": 720}, {"numeric_value": None}]}
+    page.request_refresh()
+    assert page._details_in_flight is True
+    page.request_refresh()
+    assert len(jobs) == 1
+    work, done = jobs.pop()
+    done(work())
+    assert page._details_in_flight is False
+    assert page.status.text() == "RUNNING"
+    assert page.timer.isActive()
+    assert page.ai_status.text().startswith("AI: READY")
+    assert page.chart.values == [720.0]
+    page.timer.stop()
+
+
+def test_live_data_request_refresh_handles_provider_and_status_errors(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    window.online = True
+    window.session = Session("s-live", "READY", window.active_vehicle)
+    page = window.pages[4]
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.acquisition_status.side_effect = RuntimeError("status timeout")
+    fake_api.ai_provider_info.side_effect = RuntimeError("provider timeout")
+    fake_api.acquisition_records.return_value = []
+    page.request_refresh()
+    work, done = jobs.pop()
+    done(work())
+    assert page.status.text() == "STOPPED"
+    assert page.ai_status.text() == "AI: unavailable"
+    assert page._records_data == []
+
+
+def test_live_data_poll_running_refreshes_telemetry_and_stops_when_stopped(window_factory, monkeypatch):
+    window = window_factory()
+    window.online = True
+    window.session = Session("s-live", "READY", window.active_vehicle)
+    page = window.pages[4]
+    refresh = Mock()
+    monkeypatch.setattr(window, "refresh_telemetry", refresh)
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    page._poll()
+    work, done = jobs.pop()
+    done({"state": "RUNNING"})
+    refresh.assert_called_once()
+    assert page.status.text() == "RUNNING"
+    assert page.timer.isActive()
+    page._poll_done({"state": "STOPPED"})
+    assert page.status.text() == "STOPPED"
+    assert not page.timer.isActive()
+
+
+def test_resource_path_supports_source_and_frozen_layouts(monkeypatch, tmp_path):
+    monkeypatch.setattr(ui.sys, "frozen", False, raising=False)
+    source_path = ui._resource_path("assets/icon.webp")
+    assert source_path.name == "icon.webp"
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    monkeypatch.setattr(ui.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(ui.sys, "_MEIPASS", str(bundle), raising=False)
+    assert ui._resource_path("assets/icon.webp") == bundle / "assets" / "icon.webp"

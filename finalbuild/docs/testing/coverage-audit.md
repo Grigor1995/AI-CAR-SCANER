@@ -541,3 +541,12 @@ for percent, filename, summary, lines in sorted(low):
     )
 PY
 ```
+
+### Batch 7 initial Desktop validation failure and fixture corrections (2026-10-14)
+
+The developer's first Desktop-targeted run reported **93 passed, 2 failed**. Both failures were test setup/expectation issues:
+
+- `test_icon_builder_resizes_small_source_and_creates_all_desktop_formats`: the test redirected outputs to a temporary `assets/` directory but did not create that directory. The fixture now creates the output directory before calling `icons.main()`.
+- `test_vehicle_dialog_handles_api_failure_and_malformed_offline_catalog`: the dialog intentionally preserves curated W211 defaults if the API and offline catalog are unavailable. The test incorrectly expected an empty make combo. It now asserts the documented fallback values (`Mercedes-Benz / E-Class / W211`) while verifying that the external/offline catalog remains empty and the Russian offline notice is displayed.
+
+Both test-only corrections are committed to `main`. This batch is still **awaiting a rerun**; the initial 93 passing tests do not establish full-batch PASS until the two corrected tests and the full targeted command finish without failures.

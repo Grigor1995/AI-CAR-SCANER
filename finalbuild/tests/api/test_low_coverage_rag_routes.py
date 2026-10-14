@@ -9,7 +9,7 @@ import api.rag_routes as routes
 
 def test_rag_config_reports_environment_overrides(monkeypatch):
     cfg = SimpleNamespace(dimensions=384, use_hnsw=True)
-    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda _cls: cfg)
+    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda: cfg)
     monkeypatch.setenv("RAG_EMBEDDING_PROVIDER", "test-embedder")
     monkeypatch.setenv("RAG_EMBEDDING_MODEL", "model-x")
     monkeypatch.setenv("RAG_RERANKER_PROVIDER", "test-reranker")
@@ -32,7 +32,7 @@ def test_rag_config_reports_environment_overrides(monkeypatch):
 
 def test_rag_config_defaults_to_ivfflat_and_default_environment(monkeypatch):
     cfg = SimpleNamespace(dimensions=128, use_hnsw=False)
-    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda _cls: cfg)
+    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda: cfg)
     for name in (
         "RAG_EMBEDDING_PROVIDER", "RAG_EMBEDDING_MODEL",
         "RAG_RERANKER_PROVIDER", "RAG_RERANKER_MODEL",
@@ -62,7 +62,7 @@ def test_search_request_rejects_invalid_query_or_top_k(payload):
 @pytest.mark.asyncio
 async def test_rag_search_returns_retrieval_payload(monkeypatch):
     cfg = SimpleNamespace(dimensions=3)
-    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda _cls: cfg)
+    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda: cfg)
     monkeypatch.setattr(routes, "PgVectorHybridRepository", lambda _cfg: object())
     monkeypatch.setattr(routes, "create_embedding_provider", lambda **_kwargs: object())
     monkeypatch.setattr(routes, "create_reranker", lambda: "reranker")
@@ -97,7 +97,7 @@ async def test_rag_search_returns_retrieval_payload(monkeypatch):
 @pytest.mark.parametrize("failure_site", ["repository", "provider", "retriever", "retrieve"])
 async def test_rag_search_maps_backend_failures_to_503(monkeypatch, failure_site):
     cfg = SimpleNamespace(dimensions=8)
-    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda _cls: cfg)
+    monkeypatch.setattr(routes.PgVectorConfig, "from_env", lambda: cfg)
 
     if failure_site == "repository":
         monkeypatch.setattr(routes, "PgVectorHybridRepository", lambda _cfg: (_ for _ in ()).throw(OSError("db unavailable")))

@@ -138,3 +138,16 @@ async def test_simulated_can_bus_tx_rx_hooks_timeouts_and_empty_tx_queue():
     bus.inject(CanFrame(0x7E9, b"\\x01"))
     await asyncio.sleep(0.001)
     assert async_rx == [0x7E9]
+
+def test_simulated_can_bus_closes_async_hook_when_injected_without_event_loop():
+    bus = SimulatedCanBus()
+    calls = []
+
+    async def async_hook(frame):
+        calls.append(frame.arbitration_id)
+
+    bus.add_rx_hook(async_hook)
+    # A synchronous caller cannot schedule an async hook; the implementation
+    # must close the unused coroutine and avoid a RuntimeWarning.
+    bus.inject(CanFrame(0x7E8, b"\\x01"))
+    assert calls == []

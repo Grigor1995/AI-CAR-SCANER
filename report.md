@@ -453,3 +453,14 @@ BUILD SUCCESSFUL in 12s
 Status: **APK installation PASS** on `emulator-5554`. This follows the previously reported 21 Android unit tests passing with 0 failures/errors/skips and a successful `:app:assembleDebug` build. The package ID is `com.aicarscaner.mobile` and the launcher activity is `.MainActivity`.
 
 Limit: successful installation does not prove that the app launches, renders correctly, or can reach the backend. Next validation is to launch the installed app, capture logcat/startup errors, and inspect diagnostic-screen/backend behavior on the emulator. No cloud CI was triggered.
+
+
+## Android emulator launch smoke test — 2026-10-14
+
+Developer-confirmed startup attempt on `emulator-5554`:
+
+- Cleared the log buffer, force-stopped `com.aicarscaner.mobile`, then launched `com.aicarscaner.mobile/.MainActivity`.
+- `am start` returned `Starting: Intent { cmp=com.aicarscaner.mobile/.MainActivity }`; ActivityManager reported launch result code 0 and started the application process.
+- The filtered 1,500-line logcat excerpt contained no `FATAL EXCEPTION`, `AndroidRuntime` crash, `ConnectException` or `UnknownHostException` entry. It showed the MainActivity window becoming visible and focused.
+
+Status: **startup command/process/window smoke test PASS based on supplied logs**. This does not establish that all UI controls work, that the user-visible screen renders correctly, or that API calls and diagnostic analysis succeed; no emulator screenshot or in-app functional result was provided. Continue with a visual check of the home screen and a diagnostic-flow/API connectivity test. No cloud CI was triggered.

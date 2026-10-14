@@ -30,5 +30,9 @@ class SimulatedCanBus:
                 try:
                     asyncio.get_running_loop().create_task(result)
                 except RuntimeError:
-                    pass
+                    # No event loop owns this coroutine; close it so synchronous
+                    # callers do not leak an un-awaited coroutine warning.
+                    close = getattr(result, "close", None)
+                    if callable(close):
+                        close()
     def pop_tx(self): return self.tx.popleft() if self.tx else None

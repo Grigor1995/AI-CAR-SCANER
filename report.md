@@ -492,3 +492,29 @@ python -m pytest -q
 ```
 
 Expected behavior in the Android app is to submit the test result, receive the updated diagnostic session, remove the completed test from its recommendation list, and show the recalculated order. An emulator functional run after this backend update is still needed to confirm end-to-end behavior.
+
+
+## Localization regression found after next-test result changes — 2026-10-14
+
+Developer-reported full Python suite after the next-test lifecycle change:
+- **176 passed, 1 failed, 1 skipped, 21 warnings in 10.02s**.
+- Skipped: `tests/ai/test_phase11_retrieval.py:45` because PostgreSQL/pgvector is not running.
+- Failure: `tests/api/test_diagnostic_session_api.py::test_recommendations_and_test_result_follow_requested_language`.
+
+Source inspection identified a compatibility issue introduced when test-result evidence was expanded to include the stable test name, explicit result, notes and measurements. The Armenian/Russian localization helper only recognized the older format `Test <id> result: <STATUS>`, so it returned the new evidence string unchanged and the existing test's Armenian evidence-label assertion failed.
+
+Fix committed to `main`:
+- `finalbuild/backend/diagnostic/localization.py` now recognizes both the legacy compact format and the richer `Completed diagnostic test: <name>; result: <STATUS>; ...` format.
+- The helper localizes the outcome label for Armenian/Russian and preserves technician notes and measurements instead of discarding them.
+
+Commit: `cb391c3` — `fix: localize detailed diagnostic test-result evidence`.
+
+**Verification pending:** this localization fix has not yet been run against the failing test/full Python suite locally. Pull the latest main and rerun:
+
+```bash
+git pull --ff-only origin main
+python -m pytest -q tests/api/test_diagnostic_session_api.py::test_recommendations_and_test_result_follow_requested_language
+python -m pytest -n 4 -vv -ra --durations=20
+```
+
+No cloud CI was triggered. Treat the fix as unverified until the local rerun confirms it.

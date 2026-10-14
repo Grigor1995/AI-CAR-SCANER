@@ -96,6 +96,21 @@ QT_QPA_PLATFORM=offscreen python -m pytest -q apps/desktop/tests \
 
 After this run, `coverage-python-audit.json` represents the combined measurement for the two test runs. Keep this as a local artifact; do not commit generated coverage output.
 
+
+### Step 2 local result — user-provided output (2026-10-14)
+
+The Desktop test-folder coverage run reported:
+
+```text
+89 passed in 12.89s
+TOTAL: 7324 statements, 1398 missed, 81% coverage
+HTML: htmlcov-coverage-audit
+XML: coverage-python-audit.xml
+JSON: coverage-python-audit.json
+```
+
+This is the combined result after appending Desktop tests to the Step 1 measurement. It remains scoped to the selected Python roots and does not include the excluded `apps/desktop/tests/test_ui_widgets.py` suite or native Android/iOS coverage.
+
 ## Step 3 — list source files below 70%
 
 Run this Bash here-document from the same `finalbuild/` directory. It reads the JSON report and prints the total percentage plus every measured production source file below 70%, including files at 0%.

@@ -173,3 +173,77 @@ def test_analysis_compat_path_merges_rule_tests_and_enriches_missing_fields(monk
 
     # Exact API path delegates to the same helper.
     assert api_main.analyze("s1", language="en") is session
+
+@pytest.mark.asyncio
+async def test_health_lifespan_and_request_middleware_always_persist(monkeypatch):
+    calls = []
+    monkeypatch.setattr(api_main, "load_persisted_sessions", lambda: calls.append("load"))
+    monkeypatch.setattr(api_main, "persist_sessions", lambda: calls.append("persist"))
+
+    assert api_main.health() == {
+        "status": "ok", "service": "diagnostic-api", "version": "0.1.0"
+    }
+
+    async with api_main.lifespan(api_main.app):
+        assert calls == ["load"]
+    assert calls == ["load"]
+
+    async def success(_request):
+        return {"ok": True}
+    assert await api_main.persist_diagnostic_sessions(object(), success) == {"ok": True}
+    assert calls[-1] == "persist"
+
+    async def fail(_request):
+        raise RuntimeError("handler failed")
+    with pytest.raises(RuntimeError, match="handler failed"):
+        await api_main.persist_diagnostic_sessions(object(), fail)
+    assert calls[-1] == "persist"
+
+
+def test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost(monkeypatch):
+    store = _setup(monkeypatch)
+    session = DiagnosticSession(
+        hypotheses=[Hypothesis(category="engine", statement="issue", status="rejected_by_test")],
+    )
+    unmatched = DiagnosticTest(
+        name="Unknown risk check", purpose="cover fallback cost", risk_level="CUSTOM",
+        target_hypotheses=["not-a-hypothesis"],
+    )
+    full_match = DiagnosticTest(
+        name="Full match check", purpose="cover full match", risk_level="HIGH",
+        target_hypotheses=["engine"],
+    )
+    session.recommendations = [unmatched, full_match]
+    store["s1"] = session
+
+    class FakeEngine:
+        def analyze(self, current):
+            current.recommendations = [unmatched, full_match]
+            current.hypotheses = [
+                Hypothesis(category="engine", statement="issue", status="rejected_by_test"),
+            ]
+            return current
+
+    class FakeIntelligence:
+        def _annotate_scores(self, _current):
+            pass
+        def _add_missing_questions(self, _current):
+            pass
+
+    class EmptyDecision:
+        def refresh_recommendations(self, current):
+            current.recommendations = []
+
+    monkeypatch.setattr(api_main, "engine", FakeEngine())
+    monkeypatch.setattr(api_main, "intelligence_engine", FakeIntelligence())
+    monkeypatch.setattr(api_main, "decision_engine", EmptyDecision())
+    monkeypatch.setattr(api_main, "localize_session_analysis", lambda current, _language: current)
+
+    result = api_main.analyze("s1", language="en")
+    by_name = {item.name: item for item in result.recommendations}
+    assert by_name["Unknown risk check"].expected_information_gain == 0.15
+    assert by_name["Unknown risk check"].estimated_cost == 1.0
+    assert by_name["Unknown risk check"].priority_score > 0
+    assert by_name["Full match check"].expected_information_gain == 0.25
+    assert by_name["Full match check"].estimated_cost == 4.0
+    assert by_name["Full match check"].priority_score > 0

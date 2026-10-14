@@ -178,8 +178,7 @@ class DiagnosticViewModelTest {
     fun failedActionKeepsLastSuccessfulSession() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = DiagnosticViewModel(repository)
         coEvery { repository.createSession(vehicle) } returns session
-        coEvery { repository.addSymptom("session-1", "rough idle") } throws
-            IllegalStateException("server unavailable")
+        coEvery { repository.addSymptom("session-1", "rough idle") } throws IllegalStateException("server unavailable")
 
         viewModel.createSession(vehicle)
         advanceUntilIdle()

@@ -563,14 +563,16 @@ The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The ne
 
 ### Newly committed Compose UI instrumentation tests — verification pending
 
-Commit `ae7892c` added four additional user-flow tests to `DiagnosticScreenInstrumentedTest.kt`, and commit `841a748` tightened their assertions:
+Commit `ae7892c` added four additional user-flow tests to `DiagnosticScreenInstrumentedTest.kt`:
 
 - `symptomCanBeEditedAndDeleted`
 - `dtcCanBeEditedAndDeleted`
 - `analysisRendersEvidenceHypothesisRecommendationsAndRecordsResult`
 - `liveDataTabShowsDisconnectedStateWhenNoObdAdapterIsConnected`
 
-The fake diagnostic API now supplies representative evidence, a hypothesis, a recommendation and a follow-up question, allowing the analysis/result UI to be tested without a live backend. These four tests were committed after the developer's latest supplied JaCoCo table, and **have not yet been run locally**. The instrumentation test source declares 10 methods total; only the earlier 6 are within the user's currently reported history.
+The fake diagnostic API supplies representative evidence, a hypothesis, a recommendation and a follow-up question so the analysis/result UI can be tested without a live backend.
+
+The developer's first run after these additions failed at Kotlin compilation because `onFirst()` and `onLast()` are not present in the project's Compose UI test API. Commit `5ad27cc` replaces these calls with supported `onNodeWithText(...)` selectors and indexed `onAllNodesWithText(...)` collection access. **The corrected instrumentation tests have not yet been run locally**, so compile and runtime success remain pending. Run the verification commands below before treating these tests or new coverage as passing.
 
 ### Previous instrumentation runtime issue
 

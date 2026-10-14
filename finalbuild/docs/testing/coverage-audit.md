@@ -365,3 +365,10 @@ QT_QPA_PLATFORM=offscreen python -m pytest -q \
 ```
 
 If they pass, rerun the existing clean Step 1 → append Step 2 → Step 3 coverage workflow. In Step 1, `tests/` will include the new backend test suite. In Step 2, `apps/desktop/tests/` will include the new startup/UI cases while continuing to ignore the known native Qt teardown case `test_ui_widgets.py`. Report the new percentage and remaining source files below 70%; do not assume either file passed 70% until measured.
+
+
+### Batch 5 first local run and test-fixture correction (2026-10-14)
+
+The developer's first focused run reported **84 passed, 1 failed**. The only failure was `test_start_backend_reports_process_exit_during_startup`: its shared helper reset the mocked process's `poll.return_value` to `None` (running), overwriting the intended exit code `2`. The test now restores `poll.return_value = 2` after helper setup so it actually exercises the early-exit branch. This is a test-only correction; production startup behavior was not changed for this failure.
+
+The corrected focused suite still needs to be rerun locally before batch 5 can be marked PASS or a new coverage percentage reported.

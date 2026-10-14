@@ -1,7 +1,6 @@
 package com.aicarscaner.mobile.settings
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class StringsTest {
@@ -48,7 +47,7 @@ class StringsTest {
     fun unknownEvidenceStatusFallsBackToOriginalText() {
         val extra = strings(AppLanguage.HY).extra
         assertEquals("pending-review", localizedEvidenceStatus(AppLanguage.HY, "pending-review", extra))
-        assertNotEquals("pending-review", localizedEvidenceStatus(AppLanguage.HY, "pending-review", extra))
+        assertEquals("pending-review", localizedEvidenceStatus(AppLanguage.HY, "pending-review", extra))
     }
 
     @Test

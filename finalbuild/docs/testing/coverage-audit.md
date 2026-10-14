@@ -210,7 +210,7 @@ From `finalbuild/`:
 
 ```bash
 python -m pytest -q \
-  tests/ai/test_low-coverage_embedding_providers.py \
+  tests/ai/test_low_coverage_embedding_providers.py \
   tests/ai/test_low_coverage_document_parsers.py \
   tests/ai/test_low_coverage_openai_compatible.py \
   tests/api/test_state_registry_low_coverage.py

@@ -15,10 +15,14 @@ def test_state_machine():
 def test_local_store_and_sync_queue():
     m=load(ROOT/'device/android-diagnostic-device/storage/local_store.py','store')
     qmod=load(ROOT/'device/android-diagnostic-device/sync/queue.py','queue')
-    s=m.LocalDiagnosticStore(); s.upsert('s1','session',{'status':'created'},1.0)
-    assert s.get('s1')['payload']['status']=='created'
-    q=qmod.SyncQueue(s.db); op=q.enqueue('session.upsert',{'id':'s1'}); assert len(q.pending())==1
-    q.acknowledge(op.id); assert q.pending()==[]
+    s=m.LocalDiagnosticStore()
+    try:
+        s.upsert('s1','session',{'status':'created'},1.0)
+        assert s.get('s1')['payload']['status']=='created'
+        q=qmod.SyncQueue(s.db); op=q.enqueue('session.upsert',{'id':'s1'}); assert len(q.pending())==1
+        q.acknowledge(op.id); assert q.pending()==[]
+    finally:
+        s.close()
 
 def test_vci_codec_roundtrip():
     m=load(ROOT/'device/android-diagnostic-device/transport/custom_vci.py','vci')

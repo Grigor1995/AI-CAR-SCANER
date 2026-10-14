@@ -138,13 +138,15 @@ class LiveDataPO:
         self.page.timer.stop()
 
 
-class TestsPO:
+class TestResultsPO:
     def __init__(self, window):
         self.window = window
         self.page = window.pages[6]
 
     def refresh(self):
         self.page.refresh()
+        if self.page.list.count() and self.page.list.currentRow() < 0:
+            self.page.list.setCurrentRow(0)
 
     def select(self, row=0):
         self.page.list.setCurrentRow(row)
@@ -325,6 +327,8 @@ def test_navigation_selects_pages_and_live_data_request_is_guarded(window_factor
 def test_dashboard_page_object_displays_online_vehicle_session_and_ecus(window_factory):
     window = window_factory()
     window.online = True
+    # Loading a saved vehicle does not implicitly select it as active.
+    window.active_vehicle = window.vehicles[0]
     window.session = Session("session-123456", "READY", window.active_vehicle)
     window.network = {"ecus": [{"ecu_id": "ME9.7"}, {"ecu_id": "TCM"}]}
     page = DashboardPO(window)
@@ -437,7 +441,7 @@ def test_tests_page_object_keeps_result_codes_canonical(window_factory):
         {"id": "test-1", "name": "Check LPG pressure", "purpose": "Verify delivery",
          "priority_score": 0.8, "risk": "LOW"}
     ]}
-    page = TestsPO(window)
+    page = TestResultsPO(window)
     page.refresh()
     assert page.count == 1
     assert page.selected_test_id == "test-1"
@@ -697,7 +701,7 @@ def test_record_selected_test_posts_result_notes_then_reanalyzes(
         {"id": "candidate-42", "name": "Check LPG pressure", "purpose": "Check delivery",
          "priority_score": 0.9, "risk": "LOW"}
     ]}
-    tests_page = TestsPO(window)
+    tests_page = TestResultsPO(window)
     tests_page.refresh()
     tests_page.select()
     tests_page.set_result("FAIL")

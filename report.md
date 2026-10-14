@@ -538,16 +538,15 @@ The skipped integration test requires a running PostgreSQL/pgvector service. The
 - **Pydantic serialization:** the live-AI test mixed imports under `backend.*` and top-level package names, creating different enum class identities. The test now uses the same canonical top-level imports as the application.
 - **Resource cleanup:** desktop service log handles are closed on failed startup/timeouts and the fake llama-server test cleans up its handle. The local SQLite test store now exposes `close()`; SQLite-backed tests close their connections/engine in `finally` blocks.
 
-### Verification status
+### Verification status — updated from user-provided local results (2026-10-14)
 
-The baseline above was collected **before** these cleanup changes. The modified code and dependencies have not been executed in this environment, and no CI was triggered. Treat warning reduction as **pending local verification**, not a confirmed result.
+After the cleanup commits were pulled and the test dependencies were updated, the developer reported these local results from `finalbuild/`:
 
-From `finalbuild/`, update the active virtual environment and rerun the suite:
-
-```bash
-python -m pip install -r backend/requirements-dev.txt
-python -m pytest -q -rs -W default 2>&1 | tee pytest-warnings-after.txt
-QT_QPA_PLATFORM=offscreen python -m pytest -q apps/desktop/tests/test_ui_pom.py
+```text
+Full default suite: 202 passed, 1 skipped in 26.80s
+Desktop UI POM:    28 passed in 3.26s
 ```
 
-Review the new summary and any remaining warnings before declaring the warning cleanup complete.
+No warnings summary was included in either latest output, unlike the earlier baseline run. This indicates pytest did not report warnings in the supplied outputs; the result was run locally by the developer, not by this audit environment. The one skipped integration test still requires PostgreSQL/pgvector. Cloud CI was not triggered.
+
+The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The newer result adds one passing test and no displayed warning summary, so it is a material improvement. Retain the separate UI POM run because the default configured `testpaths = tests` intentionally excludes the Qt desktop UI folder.

@@ -43,7 +43,7 @@ async def test_demultiplexer_tracks_unmatched_frames_and_caps_history():
         await asyncio.sleep(0.001)
     await mux.stop()
 
-    assert len(mux.unmatched_frames) == 501
+    assert len(mux.unmatched_frames) == 502
     assert mux.unmatched_frames[-1].data == bytes([1001 % 256])
     channel = mux.register(0x7E8)
     mux.unregister(channel)

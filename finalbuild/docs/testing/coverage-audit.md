@@ -149,6 +149,33 @@ else:
 PY
 ```
 
+## Low-coverage test expansion — batch 1 (2026-10-14)
+
+Added focused test modules on `main` for the first low-coverage targets:
+
+- `tests/api/test_decision_routes_low_coverage.py`: missing sessions/candidates, HIGH-risk safety confirmation, audit logging, and LOW-risk fallback.
+- `tests/ai/test_llm_factory.py`: default and alias selection, environment configuration, placeholder provider, and unsupported provider.
+- `tests/vehicle/test_low_coverage_obd_transports.py`: simulator responses, BLE notification/buffering/timeouts, USB serial lifecycle/error paths, and Wi-Fi stream lifecycle/errors; external adapters are faked so no hardware is required.
+- `tests/ai/test_low_coverage_rag_retrieval.py`: query expansion, multi-query aggregation/deduplication, reranker mapping/fallback, filters, empty results, and candidate sizing.
+- `tests/ai/test_low_coverage_pgvector_hybrid.py`: config, vector serialization, dimension validation, upsert parameters, vector/lexical queries, hybrid fusion, and HNSW/IVFFlat schema configuration using a fake SQLAlchemy engine (no live PostgreSQL needed).
+
+These tests have been committed, but **they have not been executed in the user's local environment yet**. Run the targeted batch first; only update the coverage baseline after the tests pass and the combined coverage command is rerun.
+
+### Validate the new tests
+
+From `finalbuild/`:
+
+```bash
+python -m pytest -q \
+  tests/api/test_decision_routes_low_coverage.py \
+  tests/ai/test_llm_factory.py \
+  tests/ai/test_low_coverage_rag_retrieval.py \
+  tests/ai/test_low_coverage_pgvector_hybrid.py \
+  tests/vehicle/test_low_coverage_obd_transports.py
+```
+
+If that passes, rerun Step 1 from a fresh coverage run, then Step 2 with `--cov-append`, and finally Step 3. This keeps the combined report reproducible instead of mixing stale `.coverage` data.
+
 ## How to interpret the result
 
 - This is a **scoped Python audit**, not whole-repository or all-platform coverage. Android and iOS require their own native coverage reports.

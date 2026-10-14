@@ -300,7 +300,10 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("Edit").fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("E-Class", substring = true).assertExists()
+        assertTrue(
+            composeRule.onAllNodesWithText("E-Class", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        )
     }
 
     @Test
@@ -309,7 +312,7 @@ class DiagnosticScreenInstrumentedTest {
         createSession()
 
         composeRule.onNodeWithText("OBD").performClick()
-        composeRule.onNodeWithText("Wi-Fi").performClick()
+        composeRule.onNodeWithText("Wi-Fi").performScrollTo().performClick()
 
         composeRule.onNodeWithText("Connect Wi-Fi").assertIsNotEnabled()
         composeRule.onNodeWithText("Host").performTextInput("192.0.2.10")

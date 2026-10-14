@@ -111,8 +111,10 @@ class VehicleDiagnosticService:
         return records
 
     def trace(self, session_id: UUID, limit: int = 500):
+        runtime = self._require(session_id)
         if limit <= 0:
             return []
+        return runtime.trace[-limit:]
         return self._require(session_id).trace[-limit:]
 
     def status(self, session_id: UUID) -> DiagnosticRuntimeStatus:

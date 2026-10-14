@@ -178,3 +178,40 @@ async def test_active_probe_maps_policy_validation_error_to_400(monkeypatch):
     assert exc.value.status_code == 400
     assert "read-only DID" in exc.value.detail
     active.probe_candidates.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_active_service_handles_missing_topology_route_candidate_filter_and_empty_filter(monkeypatch):
+    seen = []
+
+    class FakeEngine:
+        def __init__(self, policy=None):
+            self.policy = policy
+
+        async def probe_many(self, targets, buses):
+            seen.extend(targets)
+            return []
+
+    monkeypatch.setattr(active_service_module, "ActiveEcuDiscoveryEngine", FakeEngine)
+    service = active_service_module.ActiveNetworkDiscoveryService()
+    sid = uuid4()
+    passive = VehicleNetworkDiscoveryResult(ecu_candidates=[
+        _candidate("one", bus="CAN0"),
+        _candidate("two", bus="CAN0", request_id=0x7E1, response_id=0x7E9),
+    ])
+    # The route refers to a missing target ECU. The service must skip it and
+    # still keep probing candidates directly available on the bus.
+    bad_topology = VehicleNetworkTopology(
+        routes=(GatewayRoute("GW-MISSING", "CAN0", "CAN1", "not-present"),)
+    )
+    targets = await service.probe_candidates(
+        sid, passive, {"CAN0": object()}, bad_topology, candidate_ids=["one"],
+    )
+    assert targets == []
+    assert len(seen) == 1
+    assert seen[0].candidate_id == "one"
+    assert seen[0].gateway_id is None
+
+    seen.clear()
+    # An empty candidate filter intentionally behaves like no filter in this API.
+    await service.probe_candidates(sid, passive, {"CAN0": object()}, topology=None, candidate_ids=[])
+    assert [item.candidate_id for item in seen] == ["one", "two"]

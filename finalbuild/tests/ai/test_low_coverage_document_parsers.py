@@ -17,7 +17,7 @@ def test_text_parser_preserves_form_feed_pages_and_replaces_invalid_utf8(tmp_pat
     assert parsed.content_type == "text/plain"
     assert "page one" in parsed.content
     assert "\ufffd" in parsed.content
-    assert [page.number for page in parsed.pages] == [1, 2]
+    assert [page.page_number for page in parsed.pages] == [1, 2]
     assert parsed.pages[1].text.endswith("\ufffd")
 
 

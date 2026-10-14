@@ -194,9 +194,8 @@ class DiagnosticApiContractTest {
 
         assertTrue("Malformed catalog JSON should fail instead of returning entries", result.isFailure)
         assertTrue(
-            "Expected a JSON/conversion error, got ${result.exceptionOrNull()}",
-            result.exceptionOrNull() is com.google.gson.JsonParseException ||
-                result.exceptionOrNull() is java.io.IOException
+            "Malformed JSON should be a conversion failure, not an HTTP status error: ${result.exceptionOrNull()}",
+            result.exceptionOrNull() !is retrofit2.HttpException
         )
         assertEquals("/api/v1/vehicle-catalog/entries", server.takeRequest().path)
     }

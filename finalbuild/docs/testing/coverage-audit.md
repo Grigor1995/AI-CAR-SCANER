@@ -432,7 +432,7 @@ The latest local coverage JSON is **92.47% combined scoped Python coverage**, wi
 - `tests/test_low_coverage_seed_vehicle_catalog.py`: stable IDs, year range validation/normalization, row expansion/defaults and database seeding flow via fakes.
 - `tests/api/test_low_coverage_intelligence_routes.py`: session-not-found responses, text evidence ingestion, analysis language localization, PASS/FAIL/INCOMPLETE validation and legacy UNKNOWN normalization.
 
-All new tests are committed on `main`, but have **not yet been validated in the developer's local environment**. Pull latest `main`, then run the targeted test command below. If any test fails, fix the test or production behavior only after identifying which contract is incorrect; do not mark this batch passing based on commit success alone.
+All new tests are committed on `main`. The developer has now confirmed that the targeted Batch 6 run **passed** locally; the exact test count and elapsed time were not included in the confirmation. This establishes that the new targeted tests pass, but it does not establish the new per-file coverage percentages. Continue with a fresh combined coverage measurement below.
 
 ```bash
 python -m pytest -q \

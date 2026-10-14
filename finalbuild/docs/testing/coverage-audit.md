@@ -447,3 +447,68 @@ python -m pytest -q \
 ```
 
 When the targeted batch passes, rerun the clean Step 1 -> append Step 2 -> Step 3 workflow above. Then print every file below 80% with its exact new coverage and missing lines. Overall coverage is already above 90%; the acceptance target now is to bring each active production file below 80% to at least 80%, while preserving meaningful production behavior and the existing scoped denominator.
+
+## Per-file 90% coverage expansion — batch 7 (2026-10-14; awaiting local validation)
+
+The latest local report says overall scoped Python coverage is **92.47%**, while 24 measured production files remain below the new per-file minimum of **90%**. The next goal is to raise those files to at least 90% each without changing the configured production scope or weakening assertions.
+
+Added focused test modules and extended Desktop tests for the latest below-90 list:
+
+- `tests/api/test_low_coverage_network_discovery_routes.py`: passive CAN-frame ingest, invalid hex, missing sessions, map and reset.
+- `tests/api/test_low_coverage_multi_bus_routes.py`: connect success/invalid topology, topology lookup, identify-all and DTC reads.
+- `tests/api/test_low_coverage_active_discovery.py`: candidate filtering, gateway routing/correlation, active/passive statuses, route errors and policy validation.
+- `tests/test_low_coverage_small_modules.py`: Android OTA manifest and health policy, UDS DTC decoder, structured evidence extraction and CAN simulator hooks.
+- `tests/vehicle/test_low_coverage_uds_simulator.py`: positive/negative UDS responses, unsupported IDs/services, DTC payloads, multi-frame responses and legacy processing.
+- `tests/vehicle/test_low_coverage_multiplexer.py`: CAN response routing, timeouts, repeated start/stop, unmatched-frame retention and channel cleanup.
+- `tests/api/test_low_coverage_simple_routes.py`: platform roles/audit and acquisition API request validation, error translation, status and record serialization.
+- `tests/vehicle/test_low_coverage_acquisition_manager.py`: connect retries, failure state, poll/reconnect, sink errors, durable offline queueing and stop.
+- `tests/vehicle/test_low_coverage_vehicle_diagnostic_service.py`: simulator-only contract, connect/disconnect/reconnect, identity, DTCs, trace and disconnected guards.
+- `tests/test_low_coverage_acquisition_api_service.py`: simulator polling, telemetry writes, idempotent start, stop and telemetry error handling.
+- `tests/api/test_low_coverage_telemetry_routes.py` and `tests/ai/test_low_coverage_live_analysis.py`: telemetry route guards, evidence deduplication, context bounds and LLM fallback.
+- `tests/diagnostic/test_low_coverage_localization.py`: language aliases, unknown-value fallbacks, detailed/legacy test results, recommendation and audit-question translations without mutating the source session.
+- `tests/api/test_low_coverage_main_endpoints.py`: session CRUD, vehicle/symptom/DTC updates, evidence synchronization and compatibility analysis/recommendation merging.
+- `tests/vehicle/test_low_coverage_multibus_runtime.py`: bus validation, direct and gateway-routed ECUs, ECU identity, DTC read and disconnected runtime.
+- `apps/desktop/tests/test_main_coverage_edges.py`: URL health results/errors, model/server resolution, disabled/missing/busy local LLM and launcher cleanup.
+- `apps/desktop/tests/test_prepare_windows_icon_coverage.py`: missing icon, image resize and generated WEBP/PNG/ICO validation.
+- Extended `apps/desktop/tests/test_ui_pom.py` for invalid/offline vehicle catalog, telemetry refresh errors/stale sessions/success and AI unavailable/success UI states.
+
+The tests above are committed on `main`, but have **not yet been validated in the developer's local environment**. Pull latest `main` and first run:
+
+```bash
+python -m pytest -q \
+  tests/api/test_low_coverage_network_discovery_routes.py \
+  tests/api/test_low_coverage_multi_bus_routes.py \
+  tests/api/test_low_coverage_active_discovery.py \
+  tests/test_low_coverage_small_modules.py \
+  tests/vehicle/test_low_coverage_uds_simulator.py \
+  tests/vehicle/test_low_coverage_multiplexer.py \
+  tests/api/test_low_coverage_simple_routes.py \
+  tests/vehicle/test_low_coverage_acquisition_manager.py \
+  tests/vehicle/test_low_coverage_vehicle_diagnostic_service.py \
+  tests/test_low_coverage_acquisition_api_service.py \
+  tests/api/test_low_coverage_telemetry_routes.py \
+  tests/ai/test_low_coverage_live_analysis.py \
+  tests/diagnostic/test_low_coverage_localization.py \
+  tests/api/test_low_coverage_main_endpoints.py \
+  tests/vehicle/test_low_coverage_multibus_runtime.py \
+  tests/ai/test_low_coverage_ingestion_pipeline.py \
+  tests/ai/test_low_coverage_reasoning_pipeline.py \
+  tests/diagnostic/test_low_coverage_session_persistence.py \
+  tests/ai/test_low_coverage_reranker.py \
+  tests/professional_platform/test_low_coverage_rbac.py \
+  tests/vehicle/test_low_coverage_acquisition_sources.py \
+  tests/test_low_coverage_seed_vehicle_catalog.py \
+  tests/api/test_low_coverage_intelligence_routes.py
+```
+
+Then validate Desktop-specific targets, including previous lifecycle cases:
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m pytest -q \
+  apps/desktop/tests/test_main_coverage_edges.py \
+  apps/desktop/tests/test_prepare_windows_icon_coverage.py \
+  apps/desktop/tests/test_main_lifecycle.py \
+  apps/desktop/tests/test_ui_pom.py
+```
+
+Fix test failures before recording the batch as passing. Once targeted tests pass, rerun the **clean Step 1 -> append Step 2** coverage workflow above and print the fresh list below **90%** using the same JSON script from Step 3, changing the threshold comparison from `70.0` or `80.0` to `90.0`. Combined total coverage alone is not enough: each active production file on the target list must reach 90% or be explicitly reviewed as intentionally platform-dependent/infeasible with an evidence-based reason.

@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from diagnostic.models import DiagnosticSession
 from professional_platform.models import AuditEvent, Role
-from backend.acquisition.service import AcquisitionRecord, AcquisitionSourceType
+from acquisition.service import AcquisitionRecord, AcquisitionSourceType
 from backend.acquisition.models import AcquisitionStartRequest, AcquisitionStatus
 from api import acquisition_routes as acquisition_routes
 from api import platform_routes
@@ -87,6 +87,8 @@ async def test_acquisition_stop_status_and_records_cover_missing_resources(monke
     with pytest.raises(HTTPException) as exc:
         await acquisition_routes.stop_acquisition("missing")
     assert exc.value.status_code == 404
+    assert await acquisition_routes.stop_acquisition("s1") == _status(session.session_id, "STOPPED")
+    fake.stop = AsyncMock(side_effect=KeyError(session.session_id))
     with pytest.raises(HTTPException) as exc:
         await acquisition_routes.stop_acquisition("s1")
     assert exc.value.status_code == 409
@@ -94,9 +96,12 @@ async def test_acquisition_stop_status_and_records_cover_missing_resources(monke
     with pytest.raises(HTTPException) as exc:
         acquisition_routes.acquisition_status("missing")
     assert exc.value.status_code == 404
+    fake.status = lambda _sid: (_ for _ in ()).throw(KeyError(_sid))
     with pytest.raises(HTTPException) as exc:
         acquisition_routes.acquisition_status("s1")
     assert exc.value.status_code == 404
+    fake.status = lambda _sid: _status(session.session_id)
+    assert acquisition_routes.acquisition_status("s1") == _status(session.session_id)
 
     with pytest.raises(HTTPException) as exc:
         acquisition_routes.acquisition_records("s1", limit=0)

@@ -57,7 +57,9 @@ def test_icon_builder_rejects_missing_generated_output(monkeypatch, tmp_path):
     real_save = Image.Image.save
 
     def skip_webp_output(image, fp, *args, **kwargs):
-        if Path(fp) == webp:
+        # Pillow can call Image.save() with an in-memory file object while
+        # encoding formats; only intercept the explicit WEBP filesystem path.
+        if isinstance(fp, (str, Path)) and Path(fp) == webp:
             return None
         return real_save(image, fp, *args, **kwargs)
 

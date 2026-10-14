@@ -553,40 +553,34 @@ The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The ne
 
 ## Android instrumentation and coverage update — 2026-10-14
 
-### Latest developer-reported verification and coverage
+### Latest developer-reported instrumentation verification and coverage
 
-- The developer reports that `./gradlew testDebugUnitTest --rerun-tasks` completed with **BUILD SUCCESSFUL** in 39 seconds (25 actionable tasks). The output included a non-blocking deprecation warning for `Modifier.menuAnchor()` at `DiagnosticScreen.kt:1627`.
-- The developer then supplied a newer JaCoCo `debug` table after the previous 2 added Compose instrumentation tests. Aggregate coverage is **38% instructions** and **16% branches**. From the missed/total counts, line coverage is approximately **44.6%**.
-- Latest aggregate counts supplied: missed instructions 17,488 / 28,351 (10,863 covered); missed branches 1,210 / 1,453 (243 covered); missed lines 1,238 / 2,236 (998 covered); missed complexity 997 / 1,295; missed methods 416 / 683; missed classes 33 / 67.
-- Relative to the previous supplied instrumentation baseline (32% instructions, 14% branches, approximately 39.7% lines), this is +6 percentage points instruction coverage, +2 branch-coverage points, and about +4.9 line-coverage points.
-- Package figures in the pasted table have merged/misaligned columns, so only its aggregate row is treated as reliable. The `data.obd` coverage of 3% appears to be for the instrumentation/debug report; it should not be interpreted as the separate unit-test coverage for OBD. Use `createDebugUnitTestCoverageReport` to inspect unit-test coverage and `createDebugCoverageReport` for instrumentation coverage.
+The developer reports a successful Android instrumentation build/run, including the generated report at `app/build/reports/coverage/androidTest/debug/connected/index.html`, with **BUILD SUCCESSFUL** in 2 minutes 12 seconds (76 actionable tasks; 3 executed, 73 up-to-date). This run occurred after fixing unsupported Compose selectors `onFirst()` / `onLast()` in commit `5ad27cc`.
 
-### Newly committed Compose UI instrumentation tests — verification pending
+The latest supplied JaCoCo aggregate row for the `debug` report:
 
-Commit `ae7892c` added four additional user-flow tests to `DiagnosticScreenInstrumentedTest.kt`:
+- **Instruction coverage: 55%** (12,694 missed of 28,351; 15,657 covered).
+- **Branch coverage: 22%** (1,126 missed of 1,453; 327 covered).
+- **Line coverage: approximately 63.2%** (823 missed of 2,236; 1,413 covered).
+- Complexity: 860 missed of 1,295; methods: 280 missed of 683; classes: 21 missed of 67.
 
-- `symptomCanBeEditedAndDeleted`
-- `dtcCanBeEditedAndDeleted`
-- `analysisRendersEvidenceHypothesisRecommendationsAndRecordsResult`
-- `liveDataTabShowsDisconnectedStateWhenNoObdAdapterIsConnected`
+Compared with the previous supplied aggregate row (38% instructions, 16% branches, approximately 44.6% lines), this is an improvement of 17 percentage points in instruction coverage, 6 points in branch coverage, and about 18.6 points in line coverage.
 
-The fake diagnostic API supplies representative evidence, a hypothesis, a recommendation and a follow-up question so the analysis/result UI can be tested without a live backend.
+The pasted package rows contain merged/misaligned columns, so use only the aggregate row as a reliable total. This is the report located under `androidTest/debug/connected`; it measures execution associated with connected instrumentation tests, not a substitute for the separate `testDebugUnitTest` coverage report.
 
-The developer's first run after these additions failed at Kotlin compilation because `onFirst()` and `onLast()` are not present in the project's Compose UI test API. Commit `5ad27cc` replaces these calls with supported `onNodeWithText(...)` selectors and indexed `onAllNodesWithText(...)` collection access. **The corrected instrumentation tests have not yet been run locally**, so compile and runtime success remain pending. Run the verification commands below before treating these tests or new coverage as passing.
+### UI flows already included in the instrumentation source
 
-### Previous instrumentation runtime issue
+The test source includes initial vehicle form, session tabs, symptom and DTC creation, Armenian language switching, new-session cancel/confirm, symptom edit/delete, DTC edit/delete, analysis evidence/hypothesis/recommendation and test-result recording, and disconnected Live Data. The latest successful report is developer-provided; Gradle was not run by this documentation environment. The exact number of executed test cases was not included in the pasted output.
 
-Instrumentation previously failed before assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. Adding `androidx.test.espresso:espresso-core:3.7.0` addressed the reported compatibility issue and the developer's later instrumentation run succeeded.
+### Coverage target and next steps
 
-### Next verification / target status
-
-The desired 90% coverage target remains unmet. Do not increase the percentage by weakening assertions or excluding production code. Pull the latest `main`, run unit and instrumentation tests, then regenerate both separate coverage reports:
+The desired 90% target remains unmet. Continue adding meaningful tests for uncovered branches; do not weaken assertions or exclude production code merely to increase the percentage. Generate and inspect the two reports separately:
 
 ```bash
-git pull --ff-only origin main
 ./gradlew testDebugUnitTest --rerun-tasks
+./gradlew createDebugUnitTestCoverageReport
 ./gradlew connectedDebugAndroidTest --rerun-tasks
-./gradlew createDebugUnitTestCoverageReport createDebugCoverageReport
+./gradlew createDebugAndroidTestCoverageReport
 ```
 
-Check the instrumentation result first; if a new Compose test fails, fix the exact failure before interpreting coverage. Record a new coverage number only after the reports regenerate successfully. Gradle was not executed by the report authoring environment and cloud CI was not triggered; all successful runs mentioned here are developer-reported.
+For the current screen, prioritize vehicle edit/save/cancel, Wi-Fi host validation and test-result-dialog cancellation, then inspect the separate unit-test coverage before deciding whether to prioritize API, settings, repository or OBD classes. The non-blocking `Modifier.menuAnchor()` deprecation warning can be fixed independently.

@@ -47,6 +47,10 @@ def test_start_backend_uses_current_python_and_backend_path(monkeypatch, tmp_pat
     except RuntimeError:
         pass
 
+    # A child that exits during startup must not leave its file handle open.
+    assert desktop_main._backend_log is None
+    assert desktop_main._backend_process is None
+
     assert calls["command"][:4] == [
         desktop_main.sys.executable,
         "-m",

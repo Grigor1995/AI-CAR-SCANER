@@ -585,3 +585,15 @@ The first targeted run of the final Desktop tests reported **17 passed, 1 failed
 ### Final Desktop test validation — PASS (2026-10-14)
 
 The developer reran the two focused Desktop modules after the Pillow mock correction and reported **18 passed in 10.96s**. The full targeted Desktop batch (`test_main_coverage_edges.py`, `test_prepare_windows_icon_coverage.py`, `test_main_lifecycle.py`, `test_ui_pom.py`) then reported **106 passed in 17.27s**. These validate the targeted Desktop tests. The overall coverage JSON has not yet been regenerated after this batch; `apps/desktop/main.py` and `apps/desktop/prepare_windows_icon.py` are not declared at 90% until a fresh combined measurement confirms their percentages.
+
+
+## Final per-file 90% coverage acceptance — PASS (2026-10-14)
+
+The developer reran a clean combined measurement after the final Desktop test batch and reported:
+
+```text
+Total coverage: 96.62%
+Files below 90%: 0
+```
+
+This confirms that every measured production source file in the configured scoped Python coverage report is at least 90% covered. The preceding targeted test results were **92 passed in 3.02s** for the Core Batch 7 suite and **106 passed in 17.27s** for the final Desktop targeted batch. The two final Desktop test modules alone also passed (**18 passed in 10.96s**). This acceptance result applies to the configured scoped Python roots and the tests included in the user's final clean Step 1 -> Step 2 run; it is not a whole-repository metric and does not represent native Android/iOS coverage. The known Qt native-teardown test `apps/desktop/tests/test_ui_widgets.py` remains excluded from the combined desktop coverage command.

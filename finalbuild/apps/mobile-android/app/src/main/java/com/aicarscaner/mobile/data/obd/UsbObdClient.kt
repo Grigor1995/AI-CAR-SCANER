@@ -33,12 +33,14 @@ class UsbObdClient {
                 val handle = usbManager.openDevice(device)
                     ?: error("Unable to open USB device ${device.deviceName}")
 
+                // Keep the handle reachable by close() while claiming the interface so
+                // the failure path can close a device that could not be claimed.
+                connection = handle
+                usbInterface = candidate.third
                 check(handle.claimInterface(candidate.third, true)) {
                     "Unable to claim USB interface"
                 }
 
-                connection = handle
-                usbInterface = candidate.third
                 inEndpoint = input
                 outEndpoint = output
 

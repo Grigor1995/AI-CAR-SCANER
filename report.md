@@ -590,6 +590,14 @@ These are evidence-based preventive changes, but **the underlying cause is not y
 
 
 
+### Latest Gradle output failure — 2026-10-14
+
+The developer's next attempt failed before useful instrumentation results were available. Gradle 8.13 could not snapshot the connected-test task output because it could not calculate an MD5 hash for:
+
+`app/build/outputs/androidTest-results/connected/debug/Pixel_6(AVD) - 17/utp.0.log.lck`
+
+This is an Android test-runner output/lock-file access error, distinct from the earlier `ComposeNotIdleException`. The log does not establish whether the revised UI tests pass or fail. Recommended remediation is to stop Gradle, force-stop the instrumentation/app processes or restart the emulator, remove only the generated connected-test results/report directories, then run one smoke test before the complete suite. Do not interpret coverage as updated from this failed run.
+
 ### Coverage target and next steps
 
 The desired 90% target remains unmet. Continue adding meaningful tests for uncovered branches; do not weaken assertions or exclude production code merely to increase the percentage. Generate and inspect the two reports separately:

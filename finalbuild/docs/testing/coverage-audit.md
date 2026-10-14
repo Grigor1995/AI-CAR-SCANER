@@ -471,6 +471,7 @@ Added focused test modules and extended Desktop tests for the latest below-90 li
 - `apps/desktop/tests/test_main_coverage_edges.py`: URL health results/errors, model/server resolution, disabled/missing/busy local LLM and launcher cleanup.
 - `apps/desktop/tests/test_prepare_windows_icon_coverage.py`: missing icon, image resize and generated WEBP/PNG/ICO validation.
 - Extended `apps/desktop/tests/test_ui_pom.py` for invalid/offline vehicle catalog, telemetry refresh errors/stale sessions/success and AI unavailable/success UI states.
+- Updated `vehicle/adapters/can_simulator.py` to close an async RX-hook coroutine if synchronous injection happens without a running event loop, preventing an un-awaited coroutine warning; `tests/test_low_coverage_small_modules.py` covers that fallback.
 
 The tests above are committed on `main`, but have **not yet been validated in the developer's local environment**. Pull latest `main` and first run:
 

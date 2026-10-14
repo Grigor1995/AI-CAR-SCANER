@@ -1229,3 +1229,98 @@ def test_resource_path_supports_source_and_frozen_layouts(monkeypatch, tmp_path)
     monkeypatch.setattr(ui.sys, "frozen", True, raising=False)
     monkeypatch.setattr(ui.sys, "_MEIPASS", str(bundle), raising=False)
     assert ui._resource_path("assets/icon.webp") == bundle / "assets" / "icon.webp"
+
+
+def test_ui_run_starts_without_optional_icon_assets(qapp, monkeypatch, tmp_path):
+    class FakeSignal:
+        def __init__(self):
+            self.callback = None
+        def connect(self, callback):
+            self.callback = callback
+
+    class FakeApplication:
+        def __init__(self):
+            self.aboutToQuit = FakeSignal()
+            self.setApplicationName = Mock()
+            self.setWindowIcon = Mock()
+            self.exec = Mock()
+
+    class FakeWindow:
+        def __init__(self):
+            self._apply_language = Mock()
+            self.setWindowIcon = Mock()
+            self.setAttribute = Mock()
+            self.show = Mock()
+            self.windowHandle = Mock(return_value=None)
+        def winId(self):
+            return 1
+
+    app = FakeApplication()
+    window = FakeWindow()
+    monkeypatch.setattr(ui.sys, "platform", "linux")
+    monkeypatch.setattr(ui, "QApplication", lambda _args: app)
+    monkeypatch.setattr(ui, "MainWindow", lambda: window)
+    monkeypatch.setattr(ui, "_resource_path", lambda relative: tmp_path / relative)
+
+    ui.run()
+
+    app.setApplicationName.assert_called_once_with("AI Auto Diagnostic Workstation")
+    window._apply_language.assert_called_once()
+    window.show.assert_called_once()
+    window.setWindowIcon.assert_not_called()
+    app.exec.assert_called_once()
+    assert app.aboutToQuit.callback is not None
+
+
+def test_ui_run_applies_first_existing_icon_to_app_window_and_handle(qapp, monkeypatch, tmp_path):
+    class FakeSignal:
+        def connect(self, callback):
+            self.callback = callback
+
+    class FakeApplication:
+        def __init__(self):
+            self.aboutToQuit = FakeSignal()
+            self.setApplicationName = Mock()
+            self.setWindowIcon = Mock()
+            self.exec = Mock()
+
+    class FakeWindow:
+        def __init__(self):
+            self._apply_language = Mock()
+            self.setWindowIcon = Mock()
+            self.setAttribute = Mock()
+            self.show = Mock()
+            self.handle = type("NativeWindow", (), {"setIcon": Mock()})()
+            self.windowHandle = Mock(return_value=self.handle)
+        def winId(self):
+            return 1
+
+    icon_path = tmp_path / "assets" / "AI-Car-Scanner.webp"
+    icon_path.parent.mkdir(parents=True)
+    icon_path.write_bytes(b"test asset")
+    class FakeIcon:
+        def __init__(self, path=None):
+            self.path = path
+        def isNull(self):
+            return False
+
+    app = FakeApplication()
+    window = FakeWindow()
+    monkeypatch.setattr(ui.sys, "platform", "linux")
+    monkeypatch.setattr(ui, "QApplication", lambda _args: app)
+    monkeypatch.setattr(ui, "MainWindow", lambda: window)
+    monkeypatch.setattr(ui, "QIcon", FakeIcon)
+    monkeypatch.setattr(ui, "_resource_path", lambda relative: tmp_path / relative)
+
+    ui.run()
+
+    assert app.setWindowIcon.call_count == 1
+    assert app.setWindowIcon.call_args.args[0].path == str(icon_path)
+    assert window.setWindowIcon.call_count == 2
+    window.handle.setIcon.assert_called_once()
+    app.exec.assert_called_once()
+
+
+def test_windows_taskbar_icon_returns_early_for_null_icon(qapp, monkeypatch):
+    monkeypatch.setattr(ui.sys, "platform", "win32")
+    ui._set_windows_taskbar_icon(123, ui.QIcon())

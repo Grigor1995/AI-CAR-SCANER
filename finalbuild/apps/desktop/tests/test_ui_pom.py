@@ -1324,3 +1324,90 @@ def test_ui_run_applies_first_existing_icon_to_app_window_and_handle(qapp, monke
 def test_windows_taskbar_icon_returns_early_for_null_icon(qapp, monkeypatch):
     monkeypatch.setattr(ui.sys, "platform", "win32")
     ui._set_windows_taskbar_icon(123, ui.QIcon())
+
+def test_vehicle_dialog_handles_api_failure_and_malformed_offline_catalog(qapp, monkeypatch, tmp_path):
+    parent = QWidget()
+    parent.language = "ru"
+    parent.api = Mock()
+    parent.api.vehicle_catalog_entries.side_effect = RuntimeError("catalog service offline")
+    malformed = tmp_path / "catalog.json"
+    malformed.write_text('{"vehicles": "not-a-list"}', encoding="utf-8")
+    monkeypatch.setattr(ui, "_resource_path", lambda _relative: malformed)
+
+    dialog = ui.VehicleDialog(parent)
+    assert dialog._catalog_from_server is False
+    assert dialog._catalog == []
+    assert dialog.make.count() == 0
+    assert any("Офлайн-каталог" in label.text() for label in dialog.findChildren(ui.QLabel))
+    dialog.close()
+
+
+def test_refresh_telemetry_handles_error_stale_session_and_success(window_factory, monkeypatch):
+    window = window_factory()
+    window.session = Session("session-before-refresh", "READY", window.active_vehicle)
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    refresh_pages = Mock()
+    monkeypatch.setattr(window, "refresh_pages", refresh_pages)
+
+    # Backend exception is returned through the worker, not raised on the UI thread.
+    window.api.telemetry_summary.side_effect = RuntimeError("summary unavailable")
+    window.refresh_telemetry()
+    work, done = jobs.pop()
+    assert work() == {"_error": "summary unavailable"}
+    done({"_error": "summary unavailable"})
+    assert "Live-data refresh failed" in window.statusBar().currentMessage()
+    assert window._telemetry_refresh_in_flight is False
+
+    # A successful response for an obsolete session must not overwrite current UI state.
+    window.api.telemetry_summary.side_effect = None
+    window.api.telemetry_summary.return_value = {"sample_count": 4}
+    window.api.acquisition_records.return_value = {"records": [{"numeric_value": 750}]}
+    window.refresh_telemetry()
+    _work, stale_done = jobs.pop()
+    window.session = Session("new-session", "READY", window.active_vehicle)
+    stale_done({"summary": {"sample_count": 4}, "records": {"records": [{"numeric_value": 750}]}})
+    assert window.telemetry == {}
+    refresh_pages.assert_not_called()
+
+    # The response applies when the session id still matches.
+    window.refresh_telemetry()
+    work, done = jobs.pop()
+    payload = work()
+    assert payload["summary"] == {"sample_count": 4}
+    done(payload)
+    assert window.telemetry == {"sample_count": 4}
+    assert window.pages[4]._records_data == [{"numeric_value": 750}]
+    refresh_pages.assert_called_once()
+
+
+def test_live_ai_analysis_guards_missing_session_and_renders_fallback_or_success(window_factory, monkeypatch):
+    window = window_factory()
+    errors = []
+    jobs = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+
+    window.ai_analyze_live_data()
+    assert errors == ["Create a diagnostic session first."]
+    assert jobs == []
+
+    window.session = Session("session-ai", "READY", window.active_vehicle)
+    window.api.ai_analyze_live_data.return_value = {"ai": {"available": True, "provider": "local", "model": "qwen", "text": "Evidence-based result"}}
+    window.ai_analyze_live_data()
+    work, done = jobs.pop()
+    assert work() == window.api.ai_analyze_live_data.return_value
+
+    refresh_pages = Mock()
+    monkeypatch.setattr(window, "refresh_pages", refresh_pages)
+    done({
+        "ai": {"available": False, "provider": "fallback", "model": "offline", "text": "Deterministic result", "error": "server offline"},
+        "telemetry": {"sample_count": 1},
+        "session": {"state": "ANALYZED"},
+    })
+    displayed = window.pages[4].ai_box.toPlainText()
+    assert "Provider: fallback" in displayed
+    assert "Provider error: server offline" in displayed
+    assert window.telemetry == {"sample_count": 1}
+    assert window.session_json == {"state": "ANALYZED"}
+    refresh_pages.assert_called_once()

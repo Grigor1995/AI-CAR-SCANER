@@ -244,12 +244,12 @@ def test_can_bus_request_uses_send_then_receive():
 
 
 def test_professional_analytics_audit_reporting_and_security_event():
-    org = "org-1"
+    org = "00000000-0000-0000-0000-000000000001"
     snapshot = summarize_events(org, "2026-10", [
-        {"action": "SESSION_CREATED", "actor_user_id": "u1", "vehicle_id": "v1"},
-        {"action": "SESSION_CLOSED", "actor_user_id": "u1", "vehicle_id": "v1"},
-        {"action": "DTC_READ", "actor_user_id": "u2", "vehicle_id": "v2"},
-        {"action": "AI_ANALYSIS_STARTED", "actor_user_id": "u2"},
+        {"action": "SESSION_CREATED", "actor_user_id": "00000000-0000-0000-0000-000000000011", "vehicle_id": "00000000-0000-0000-0000-000000000021"},
+        {"action": "SESSION_CLOSED", "actor_user_id": "00000000-0000-0000-0000-000000000011", "vehicle_id": "00000000-0000-0000-0000-000000000021"},
+        {"action": "DTC_READ", "actor_user_id": "00000000-0000-0000-0000-000000000012", "vehicle_id": "00000000-0000-0000-0000-000000000022"},
+        {"action": "AI_ANALYSIS_STARTED", "actor_user_id": "00000000-0000-0000-0000-000000000012"},
         {"action": "SYNC_COMPLETED", "actor_user_id": None},
         {"action": "OTHER"},
     ])
@@ -260,10 +260,10 @@ def test_professional_analytics_audit_reporting_and_security_event():
 
     audit = AuditLog()
     first = AuditEvent(organization_id=org, action="SESSION_CREATED", resource_type="session")
-    second = AuditEvent(organization_id="org-2", action="DTC_READ", resource_type="vehicle")
+    second = AuditEvent(organization_id="00000000-0000-0000-0000-000000000002", action="DTC_READ", resource_type="vehicle")
     assert audit.append(first) is first
     audit.append(second)
-    assert audit.for_organization(org) == [first]
+    assert audit.for_organization(first.organization_id) == [first]
     assert build_session_report({"id": "s1"}, [first.model_dump()])["audit"]
     report = build_session_report({"id": "s2"})
     assert report["audit"] == []
@@ -276,5 +276,5 @@ def test_professional_analytics_audit_reporting_and_security_event():
 
 def test_diagnostic_intelligence_reexport_is_public():
     from backend.diagnostic.intelligence import DiagnosticIntelligenceEngine
-    from backend.ai.reasoning.engine import DiagnosticIntelligenceEngine as Engine
+    from ai.reasoning.engine import DiagnosticIntelligenceEngine as Engine
     assert DiagnosticIntelligenceEngine is Engine

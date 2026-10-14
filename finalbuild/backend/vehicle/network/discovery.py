@@ -31,7 +31,7 @@ class VehicleNetworkDiscoveryEngine:
     def analyze_observations(self, observations):
         candidates={}
         for o in observations:
-            if o.arbitration_id < 0x700:
+            if 0x7E0 <= o.arbitration_id <= 0x7E7:
                 key=f"{o.bus}:{o.arbitration_id:03X}"
                 candidates.setdefault(key,DiscoveredEcuCandidate(key,o.bus,o.arbitration_id,o.arbitration_id+8,"CAN_NODE",0.5))
         return VehicleNetworkDiscoveryResult(list(candidates.values()),len(observations))

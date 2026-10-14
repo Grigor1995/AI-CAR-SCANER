@@ -39,7 +39,7 @@ def test_backend_worker_uses_frozen_extraction_root(monkeypatch, tmp_path):
 
 def test_prepare_windows_icon_generates_and_validates_formats(monkeypatch, tmp_path, capsys):
     source = tmp_path / "launcher.webp"
-    Image.new("RGB", (64, 64), (20, 80, 120)).save(source, format="WEBP")
+    Image.effect_noise((512, 512), 80).convert("RGB").save(source, format="WEBP")
     webp = tmp_path / "desktop.webp"
     png = tmp_path / "desktop.png"
     ico = tmp_path / "desktop.ico"

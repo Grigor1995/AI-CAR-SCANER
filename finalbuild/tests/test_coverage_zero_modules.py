@@ -263,7 +263,7 @@ def test_professional_analytics_audit_reporting_and_security_event():
     second = AuditEvent(organization_id="00000000-0000-0000-0000-000000000002", action="DTC_READ", resource_type="vehicle")
     assert audit.append(first) is first
     audit.append(second)
-    assert audit.for_organization(org) == [first]
+    assert audit.for_organization(first.organization_id) == [first]
     assert build_session_report({"id": "s1"}, [first.model_dump()])["audit"]
     report = build_session_report({"id": "s2"})
     assert report["audit"] == []

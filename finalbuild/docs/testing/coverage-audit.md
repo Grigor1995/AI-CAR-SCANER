@@ -180,6 +180,44 @@ python -m pytest -q \
 
 If that passes, rerun Step 1 from a fresh coverage run, then Step 2 with `--cov-append`, and finally Step 3. This keeps the combined report reproducible instead of mixing stale `.coverage` data.
 
+## Combined audit result after batch 1 (2026-10-14)
+
+User-provided local outputs after adding the first focused tests:
+
+```text
+Main test suite: 249 passed, 1 skipped in 24.63s
+Main-suite scoped coverage: 6471 statements, 1023 missed, 84%
+Desktop test-folder suite: 89 passed in 10.43s
+Combined scoped coverage: 7324 statements, 1228 missed, 83%
+```
+
+The combined scoped result is now **83%**, up from the previous combined baseline of 81%. The Desktop test-folder run displayed non-fatal coverage warnings that `apps.desktop.backend_worker` and `apps.desktop.prepare_windows_icon` were not imported during that run; the combined report still showed those modules because the first test run measured them. Do not confuse these warnings with pytest test failures.
+
+## Low-coverage test expansion — batch 2 (2026-10-14)
+
+Added the following additional focused test modules on `main`:
+
+- `tests/ai/test_low_coverage_embedding_providers.py`: deterministic hash embeddings, optional sentence-transformers and fastembed lazy loading, normalization parameters, import failures, aliases and unsupported providers.
+- `tests/ai/test_low_coverage_document_parsers.py`: text/form-feed parsing, JSON and YAML success/fallback, HTML extraction, PDF page handling and missing dependency, unsupported/missing files and custom parser registration.
+- `tests/ai/test_low_coverage_openai_compatible.py`: request URL/body/headers, optional authorization, successful response parsing, network/HTTP/timeout/invalid JSON errors.
+- `tests/api/test_state_registry_low_coverage.py`: cache/mapping operations, persisted lookup/refresh, writes, and persistence-disabled branches.
+
+These second-batch tests have been committed but **have not yet been run in the local environment**.
+
+### Validate batch 2 tests
+
+From `finalbuild/`:
+
+```bash
+python -m pytest -q \
+  tests/ai/test_low_coverage_embedding_providers.py \
+  tests/ai/test_low_coverage_document_parsers.py \
+  tests/ai/test_low_coverage_openai_compatible.py \
+  tests/api/test_state_registry_low_coverage.py
+```
+
+If the targeted batch passes, rerun the main scoped coverage command in Step 1 followed by the Desktop command in Step 2, then capture the fresh combined total and below-70% file list from Step 3.
+
 ## How to interpret the result
 
 - This is a **scoped Python audit**, not whole-repository or all-platform coverage. Android and iOS require their own native coverage reports.

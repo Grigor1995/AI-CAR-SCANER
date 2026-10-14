@@ -321,3 +321,22 @@ The developer reran all seven batch 4 modules after the fixes above. The supplie
 ```
 
 This confirms the targeted batch 4 test modules pass in the developer's local environment. The total combined coverage has **not yet been remeasured after batch 4**; rerun the clean Step 1 → append Step 2 → JSON Step 3 workflow before recording a new coverage percentage.
+
+
+## Latest combined coverage after batch 4 — local result (2026-10-14)
+
+The developer-provided output after rerunning the main suite and appending the Desktop test-folder suite reports:
+
+```text
+Desktop test-folder suite: 89 passed in 12.10s
+TOTAL: 7326 statements, 813 missed, 89% (terminal rounding)
+Combined coverage from JSON: 88.90%
+Measured source files below 70%: 2
+HTML: htmlcov-coverage-audit
+XML: coverage-python-audit.xml
+JSON: coverage-python-audit.json
+```
+
+Compared with the preceding 88.46% snapshot, combined scoped coverage increased to **88.90%** and the number of measured files below 70% decreased from 9 to **2**. The count and percentage are scoped to the configured Python production roots; this is not native iOS/Android coverage or whole-repository coverage.
+
+The names of the remaining two files were not included in the supplied output. Use the JSON report to print their names, exact percentages and uncovered lines before choosing the next test batch.

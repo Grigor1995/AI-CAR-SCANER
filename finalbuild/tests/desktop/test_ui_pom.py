@@ -138,7 +138,7 @@ class LiveDataPO:
         self.page.timer.stop()
 
 
-class TestResultsPO:
+class ResultsPageObject:
     def __init__(self, window):
         self.window = window
         self.page = window.pages[6]
@@ -441,7 +441,7 @@ def test_tests_page_object_keeps_result_codes_canonical(window_factory):
         {"id": "test-1", "name": "Check LPG pressure", "purpose": "Verify delivery",
          "priority_score": 0.8, "risk": "LOW"}
     ]}
-    page = TestResultsPO(window)
+    page = ResultsPageObject(window)
     page.refresh()
     assert page.count == 1
     assert page.selected_test_id == "test-1"
@@ -701,7 +701,7 @@ def test_record_selected_test_posts_result_notes_then_reanalyzes(
         {"id": "candidate-42", "name": "Check LPG pressure", "purpose": "Check delivery",
          "priority_score": 0.9, "risk": "LOW"}
     ]}
-    tests_page = TestResultsPO(window)
+    tests_page = ResultsPageObject(window)
     tests_page.refresh()
     tests_page.select()
     tests_page.set_result("FAIL")

@@ -512,3 +512,31 @@ QT_QPA_PLATFORM=offscreen python -m pytest -q \
 ```
 
 Fix test failures before recording the batch as passing. Once targeted tests pass, rerun the **clean Step 1 -> append Step 2** coverage workflow above and print the fresh list below **90%** using the same JSON script from Step 3, changing the threshold comparison from `70.0` or `80.0` to `90.0`. Combined total coverage alone is not enough: each active production file on the target list must reach 90% or be explicitly reviewed as intentionally platform-dependent/infeasible with an evidence-based reason.
+
+### Print the files still below 90%
+
+After Step 2 has created the fresh combined JSON report, use:
+
+```bash
+python - <<'PY'
+import json
+
+with open("coverage-python-audit.json", encoding="utf-8") as f:
+    data = json.load(f)
+
+print(f"Combined scoped coverage: {data['totals']['percent_covered']:.2f}%")
+low = []
+for filename, item in data["files"].items():
+    summary = item["summary"]
+    if summary.get("num_statements", 0) and summary.get("percent_covered", 0.0) < 90.0:
+        low.append((summary["percent_covered"], filename, summary, item.get("missing_lines", [])))
+
+print(f"Files below 90%: {len(low)}")
+for percent, filename, summary, lines in sorted(low):
+    print(
+        f"\\n{percent:.2f}% | {filename}"
+        f"\\nMissing: {summary.get('missing_lines', 0)}"
+        f"\\nLines: {','.join(map(str, lines))}"
+    )
+PY
+```

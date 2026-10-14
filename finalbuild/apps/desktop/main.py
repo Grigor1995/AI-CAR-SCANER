@@ -38,6 +38,17 @@ _llm_process: subprocess.Popen[bytes] | None = None
 _backend_log = None
 _llm_log = None
 
+def _close_backend_log() -> None:
+    global _backend_log
+    if _backend_log is not None:
+        _backend_log.close()
+        _backend_log = None
+
+
+def _close_llm_log() -> None:
+    global _llm_log
+    _close_llm_log()
+
 
 def _is_port_open(host: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -166,8 +177,11 @@ def start_llama_server(wait_for_ready: bool = True) -> subprocess.Popen[bytes] |
     deadline = time.monotonic() + _LLM_STARTUP_TIMEOUT
     while time.monotonic() < deadline:
         if _llm_process.poll() is not None:
+            returncode = _llm_process.returncode
+            _llm_process = None
+            _close_llm_log()
             print(
-                f"[AI-Car-Scanner] llama-server exited with code {_llm_process.returncode}. Log: {log_path}",
+                f"[AI-Car-Scanner] llama-server exited with code {returncode}. Log: {log_path}",
                 file=sys.stderr,
             )
             return None
@@ -179,15 +193,20 @@ def start_llama_server(wait_for_ready: bool = True) -> subprocess.Popen[bytes] |
         f"[AI-Car-Scanner] llama-server did not become healthy within {_LLM_STARTUP_TIMEOUT:g}s. Log: {log_path}",
         file=sys.stderr,
     )
+    process = _llm_process
     try:
-        _llm_process.terminate()
-        _llm_process.wait(timeout=2)
+        if process is not None:
+            process.terminate()
+            process.wait(timeout=2)
     except Exception:
         try:
-            _llm_process.kill()
+            if process is not None:
+                process.kill()
+                process.wait(timeout=2)
         except Exception:
             pass
     _llm_process = None
+    _close_llm_log()
     return None
 
 
@@ -274,18 +293,30 @@ def start_backend() -> subprocess.Popen[bytes] | None:
     deadline = time.monotonic() + _STARTUP_TIMEOUT
     while time.monotonic() < deadline:
         if _backend_process.poll() is not None:
+            returncode = _backend_process.returncode
+            _backend_process = None
+            _close_backend_log()
             raise RuntimeError(
-                f"Backend exited during startup with code {_backend_process.returncode}. Log: {backend_log_path}"
+                f"Backend exited during startup with code {returncode}. Log: {backend_log_path}"
             )
         if _backend_healthy():
             return _backend_process
         time.sleep(0.25)
 
+    process = _backend_process
     try:
-        _backend_process.terminate(); _backend_process.wait(timeout=2)
+        if process is not None:
+            process.terminate()
+            process.wait(timeout=2)
     except Exception:
-        try: _backend_process.kill()
-        except Exception: pass
+        try:
+            if process is not None:
+                process.kill()
+                process.wait(timeout=2)
+        except Exception:
+            pass
+    _backend_process = None
+    _close_backend_log()
     raise RuntimeError(f"Backend did not become healthy within {_STARTUP_TIMEOUT:g}s. Log: {backend_log_path}")
 
 
@@ -298,8 +329,7 @@ def stop_backend() -> None:
             process.terminate(); process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             process.kill(); process.wait(timeout=2)
-    if _backend_log is not None:
-        _backend_log.close(); _backend_log = None
+    _close_backend_log()
 
 
 def run() -> None:

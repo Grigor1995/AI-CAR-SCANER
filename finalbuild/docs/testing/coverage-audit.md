@@ -418,3 +418,32 @@ PY
 ```
 
 After reviewing this current list, add or extend focused tests for the lowest-coverage active modules first. Re-run the relevant targeted tests locally before recording each batch as passing, then regenerate the combined coverage report. Do not count this scoped percentage as iOS, Android, or whole-repository coverage.
+
+## Per-file 80% coverage expansion — batch 6 (2026-10-14; awaiting local validation)
+
+The latest local coverage JSON is **92.47% combined scoped Python coverage**, with eight measured production files below 80%. Added focused tests for the current list rather than changing the coverage scope:
+
+- `tests/ai/test_low_coverage_ingestion_pipeline.py`: ingestion metadata defaults/overrides, empty-document policy, no-chunk warning, directory suffix filtering and ordering, manifest serialization.
+- `tests/ai/test_low_coverage_reasoning_pipeline.py`: evidence-derived vs explicit retrieval query, reranking, prompt assembly and empty retrieval results.
+- `tests/diagnostic/test_low_coverage_session_persistence.py`: disabled mode, SQLite insert/update/upsert and reload, invalid-row skip/logging, database read/write error handling and engine disposal.
+- `tests/ai/test_low_coverage_reranker.py`: lexical matching/sorting/limits, optional cross-encoder lazy load/cache, prediction order, dependency failure and provider aliases.
+- `tests/professional_platform/test_low_coverage_rbac.py`: inactive/insufficient memberships and permission boundaries for viewer, technician, admin and owner.
+- `tests/vehicle/test_low_coverage_acquisition_sources.py`: OBD successful/unknown/error PIDs, CAN timeout/frame metadata, UDS decoding and exception records.
+- `tests/test_low_coverage_seed_vehicle_catalog.py`: stable IDs, year range validation/normalization, row expansion/defaults and database seeding flow via fakes.
+- `tests/api/test_low_coverage_intelligence_routes.py`: session-not-found responses, text evidence ingestion, analysis language localization, PASS/FAIL/INCOMPLETE validation and legacy UNKNOWN normalization.
+
+All new tests are committed on `main`, but have **not yet been validated in the developer's local environment**. Pull latest `main`, then run the targeted test command below. If any test fails, fix the test or production behavior only after identifying which contract is incorrect; do not mark this batch passing based on commit success alone.
+
+```bash
+python -m pytest -q \
+  tests/ai/test_low_coverage_ingestion_pipeline.py \
+  tests/ai/test_low_coverage_reasoning_pipeline.py \
+  tests/diagnostic/test_low_coverage_session_persistence.py \
+  tests/ai/test_low_coverage_reranker.py \
+  tests/professional_platform/test_low_coverage_rbac.py \
+  tests/vehicle/test_low_coverage_acquisition_sources.py \
+  tests/test_low_coverage_seed_vehicle_catalog.py \
+  tests/api/test_low_coverage_intelligence_routes.py
+```
+
+When the targeted batch passes, rerun the clean Step 1 -> append Step 2 -> Step 3 workflow above. Then print every file below 80% with its exact new coverage and missing lines. Overall coverage is already above 90%; the acceptance target now is to bring each active production file below 80% to at least 80%, while preserving meaningful production behavior and the existing scoped denominator.

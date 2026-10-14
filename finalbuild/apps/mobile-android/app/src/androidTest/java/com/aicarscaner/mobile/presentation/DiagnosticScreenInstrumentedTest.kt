@@ -316,11 +316,12 @@ class DiagnosticScreenInstrumentedTest {
             composeRule.onAllNodesWithText("OBD Connection")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("Wi-Fi").performScrollTo().performClick()
+        // The UI uses U+2011 (non-breaking hyphen) in "Wi‑Fi".
+        composeRule.onNodeWithText("Wi‑Fi").performScrollTo().performClick()
 
-        composeRule.onNodeWithText("Connect Wi-Fi").assertIsNotEnabled()
+        composeRule.onNodeWithText("Connect Wi‑Fi").assertIsNotEnabled()
         composeRule.onNodeWithText("Host").performTextInput("192.0.2.10")
-        composeRule.onNodeWithText("Connect Wi-Fi").assertIsEnabled()
+        composeRule.onNodeWithText("Connect Wi‑Fi").assertIsEnabled()
     }
 
     @Test

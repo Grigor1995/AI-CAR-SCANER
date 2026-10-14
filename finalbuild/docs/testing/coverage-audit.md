@@ -163,7 +163,7 @@ The first developer-provided targeted run reported **40 passed, 7 failed**. The 
 - The LLM factory tests patched a classmethod with a lambda that incorrectly expected a bound `cls` argument. The mocks were corrected to zero-argument lambdas.
 - The pgvector upsert test expected no transaction to start on dimension validation failure. The implementation opens a transaction before checking each vector; the assertion now verifies the actual contract: no SQL is executed for the invalid embedding.
 
-These corrections are committed, but **the corrected targeted suite still needs to be rerun locally**. Do not record a new coverage percentage until that rerun passes and the combined coverage command is rerun.
+The corrected targeted rerun reported **47 passed in 1.57 seconds** (user-provided local output, 2026-10-14). The targeted tests pass; the combined coverage percentage still needs to be remeasured from a fresh coverage run.
 
 ### Validate the new tests
 

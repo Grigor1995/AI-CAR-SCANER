@@ -203,7 +203,7 @@ async def test_health_lifespan_and_request_middleware_always_persist(monkeypatch
 def test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost(monkeypatch):
     store = _setup(monkeypatch)
     session = DiagnosticSession(
-        hypotheses=[Hypothesis(category="engine", statement="issue", status="rejected_by_test")],
+        hypotheses=[Hypothesis(category="engine", statement="issue", status="possible")],
     )
     unmatched = DiagnosticTest(
         name="Unknown risk check", purpose="cover fallback cost", risk_level="CUSTOM",

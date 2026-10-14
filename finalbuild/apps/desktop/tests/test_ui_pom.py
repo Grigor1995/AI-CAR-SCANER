@@ -893,6 +893,7 @@ def test_delete_vehicle_respects_cancel_confirmation(window_factory, monkeypatch
 
 def test_delete_vehicle_removes_confirmed_profile_and_clears_active_vehicle(window_factory, monkeypatch):
     window = window_factory()
+    window.active_vehicle = window.vehicles[0]
     window.pages[1].refresh()
     window.pages[1].list.setCurrentRow(0)
     monkeypatch.setattr(ui.QMessageBox, "question", lambda *_args, **_kwargs: ui.QMessageBox.Yes)

@@ -575,3 +575,8 @@ The developer's latest combined JSON report reports **96.18% scoped Python cover
 Added more focused tests to `apps/desktop/tests/test_main_coverage_edges.py` for frozen-package bootstrap/path insertion, frozen bundled `llama-server` discovery and filesystem errors, health helper delegation, LLM `--no-webui` and readiness retries, startup timeout cleanup failures, frozen backend startup and retries, backend timeout cleanup failures, the absolute UI import fallback, and the module script entrypoint. Added tests to `apps/desktop/tests/test_prepare_windows_icon_coverage.py` for missing generated output, invalid ICO validation and execution through the script entrypoint in an isolated temporary project tree.
 
 These tests are now committed to main, but have not yet been run by the developer. Validate the targeted files first, then run the full Desktop target batch and repeat the combined coverage workflow. Do not claim 90% per-file coverage until a fresh JSON report confirms it.
+
+
+### Final Desktop coverage test mock correction (2026-10-14)
+
+The first targeted run of the final Desktop tests reported **17 passed, 1 failed**. `test_icon_builder_rejects_missing_generated_output` mocked `Image.Image.save` and called `Path(fp)` for every argument, but Pillow may pass an in-memory file-like object during ICO encoding. The mock now intercepts only `str`/`Path` arguments that point at the intended WEBP output, and delegates file-like objects to the real Pillow method. This is a test-only correction; production code is unchanged. Rerun the two focused Desktop test modules before running the full Desktop batch.

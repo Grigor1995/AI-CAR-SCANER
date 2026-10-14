@@ -550,3 +550,16 @@ Desktop UI POM:    28 passed in 3.26s
 No warnings summary was included in either latest output, unlike the earlier baseline run. This indicates pytest did not report warnings in the supplied outputs; the result was run locally by the developer, not by this audit environment. The one skipped integration test still requires PostgreSQL/pgvector. Cloud CI was not triggered.
 
 The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The newer result adds one passing test and no displayed warning summary, so it is a material improvement. Retain the separate UI POM run because the default configured `testpaths = tests` intentionally excludes the Qt desktop UI folder.
+
+## Android instrumentation and coverage update — 2026-10-14
+
+Developer-provided latest local Gradle result after fixing instrumentation setup and upgrading Espresso:
+
+- `./gradlew clean connectedDebugAndroidTest` completed with **BUILD SUCCESSFUL**. The instrumentation suite currently declares 4 Compose UI test cases: initial screen, session/tab rendering, adding a symptom, and adding a DTC.
+- The developer also supplied the generated Android `debug` coverage summary. It reports **32% instruction coverage**, **14% branch coverage**, and approximately **39.7% line coverage**. This is a measured result for the report's Android debug scope, not whole-repository coverage.
+- Aggregate values transcribed from the JaCoCo summary: 19,212 / 28,288 instructions missed (9,076 covered); 1,237 / 1,449 branches missed (212 covered); 1,345 / 2,232 lines missed (887 covered); 1,056 / 1,293 complexity units missed; 469 / 683 methods missed; 33 / 67 classes missed.
+- Espresso previously failed before test assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. `androidx.test.espresso:espresso-core:3.7.0` was added to the Android test runtime to address that compatibility issue. The next user-provided Gradle run completed successfully.
+- Current Android test sources declare 52 unit-test methods and 4 instrumentation-test methods. The pasted Gradle success summary did not include XML totals, so this source inventory should not be treated as an independently extracted executed-test count.
+- **Coverage target remains unmet:** 32% instruction coverage and 14% branch coverage are substantially below the desired 90% target. Priority should be meaningful tests for Compose screen branches, API/error handling, OBD transport success/failure paths, and settings persistence. Do not raise coverage by weakening assertions or excluding production code.
+
+This update records developer-provided local output; Gradle was not executed by the report authoring environment. No cloud CI was triggered.

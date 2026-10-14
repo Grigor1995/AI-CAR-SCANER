@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Body, Request
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.localization import localize_session_analysis
@@ -22,11 +24,14 @@ from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
 from api.vehicle_catalog_routes import router as vehicle_catalog_router
 from api.global_data_routes import router as global_data_router
-app=FastAPI(title="AI Auto Diagnostic Platform",version="0.1.0")
-
-@app.on_event("startup")
-def startup_load_persisted_sessions():
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Restore persisted sessions before serving requests."""
     load_persisted_sessions()
+    yield
+
+
+app = FastAPI(title="AI Auto Diagnostic Platform", version="0.1.0", lifespan=lifespan)
 
 @app.middleware("http")
 async def persist_diagnostic_sessions(request: Request, call_next):

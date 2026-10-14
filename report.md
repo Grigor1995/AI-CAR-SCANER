@@ -602,10 +602,10 @@ This is an Android test-runner output/lock-file access error, distinct from the 
 
 After the successful smoke test, all 13 instrumentation tests ran: **11 passed and 2 failed**. The detailed XML showed:
 
-- `wifiConnectButtonRequiresANonBlankHost`: the `Wi-Fi` text was not present after trying to click the `OBD` tab. The test now scrolls the OBD tab into view and waits until the `OBD Connection` section is actually present before trying to select Wi-Fi.
+- `wifiConnectButtonRequiresANonBlankHost`: the UI labels use a non-breaking hyphen in `Wi‑Fi` and `Connect Wi‑Fi`, while the test had been searching for ordinary-hyphen variants. The test now uses the exact displayed labels. It also scrolls the OBD tab into view and waits for the `OBD Connection` section before selecting Wi-Fi. Commit `3fb1742` addresses the text mismatch; this fix still needs a local test run.
 - `vehicleCanEnterEditModeAndSave`: `E-Class` matched two UI nodes. Commit `ec64041` changed the assertion to check that at least one matching node exists.
 
-The Wi-Fi wait/scroll update is commit `48a59eb`: [test(android): wait for OBD tab content before testing Wi-Fi validation](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca).
+The OBD wait/scroll update is commit `48a59eb`: [wait for OBD tab content](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca). The exact `Wi‑Fi` selector correction is [commit `3fb1742`](https://github.com/Grigor1995/AI-CAR-SCANER/commit/3fb174285d05aea25063f369f1ff7fb33f6e11ea).
 
 **The latest Wi-Fi test update has not yet been run locally.** The previous 55% instruction / 22% branch coverage report remains the latest successful measurement.
 

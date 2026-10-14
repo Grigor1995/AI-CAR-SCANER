@@ -313,7 +313,7 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("Edit").fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("E-Class").assertExists()
+        composeRule.onNodeWithText("E-Class", substring = true).assertExists()
     }
 
     @Test

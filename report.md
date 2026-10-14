@@ -613,7 +613,11 @@ Relevant changes: [OBD wait/scroll](https://github.com/Grigor1995/AI-CAR-SCANER/
 
 ### Coverage target and next steps
 
-The desired 90% target remains unmet. Continue adding meaningful tests for uncovered branches; do not weaken assertions or exclude production code merely to increase the percentage. Generate and inspect the two reports separately:
+The latest debug coverage table provided on 2026-10-14 reports **62% instruction**, **26% branch**, and approximately **63.7% line coverage** (1,426 of 2,238 lines covered). The 90% target remains unmet.
+
+The package table reports `com.aicarscaner.mobile.data.obd` at only **3% instruction / 2% branch coverage**. Since the repository already contains JVM unit tests for `LiveDataReader`, the Wi-Fi client, and Bluetooth/USB connection failure paths, this very low OBD figure likely comes from the **instrumentation-test coverage report**, not the separate unit-test coverage report. Keep the two report types separate until the unit-test table is confirmed.
+
+Generate and inspect both reports separately:
 
 ```bash
 ./gradlew testDebugUnitTest --rerun-tasks
@@ -622,4 +626,4 @@ The desired 90% target remains unmet. Continue adding meaningful tests for uncov
 ./gradlew createDebugAndroidTestCoverageReport
 ```
 
-For the current screen, prioritize vehicle edit/save/cancel, Wi-Fi host validation and test-result-dialog cancellation, then inspect the separate unit-test coverage before deciding whether to prioritize API, settings, repository or OBD classes. The non-blocking `Modifier.menuAnchor()` deprecation warning can be fixed independently.
+Next, capture the **unit-test report** at `app/build/reports/coverage/test/debug/index.html` and compare it with the instrumentation report. Use the unit report to find remaining untested client branches; use the instrumentation report to prioritize UI behavior. Do not weaken assertions or exclude production code merely to inflate coverage.

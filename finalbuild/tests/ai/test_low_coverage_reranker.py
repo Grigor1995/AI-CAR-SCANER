@@ -37,6 +37,10 @@ def test_lexical_reranker_handles_no_query_tokens_and_empty_hits():
 
 
 def test_cross_encoder_is_lazy_predicts_sorts_and_caches_model(monkeypatch):
+    # The project intentionally requires an explicit opt-in for native model
+    # loading on Windows; this test substitutes a fake model and performs no
+    # native load, so authorize the code path explicitly.
+    monkeypatch.setenv("RAG_RERANKER_ALLOW_NATIVE", "1")
     model = Mock()
     model.predict.return_value = [0.1, 0.9]
     module = ModuleType("sentence_transformers")

@@ -53,6 +53,13 @@ class DiagnosticSessionPersistence:
         )
         SessionStateBase.metadata.create_all(self.engine)
 
+    def close(self) -> None:
+        """Dispose the connection pool owned by this persistence instance."""
+        engine = self.engine
+        self.engine = None
+        if engine is not None:
+            engine.dispose()
+
     def load(self) -> dict[str, DiagnosticSession]:
         if not self.enabled or self.engine is None:
             return {}

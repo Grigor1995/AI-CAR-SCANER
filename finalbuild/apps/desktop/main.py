@@ -47,7 +47,9 @@ def _close_backend_log() -> None:
 
 def _close_llm_log() -> None:
     global _llm_log
-    _close_llm_log()
+    if _llm_log is not None:
+        _llm_log.close()
+        _llm_log = None
 
 
 def _is_port_open(host: str, port: int) -> bool:

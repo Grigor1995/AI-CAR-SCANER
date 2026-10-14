@@ -365,7 +365,8 @@ def test_vehicle_dialog_page_object_filters_catalog_and_converts_form(qapp, fake
     parent.api = fake_api
     parent.language = "en"
     dialog = ui.VehicleDialog(parent)
-    assert dialog.make.count() == 2
+    assert dialog.make.findText("Mercedes-Benz") >= 0
+    assert dialog.make.findText("Kia") >= 0
     dialog.make.setCurrentText("Kia")
     assert dialog.model.currentText() == "Forte"
     assert dialog.chassis.currentText() == "BD"

@@ -553,23 +553,32 @@ The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The ne
 
 ## Android instrumentation and coverage update — 2026-10-14
 
-### Latest developer-reported verification
+### Latest developer-reported verification and coverage
 
-- After commit `95a26eb` relaxed a brittle exception-subtype assertion in the malformed-catalog JSON test, the developer reported both the targeted test and the full `./gradlew testDebugUnitTest --rerun-tasks` run as **BUILD SUCCESSFUL**. The full-run output showed 25 actionable tasks executed in 39 seconds. Its pasted summary did not include the exact number of tests; the immediately preceding run reported 70 completed with only that malformed-JSON assertion failing.
-- The Kotlin compiler still warns that `Modifier.menuAnchor()` is deprecated at `DiagnosticScreen.kt:1627`. It is non-blocking; the recommended Material 3 overload takes `MenuAnchorType` and an `enabled` argument.
-- Two additional Compose UI instrumentation tests have now been committed: `settingsDialogCanSwitchToArmenianAndClose` and `newSessionDialogCanBeCancelledOrConfirmed`. They exercise language switching/settings dismissal and the cancel/confirm paths for starting a new session. **These two tests have not yet been run locally.** The instrumentation test source now declares 6 test methods (the earlier verified run covered the prior 4).
+- The developer reports that `./gradlew testDebugUnitTest --rerun-tasks` completed with **BUILD SUCCESSFUL** in 39 seconds (25 actionable tasks). The output included a non-blocking deprecation warning for `Modifier.menuAnchor()` at `DiagnosticScreen.kt:1627`.
+- The developer then supplied a newer JaCoCo `debug` table after the previous 2 added Compose instrumentation tests. Aggregate coverage is **38% instructions** and **16% branches**. From the missed/total counts, line coverage is approximately **44.6%**.
+- Latest aggregate counts supplied: missed instructions 17,488 / 28,351 (10,863 covered); missed branches 1,210 / 1,453 (243 covered); missed lines 1,238 / 2,236 (998 covered); missed complexity 997 / 1,295; missed methods 416 / 683; missed classes 33 / 67.
+- Relative to the previous supplied instrumentation baseline (32% instructions, 14% branches, approximately 39.7% lines), this is +6 percentage points instruction coverage, +2 branch-coverage points, and about +4.9 line-coverage points.
+- Package figures in the pasted table have merged/misaligned columns, so only its aggregate row is treated as reliable. The `data.obd` coverage of 3% appears to be for the instrumentation/debug report; it should not be interpreted as the separate unit-test coverage for OBD. Use `createDebugUnitTestCoverageReport` to inspect unit-test coverage and `createDebugCoverageReport` for instrumentation coverage.
 
-### Last measured Android coverage baseline
+### Newly committed Compose UI instrumentation tests — verification pending
 
-The latest previously supplied JaCoCo summary reported **32% instruction coverage**, **14% branch coverage**, and approximately **39.7% line coverage**. These are baseline figures from before the two newly added instrumentation tests; they must not be presented as the current post-change measurement.
+Commit `ae7892c` added four additional user-flow tests to `DiagnosticScreenInstrumentedTest.kt`, and commit `841a748` tightened their assertions:
 
-Aggregate values from that coverage summary: 19,212 / 28,288 instructions missed (9,076 covered); 1,237 / 1,449 branches missed (212 covered); 1,345 / 2,232 lines missed (887 covered); 1,056 / 1,293 complexity units missed; 469 / 683 methods missed; 33 / 67 classes missed.
+- `symptomCanBeEditedAndDeleted`
+- `dtcCanBeEditedAndDeleted`
+- `analysisRendersEvidenceHypothesisRecommendationsAndRecordsResult`
+- `liveDataTabShowsDisconnectedStateWhenNoObdAdapterIsConnected`
 
-Instrumentation previously failed before its test assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. Adding `androidx.test.espresso:espresso-core:3.7.0` addressed the reported runtime incompatibility, and the developer's subsequent run completed successfully.
+The fake diagnostic API now supplies representative evidence, a hypothesis, a recommendation and a follow-up question, allowing the analysis/result UI to be tested without a live backend. These four tests were committed after the developer's latest supplied JaCoCo table, and **have not yet been run locally**. The instrumentation test source declares 10 methods total; only the earlier 6 are within the user's currently reported history.
+
+### Previous instrumentation runtime issue
+
+Instrumentation previously failed before assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. Adding `androidx.test.espresso:espresso-core:3.7.0` addressed the reported compatibility issue and the developer's later instrumentation run succeeded.
 
 ### Next verification / target status
 
-The desired 90% coverage target remains unmet. Do not improve the percentage by weakening assertions or excluding production code. Pull the latest `main`, run the complete unit and instrumentation suite, and then inspect the regenerated reports:
+The desired 90% coverage target remains unmet. Do not increase the percentage by weakening assertions or excluding production code. Pull the latest `main`, run unit and instrumentation tests, then regenerate both separate coverage reports:
 
 ```bash
 git pull --ff-only origin main
@@ -578,4 +587,4 @@ git pull --ff-only origin main
 ./gradlew createDebugUnitTestCoverageReport createDebugCoverageReport
 ```
 
-Record the new coverage numbers only after that run succeeds. The report authoring environment did not execute Gradle or trigger cloud CI; all test outcomes above are attributed to developer-provided local output.
+Check the instrumentation result first; if a new Compose test fails, fix the exact failure before interpreting coverage. Record a new coverage number only after the reports regenerate successfully. Gradle was not executed by the report authoring environment and cloud CI was not triggered; all successful runs mentioned here are developer-reported.

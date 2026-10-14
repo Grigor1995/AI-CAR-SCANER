@@ -129,3 +129,12 @@ async def test_simulated_can_bus_tx_rx_hooks_timeouts_and_empty_tx_queue():
     bus.inject(rx)
     assert seen_rx == [0x7E8]
     assert await bus.receive(timeout_ms=10) == rx
+
+    async_rx = []
+    async def async_rx_hook(frame):
+        await asyncio.sleep(0)
+        async_rx.append(frame.arbitration_id)
+    bus.add_rx_hook(async_rx_hook)
+    bus.inject(CanFrame(0x7E9, b"\\x01"))
+    await asyncio.sleep(0)
+    assert async_rx == [0x7E9]

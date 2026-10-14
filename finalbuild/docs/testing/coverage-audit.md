@@ -31,6 +31,45 @@ python -m pytest -q tests \
   --cov-report=json:coverage-python-audit.json
 ```
 
+## First local baseline — user-provided output (2026-10-14)
+
+After Step 1, the developer's local command reported:
+
+```text
+202 passed, 1 skipped in 26.24s
+TOTAL: 6471 statements, 1193 missed, 82% coverage
+```
+
+This is the first baseline for the scoped roots listed in Step 1, **before** adding the Desktop test-folder run. It is not whole-repository or mobile coverage.
+
+Notable production files below 70% in this baseline:
+
+| Source file | Coverage |
+|---|---:|
+| `backend/ai/rag/retrieval.py` | 33% |
+| `backend/ai/rag/pgvector_hybrid.py` | 34% |
+| `apps/desktop/api_client.py` | 44% |
+| `backend/api/decision_routes.py` | 44% |
+| `backend/ai/llm/factory.py` | 43% |
+| `vehicle/obd/adapters/ble.py` | 41% |
+| `vehicle/obd/adapters/usb_serial.py` | 41% |
+| `backend/ai/llm/openai_compatible.py` | 53% |
+| `backend/ai/embeddings/providers.py` | 53% |
+| `backend/ai/llm/llama_server.py` | 54% |
+| `vehicle/obd/adapters/simulator.py` | 57% |
+| `vehicle/obd/adapters/tcp_wifi.py` | 57% |
+| `backend/ai/ingestion/parsers.py` | 59% |
+| `backend/api/rag_routes.py` | 61% |
+| `vehicle/isotp/stack.py` | 62% |
+| `backend/api/state.py` | 63% |
+| `backend/api/ai_routes.py` | 64% |
+| `backend/api/device_routes.py` | 66% |
+| `backend/api/multi_ecu_routes.py` | 68% |
+| `backend/api/vehicle_diagnostic_routes.py` | 68% |
+| `backend/ai/ingestion/pipeline.py` | 70% |
+
+Prioritize testable business logic and failure paths in the LLM/RAG/provider modules, API decision/device/catalog routes, and connection adapters. Some branches that require live PostgreSQL, a physical VCI, or platform-specific DLLs should be covered with suitable fakes/mocks where that still tests meaningful behavior. Do not raise a percentage by hiding legitimate code or excluding active production modules.
+
 ## Step 2 — append Desktop tests to the same measurement
 
 Use the **same `--cov` source arguments** and add `--cov-append` so results from the first run are retained. The widget suite known to have a native Qt teardown issue is excluded; the POM tests are included.

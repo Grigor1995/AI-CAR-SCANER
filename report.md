@@ -553,13 +553,29 @@ The earlier pre-cleanup result was `201 passed, 1 skipped, 227 warnings`. The ne
 
 ## Android instrumentation and coverage update — 2026-10-14
 
-Developer-provided latest local Gradle result after fixing instrumentation setup and upgrading Espresso:
+### Latest developer-reported verification
 
-- `./gradlew clean connectedDebugAndroidTest` completed with **BUILD SUCCESSFUL**. The instrumentation suite currently declares 4 Compose UI test cases: initial screen, session/tab rendering, adding a symptom, and adding a DTC.
-- The developer also supplied the generated Android `debug` coverage summary. It reports **32% instruction coverage**, **14% branch coverage**, and approximately **39.7% line coverage**. This is a measured result for the report's Android debug scope, not whole-repository coverage.
-- Aggregate values transcribed from the JaCoCo summary: 19,212 / 28,288 instructions missed (9,076 covered); 1,237 / 1,449 branches missed (212 covered); 1,345 / 2,232 lines missed (887 covered); 1,056 / 1,293 complexity units missed; 469 / 683 methods missed; 33 / 67 classes missed.
-- Espresso previously failed before test assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. `androidx.test.espresso:espresso-core:3.7.0` was added to the Android test runtime to address that compatibility issue. The next user-provided Gradle run completed successfully.
-- Current Android test sources declare 52 unit-test methods and 4 instrumentation-test methods. The pasted Gradle success summary did not include XML totals, so this source inventory should not be treated as an independently extracted executed-test count.
-- **Coverage target remains unmet:** 32% instruction coverage and 14% branch coverage are substantially below the desired 90% target. Priority should be meaningful tests for Compose screen branches, API/error handling, OBD transport success/failure paths, and settings persistence. Do not raise coverage by weakening assertions or excluding production code.
+- After commit `95a26eb` relaxed a brittle exception-subtype assertion in the malformed-catalog JSON test, the developer reported both the targeted test and the full `./gradlew testDebugUnitTest --rerun-tasks` run as **BUILD SUCCESSFUL**. The full-run output showed 25 actionable tasks executed in 39 seconds. Its pasted summary did not include the exact number of tests; the immediately preceding run reported 70 completed with only that malformed-JSON assertion failing.
+- The Kotlin compiler still warns that `Modifier.menuAnchor()` is deprecated at `DiagnosticScreen.kt:1627`. It is non-blocking; the recommended Material 3 overload takes `MenuAnchorType` and an `enabled` argument.
+- Two additional Compose UI instrumentation tests have now been committed: `settingsDialogCanSwitchToArmenianAndClose` and `newSessionDialogCanBeCancelledOrConfirmed`. They exercise language switching/settings dismissal and the cancel/confirm paths for starting a new session. **These two tests have not yet been run locally.** The instrumentation test source now declares 6 test methods (the earlier verified run covered the prior 4).
 
-This update records developer-provided local output; Gradle was not executed by the report authoring environment. No cloud CI was triggered.
+### Last measured Android coverage baseline
+
+The latest previously supplied JaCoCo summary reported **32% instruction coverage**, **14% branch coverage**, and approximately **39.7% line coverage**. These are baseline figures from before the two newly added instrumentation tests; they must not be presented as the current post-change measurement.
+
+Aggregate values from that coverage summary: 19,212 / 28,288 instructions missed (9,076 covered); 1,237 / 1,449 branches missed (212 covered); 1,345 / 2,232 lines missed (887 covered); 1,056 / 1,293 complexity units missed; 469 / 683 methods missed; 33 / 67 classes missed.
+
+Instrumentation previously failed before its test assertions with `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. Adding `androidx.test.espresso:espresso-core:3.7.0` addressed the reported runtime incompatibility, and the developer's subsequent run completed successfully.
+
+### Next verification / target status
+
+The desired 90% coverage target remains unmet. Do not improve the percentage by weakening assertions or excluding production code. Pull the latest `main`, run the complete unit and instrumentation suite, and then inspect the regenerated reports:
+
+```bash
+git pull --ff-only origin main
+./gradlew testDebugUnitTest --rerun-tasks
+./gradlew connectedDebugAndroidTest --rerun-tasks
+./gradlew createDebugUnitTestCoverageReport createDebugCoverageReport
+```
+
+Record the new coverage numbers only after that run succeeds. The report authoring environment did not execute Gradle or trigger cloud CI; all test outcomes above are attributed to developer-provided local output.

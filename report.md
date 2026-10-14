@@ -464,3 +464,31 @@ Developer-confirmed startup attempt on `emulator-5554`:
 - The filtered 1,500-line logcat excerpt contained no `FATAL EXCEPTION`, `AndroidRuntime` crash, `ConnectException` or `UnknownHostException` entry. It showed the MainActivity window becoming visible and focused.
 
 Status: **startup command/process/window smoke test PASS based on supplied logs**. This does not establish that all UI controls work, that the user-visible screen renders correctly, or that API calls and diagnostic analysis succeed; no emulator screenshot or in-app functional result was provided. Continue with a visual check of the home screen and a diagnostic-flow/API connectivity test. No cloud CI was triggered.
+
+
+## Next-test lifecycle and priority recalculation — 2026-10-14
+
+User-requested behavior: after a technician records a result for a suggested diagnostic test, the completed test should disappear from the remaining "Next Test" recommendations and the remaining tests should be re-ranked using the new outcome and evidence.
+
+Changes committed to `main`:
+- `finalbuild/backend/ai/reasoning/engine.py`: persist the selected test name, explicit outcome, technician notes and supplied measurements as structured measured evidence; match submitted IDs as strings/UUIDs safely; filter completed tests by stable normalized name as well as ID when rule-generated recommendations fall back to newly generated UUIDs; rebuild the plan after interpreting the result.
+- `finalbuild/backend/diagnostic/decision.py`: use prior test outcomes when scoring related catalog tests. A `PASS` (no target fault observed) lowers the priority of checks aimed at the same hypothesis; a `FAIL` (target fault observed) raises the value of follow-up tests for isolating/confirming the relevant hypothesis. Recalculate priority metadata for rule-generated fallback tests too, and sort these by current priority, risk and cost. Normalize recommendation names across punctuation/case.
+- The explicit `PASS`, `FAIL`, or `INCOMPLETE` outcome takes precedence over conflicting free-text notes. `INCOMPLETE` does not incorrectly support or disfavor a hypothesis.
+- `finalbuild/tests/harness/test_engine_contracts.py`: added regression tests for removing a completed test, recalculating remaining scores, preventing a rules-only test from reappearing with a regenerated UUID, sorting fallback tests, and handling outcome/notes conflicts.
+
+Commits:
+- `3389e71` and `74a85c6` — catalog and fallback scoring changes.
+- `37a5d5f` — record measured test details, remove completed rule fallback tests, and re-plan after outcome.
+- `d74fba1` — explicit outcome precedence.
+- `b068f42` and `292aee1` — regression tests.
+
+**Verification status:** the changes and regression tests are committed, but the local Python tests have not yet been run against this new change set. Do not mark this feature PASS until the developer runs the tests below locally. No cloud CI was triggered.
+
+Local verification from the repository's `finalbuild` directory:
+
+```bash
+python -m pytest -q tests/harness/test_engine_contracts.py
+python -m pytest -q
+```
+
+Expected behavior in the Android app is to submit the test result, receive the updated diagnostic session, remove the completed test from its recommendation list, and show the recalculated order. An emulator functional run after this backend update is still needed to confirm end-to-end behavior.

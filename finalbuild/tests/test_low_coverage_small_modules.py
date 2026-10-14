@@ -51,9 +51,9 @@ def test_evidence_extractor_empty_patterns_normalized_symptom_and_dtc_statuses()
 
 def test_uds_dtc_decoder_all_prefixes_boundaries_and_payload_shapes():
     assert format_uds_dtc(0x030200) == "P030200"
-    assert format_uds_dtc(0x430102).startswith("U")
-    assert format_uds_dtc(0x830102).startswith("C")
-    assert format_uds_dtc(0xC30102).startswith("B")
+    assert format_uds_dtc(0x430102).startswith("C")
+    assert format_uds_dtc(0x830102).startswith("B")
+    assert format_uds_dtc(0xC30102).startswith("U")
     with pytest.raises(ValueError, match="uint24"):
         format_uds_dtc(-1)
     with pytest.raises(ValueError, match="uint24"):

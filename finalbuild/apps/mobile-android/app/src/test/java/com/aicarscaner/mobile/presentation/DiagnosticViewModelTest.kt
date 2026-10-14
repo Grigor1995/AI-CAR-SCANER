@@ -131,6 +131,67 @@ class DiagnosticViewModelTest {
     }
 
     @Test
+    fun httpFailureWithoutBodyIncludesOnlyStatusCode() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = DiagnosticViewModel(repository)
+        val response = Response.error<DiagnosticSessionDto>(
+            503,
+            "".toResponseBody("text/plain".toMediaType())
+        )
+        coEvery { repository.createSession(vehicle) } throws HttpException(response)
+
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+
+        assertEquals("HTTP 503", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.loading)
+    }
+
+    @Test
+    fun httpFailureTruncatesErrorBodyToFiveHundredCharacters() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = DiagnosticViewModel(repository)
+        val body = "x".repeat(600)
+        val response = Response.error<DiagnosticSessionDto>(
+            502,
+            body.toResponseBody("text/plain".toMediaType())
+        )
+        coEvery { repository.createSession(vehicle) } throws HttpException(response)
+
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+
+        assertEquals("HTTP 502: " + "x".repeat(500), viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun nullThrowableMessageUsesFallbackText() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = DiagnosticViewModel(repository)
+        coEvery { repository.createSession(vehicle) } throws Throwable()
+
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+
+        assertEquals("Request failed", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.loading)
+    }
+
+    @Test
+    fun failedActionKeepsLastSuccessfulSession() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = DiagnosticViewModel(repository)
+        coEvery { repository.createSession(vehicle) } returns session
+        coEvery { repository.addSymptom("session-1", "rough idle") } throws
+            IllegalStateException("server unavailable")
+
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+        viewModel.addSymptom("rough idle")
+        advanceUntilIdle()
+
+        assertEquals(session, viewModel.uiState.value.session)
+        assertEquals("server unavailable", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.loading)
+    }
+
+    @Test
     fun clearSessionRemovesSessionAndKeepsLoadedCatalog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = DiagnosticViewModel(repository)
         val catalog = listOf(

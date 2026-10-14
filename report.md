@@ -607,7 +607,7 @@ After the successful smoke test, all 13 instrumentation tests ran: **11 passed a
 
 The OBD wait/scroll update is commit `48a59eb`: [wait for OBD tab content](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca). The exact `Wi‑Fi` selector correction is [commit `3fb1742`](https://github.com/Grigor1995/AI-CAR-SCANER/commit/3fb174285d05aea25063f369f1ff7fb33f6e11ea).
 
-**The latest Wi-Fi test update has not yet been run locally.** The previous 55% instruction / 22% branch coverage report remains the latest successful measurement.
+**Focused verification update:** on 2026-10-14, the user reran `wifiConnectButtonRequiresANonBlankHost` after commit `3fb1742`; Gradle reported `BUILD SUCCESSFUL` (69 tasks executed). The `vehicleCanEnterEditModeAndSave` correction and the complete 13-test instrumentation suite still need verification. The previous 55% instruction / 22% branch coverage report remains the latest successful coverage measurement.
 
 ### Coverage target and next steps
 

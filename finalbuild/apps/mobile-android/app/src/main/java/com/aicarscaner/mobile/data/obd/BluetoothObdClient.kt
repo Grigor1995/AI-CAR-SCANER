@@ -19,15 +19,21 @@ class BluetoothObdClient {
         get() = socket?.isConnected == true
 
     suspend fun connect(device: BluetoothDevice): Result<String> = withContext(Dispatchers.IO) {
+        var pendingSocket: BluetoothSocket? = null
         runCatching {
             close()
             val s = device.createRfcommSocketToServiceRecord(SPP_UUID)
+            pendingSocket = s
             s.connect()
             socket = s
+            pendingSocket = null
 
             initialize()
-            "Connected to \${device.name ?: device.address}"
+            "Connected to ${device.name ?: device.address}"
         }.onFailure {
+            // A connect failure happens before the socket is stored on this client.
+            // Close the local socket explicitly so failed attempts do not leak it.
+            pendingSocket?.let { pending -> runCatching { pending.close() } }
             close()
         }
     }

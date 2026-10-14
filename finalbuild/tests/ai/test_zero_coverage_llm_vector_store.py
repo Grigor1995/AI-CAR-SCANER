@@ -109,9 +109,9 @@ def test_pgvector_repository_schema_upsert_and_search_without_database(monkeypat
         [0.1, 0.2, 0.3],
     )
     hits = repository.search([0.1, 0.2, 0.3], top_k=4)
-    assert len(engine.connection.calls) == 3
+    assert len(engine.connection.calls) == 4
     assert "vector(384)" in engine.connection.calls[0][0]
-    assert engine.connection.calls[1][1]["metadata"] == '{"source": "manual"}'
-    assert engine.connection.calls[1][1]["embedding"] == "[0.1,0.2,0.3]"
-    assert engine.connection.calls[2][1]["top_k"] == 4
+    assert engine.connection.calls[2][1]["metadata"] == '{"source": "manual"}'
+    assert engine.connection.calls[2][1]["embedding"] == "[0.1,0.2,0.3]"
+    assert engine.connection.calls[3][1]["top_k"] == 4
     assert hits == [vector_store.VectorHit("chunk-1", "doc-1", "LPG misfire", {"source": "manual"}, 0.91)]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from collections import defaultdict
 from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Hypothesis, DiagnosticTest, SessionState
 from diagnostic.rules import DiagnosticReasoningEngine
@@ -41,12 +42,8 @@ class DiagnosticIntelligenceEngine:
         rule_recommendations = list(session.recommendations)
         self.decision.refresh_recommendations(session)
         if not session.recommendations and rule_recommendations:
-            completed_ids = {str(item.test_id) for item in session.test_results}
-            remaining = [
-                item for item in rule_recommendations if str(item.id) not in completed_ids
-            ]
-            session.recommendations = self.decision.enrich_external_recommendations(
-                session, remaining
+            session.recommendations = self._fallback_recommendations(
+                session, rule_recommendations
             )
         if session.recommendations:
             session.state = SessionState.TESTING
@@ -60,31 +57,83 @@ class DiagnosticIntelligenceEngine:
     def record_test_result(self, session: DiagnosticSession, test_id, result: str, measurements: dict | None = None, notes: str | None = None) -> DiagnosticSession:
         from diagnostic.models import TestResult, Evidence
         measurements = measurements or {}
-        selected_test = next((x for x in session.recommendations if x.id == test_id), None)
+        normalized_result = result.strip().upper()
+        selected_test = next(
+            (x for x in session.recommendations if str(x.id) == str(test_id)),
+            None,
+        )
         session.test_results.append(TestResult(
             test_id=test_id,
-            result=result.strip().upper(),
+            result=normalized_result,
             measurements=measurements,
             notes=notes,
             test_name=selected_test.name if selected_test else None,
         ))
+        evidence_parts = [
+            f"Completed diagnostic test: {selected_test.name}" if selected_test else f"Completed diagnostic test ID: {test_id}",
+            f"result: {normalized_result}",
+        ]
+        if notes and notes.strip():
+            evidence_parts.append(f"technician notes: {notes.strip()}")
+        if measurements:
+            evidence_parts.append(
+                "measurements: " + json.dumps(measurements, ensure_ascii=False, sort_keys=True, default=str)
+            )
         session.evidence.append(Evidence(
-            fact=f"Test {test_id} result: {result}", source=EvidenceSource.TECHNICIAN_OBSERVED,
-            status=EvidenceStatus.MEASURED, confidence=0.95, metadata={"test_id": str(test_id), "measurements": measurements}
+            fact="; ".join(evidence_parts),
+            source=EvidenceSource.TECHNICIAN_OBSERVED,
+            status=EvidenceStatus.MEASURED,
+            confidence=0.95,
+            metadata={"test_id": str(test_id), "test_name": selected_test.name if selected_test else None, "result": normalized_result, "measurements": measurements, "notes": notes},
         ))
         # Free-form technician notes are part of the result evidence. This lets
         # entries such as "pressure drops" or "no leak, stable" affect the
         # targeted hypotheses even when the UI outcome is left inconclusive.
-        interpretation_text = " ".join(x for x in (result, notes or "") if x)
+        interpretation_text = " ".join(x for x in (normalized_result, notes or "") if x)
         self.decision.update_hypotheses_from_result(session, selected_test, interpretation_text)
         analyzed = self.analyze(session)
-        # Re-apply the test interpretation after re-analysis so regenerated hypotheses retain the measured-result effect.
+        # Re-apply the test interpretation after rules regenerate the hypothesis
+        # objects, then rebuild the plan once more so remaining-test priorities
+        # reflect the latest PASS/FAIL evidence instead of stale pre-result scores.
         supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, interpretation_text)
-        # analyze() already rebuilt the next-test queue and excluded this
-        # completed test. Keep that plan after applying the final interpretation.
+        previous_remaining = list(analyzed.recommendations)
+        self.decision.refresh_recommendations(analyzed)
+        if not analyzed.recommendations and previous_remaining:
+            analyzed.recommendations = self._fallback_recommendations(analyzed, previous_remaining)
         analyzed.audit_log.append({"event": "TEST_RESULT_INTERPRETED", "test_id": str(test_id), "supported_hypotheses": supported})
         analyzed.state = SessionState.HYPOTHESIS_VALIDATION
         return analyzed
+
+    def _fallback_recommendations(
+        self, session: DiagnosticSession, candidates: list[DiagnosticTest]
+    ) -> list[DiagnosticTest]:
+        """Keep rule-generated tests, but never reintroduce a completed test by name.
+
+        Rule analysis creates fresh UUIDs on each pass, so UUID-only filtering can
+        accidentally resurrect a test that was already recorded. Stable names are
+        the fallback identity for completed tests.
+        """
+        completed_ids = {str(item.test_id) for item in session.test_results}
+        completed_names = {
+            self.decision._recommendation_key(item.test_name)
+            for item in session.test_results
+            if item.test_name
+        }
+        remaining = [
+            item for item in candidates
+            if str(item.id) not in completed_ids
+            and self.decision._recommendation_key(item.name) not in completed_names
+        ]
+        enriched = self.decision.enrich_external_recommendations(session, remaining)
+        return sorted(
+            enriched,
+            key=lambda item: (
+                -item.priority_score,
+                {"LOW": 0, "MEDIUM": 1, "HIGH": 2}.get(item.risk_level.upper(), 3),
+                item.estimated_cost,
+                item.name,
+            ),
+        )
 
     def next_test(self, session: DiagnosticSession) -> DiagnosticTest | None:
         return session.recommendations[0] if session.recommendations else None

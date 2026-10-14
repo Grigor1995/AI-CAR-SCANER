@@ -165,6 +165,43 @@ class DiagnosticApiContractTest {
     }
 
     @Test
+    fun createSessionSurfacesServiceUnavailableAsHttpException() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"detail":"diagnostic service unavailable"}""")
+        )
+
+        val error = runCatching {
+            api.createSession(VehicleDto(make = "Mercedes-Benz", model = "E350"))
+        }.exceptionOrNull()
+
+        assertTrue("Expected an HTTP exception but got $error", error is retrofit2.HttpException)
+        assertEquals(503, (error as retrofit2.HttpException).code())
+        assertEquals("/api/v1/sessions", server.takeRequest().path)
+    }
+
+    @Test
+    fun vehicleCatalogMalformedJsonReturnsDeserializationFailure() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"not":"a list"}""")
+        )
+
+        val result = runCatching { api.vehicleCatalog() }
+
+        assertTrue("Malformed catalog JSON should fail instead of returning entries", result.isFailure)
+        assertTrue(
+            "Expected a JSON/conversion error, got ${result.exceptionOrNull()}",
+            result.exceptionOrNull() is com.google.gson.JsonParseException ||
+                result.exceptionOrNull() is java.io.IOException
+        )
+        assertEquals("/api/v1/vehicle-catalog/entries", server.takeRequest().path)
+    }
+
+    @Test
     fun recommendationDtoMapsBackendJsonNames() {
         val recommendation = Gson().fromJson(
             """{"id":"r1","name":"Check fuel pressure","purpose":"validate fuel delivery","priority_score":0.8,"expected_information_gain":0.6,"estimated_cost":25.0,"risk_level":"LOW"}""",

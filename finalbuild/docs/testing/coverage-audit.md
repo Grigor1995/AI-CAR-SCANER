@@ -550,3 +550,16 @@ The developer's first Desktop-targeted run reported **93 passed, 2 failed**. Bot
 - `test_vehicle_dialog_handles_api_failure_and_malformed_offline_catalog`: the dialog intentionally preserves curated W211 defaults if the API and offline catalog are unavailable. The test incorrectly expected an empty make combo. It now asserts the documented fallback values (`Mercedes-Benz / E-Class / W211`) while verifying that the external/offline catalog remains empty and the Russian offline notice is displayed.
 
 Both test-only corrections are committed to `main`. The developer reran the two corrected cases and reported **2 passed in 3.82s**, then reran the full Desktop-specific command and reported **95 passed in 13.32s**. The Desktop-specific Batch 7 tests are therefore **PASS**. The core Batch 7 targeted tests remain awaiting local validation and combined coverage has not yet been remeasured after this batch.
+
+
+### Batch 7 core validation failures and corrections (2026-10-14)
+
+The developer's first run of the targeted core batch reported **87 passed, 5 failed**. The five failures and fixes committed to main are:
+
+- `test_active_probe_validates_session_runtime_and_returns_correlation`: retain the `session` returned by the test setup instead of discarding it before asserting the correlated session ID.
+- `test_uds_simulator_queues_single_frame_and_legacy_process_drains_tx`: use actual ISO-TP bytes (`b"\\x50\\x03"`, etc.), not backslash characters followed by hex text.
+- `test_routed_channel_send_and_multiple_subscribers_receive_same_response`: use valid two-/three-byte CAN payloads instead of accidentally over-escaped payloads that exceeded the eight-byte CAN limit.
+- `test_vehicle_diagnostic_simulator_lifecycle_trace_and_status`: the test exposed a production edge case in `trace(limit=0)`, where Python's `trace[-0:]` returned every event. The service now returns an empty list for non-positive limits while still checking that the session exists.
+- `test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost`: the fake engine marked the matching hypothesis as rejected, so the production analysis correctly excluded it from the active category set. The fixture now leaves the hypothesis `possible` to test the matching-target branch; its expected information gain is then 0.25.
+
+These corrections are committed on main, but the core batch has **not yet been rerun**. No post-fix PASS is claimed. The Desktop-specific targeted batch separately remains confirmed at **95 passed in 13.32s**. After pulling the latest main, rerun the core batch command above before regenerating combined coverage.

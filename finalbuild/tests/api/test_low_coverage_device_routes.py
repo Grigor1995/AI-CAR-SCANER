@@ -4,6 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 import api.device_routes as routes
+from device.manager import DeviceCapabilities, DeviceStatus
 
 
 def make_device(device_id="vci-1", status=None):
@@ -14,8 +15,8 @@ def make_device(device_id="vci-1", status=None):
         firmware_version="1.2",
         protocol="OBD/CAN",
         connection_type="simulator",
-        capabilities=routes.DeviceCapabilities(obd=True, can=True, uds=False),
-        status=status or routes.DeviceStatus.DISCONNECTED,
+        capabilities=DeviceCapabilities(obd=True, can=True, uds=False),
+        status=status or DeviceStatus.DISCONNECTED,
         metadata={"fixture": True},
     )
 
@@ -86,11 +87,12 @@ def test_list_devices_serializes_all_registered_devices(monkeypatch):
     assert [row["device_id"] for row in result["devices"]] == ["vci-1"]
 
 
-def test_scan_devices_returns_lowercase_transport_and_serialized_devices(monkeypatch):
+@pytest.mark.asyncio
+async def test_scan_devices_returns_lowercase_transport_and_serialized_devices(monkeypatch):
     manager = FakeManager()
     manager.result = [make_device("scan-1")]
     monkeypatch.setattr(routes, "manager", manager)
-    result = routes.scan_devices("SIMULATOR", routes.ScanRequest(timeout=1.2))
+    result = await routes.scan_devices("SIMULATOR", routes.ScanRequest(timeout=1.2))
     assert result == {"transport": "simulator", "devices": [routes._json(make_device("scan-1"))]}
     assert manager.calls == [("scan", ("SIMULATOR", 1.2))]
 

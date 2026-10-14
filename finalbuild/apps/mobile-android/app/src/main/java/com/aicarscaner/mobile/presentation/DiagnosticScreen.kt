@@ -233,9 +233,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     LaunchedEffect(Unit) {
+        // Keep first render free of hardware discovery and runtime permission prompts.
+        // Bluetooth and USB devices are refreshed from the OBD screen when the user opens it.
         viewModel.loadVehicleCatalog()
-        refreshBluetoothDevices()
-        refreshUsbDevices()
     }
 
     fun applyRemoteMake(value: String): Boolean {
@@ -610,7 +610,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         tabs.forEachIndexed { index, title ->
                             Tab(
                                 selected = selectedTab == index,
-                                onClick = { selectedTab = index },
+                                onClick = {
+                                    selectedTab = index
+                                    if (index == 2) {
+                                        // USB discovery does not require a runtime permission.
+                                        // Bluetooth discovery waits for the user to tap Refresh.
+                                        refreshUsbDevices()
+                                    }
+                                },
                                 text = { Text(title) }
                             )
                         }

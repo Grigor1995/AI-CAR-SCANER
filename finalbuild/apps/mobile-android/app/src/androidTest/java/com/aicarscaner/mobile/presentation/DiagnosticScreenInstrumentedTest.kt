@@ -2,6 +2,7 @@ package com.aicarscaner.mobile.presentation
 
 import android.Manifest
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -129,6 +130,41 @@ class DiagnosticScreenInstrumentedTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }
+
+    @Test
+    fun settingsDialogCanSwitchToArmenianAndClose() {
+        launchScreen()
+
+        composeRule.onNodeWithText("⚙").performClick()
+        composeRule.onNodeWithText("ARM").performClick()
+
+        composeRule.onNodeWithText("Նոր սեսիա").assertExists()
+        composeRule.onNodeWithText("Կարգավորումներ").assertExists()
+        composeRule.onNodeWithText("Փակել").performClick()
+        composeRule.onNodeWithText("Ստեղծել ախտորոշիչ սեսիա")
+            .performScrollTo()
+            .assertExists()
+    }
+
+    @Test
+    fun newSessionDialogCanBeCancelledOrConfirmed() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithContentDescription("New Session").performClick()
+        composeRule.onNodeWithText("Start a new session?").assertExists()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.onNodeWithText("Diagnose (0)").assertExists()
+
+        composeRule.onNodeWithContentDescription("New Session").performClick()
+        composeRule.onNodeWithText("Start New Session").performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Create Diagnostic Session")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Create Diagnostic Session").assertExists()
+    }
+
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {

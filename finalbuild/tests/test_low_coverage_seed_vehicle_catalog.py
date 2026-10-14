@@ -51,9 +51,16 @@ def test_build_rows_expands_ecus_years_and_filters_blank_values():
     assert all(row["source"] == "fixture-source" and row["scope"] == "fixture-scope" for row in rows)
 
 
-def test_build_rows_uses_defaults_for_empty_payload_fields():
-    rows = seed.build_rows({"entries": [{"make": "A", "model": "B", "engines": [{"name": "E"}]}]})
-    assert rows[0]["year"] == rows[0]["year"]  # row is generated even with no year ranges
+def test_build_rows_uses_defaults_for_missing_source_scope_ecu_and_fuel():
+    rows = seed.build_rows({
+        "entries": [{
+            "make": "A",
+            "model": "B",
+            "year_ranges": [[2010, 2010]],
+            "engines": [{"name": "E"}],
+        }]
+    })
+    assert rows[0]["year"] == 2010
     assert rows[0]["ecu"] is None
     assert rows[0]["fuel"] == []
     assert rows[0]["source"] == "project-curated-seed"

@@ -473,7 +473,7 @@ Added focused test modules and extended Desktop tests for the latest below-90 li
 - Extended `apps/desktop/tests/test_ui_pom.py` for invalid/offline vehicle catalog, telemetry refresh errors/stale sessions/success and AI unavailable/success UI states.
 - Updated `vehicle/adapters/can_simulator.py` to close an async RX-hook coroutine if synchronous injection happens without a running event loop, preventing an un-awaited coroutine warning; `tests/test_low_coverage_small_modules.py` covers that fallback.
 
-The tests above are committed on `main`, but have **not yet been validated in the developer's local environment**. Pull latest `main` and first run:
+The new core Batch 7 tests are committed on `main` but remain **awaiting local validation**. The developer has now confirmed that the Desktop-specific command passed **95 tests in 13.32s**, and the two previously failing cases passed together (**2 passed in 3.82s**). These results validate the Desktop target command only; they do not yet validate the core Batch 7 tests below. Pull latest `main` and run:
 
 ```bash
 python -m pytest -q \
@@ -549,4 +549,4 @@ The developer's first Desktop-targeted run reported **93 passed, 2 failed**. Bot
 - `test_icon_builder_resizes_small_source_and_creates_all_desktop_formats`: the test redirected outputs to a temporary `assets/` directory but did not create that directory. The fixture now creates the output directory before calling `icons.main()`.
 - `test_vehicle_dialog_handles_api_failure_and_malformed_offline_catalog`: the dialog intentionally preserves curated W211 defaults if the API and offline catalog are unavailable. The test incorrectly expected an empty make combo. It now asserts the documented fallback values (`Mercedes-Benz / E-Class / W211`) while verifying that the external/offline catalog remains empty and the Russian offline notice is displayed.
 
-Both test-only corrections are committed to `main`. This batch is still **awaiting a rerun**; the initial 93 passing tests do not establish full-batch PASS until the two corrected tests and the full targeted command finish without failures.
+Both test-only corrections are committed to `main`. The developer reran the two corrected cases and reported **2 passed in 3.82s**, then reran the full Desktop-specific command and reported **95 passed in 13.32s**. The Desktop-specific Batch 7 tests are therefore **PASS**. The core Batch 7 targeted tests remain awaiting local validation and combined coverage has not yet been remeasured after this batch.

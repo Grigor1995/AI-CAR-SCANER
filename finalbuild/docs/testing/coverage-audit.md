@@ -310,3 +310,14 @@ The first reported run returned **73 passed, 11 failed**. The failing cases iden
 3. **RAG config mock signature:** `PgVectorConfig.from_env` is a classmethod, but monkeypatch replaces its descriptor with a plain function. The mock must therefore be `lambda: cfg`, not `lambda _cls: cfg`.
 
 These changes are committed to `main`. The corrected batch has **not yet been rerun**, so do not record it as passing until the next local pytest result confirms it.
+
+
+### Batch 4 corrected local validation — PASS (2026-10-14)
+
+The developer reran all seven batch 4 modules after the fixes above. The supplied local result is:
+
+```text
+84 passed in 1.81s
+```
+
+This confirms the targeted batch 4 test modules pass in the developer's local environment. The total combined coverage has **not yet been remeasured after batch 4**; rerun the clean Step 1 → append Step 2 → JSON Step 3 workflow before recording a new coverage percentage.

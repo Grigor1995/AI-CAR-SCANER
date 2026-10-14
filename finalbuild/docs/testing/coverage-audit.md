@@ -563,3 +563,15 @@ The developer's first run of the targeted core batch reported **87 passed, 5 fai
 - `test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost`: the fake engine marked the matching hypothesis as rejected, so the production analysis correctly excluded it from the active category set. The fixture now leaves the hypothesis `possible` to test the matching-target branch; its expected information gain is then 0.25.
 
 These corrections are committed on main. The developer reran the five previously failing test cases and confirmed **5 passed in 2.09s**. The complete Core Batch 7 suite was then rerun and confirmed **92 passed in 3.02s**. The Desktop-specific targeted batch separately remains confirmed at **95 passed in 13.32s**. Together these targeted validations pass, but the combined coverage percentage has not yet been remeasured after Batch 7.
+
+
+## Per-file 90% coverage — Desktop final two files (2026-10-14; tests committed, awaiting local validation)
+
+The developer's latest combined JSON report reports **96.18% scoped Python coverage**. Only two active Desktop production files remain below 90%:
+
+- `apps/desktop/main.py`: **88.67%**, 29 missing statements at lines 15, 16, 21, 70, 74, 90, 101, 102, 157, 192, 203-209, 272, 306, 313-319, 340-341 and 367.
+- `apps/desktop/prepare_windows_icon.py`: **89.29%**, 3 missing statements at lines 32, 36 and 42.
+
+Added more focused tests to `apps/desktop/tests/test_main_coverage_edges.py` for frozen-package bootstrap/path insertion, frozen bundled `llama-server` discovery and filesystem errors, health helper delegation, LLM `--no-webui` and readiness retries, startup timeout cleanup failures, frozen backend startup and retries, backend timeout cleanup failures, the absolute UI import fallback, and the module script entrypoint. Added tests to `apps/desktop/tests/test_prepare_windows_icon_coverage.py` for missing generated output, invalid ICO validation and execution through the script entrypoint in an isolated temporary project tree.
+
+These tests are now committed to main, but have not yet been run by the developer. Validate the targeted files first, then run the full Desktop target batch and repeat the combined coverage workflow. Do not claim 90% per-file coverage until a fresh JSON report confirms it.

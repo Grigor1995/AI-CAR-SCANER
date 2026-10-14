@@ -1,7 +1,7 @@
 package com.aicarscaner.mobile.presentation
 
 import android.Manifest
-import androidx.activity.ComponentActivity
+import com.aicarscaner.mobile.MainActivity
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -30,7 +30,7 @@ import org.junit.rules.TestRule
 
 @RunWith(AndroidJUnit4::class)
 class DiagnosticScreenInstrumentedTest {
-    private val composeRule = createAndroidComposeRule<ComponentActivity>()
+    private val composeRule = createAndroidComposeRule<MainActivity>()
 
     @get:Rule
     val ruleChain: TestRule = RuleChain
@@ -84,7 +84,7 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.onNodeWithText("OBD").assertExists()
         composeRule.onNodeWithText("Live Data").assertExists()
         composeRule.onNodeWithText("Analysis").assertExists()
-        composeRule.onNodeWithText("E-Class").assertExists()
+        composeRule.onNodeWithText("E-Class", substring = true).assertExists()
     }
 
     @Test

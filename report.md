@@ -395,3 +395,14 @@ The developer isolated the Windows Qt crash by loading plugins one at a time:
 This points to an interaction between the auto-loaded `pytest-benchmark` plugin and the Qt/Python native import path in the developer's environment; it does not prove the root cause inside the plugin or PySide6. Repository search shows no use of the pytest-benchmark fixture/API. The project performance test in `tests/harness/test_performance.py` uses `time.perf_counter` directly.
 
 Change: `finalbuild/pytest.ini` now adds `-p no:benchmark` by default to prevent the unused plugin from loading during this project's tests. This is a targeted workaround based on the reproduced plugin-specific crash; the test suite and UI tests must be rerun after pulling the change. Do not add `-o addopts=""` when verifying that this config works, because that option deliberately overrides the config addopts. No CI was run.
+
+
+## Local verification after disabling pytest-benchmark — 2026-10-14
+
+Developer-confirmed Windows local results after pulling the main-branch pytest configuration change:
+- `python -m pytest -p no:xdist -q -ra apps/desktop/tests/test_ui_widgets.py`: **18 passed in 5.32s**.
+- `python -m pytest -p no:xdist -q -ra apps/desktop/tests`: **79 passed in 3.36s**.
+
+These commands were run without `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, and with the normal repository `pytest.ini` configuration that disables the unused `benchmark` plugin. The specific UI test and the complete Desktop tests directory both completed without the previously observed native access violation in these runs.
+
+This confirms the local test workaround is effective for these invocations; it does not identify the underlying native crash root cause beyond the reproduced plugin-specific interaction. The main Python suite had separately been reported as 172 passed / 1 skipped / 61 warnings in 25.59s before this Desktop verification. A fresh combined full-suite run remains recommended. No cloud CI was run.

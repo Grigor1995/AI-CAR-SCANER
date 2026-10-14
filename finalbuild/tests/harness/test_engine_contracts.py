@@ -163,3 +163,35 @@ def test_completed_rule_test_does_not_reappear_with_regenerated_id():
             item.name,
         ),
     )
+
+
+
+@pytest.mark.parametrize(
+    "outcome,notes,expected_status",
+    [
+        ("PASS", "pressure drops", "disfavored_by_test"),
+        ("FAIL", "pressure stable", "supported_by_test"),
+        ("INCOMPLETE", "symptom reproduced", None),
+    ],
+)
+def test_explicit_test_outcome_takes_precedence_over_conflicting_notes(
+    outcome, notes, expected_status
+):
+    engine = DiagnosticIntelligenceEngine()
+    session = engine.analyze(_session())
+    test = engine.next_test(session)
+    assert test is not None
+
+    engine.decision.update_hypotheses_from_result(session, test, f"{outcome} {notes}")
+    targeted = [
+        hypothesis for hypothesis in session.hypotheses
+        if hypothesis.category in test.target_hypotheses
+    ]
+    assert targeted
+    if expected_status is None:
+        assert all(
+            hypothesis.status not in {"supported_by_test", "disfavored_by_test"}
+            for hypothesis in targeted
+        )
+    else:
+        assert all(hypothesis.status == expected_status for hypothesis in targeted)

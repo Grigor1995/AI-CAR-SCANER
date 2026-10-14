@@ -622,8 +622,11 @@ class LiveDataPage(QWidget):
         provider = self._provider_data
         available = bool(provider.get("available"))
         model = provider.get("model", "—")
-        self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
-        self.ai_status.setObjectName("ok" if available else "warn")
+        if provider.get("_error"):
+            self.ai_status.setText("AI: unavailable")
+        else:
+            self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
+        self.ai_status.setObjectName("ok" if available and not provider.get("_error") else "warn")
         self.ai_status.style().unpolish(self.ai_status)
         self.ai_status.style().polish(self.ai_status)
         summary = self.app.telemetry

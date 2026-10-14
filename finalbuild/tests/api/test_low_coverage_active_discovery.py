@@ -103,7 +103,7 @@ def _route_setup(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_active_probe_validates_session_runtime_and_returns_correlation(monkeypatch):
-    _, passive, active, runtime = _route_setup(monkeypatch)
+    session, passive, active, runtime = _route_setup(monkeypatch)
     req = routes.ActiveProbeRequest(candidate_ids=["ecu-1"], timeout_ms=500, max_targets=2, inter_probe_ms=0)
 
     with pytest.raises(HTTPException) as exc:

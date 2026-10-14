@@ -601,3 +601,159 @@ def test_translation_round_trips_dynamic_session_state_between_languages():
     assert russian.startswith("Состояние сеанса:")
     assert armenian.startswith("Սեսիայի վիճակ՝")
     assert english == source
+
+
+
+def test_new_session_offline_reports_error_without_starting_worker(window_factory, monkeypatch):
+    window = window_factory()
+    window.online = False
+    errors = []
+    jobs = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    window.new_session()
+    assert errors == ["Backend is offline. Start the FastAPI backend first."]
+    assert jobs == []
+
+
+def test_new_session_online_runs_api_call_and_handles_result(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    window.online = True
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    window.new_session()
+    assert len(jobs) == 1
+    worker, done = jobs[0]
+    fake_api.create_session.return_value = {
+        "session_id": "new-session", "state": "CREATED"
+    }
+    result = worker()
+    assert result["session_id"] == "new-session"
+    fake_api.create_session.assert_called_once_with(window.active_vehicle.to_json())
+    done(result)
+    assert window.session.session_id == "new-session"
+    assert window.session.state == "CREATED"
+
+
+def test_refresh_telemetry_updates_current_session_and_ignores_stale_result(
+    window_factory, monkeypatch, fake_api
+):
+    window = window_factory()
+    window.session = Session("session-current", "ACQUIRING", window.active_vehicle)
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    fake_api.telemetry_summary.return_value = {"signals": [{"pid": "RPM"}]}
+    fake_api.acquisition_records.return_value = {"records": [{"numeric_value": 900}]}
+
+    window.refresh_telemetry()
+    assert window._telemetry_refresh_in_flight is True
+    window.refresh_telemetry()
+    assert len(jobs) == 1  # duplicate polling request is suppressed
+    worker, done = jobs[0]
+    result = worker()
+    done(result)
+    assert window._telemetry_refresh_in_flight is False
+    assert window.telemetry == {"signals": [{"pid": "RPM"}]}
+    assert window.pages[4]._records_data == [{"numeric_value": 900}]
+
+    # A late result from an old session must not overwrite the current session.
+    window.session = Session("session-old", "ACQUIRING", window.active_vehicle)
+    jobs.clear()
+    window.refresh_telemetry()
+    worker, done = jobs[0]
+    result = worker()
+    window.session = Session("session-new", "ACQUIRING", window.active_vehicle)
+    previous_telemetry = dict(window.telemetry)
+    done(result)
+    assert window.telemetry == previous_telemetry
+
+
+def test_refresh_telemetry_reports_api_error_and_releases_in_flight_flag(
+    window_factory, monkeypatch, fake_api
+):
+    window = window_factory()
+    window.session = Session("session-error", "ACQUIRING", window.active_vehicle)
+    jobs = []
+    messages = []
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    monkeypatch.setattr(window.statusBar(), "showMessage", messages.append)
+    fake_api.telemetry_summary.side_effect = RuntimeError("telemetry unavailable")
+    window.refresh_telemetry()
+    worker, done = jobs[0]
+    done(worker())
+    assert window._telemetry_refresh_in_flight is False
+    assert messages[-1] == "Live-data refresh failed: telemetry unavailable"
+
+
+def test_record_selected_test_posts_result_notes_then_reanalyzes(
+    window_factory, monkeypatch, fake_api
+):
+    window = window_factory()
+    window.session = Session("session-test", "READY", window.active_vehicle)
+    window.decision = {"candidates": [
+        {"id": "candidate-42", "name": "Check LPG pressure", "purpose": "Check delivery",
+         "priority_score": 0.9, "risk": "LOW"}
+    ]}
+    tests_page = TestsPO(window)
+    tests_page.refresh()
+    tests_page.select()
+    tests_page.set_result("FAIL")
+    tests_page.set_notes("Pressure below spec")
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    window.record_selected_test()
+    assert len(jobs) == 1
+    worker, done = jobs[0]
+    fake_api.record_test_result.return_value = {"ok": True}
+    fake_api.analyze.return_value = {"state": "ANALYZED"}
+    fake_api.decision_plan.return_value = {"candidates": []}
+    result = worker()
+    fake_api.record_test_result.assert_called_once_with(
+        "session-test", "candidate-42", "FAIL",
+        notes="Pressure below spec", language="en"
+    )
+    fake_api.analyze.assert_called_once_with("session-test", language="en")
+    fake_api.decision_plan.assert_called_once_with("session-test")
+    assert result == {"candidates": []}
+    assert callable(done)
+
+
+def test_record_selected_test_requires_session_and_selection(window_factory, monkeypatch):
+    window = window_factory()
+    errors = []
+    jobs = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    window.record_selected_test()
+    assert errors == ["No active session."]
+    assert jobs == []
+
+    window.session = Session("session-test", "READY", window.active_vehicle)
+    window.record_selected_test()
+    assert errors[-1] == "Select a diagnostic test first."
+    assert jobs == []
+
+
+def test_live_ai_callback_formats_unavailable_provider_result(window_factory):
+    window = window_factory()
+    window._live_ai_done({
+        "ai": {"available": False, "provider": "local", "model": "Qwen",
+               "error": "model offline", "text": "No diagnosis produced."},
+        "telemetry": {"signals": []},
+        "session": {"state": "ANALYSIS_READY"},
+    })
+    text = window.pages[4].ai_box.toPlainText()
+    assert "Provider: local" in text
+    assert "Model: Qwen" in text
+    assert "No diagnosis produced." in text
+    assert "Provider error: model offline" in text
+    assert window.telemetry == {"signals": []}
+
+
+def test_device_action_callback_replaces_device_and_updates_status(window_factory):
+    window = window_factory()
+    window.devices = [{"device_id": "dev-1", "status": "disconnected"}]
+    result = {"device_id": "dev-1", "status": "connected"}
+    window._device_action_done(result, "Device connected")
+    assert window.devices == [result]
+    assert window.statusBar().currentMessage() == "Device connected"

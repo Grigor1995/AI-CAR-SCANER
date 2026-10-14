@@ -92,10 +92,13 @@ def test_upsert_validates_dimensions_and_executes_parameterized_upsert(monkeypat
     )
     with pytest.raises(ValueError, match="embedding dimension 2 != configured 3"):
         repo.upsert_chunks([chunk], [[0.1, 0.2]])
-    assert engine.transactions == 0
+    # The repository enters its transaction before validating individual embedding dimensions.
+    # Validation must fail without executing any SQL statements.
+    assert engine.transactions == 1
+    assert connection.calls == []
 
     repo.upsert_chunks([chunk], [[0.1, 0.2, 0.3]])
-    assert engine.transactions == 1
+    assert engine.transactions == 2
     sql, params = connection.calls[-1]
     assert "ON CONFLICT (chunk_id) DO UPDATE" in sql
     assert params["chunk_index"] == 2

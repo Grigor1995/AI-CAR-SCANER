@@ -261,10 +261,25 @@ def _localized_event(event: str, language: str) -> str:
     return AUDIT_EVENT_LABELS.get(language, {}).get(event, event)
 
 def _localized_test_result_fact(fact: str, language: str) -> str:
-    match = re.match(r"^Test ([^ ]+) result: (.*)$", fact)
-    if not match:
+    # Support the original compact evidence string and the richer test-result
+    # evidence written by DiagnosticIntelligenceEngine. Keep notes/measurements
+    # visible instead of dropping information from the technician's submission.
+    legacy = re.match(r"^Test ([^ ]+) result: (PASS|FAIL|UNKNOWN|INCOMPLETE)$", fact)
+    detailed = re.match(
+        r"^Completed diagnostic test(?:: (.+?)| ID: ([^;]+));\s*result:\s*(PASS|FAIL|UNKNOWN|INCOMPLETE)(?:;\s*(.*))?$",
+        fact,
+    )
+    if legacy:
+        test_label = legacy.group(1)
+        result_value = legacy.group(2)
+        details = ""
+    elif detailed:
+        test_label = (detailed.group(1) or detailed.group(2) or "").strip()
+        result_value = detailed.group(3)
+        details = (detailed.group(4) or "").strip()
+    else:
         return fact
-    result_value = match.group(2)
+
     result_labels = {
         "ru": {
             "PASS": "ПРОЙДЕН",
@@ -280,7 +295,10 @@ def _localized_test_result_fact(fact: str, language: str) -> str:
         },
     }
     prefix = {"ru": "Результат теста", "hy": "Թեստի արդյունք"}.get(language, "Test result")
-    return f"{prefix} {match.group(1)}: {result_labels.get(language, {}).get(result_value, result_value)}"
+    localized = f"{prefix} {test_label}: {result_labels.get(language, {}).get(result_value, result_value)}"
+    if details:
+        localized = f"{localized}; {details}"
+    return localized
 
 
 HYPOTHESIS_LABELS = {

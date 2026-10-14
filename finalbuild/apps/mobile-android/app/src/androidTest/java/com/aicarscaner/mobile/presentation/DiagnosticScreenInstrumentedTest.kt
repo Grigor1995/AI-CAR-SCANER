@@ -4,6 +4,8 @@ import android.Manifest
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -293,6 +295,72 @@ class DiagnosticScreenInstrumentedTest {
 
         assertTrue(composeRule.onAllNodesWithText("OBD is not connected")
             .fetchSemanticsNodes().isNotEmpty())
+    }
+
+
+    @Test
+    fun vehicleCanEnterEditModeAndSave() {
+        launchScreen()
+        createSession()
+
+        // The first exact "Session" is the summary card heading; the second is the tab.
+        composeRule.onAllNodesWithText("Session")[1].performClick()
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
+
+        composeRule.onNodeWithText("Save Session").performScrollTo().assertExists()
+        composeRule.onNodeWithText("Save Session").performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Edit").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("E-Class").assertExists()
+    }
+
+    @Test
+    fun wifiConnectButtonRequiresANonBlankHost() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("OBD").performClick()
+        composeRule.onNodeWithText("Wi-Fi").performClick()
+
+        composeRule.onNodeWithText("Connect Wi-Fi").assertIsNotEnabled()
+        composeRule.onNodeWithText("Host").performTextInput("192.0.2.10")
+        composeRule.onNodeWithText("Connect Wi-Fi").assertIsEnabled()
+    }
+
+    @Test
+    fun testResultDialogCanBeCancelledWithoutSavingAResult() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Driver symptom")
+            .performScrollTo()
+            .performTextInput("Engine shakes on LPG under load")
+        composeRule.onNodeWithText("Add Symptom")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Review Analysis").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Review Analysis").performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Check LPG injector balance")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText("Record result")[0].performScrollTo().performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+
+        assertTrue(
+            composeRule.onAllNodesWithText("Check LPG injector balance")
+                .fetchSemanticsNodes().isNotEmpty()
+        )
+        assertTrue(
+            composeRule.onAllNodesWithText("Result: INCOMPLETE")
+                .fetchSemanticsNodes().isEmpty()
+        )
     }
 
 }

@@ -7,14 +7,18 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import com.aicarscaner.mobile.data.api.AuditEventDto
 import com.aicarscaner.mobile.data.api.DiagnosticApi
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
+import com.aicarscaner.mobile.data.api.EvidenceDto
+import com.aicarscaner.mobile.data.api.HypothesisDto
 import com.aicarscaner.mobile.data.api.DtcDto
 import com.aicarscaner.mobile.data.api.DtcRequest
+import com.aicarscaner.mobile.data.api.RecommendationDto
 import com.aicarscaner.mobile.data.api.SymptomDto
 import com.aicarscaner.mobile.data.api.SymptomRequest
 import com.aicarscaner.mobile.data.api.TestResultDto
@@ -165,6 +169,128 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.onNodeWithText("Create Diagnostic Session").assertExists()
     }
 
+
+    @Test
+    fun symptomCanBeEditedAndDeleted() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Driver symptom")
+            .performScrollTo()
+            .performTextInput("Engine shakes at low RPM")
+        composeRule.onNodeWithText("Add Symptom")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Engine shakes at low RPM")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onAllNodesWithText("Edit").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Driver symptom").performTextClearance()
+        composeRule.onNodeWithText("Driver symptom").performTextInput("Engine shakes after warm-up")
+        composeRule.onNodeWithText("Save").performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Engine shakes after warm-up")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Diagnose (0)")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun dtcCanBeEditedAndDeleted() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Diagnostic trouble code")
+            .performScrollTo()
+            .performTextInput("p0302")
+        composeRule.onNodeWithText("Add DTC")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("P0302")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onAllNodesWithText("Edit").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Diagnostic trouble code").performTextClearance()
+        composeRule.onNodeWithText("Diagnostic trouble code").performTextInput("P0300")
+        composeRule.onNodeWithText("Save").performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("P0300")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Diagnose (0)")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun analysisRendersEvidenceHypothesisRecommendationsAndRecordsResult() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Driver symptom")
+            .performScrollTo()
+            .performTextInput("Engine shakes on LPG under load")
+        composeRule.onNodeWithText("Add Symptom")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Review Analysis")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Review Analysis").performScrollTo().performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("LPG injector imbalance could explain load misfire")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText("Petrol runs normally")
+            .fetchSemanticsNodes().isNotEmpty()
+        composeRule.onAllNodesWithText("Check LPG injector balance")
+            .fetchSemanticsNodes().isNotEmpty()
+        composeRule.onAllNodesWithText("Does misfire disappear on petrol?")
+            .fetchSemanticsNodes().isNotEmpty()
+
+        composeRule.onAllNodesWithText("Record result").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("FAIL").performClick()
+        composeRule.onNodeWithText("Technician notes / result")
+            .performTextInput("Injector balance uneven")
+        composeRule.onAllNodesWithText("Record result").onLast().performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Injector balance uneven")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun liveDataTabShowsDisconnectedStateWhenNoObdAdapterIsConnected() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Live Data").performClick()
+        composeRule.waitForIdle()
+
+        assert(composeRule.onAllNodesWithText("OBD is not connected")
+            .fetchSemanticsNodes().isNotEmpty())
+    }
+
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {
@@ -269,6 +395,39 @@ private class FakeDiagnosticApi : DiagnosticApi {
         language: String
     ): DiagnosticSessionDto = current.copy(
         state = "INITIAL_ANALYSIS",
-        audit_log = current.audit_log + AuditEventDto(event = "analysis_requested")
+        evidence = listOf(
+            EvidenceDto(
+                id = "evidence-petrol",
+                fact = "Petrol runs normally",
+                source = "driver report",
+                status = "reported",
+                confidence = 0.9
+            )
+        ),
+        hypotheses = listOf(
+            HypothesisDto(
+                id = "hypothesis-lpg",
+                category = "Fuel delivery",
+                statement = "LPG injector imbalance could explain load misfire",
+                supporting_evidence_ids = listOf("evidence-petrol"),
+                status = "POSSIBLE:0.72"
+            )
+        ),
+        recommendations = listOf(
+            RecommendationDto(
+                id = "lpg-injector-balance",
+                title = "Check LPG injector balance",
+                purpose = "Compare injector contribution under the same operating conditions",
+                priority = 0.9,
+                expected_observation = "Uneven contribution supports a fuel-delivery hypothesis",
+                informationGain = 0.7,
+                estimatedCost = 15.0,
+                riskLevel = "LOW"
+            )
+        ),
+        audit_log = current.audit_log + AuditEventDto(
+            event = "analysis_requested",
+            questions = listOf("Does misfire disappear on petrol?")
+        )
     ).also { current = it }
 }

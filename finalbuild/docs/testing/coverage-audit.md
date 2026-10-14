@@ -299,3 +299,14 @@ python -m pytest -q \
 ```
 
 After resolving any failures, rerun the full Step 1 coverage command from a clean measurement, then the Step 2 Desktop run with `--cov-append`, and finally Step 3. Do not treat the current 88.46% as the post-batch-4 percentage until those measurement steps have been repeated.
+
+
+### Batch 4 first local run and corrective changes (2026-10-14)
+
+The first reported run returned **73 passed, 11 failed**. The failing cases identified two separate causes:
+
+1. **Windows temporary-file sharing:** the direct unit test exposed that the text-ingestion route passed a still-open `NamedTemporaryFile` path into the pipeline. This can prevent the pipeline from reopening the file on Windows. The route now writes a regular file inside `TemporaryDirectory`, closes it before calling the pipeline, and cleans it up on exit. Both text and upload ingestion use this pattern.
+2. **Direct handler invocation defaults:** outside FastAPI request processing, parameters declared as `Form("{}")` and `Form(None)` are FastAPI parameter objects, not the runtime strings/None. File-ingestion unit tests now pass `metadata_json="{}"` and `title=None` explicitly.
+3. **RAG config mock signature:** `PgVectorConfig.from_env` is a classmethod, but monkeypatch replaces its descriptor with a plain function. The mock must therefore be `lambda: cfg`, not `lambda _cls: cfg`.
+
+These changes are committed to `main`. The corrected batch has **not yet been rerun**, so do not record it as passing until the next local pytest result confirms it.

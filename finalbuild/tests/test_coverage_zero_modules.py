@@ -273,3 +273,8 @@ def test_professional_analytics_audit_reporting_and_security_event():
     assert sec.actor_id == "u1"
     assert sec.outcome == "denied"
     assert sec.timestamp.endswith("+00:00")
+
+def test_diagnostic_intelligence_reexport_is_public():
+    from backend.diagnostic.intelligence import DiagnosticIntelligenceEngine
+    from backend.ai.reasoning.engine import DiagnosticIntelligenceEngine as Engine
+    assert DiagnosticIntelligenceEngine is Engine

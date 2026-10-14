@@ -518,3 +518,36 @@ python -m pytest -n 4 -vv -ra --durations=20
 ```
 
 No cloud CI was triggered. Treat the fix as unverified until the local rerun confirms it.
+
+
+## Local warning audit and cleanup — 2026-10-14
+
+### User-provided baseline before the cleanup commits
+
+From `finalbuild/`, the full local suite reported:
+
+```text
+201 passed, 1 skipped, 227 warnings in 20.81s
+```
+
+The skipped integration test requires a running PostgreSQL/pgvector service. The warning summary identified several repeatable groups rather than 227 separate application defects:
+
+- **Starlette TestClient:** using `httpx` triggers a deprecation warning; the development dependencies now include `httpx2`.
+- **FastAPI lifecycle:** the deprecated `@app.on_event("startup")` hook was replaced with an application lifespan handler. A focused lifespan test was added.
+- **Python 3.14 / pytest-asyncio:** the old pinned pytest-asyncio range is upgraded to `>=1.4,<2`; explicit fixture/test loop scopes were added to `pytest.ini`.
+- **Pydantic serialization:** the live-AI test mixed imports under `backend.*` and top-level package names, creating different enum class identities. The test now uses the same canonical top-level imports as the application.
+- **Resource cleanup:** desktop service log handles are closed on failed startup/timeouts and the fake llama-server test cleans up its handle. The local SQLite test store now exposes `close()`; SQLite-backed tests close their connections/engine in `finally` blocks.
+
+### Verification status
+
+The baseline above was collected **before** these cleanup changes. The modified code and dependencies have not been executed in this environment, and no CI was triggered. Treat warning reduction as **pending local verification**, not a confirmed result.
+
+From `finalbuild/`, update the active virtual environment and rerun the suite:
+
+```powershell
+python -m pip install -r backend/requirements-dev.txt
+python -m pytest -q -rs -W default 2>&1 | Tee-Object -FilePath pytest-warnings-after.txt
+QT_QPA_PLATFORM=offscreen python -m pytest -q apps/desktop/tests/test_ui_pom.py
+```
+
+Review the new summary and any remaining warnings before declaring the warning cleanup complete.

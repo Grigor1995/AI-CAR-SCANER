@@ -335,17 +335,25 @@ class DiagnosticDecisionEngine:
             return []
         text = result.strip().lower()
         supported: list[str] = []
-        # Normalize the UI outcome values as well as free-form technician notes.
-        # PASS means the selected test did NOT show the targeted fault;
-        # FAIL means the targeted fault was observed.
-        positive = (
-            text in {"fail", "failed", "failure"}
-            or any(k in text for k in ("supports", "confirmed", "drops", "low", "unstable", "leak", "misfire reproduced", "fails"))
-        )
-        negative = (
-            text in {"pass", "passed", "normal", "stable", "within spec", "no leak"}
-            or any(k in text for k in ("normal", "stable", "no leak", "within spec", "passes"))
-        )
+        # The explicit UI outcome is authoritative. Notes may contain a word
+        # such as "stable" or "drops" that otherwise makes the same result look
+        # both positive and negative. Interpret notes heuristically only when
+        # there is no explicit PASS/FAIL/INCOMPLETE outcome.
+        outcome = text.split(maxsplit=1)[0] if text else ""
+        if outcome in {"fail", "failed", "failure"}:
+            positive, negative = True, False
+        elif outcome in {"pass", "passed"}:
+            positive, negative = False, True
+        elif outcome in {"incomplete", "unknown", "pending"}:
+            positive, negative = False, False
+        else:
+            positive = any(
+                k in text
+                for k in ("supports", "confirmed", "drops", "low", "unstable", "leak", "misfire reproduced", "fails")
+            )
+            negative = any(
+                k in text for k in ("normal", "stable", "no leak", "within spec", "passes")
+            )
         for hypothesis in session.hypotheses:
             if hypothesis.category not in test.target_hypotheses:
                 continue

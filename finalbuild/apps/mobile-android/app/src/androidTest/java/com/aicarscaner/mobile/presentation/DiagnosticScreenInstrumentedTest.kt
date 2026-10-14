@@ -1,6 +1,5 @@
 package com.aicarscaner.mobile.presentation
 
-import android.Manifest
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -12,7 +11,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.rule.GrantPermissionRule
 import com.aicarscaner.mobile.data.api.AuditEventDto
 import com.aicarscaner.mobile.data.api.DiagnosticApi
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
@@ -32,22 +30,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.rules.RuleChain
-import org.junit.rules.TestRule
 
 @RunWith(AndroidJUnit4::class)
 class DiagnosticScreenInstrumentedTest {
-    private val composeRule = createAndroidComposeRule<TestHostActivity>()
-
     @get:Rule
-    val ruleChain: TestRule = RuleChain
-        .outerRule(
-            GrantPermissionRule.grant(
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_SCAN
-            )
-        )
-        .around(composeRule)
+    val composeRule = createAndroidComposeRule<TestHostActivity>()
 
     private val fakeApi = FakeDiagnosticApi()
 

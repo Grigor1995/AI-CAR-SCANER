@@ -3,6 +3,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+# Local scoped coverage-audit reports (never commit generated reports)
+coverage-python-audit.*
+htmlcov-coverage-audit/
 .venv/
 .env
 .env.*

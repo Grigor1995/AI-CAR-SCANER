@@ -246,3 +246,56 @@ python -m pytest -q \
 - First identify genuine active production files at 0%, then add focused tests for those files and for important uncovered branches. Next raise active production files toward the 70% target and the measured scoped total toward 70%.
 - Do not include generated files, test files, obsolete code or intentionally platform-specific files in the production denominator without first confirming they are active.
 - No CI is required for this audit. Run locally, then use the JSON summary and low-coverage list to plan the next small batch of tests.
+
+
+## Updated combined coverage measurement (2026-10-14)
+
+Latest combined coverage output provided by the developer:
+
+```text
+Combined coverage: 88.46%
+Files below 70%: 9
+```
+
+Files currently reported below 70%:
+
+| Source file | Coverage | Missing statements |
+|---|---:|---:|
+| `apps/desktop/api_client.py` | 44.12% | 57 |
+| `apps/desktop/main.py` | 50.39% | 127 |
+| `backend/api/knowledge_routes.py` | 51.52% | 16 |
+| `backend/api/rag_routes.py` | 60.71% | 11 |
+| `backend/ai/llm/orchestrator.py` | 61.54% | 5 |
+| `backend/api/ai_routes.py` | 64.29% | 15 |
+| `backend/api/device_routes.py` | 65.85% | 28 |
+| `backend/api/vehicle_diagnostic_routes.py` | 67.81% | 47 |
+| `backend/api/multi_ecu_routes.py` | 68.06% | 23 |
+
+This is the developer-provided measurement before locally validating the new route-focused test batch below. The two Desktop files remain the next candidates after backend route tests are run; desktop API-client tests already exist under `apps/desktop/tests/test_api_client.py`, so ensure that suite is part of the appended coverage run before interpreting its measured percentage.
+
+## Low-coverage test expansion — batch 4 (2026-10-14; awaiting local validation)
+
+Added focused tests on `main` for:
+
+- `tests/api/test_low_coverage_knowledge_routes.py`: text/file ingestion, temp-file contents and suffixes, title defaults/overrides, metadata validation, serialized response and invalid JSON.
+- `tests/api/test_low_coverage_rag_routes.py`: config values/defaults, request validation, successful retrieval serialization, and repository/provider/retriever/timeout failures mapped to 503.
+- `tests/ai/test_low_coverage_orchestrator.py`: evidence/context serialization, missing vehicle, supplied retrieval, requested language, and provider prompt/context.
+- `tests/api/test_low_coverage_ai_routes.py`: knowledge indexing/search, unknown sessions, requested language, provider config and provider availability branches.
+- `tests/api/test_low_coverage_device_routes.py`: device serialization, scanning, Wi-Fi probe, connect/reconnect/disconnect/status, OBD VIN/DTC/live-data and expected error translation.
+- `tests/api/test_low_coverage_vehicle_diagnostic_routes.py`: connection lifecycle, ECU identification/DTC reads, trace validation, binding, OBD sync, evidence/audit updates, deduplication and error paths.
+- `tests/api/test_low_coverage_multi_ecu_routes.py`: connect/disconnect, topology, identify-all, read-all DTCs/correlation, trace validation and runtime errors.
+
+The new modules have **not yet been confirmed by a local pytest run**. Validate them from `finalbuild/`:
+
+```bash
+python -m pytest -q \
+  tests/api/test_low_coverage_knowledge_routes.py \
+  tests/api/test_low_coverage_rag_routes.py \
+  tests/ai/test_low_coverage_orchestrator.py \
+  tests/api/test_low_coverage_ai_routes.py \
+  tests/api/test_low_coverage_device_routes.py \
+  tests/api/test_low_coverage_vehicle_diagnostic_routes.py \
+  tests/api/test_low_coverage_multi_ecu_routes.py
+```
+
+After resolving any failures, rerun the full Step 1 coverage command from a clean measurement, then the Step 2 Desktop run with `--cov-append`, and finally Step 3. Do not treat the current 88.46% as the post-batch-4 percentage until those measurement steps have been repeated.

@@ -580,7 +580,15 @@ Additional tests have now been committed for the next run:
 
 Commit: `55e3b51` — [test(android): cover vehicle edit Wi-Fi validation and result cancel](https://github.com/Grigor1995/AI-CAR-SCANER/commit/55e3b51d56fd33c32e71f391f5576ed096c8320e).
 
-**These three additional tests have not yet been run locally.** The 55% instruction / 22% branch / 63.2% line coverage figures above are from the preceding successful run, before this latest commit. Do not present them as the post-change result.
+**Verification update from developer (2026-10-14):** the unit-test task completed successfully in 40s, but `connectedDebugAndroidTest` then reported all 13 instrumentation methods failing with the same `ComposeNotIdleException` ("possibly due to compose being busy"). No test-specific assertion failure was reached, so this is tracked as a shared test/startup synchronization failure, not 13 independent product regressions. The 55% / 22% / 63.2% numbers above predate this failed run and are not a new successful coverage measurement.
+
+A likely contributor was device discovery and Bluetooth runtime-permission handling being triggered as soon as the screen was composed, even for tests that only exercise the vehicle form. Two changes have been committed to remove this unwanted first-render side effect:
+- `105b2fe`: app startup now loads only the remote vehicle catalog; USB devices refresh when opening the OBD tab, while Bluetooth discovery is left to the existing user-triggered Refresh button.
+- `720c38e`: Compose instrumentation tests no longer install a `GrantPermissionRule`, because these UI flows do not grant or use real Bluetooth hardware permissions.
+
+These are evidence-based preventive changes, but **the underlying cause is not yet confirmed and the revised instrumentation run is still pending**. First run a single screen smoke test and then the full suite; if it still fails, inspect the XML stack trace from the first failure.
+
+
 
 ### Coverage target and next steps
 

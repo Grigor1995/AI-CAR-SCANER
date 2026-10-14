@@ -178,7 +178,8 @@ def test_start_llama_server_skips_busy_unhealthy_port(monkeypatch, tmp_path, cap
     monkeypatch.setattr(main, "_resolve_llama_server", lambda: server)
     monkeypatch.setattr(main, "_is_port_open", lambda *_args: True)
     assert main.start_llama_server() is None
-    assert "port" in capsys.readouterr().err and "busy" in capsys.readouterr().err
+    stderr = capsys.readouterr().err
+    assert "port" in stderr and "busy" in stderr
 
 
 def test_start_llama_server_reports_spawn_error_and_closes_log(monkeypatch, tmp_path):

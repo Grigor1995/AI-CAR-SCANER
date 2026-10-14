@@ -226,9 +226,9 @@ Added four more focused test modules to `main`, with no requirement for a live L
 - `tests/vehicle/isotp/test_low_coverage_stack.py`: malformed frames, timeouts, sequence validation, payload constraints, flow-control overflow/wait/block-size, and extended-frame sending.
 - `tests/api/test_low_coverage_vehicle_catalog_routes.py`: catalog filtering/facets, resolve queries, blank make/model errors and database-unavailable translation, using mocked query results.
 
-These batch 3 tests are committed but have **not yet been run locally**.
+The developer-provided local run confirmed **63 passed in 1.73 seconds** for batch 3 (2026-10-14).
 
-### Validate batch 3
+### Batch 3 validation command
 
 ```bash
 python -m pytest -q \

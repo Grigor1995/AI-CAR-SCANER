@@ -847,7 +847,7 @@ def test_add_vehicle_cancel_does_not_persist_or_start_session(window_factory, mo
 
 def test_add_vehicle_replaces_duplicate_profile_and_starts_new_session(window_factory, monkeypatch, vehicle):
     window = window_factory()
-    new_vehicle = Vehicle(vehicle.make, vehicle.model, vehicle.chassis, vehicle.year, "M272 upgraded", ["LPG"], vehicle.ecu)
+    new_vehicle = Vehicle(vehicle.make, vehicle.model, vehicle.chassis, vehicle.year, vehicle.engine, ["LPG"], vehicle.ecu)
     class AcceptedDialog:
         def __init__(self, _parent):
             pass
@@ -1193,7 +1193,7 @@ def test_live_data_request_refresh_handles_provider_and_status_errors(window_fac
     page.request_refresh()
     work, done = jobs.pop()
     done(work())
-    assert page.status.text() == "STOPPED"
+    assert page.status.text() == "Backend unavailable"
     assert page.ai_status.text() == "AI: unavailable"
     assert page._records_data == []
 
@@ -1207,6 +1207,7 @@ def test_live_data_poll_running_refreshes_telemetry_and_stops_when_stopped(windo
     monkeypatch.setattr(window, "refresh_telemetry", refresh)
     jobs = []
     monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    page.timer.start()
     page._poll()
     work, done = jobs.pop()
     done({"state": "RUNNING"})

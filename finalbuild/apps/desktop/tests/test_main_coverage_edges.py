@@ -52,7 +52,7 @@ def test_llama_server_resolution_and_model_override(monkeypatch, tmp_path):
     assert main._resolve_model_path() == (tmp_path / "models" / "default.gguf").resolve()
 
 
-def test_start_llama_server_respects_disable_health_missing_model_and_busy_port(monkeypatch, capsys):
+def test_start_llama_server_respects_disable_health_missing_model_and_busy_port(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("AI_CAR_DISABLE_LLM_AUTOSTART", "yes")
     assert main.start_llama_server() is None
 
@@ -65,7 +65,7 @@ def test_start_llama_server_respects_disable_health_missing_model_and_busy_port(
     assert main.start_llama_server() is None
     assert "model not found" in capsys.readouterr().err
 
-    model = Path(__file__).resolve().parent / "model-for-test.gguf"
+    model = tmp_path / "model-for-test.gguf"
     model.write_text("test model", encoding="utf-8")
     monkeypatch.setattr(main, "_resolve_model_path", lambda: model)
     monkeypatch.setattr(main, "_resolve_llama_server", lambda: None)

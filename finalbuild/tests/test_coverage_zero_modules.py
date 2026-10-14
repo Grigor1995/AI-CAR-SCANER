@@ -247,7 +247,7 @@ def test_professional_analytics_audit_reporting_and_security_event():
     org = "00000000-0000-0000-0000-000000000001"
     snapshot = summarize_events(org, "2026-10", [
         {"action": "SESSION_CREATED", "actor_user_id": "00000000-0000-0000-0000-000000000011", "vehicle_id": "00000000-0000-0000-0000-000000000021"},
-        {"action": "SESSION_CLOSED", "actor_user_id": "u1", "vehicle_id": "v1"},
+        {"action": "SESSION_CLOSED", "actor_user_id": "00000000-0000-0000-0000-000000000011", "vehicle_id": "00000000-0000-0000-0000-000000000021"},
         {"action": "DTC_READ", "actor_user_id": "00000000-0000-0000-0000-000000000012", "vehicle_id": "00000000-0000-0000-0000-000000000022"},
         {"action": "AI_ANALYSIS_STARTED", "actor_user_id": "00000000-0000-0000-0000-000000000012"},
         {"action": "SYNC_COMPLETED", "actor_user_id": None},

@@ -96,11 +96,10 @@ async def test_send_rejects_flow_control_overflow_and_invalid_wait_followup():
 async def test_send_handles_wait_cts_block_size_and_extended_frames(monkeypatch):
     payload = b"0123456789ABCDEFGHIJKLMN"
     bus = QueueBus([
-        CanFrame(0x708, b"\x31\x01\x00"),
-        CanFrame(0x708, b"\x30\x01\x00"),
-        CanFrame(0x708, b"\x30\x00\x00"),
+        CanFrame(0x18DAF110, b"\x31\x01\x00", is_extended=True),
+        CanFrame(0x18DAF110, b"\x30\x01\x00", is_extended=True),
+        CanFrame(0x18DAF110, b"\x30\x00\x00", is_extended=True),
     ])
-    monkeypatch.setattr(asyncio, "sleep", lambda *_args: asyncio.sleep(0))
     # Replace sleep with an async no-op so STmin/block handling never incurs wall-clock delay.
     async def no_sleep(_seconds):
         return None

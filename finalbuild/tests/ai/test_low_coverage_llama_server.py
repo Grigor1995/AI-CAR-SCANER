@@ -154,7 +154,7 @@ def test_availability_reports_not_ready_and_endpoint_failure(monkeypatch):
 
 
 def test_safe_context_text_keeps_recent_items_and_compacts_oversized_data(monkeypatch):
-    provider = make_provider(configured_context=1024, max_tokens=64)
+    provider = make_provider(configured_context=1024, max_tokens=64, context_safety_margin=4096)
     monkeypatch.setattr(provider, "_server_context_size", lambda: 1024)
     normal = provider._safe_context_text({
         "dtcs": list(range(12)),

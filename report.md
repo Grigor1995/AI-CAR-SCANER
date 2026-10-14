@@ -600,14 +600,16 @@ This is an Android test-runner output/lock-file access error, distinct from the 
 
 ### Latest full instrumentation result — 2026-10-14
 
-After the successful smoke test, all 13 instrumentation tests ran: **11 passed and 2 failed**. The detailed XML showed:
+**Latest full run: PASS — 13/13 instrumentation tests passed, 0 skipped, 0 failed** on `Pixel_6_Pro(AVD) - 17`. The user reported `BUILD SUCCESSFUL` in 2m 20s (69 tasks executed).
 
-- `wifiConnectButtonRequiresANonBlankHost`: the UI labels use a non-breaking hyphen in `Wi‑Fi` and `Connect Wi‑Fi`, while the test had been searching for ordinary-hyphen variants. The test now uses the exact displayed labels. It also scrolls the OBD tab into view and waits for the `OBD Connection` section before selecting Wi-Fi. Commit `3fb1742` addresses the text mismatch; this fix still needs a local test run.
-- `vehicleCanEnterEditModeAndSave`: `E-Class` matched two UI nodes. Commit `ec64041` changed the assertion to check that at least one matching node exists.
+The two tests that had failed in the earlier full run are now independently verified and pass in the full suite:
 
-The OBD wait/scroll update is commit `48a59eb`: [wait for OBD tab content](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca). The exact `Wi‑Fi` selector correction is [commit `3fb1742`](https://github.com/Grigor1995/AI-CAR-SCANER/commit/3fb174285d05aea25063f369f1ff7fb33f6e11ea).
+- `wifiConnectButtonRequiresANonBlankHost` — fixed the selector to match the UI's non-breaking hyphen in `Wi‑Fi` and `Connect Wi‑Fi`; the test also waits for the OBD section.
+- `vehicleCanEnterEditModeAndSave` — fixed an assertion that encountered two matching `E-Class` nodes by checking for at least one match.
 
-**Focused verification update:** on 2026-10-14, both `wifiConnectButtonRequiresANonBlankHost` (after commit `3fb1742`) and `vehicleCanEnterEditModeAndSave` passed their individual instrumentation runs on `Pixel_6_Pro(AVD) - 17` (`BUILD SUCCESSFUL`; 69 tasks executed per run). The complete 13-test instrumentation suite still needs verification. The previous 55% instruction / 22% branch coverage report remains the latest successful coverage measurement.
+Relevant changes: [OBD wait/scroll](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca), [Wi‑Fi selector fix](https://github.com/Grigor1995/AI-CAR-SCANER/commit/3fb174285d05aea25063f369f1ff7fb33f6e11ea), and [vehicle selector fix](https://github.com/Grigor1995/AI-CAR-SCANER/commit/ec640416fd4a1fb57bacde1ae6280050cd5ff33c).
+
+**Coverage has not yet been remeasured after these test changes.** The previous successful measurement remains 55% instruction coverage, 22% branch coverage and approximately 63.2% line coverage. The full instrumentation suite passing is a test result, not evidence that the 90% coverage target has been reached.
 
 ### Coverage target and next steps
 

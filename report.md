@@ -406,3 +406,16 @@ Developer-confirmed Windows local results after pulling the main-branch pytest c
 These commands were run without `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, and with the normal repository `pytest.ini` configuration that disables the unused `benchmark` plugin. The specific UI test and the complete Desktop tests directory both completed without the previously observed native access violation in these runs.
 
 This confirms the local test workaround is effective for these invocations; it does not identify the underlying native crash root cause beyond the reproduced plugin-specific interaction. The main Python suite had separately been reported as 172 passed / 1 skipped / 61 warnings in 25.59s before this Desktop verification. A fresh combined full-suite run remains recommended. No cloud CI was run.
+
+
+## Full Python regression suite — local verification — 2026-10-14
+
+Developer-confirmed local result after pulling the pytest configuration change and running the default test suite with 4 xdist workers:
+
+```
+172 passed, 1 skipped, 21 warnings in 11.57s
+```
+
+The skipped test is `tests/ai/test_phase11_retrieval.py::test_postgres_hybrid_integration_placeholder`, which explicitly requires a running PostgreSQL/pgvector service. This result verifies the configured Python suite rooted at `tests/`; it does not include native Android Gradle tests, iOS XCTest, Windows packaging/build verification, or a separate full combined Desktop run. Desktop tests were separately reported by the developer as 79 passed, including 18 Qt widget tests, under the configuration that disables the unused `benchmark` plugin.
+
+This is user-provided local test output; it was not executed by the audit environment. No cloud CI was run. Remaining warnings should be assessed separately, including FastAPI `on_event` deprecation, Starlette/httpx deprecation, and Pydantic enum serialization warnings seen in a prior run.

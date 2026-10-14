@@ -598,6 +598,10 @@ The developer's next attempt failed before useful instrumentation results were a
 
 This is an Android test-runner output/lock-file access error, distinct from the earlier `ComposeNotIdleException`. The log does not establish whether the revised UI tests pass or fail. Recommended remediation is to stop Gradle, force-stop the instrumentation/app processes or restart the emulator, remove only the generated connected-test results/report directories, then run one smoke test before the complete suite. Do not interpret coverage as updated from this failed run.
 
+### Follow-up smoke-test result — 2026-10-14
+
+After restarting ADB, removing stale generated connected-test results, and running the focused `screenShowsInitialVehicleForm` instrumentation smoke test, the developer reported **BUILD SUCCESSFUL in 3m 6s** (69 actionable tasks). This confirms that the test runner can launch and complete at least the initial-screen test after the cleanup and startup changes. The full 13-test instrumentation suite has not yet been rerun, so its status and refreshed coverage remain pending.
+
 ### Coverage target and next steps
 
 The desired 90% target remains unmet. Continue adding meaningful tests for uncovered branches; do not weaken assertions or exclude production code merely to increase the percentage. Generate and inspect the two reports separately:

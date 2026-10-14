@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import log2
+import re
 from typing import Iterable
 from uuid import UUID, uuid4
 
@@ -101,6 +102,12 @@ class DiagnosticDecisionEngine:
     def build_plan(self, session: DiagnosticSession, limit: int = 5) -> DiagnosticDecisionPlan:
         active_hypotheses = [h for h in session.hypotheses if not h.status.startswith("rejected")]
         categories = {h.category for h in active_hypotheses}
+        supported_categories = {
+            h.category for h in active_hypotheses if h.status == "supported_by_test"
+        }
+        disfavored_categories = {
+            h.category for h in active_hypotheses if h.status == "disfavored_by_test"
+        }
         if not categories:
             return DiagnosticDecisionPlan(
                 session_id=session.session_id,
@@ -155,7 +162,18 @@ class DiagnosticDecisionEngine:
                 + 0.15 * (1 - risk_penalty)
                 - prerequisite_penalty
             )
-            score = min(max(score, 0.0), 1.0)
+            # Re-score remaining tests after every submitted result. A prior
+            # negative result reduces the value of repeating checks aimed at
+            # the same hypothesis; a positive result raises the value of
+            # follow-up tests that can isolate/confirm that supported domain.
+            matched_count = max(len(set(matched)), 1)
+            supported_matches = len(set(matched) & supported_categories)
+            disfavored_matches = len(set(matched) & disfavored_categories)
+            result_adjustment = (
+                0.12 * supported_matches / matched_count
+                - 0.18 * disfavored_matches / matched_count
+            )
+            score = min(max(score + result_adjustment, 0.0), 1.0)
 
             diagnostic_test = DiagnosticTest(
                 id=existing_id or uuid4(),
@@ -177,6 +195,14 @@ class DiagnosticDecisionEngine:
                 rationale.append(f"Missing evidence: {', '.join(gaps)}.")
             else:
                 rationale.append("Required evidence is present.")
+            if supported_matches:
+                rationale.append(
+                    "A prior test supports a related hypothesis; this follow-up can help isolate the cause."
+                )
+            if disfavored_matches:
+                rationale.append(
+                    "A prior negative result lowers the priority of repeating checks aimed at this hypothesis."
+                )
 
             candidates.append(
                 DecisionCandidate(
@@ -271,16 +297,20 @@ class DiagnosticDecisionEngine:
                     "MEDIUM": 2.0,
                     "HIGH": 4.0,
                 }.get(item.risk_level.upper(), 1.0)
-            if item.priority_score <= 0:
-                item.priority_score = round(min(
-                    0.65 * item.expected_information_gain
-                    + 0.35 * (
-                        1.0 if item.risk_level.upper() == "LOW"
-                        else 0.75 if item.risk_level.upper() == "MEDIUM"
-                        else 0.5
-                    ),
-                    1.0,
-                ), 4)
+            # Recalculate even when the rule engine supplied a previous score;
+            # otherwise priorities stay stale after new test evidence arrives.
+            risk_value = {
+                "LOW": 1.0,
+                "MEDIUM": 0.75,
+                "HIGH": 0.5,
+            }.get(item.risk_level.upper(), 0.5)
+            cost_penalty = min(max((item.estimated_cost - 1.0) / 4.0, 0.0), 1.0)
+            item.priority_score = round(min(max(
+                0.65 * item.expected_information_gain
+                + 0.25 * (1.0 - cost_penalty)
+                + 0.10 * risk_value,
+                0.0,
+            ), 1.0), 4)
             enriched.append(item)
 
         return enriched
@@ -313,7 +343,7 @@ class DiagnosticDecisionEngine:
 
     @staticmethod
     def _recommendation_key(name: str) -> str:
-        return " ".join(name.lower().split())
+        return re.sub(r"[^a-z0-9]+", " ", name.casefold()).strip()
 
     @staticmethod
     def _risk_label(risk: float) -> str:

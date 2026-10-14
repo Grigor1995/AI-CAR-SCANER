@@ -220,7 +220,7 @@ def test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost(monk
         def analyze(self, current):
             current.recommendations = [unmatched, full_match]
             current.hypotheses = [
-                Hypothesis(category="engine", statement="issue", status="rejected_by_test"),
+                Hypothesis(category="engine", statement="issue", status="possible"),
             ]
             return current
 

@@ -7,7 +7,7 @@ def test_factory_defaults_to_local_llama_server(monkeypatch):
     monkeypatch.delenv("DIAGNOSTIC_LLM_PROVIDER", raising=False)
     sentinel = object()
     captured = []
-    monkeypatch.setattr(factory.LlamaServerConfig, "from_env", lambda _cls: sentinel)
+    monkeypatch.setattr(factory.LlamaServerConfig, "from_env", lambda: sentinel)
     monkeypatch.setattr(
         factory, "LlamaServerLLMProvider",
         lambda config: captured.append(config) or "llama-provider",
@@ -23,7 +23,7 @@ def test_factory_defaults_to_local_llama_server(monkeypatch):
 )
 def test_factory_accepts_local_provider_aliases(monkeypatch, provider):
     monkeypatch.setenv("DIAGNOSTIC_LLM_PROVIDER", provider)
-    monkeypatch.setattr(factory.LlamaServerConfig, "from_env", lambda _cls: "config")
+    monkeypatch.setattr(factory.LlamaServerConfig, "from_env", lambda: "config")
     monkeypatch.setattr(factory, "LlamaServerLLMProvider", lambda config: (provider, config))
 
     assert factory.build_llm_provider() == (provider, "config")

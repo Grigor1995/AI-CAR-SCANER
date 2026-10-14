@@ -431,3 +431,25 @@ Developer-confirmed local results from `apps/mobile-android` on Windows/Git Bash
 Non-fatal warnings observed include deprecated Kotlin `jvmTarget` configuration, deprecated `Modifier.menuAnchor()` in `DiagnosticScreen.kt:1627`, and an Android SDK XML version mismatch warning during initial configuration. They did not fail these tasks and should be cleaned up separately.
 
 Scope: this verifies local Android unit tests and the Debug APK build task only. The APK was not independently installed or launched on an emulator or physical device, so diagnostic UI/API runtime behavior, permissions, offline states and device-specific integrations remain unverified. No GitHub Actions, Codemagic or other cloud CI was triggered.
+
+
+## Android emulator installation verification — 2026-10-14
+
+Developer-confirmed local result on the Pixel 6 (AVD), Android 17 emulator:
+
+```
+adb devices
+emulator-5554   device
+
+./gradlew.bat installDebug
+
+> Task :app:installDebug
+Installing APK 'app-debug.apk' on 'Pixel_6(AVD) - 17' for :app:debug
+Installed on 1 device.
+BUILD SUCCESSFUL in 12s
+38 actionable tasks: 1 executed, 37 up-to-date
+```
+
+Status: **APK installation PASS** on `emulator-5554`. This follows the previously reported 21 Android unit tests passing with 0 failures/errors/skips and a successful `:app:assembleDebug` build. The package ID is `com.aicarscaner.mobile` and the launcher activity is `.MainActivity`.
+
+Limit: successful installation does not prove that the app launches, renders correctly, or can reach the backend. Next validation is to launch the installed app, capture logcat/startup errors, and inspect diagnostic-screen/backend behavior on the emulator. No cloud CI was triggered.

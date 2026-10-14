@@ -600,17 +600,14 @@ This is an Android test-runner output/lock-file access error, distinct from the 
 
 ### Latest full instrumentation result — 2026-10-14
 
-After the successful one-test smoke run, the developer ran all 13 instrumentation tests. **11 passed and 2 failed**. The test runner and Compose idling setup now work well enough to reach the test assertions; these were specific selector/visibility issues rather than the earlier shared `ComposeNotIdleException`.
+After the successful smoke test, all 13 instrumentation tests ran: **11 passed and 2 failed**. The detailed XML showed:
 
-Failures reported:
-- `wifiConnectButtonRequiresANonBlankHost`: could not find the `Wi-Fi` text node before tapping it.
-- `vehicleCanEnterEditModeAndSave`: `E-Class` substring assertion found two valid UI nodes; the test incorrectly required exactly one.
+- `wifiConnectButtonRequiresANonBlankHost`: the `Wi-Fi` text was not present after trying to click the `OBD` tab. The test now scrolls the OBD tab into view and waits until the `OBD Connection` section is actually present before trying to select Wi-Fi.
+- `vehicleCanEnterEditModeAndSave`: `E-Class` matched two UI nodes. Commit `ec64041` changed the assertion to check that at least one matching node exists.
 
-Commit `ec64041` addresses both:
-- scrolls the `Wi-Fi` transport option into view before tapping it;
-- checks that at least one `E-Class` node exists instead of using a singular selector that fails on duplicate labels.
+The Wi-Fi wait/scroll update is commit `48a59eb`: [test(android): wait for OBD tab content before testing Wi-Fi validation](https://github.com/Grigor1995/AI-CAR-SCANER/commit/48a59eb6a679eca177a6b26866e26a45d42918ca).
 
-The updated tests have not been run after this commit. The previous 55% instruction / 22% branch coverage report remains the latest successful coverage measurement; rerun the tests and reports before recording new figures.
+**The latest Wi-Fi test update has not yet been run locally.** The previous 55% instruction / 22% branch coverage report remains the latest successful measurement.
 
 ### Coverage target and next steps
 

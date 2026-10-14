@@ -49,4 +49,4 @@ async def test_vehicle_diagnostic_disconnected_operations_raise_and_can_reconnec
 
     reconnected = await service.connect(sid, adapter="simulator", request_id=0x7E0, response_id=0x7E8)
     assert reconnected.connected is True
-    assert reconnected.trace_events == 3
+    assert reconnected.trace_events == 1  # reconnect creates a fresh simulator runtime

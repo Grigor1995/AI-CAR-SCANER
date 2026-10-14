@@ -101,6 +101,9 @@ def test_start_backend_reports_process_exit_during_startup(monkeypatch, tmp_path
     process.poll.return_value = 2
     process.returncode = 2
     _prepare_local_backend(monkeypatch, tmp_path, popen=process)
+    # The helper initializes a still-running default process; override it
+    # after setup so this scenario models an immediate child-process exit.
+    process.poll.return_value = 2
     monkeypatch.setattr(main, "_backend_healthy", Mock(return_value=False))
     with pytest.raises(RuntimeError, match="exited during startup with code 2"):
         main.start_backend()

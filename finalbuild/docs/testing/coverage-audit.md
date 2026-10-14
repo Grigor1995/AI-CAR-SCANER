@@ -202,7 +202,7 @@ Added the following additional focused test modules on `main`:
 - `tests/ai/test_low_coverage_openai_compatible.py`: request URL/body/headers, optional authorization, successful response parsing, network/HTTP/timeout/invalid JSON errors.
 - `tests/api/test_state_registry_low_coverage.py`: cache/mapping operations, persisted lookup/refresh, writes, and persistence-disabled branches.
 
-These second-batch tests have been committed but **have not yet been run in the local environment**.
+The developer's first run of batch 2 reported **32 passed, 1 failed**. The failure was a test assertion using `ParsedPage.number`, but the actual model field is `ParsedPage.page_number`. The assertion has now been corrected. A rerun is required to confirm the whole batch passes.
 
 ### Validate batch 2 tests
 

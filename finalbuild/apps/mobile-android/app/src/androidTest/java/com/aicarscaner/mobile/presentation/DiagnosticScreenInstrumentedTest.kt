@@ -1,7 +1,6 @@
 package com.aicarscaner.mobile.presentation
 
 import android.Manifest
-import com.aicarscaner.mobile.MainActivity
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -30,7 +29,7 @@ import org.junit.rules.TestRule
 
 @RunWith(AndroidJUnit4::class)
 class DiagnosticScreenInstrumentedTest {
-    private val composeRule = createAndroidComposeRule<MainActivity>()
+    private val composeRule = createAndroidComposeRule<TestHostActivity>()
 
     @get:Rule
     val ruleChain: TestRule = RuleChain
@@ -45,6 +44,13 @@ class DiagnosticScreenInstrumentedTest {
     private val fakeApi = FakeDiagnosticApi()
 
     private fun launchScreen() {
+        // Keep UI assertions deterministic regardless of preferences left on the emulator.
+        composeRule.activity
+            .getSharedPreferences("ai_car_scaner_settings", android.content.Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+
         composeRule.setContent {
             DiagnosticScreen(
                 DiagnosticViewModel(

@@ -56,12 +56,12 @@ async def test_routed_channel_send_and_multiple_subscribers_receive_same_respons
     mux = CanBusDemultiplexer(bus, poll_timeout_ms=5)
     channel_a = mux.register(0x7E8)
     channel_b = mux.register(0x7E8)
-    request = CanFrame(0x7E0, b"\\x01\\x03")
+    request = CanFrame(0x7E0, b"\x01\x03")
     await channel_a.send(request)
     assert bus.pop_tx() == request
 
     await mux.start()
-    response = CanFrame(0x7E8, b"\\x02\\x41\\x0C")
+    response = CanFrame(0x7E8, b"\x02\x41\x0C")
     bus.inject(response)
     assert await channel_a.receive(timeout_ms=100) == response
     assert await channel_b.receive(timeout_ms=100) == response

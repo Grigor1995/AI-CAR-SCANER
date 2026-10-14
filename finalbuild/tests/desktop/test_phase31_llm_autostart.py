@@ -93,9 +93,12 @@ def test_start_llama_server_starts_when_unhealthy(monkeypatch, tmp_path):
     monkeypatch.setattr(desktop_main.subprocess, "Popen", fake_popen)
     result = desktop_main.start_llama_server()
 
-    assert result is not None
-    command = calls["command"]
-    assert command[:2] == [str(exe), "-m"]
-    assert str(model) in command
-    assert "--host" in command and "127.0.0.1" in command
-    assert "--port" in command and "8000" in command
+    try:
+        assert result is not None
+        command = calls["command"]
+        assert command[:2] == [str(exe), "-m"]
+        assert str(model) in command
+        assert "--host" in command and "127.0.0.1" in command
+        assert "--port" in command and "8000" in command
+    finally:
+        desktop_main.stop_llama_server()

@@ -135,3 +135,46 @@ def test_active_map_validates_runtime_and_returns_correlation(monkeypatch):
     assert exc.value.status_code == 409
     monkeypatch.setattr(routes, "multi_bus_runtime", {"s1": runtime})
     assert routes.active_map("s1") == {"active_probe_count": 0, "candidates": []}
+
+def test_active_service_correlates_responder_no_response_and_unmatched_probe_results():
+    service = active_service_module.ActiveNetworkDiscoveryService()
+    sid = uuid4()
+    passive = VehicleNetworkDiscoveryResult(ecu_candidates=[
+        _candidate("responder"), _candidate("silent"), _candidate("passive-only"),
+    ])
+    service._results[str(sid)] = [
+        ActiveProbeResult(
+            candidate_id="responder", bus="CAN0", request_id=0x7E0, response_id=0x7E8,
+            classification="ACTIVE_UDS_RESPONDER", confidence=0.78, responded=True,
+            negative_responses=("0xF190:NRC=0x31",),
+        ),
+        ActiveProbeResult(
+            candidate_id="silent", bus="CAN1", request_id=0x7E1, response_id=0x7E9,
+            classification="NO_RESPONSE", confidence=0.05, responded=False, error="timeout",
+        ),
+        ActiveProbeResult(
+            candidate_id="extra-active", bus="CAN2", request_id=0x7E2, response_id=0x7EA,
+            classification="ACTIVE_UDS_RESPONDER", confidence=0.78, responded=True,
+        ),
+    ]
+
+    result = service.correlate(sid, passive)
+    statuses = {item["candidate_id"]: item["status"] for item in result["candidates"]}
+    assert statuses == {
+        "responder": "ACTIVE_RESPONDER",
+        "silent": "NO_RESPONSE",
+        "passive-only": "PASSIVE_ONLY",
+    }
+    assert result["active_probe_count"] == 3
+    assert [item["candidate_id"] for item in result["unmatched_active"]] == ["extra-active"]
+
+
+@pytest.mark.asyncio
+async def test_active_probe_maps_policy_validation_error_to_400(monkeypatch):
+    _session, _passive, active, _runtime = _route_setup(monkeypatch)
+    request = routes.ActiveProbeRequest(allowed_dids=[], timeout_ms=500, max_targets=1, inter_probe_ms=0)
+    with pytest.raises(HTTPException) as exc:
+        await routes.active_probe("s1", request)
+    assert exc.value.status_code == 400
+    assert "read-only DID" in exc.value.detail
+    active.probe_candidates.assert_not_awaited()

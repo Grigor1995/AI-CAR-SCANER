@@ -19,6 +19,7 @@ def test_icon_builder_resizes_small_source_and_creates_all_desktop_formats(monke
     webp = tmp_path / "assets" / "AI-Car-Scanner.webp"
     png = tmp_path / "assets" / "AI-Car-Scanner-mobile.png"
     ico = tmp_path / "assets" / "AI-Car-Scanner.ico"
+    webp.parent.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(icons, "ANDROID_ICON", source)
     monkeypatch.setattr(icons, "DESKTOP_WEBP", webp)

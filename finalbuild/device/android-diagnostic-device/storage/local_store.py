@@ -17,3 +17,13 @@ class LocalDiagnosticStore:
         row = self.db.execute("SELECT id,kind,payload,updated_at FROM records WHERE id=?", (record_id,)).fetchone()
         if not row: return None
         return {"id": row[0], "kind": row[1], "payload": json.loads(row[2]), "updated_at": row[3]}
+
+    def close(self) -> None:
+        """Release the underlying SQLite connection."""
+        self.db.close()
+
+    def __enter__(self) -> "LocalDiagnosticStore":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()

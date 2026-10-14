@@ -352,7 +352,7 @@ The last combined JSON report identified only these two files below 70%:
 Added test coverage for their untested runtime paths:
 
 - New `apps/desktop/tests/test_main_lifecycle.py`: local backend health/startup and stop behavior; remote-backend startup bypass; occupied ports; source vs frozen startup path; subprocess creation failures; child-process early exit and timeout; log handle cleanup; LLM server health, timeout and early-exit paths; and app-run cleanup after UI close or backend startup failure.
-- Expanded `apps/desktop/tests/test_ui_pom.py`: settings save/cancel; add/delete vehicle outcomes; translation and offline catalog fallback; health/device actions and callbacks; DTC-only analysis; session reset; simulator and telemetry guards; AI live-data available/unavailable/error states; device read-outs; live-data polling/refresh and duplicate-request protection; active ECU probe IDs; and source/frozen resource resolution.
+- Expanded `apps/desktop/tests/test_ui_pom.py`: settings save/cancel; add/delete vehicle outcomes; translation and offline catalog fallback; health/device actions and callbacks; DTC-only analysis; session reset; simulator and telemetry guards; AI live-data available/unavailable/error states; device read-outs; live-data polling/refresh and duplicate-request protection; active ECU probe IDs; source/frozen resource resolution; and UI process startup with/without optional icon assets plus the Windows taskbar-icon null-icon guard.
 
 Also corrected a behavior surfaced while testing the live-data provider error path: `LiveDataPage.refresh()` now preserves the “AI: unavailable” message when provider status fetch fails, instead of immediately overwriting it with a generic offline message.
 

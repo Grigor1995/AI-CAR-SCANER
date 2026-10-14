@@ -12,7 +12,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from unittest.mock import Mock
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
 from apps.desktop import ui
@@ -250,6 +250,8 @@ def qapp():
     yield app
     app.closeAllWindows()
     app.processEvents()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
 
 
 @pytest.fixture
@@ -292,6 +294,8 @@ def window_factory(monkeypatch, qapp, fake_api, vehicle):
     for window in made:
         window.close()
         window.deleteLater()
+    qapp.processEvents()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     qapp.processEvents()
 
 

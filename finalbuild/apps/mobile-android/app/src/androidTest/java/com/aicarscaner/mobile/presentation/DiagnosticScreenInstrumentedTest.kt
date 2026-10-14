@@ -188,7 +188,7 @@ class DiagnosticScreenInstrumentedTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onAllNodesWithText("Edit").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
         composeRule.onNodeWithText("Driver symptom").performTextClearance()
         composeRule.onNodeWithText("Driver symptom").performTextInput("Engine shakes after warm-up")
         composeRule.onNodeWithText("Save").performScrollTo().performClick()
@@ -198,7 +198,7 @@ class DiagnosticScreenInstrumentedTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Delete").performScrollTo().performClick()
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("Diagnose (0)")
                 .fetchSemanticsNodes().isNotEmpty()
@@ -222,7 +222,7 @@ class DiagnosticScreenInstrumentedTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onAllNodesWithText("Edit").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
         composeRule.onNodeWithText("Diagnostic trouble code").performTextClearance()
         composeRule.onNodeWithText("Diagnostic trouble code").performTextInput("P0300")
         composeRule.onNodeWithText("Save").performScrollTo().performClick()
@@ -232,7 +232,7 @@ class DiagnosticScreenInstrumentedTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onAllNodesWithText("Delete").onFirst().performScrollTo().performClick()
+        composeRule.onNodeWithText("Delete").performScrollTo().performClick()
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("Diagnose (0)")
                 .fetchSemanticsNodes().isNotEmpty()
@@ -268,11 +268,14 @@ class DiagnosticScreenInstrumentedTest {
         assertTrue(composeRule.onAllNodesWithText("Does misfire disappear on petrol?", substring = true)
             .fetchSemanticsNodes().isNotEmpty())
 
-        composeRule.onAllNodesWithText("Record result").onFirst().performScrollTo().performClick()
+        composeRule.onAllNodesWithText("Record result")[0].performScrollTo().performClick()
         composeRule.onNodeWithText("FAIL").performClick()
         composeRule.onNodeWithText("Technician notes / result")
             .performTextInput("Injector balance uneven")
-        composeRule.onAllNodesWithText("Record result").onLast().performClick()
+        run {
+            val resultButtons = composeRule.onAllNodesWithText("Record result")
+            resultButtons[resultButtons.fetchSemanticsNodes().lastIndex].performClick()
+        }
 
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithText("Injector balance uneven")

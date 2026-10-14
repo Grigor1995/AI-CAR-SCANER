@@ -48,16 +48,16 @@ def test_uds_simulator_queues_single_frame_and_legacy_process_drains_tx():
     bus = SimulatedCanBus()
     ecu = UdsEcuSimulator(bus)
 
-    ecu._queue_response(b"\\x50\\x03")
+    ecu._queue_response(b"\x50\x03")
     assert len(bus.rx) == 1
-    assert bus.rx[0].data == b"\\x02\\x50\\x03"
+    assert bus.rx[0].data == b"\x02\x50\x03"
 
     # Keep the backward-compatible synchronous processing loop deterministic:
     # replace the async transport hook with a synchronous recorder for this unit.
     seen = []
     ecu.on_tx = lambda frame: seen.append(frame.arbitration_id)
-    bus.tx.append(CanFrame(0x7E0, b"\\x01\\x03"))
-    bus.tx.append(CanFrame(0x7E1, b"\\x01\\x03"))
+    bus.tx.append(CanFrame(0x7E0, b"\x01\x03"))
+    bus.tx.append(CanFrame(0x7E1, b"\x01\x03"))
     ecu.process()
     assert seen == [0x7E0, 0x7E1]
     assert bus.pop_tx() is None

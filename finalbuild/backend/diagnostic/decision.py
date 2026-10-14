@@ -274,13 +274,20 @@ class DiagnosticDecisionEngine:
             h.category for h in session.hypotheses
             if not h.status.startswith("rejected")
         }
+        supported_categories = {
+            h.category for h in session.hypotheses if h.status == "supported_by_test"
+        }
+        disfavored_categories = {
+            h.category for h in session.hypotheses if h.status == "disfavored_by_test"
+        }
         category_count = max(len(categories), 1)
         enriched: list[DiagnosticTest] = []
 
         from math import log2
 
         for item in recommendations:
-            target_matches = len(set(item.target_hypotheses) & categories)
+            matched_categories = set(item.target_hypotheses) & categories
+            target_matches = len(matched_categories)
             coverage = target_matches / category_count if category_count else 0.0
             if target_matches == 0:
                 information_gain = 0.15
@@ -305,10 +312,18 @@ class DiagnosticDecisionEngine:
                 "HIGH": 0.5,
             }.get(item.risk_level.upper(), 0.5)
             cost_penalty = min(max((item.estimated_cost - 1.0) / 4.0, 0.0), 1.0)
+            supported_matches = len(matched_categories & supported_categories)
+            disfavored_matches = len(matched_categories & disfavored_categories)
+            matched_count = max(len(matched_categories), 1)
+            result_adjustment = (
+                0.12 * supported_matches / matched_count
+                - 0.18 * disfavored_matches / matched_count
+            )
             item.priority_score = round(min(max(
                 0.65 * item.expected_information_gain
                 + 0.25 * (1.0 - cost_penalty)
-                + 0.10 * risk_value,
+                + 0.10 * risk_value
+                + result_adjustment,
                 0.0,
             ), 1.0), 4)
             enriched.append(item)

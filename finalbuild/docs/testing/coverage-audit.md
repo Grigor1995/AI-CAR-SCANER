@@ -372,3 +372,49 @@ If they pass, rerun the existing clean Step 1 → append Step 2 → Step 3 cover
 The developer's first focused run reported **84 passed, 1 failed**. The only failure was `test_start_backend_reports_process_exit_during_startup`: its shared helper reset the mocked process's `poll.return_value` to `None` (running), overwriting the intended exit code `2`. The test now restores `poll.return_value = 2` after helper setup so it actually exercises the early-exit branch. This is a test-only correction; production startup behavior was not changed for this failure.
 
 The corrected focused suite still needs to be rerun locally before batch 5 can be marked PASS or a new coverage percentage reported.
+
+## Latest combined coverage result and new target (2026-10-14)
+
+The developer's latest local coverage JSON reports:
+
+```text
+Combined coverage: 92.47%
+Measured source files below 80%: 8
+```
+
+The overall scoped Python coverage is now above 90%. The next task is to raise **each active production source file below 80% to at least 80%**, prioritizing uncovered business logic, error handling and meaningful conditional branches. Do not infer which files remain under the threshold from older audit tables; those percentages predate the latest test batches.
+
+Print the exact current targets and their missing executable lines from `finalbuild/`:
+
+```bash
+python - <<'PY'
+import json
+from pathlib import Path
+
+report = Path("coverage-python-audit.json")
+if not report.is_file():
+    raise SystemExit("Missing coverage-python-audit.json; rerun the clean Step 1 -> Step 2 workflow first.")
+
+data = json.loads(report.read_text(encoding="utf-8"))
+print(f"Combined scoped coverage: {data['totals']['percent_covered']:.2f}%")
+low = []
+for filename, item in data["files"].items():
+    summary = item["summary"]
+    statements = summary.get("num_statements", 0)
+    percent = summary.get("percent_covered", 0.0)
+    if statements and percent < 80.0:
+        low.append((percent, filename, summary, item.get("missing_lines", [])))
+
+print(f"Files below 80%: {len(low)}")
+for percent, filename, summary, lines in sorted(low):
+    print(
+        f"{percent:6.2f}% | {filename} | "
+        f"covered={summary.get('covered_lines', 0)}/"
+        f"{summary.get('num_statements', 0)} | "
+        f"missing={summary.get('missing_lines', 0)} | "
+        f"lines={','.join(map(str, lines))}"
+    )
+PY
+```
+
+After reviewing this current list, add or extend focused tests for the lowest-coverage active modules first. Re-run the relevant targeted tests locally before recording each batch as passing, then regenerate the combined coverage report. Do not count this scoped percentage as iOS, Android, or whole-repository coverage.

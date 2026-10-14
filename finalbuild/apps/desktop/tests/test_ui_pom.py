@@ -1337,7 +1337,12 @@ def test_vehicle_dialog_handles_api_failure_and_malformed_offline_catalog(qapp, 
     dialog = ui.VehicleDialog(parent)
     assert dialog._catalog_from_server is False
     assert dialog._catalog == []
-    assert dialog.make.count() == 0
+    # When both server and offline catalogs are unavailable, the dialog keeps
+    # its curated W211 defaults instead of leaving vehicle selection unusable.
+    assert dialog.make.count() == 1
+    assert dialog.make.currentText() == "Mercedes-Benz"
+    assert dialog.model.currentText() == "E-Class"
+    assert dialog.chassis.currentText() == "W211"
     assert any("Офлайн-каталог" in label.text() for label in dialog.findChildren(ui.QLabel))
     dialog.close()
 

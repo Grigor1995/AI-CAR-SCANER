@@ -544,9 +544,9 @@ The baseline above was collected **before** these cleanup changes. The modified 
 
 From `finalbuild/`, update the active virtual environment and rerun the suite:
 
-```powershell
+```bash
 python -m pip install -r backend/requirements-dev.txt
-python -m pytest -q -rs -W default 2>&1 | Tee-Object -FilePath pytest-warnings-after.txt
+python -m pytest -q -rs -W default 2>&1 | tee pytest-warnings-after.txt
 QT_QPA_PLATFORM=offscreen python -m pytest -q apps/desktop/tests/test_ui_pom.py
 ```
 

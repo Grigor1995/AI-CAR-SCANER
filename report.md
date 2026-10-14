@@ -419,3 +419,15 @@ Developer-confirmed local result after pulling the pytest configuration change a
 The skipped test is `tests/ai/test_phase11_retrieval.py::test_postgres_hybrid_integration_placeholder`, which explicitly requires a running PostgreSQL/pgvector service. This result verifies the configured Python suite rooted at `tests/`; it does not include native Android Gradle tests, iOS XCTest, Windows packaging/build verification, or a separate full combined Desktop run. Desktop tests were separately reported by the developer as 79 passed, including 18 Qt widget tests, under the configuration that disables the unused `benchmark` plugin.
 
 This is user-provided local test output; it was not executed by the audit environment. No cloud CI was run. Remaining warnings should be assessed separately, including FastAPI `on_event` deprecation, Starlette/httpx deprecation, and Pydantic enum serialization warnings seen in a prior run.
+
+
+## Android Gradle local verification — 2026-10-14
+
+Developer-confirmed local results from `apps/mobile-android` on Windows/Git Bash:
+
+- `./gradlew.bat :app:testDebugUnitTest --rerun-tasks --console=plain`: **BUILD SUCCESSFUL**. The XML test reports show **21 tests, 0 failures, 0 errors, 0 skipped — PASS**.
+- `./gradlew.bat :app:assembleDebug --console=plain`: **BUILD SUCCESSFUL** in 38 seconds (37 actionable tasks; 19 executed, 18 up-to-date).
+
+Non-fatal warnings observed include deprecated Kotlin `jvmTarget` configuration, deprecated `Modifier.menuAnchor()` in `DiagnosticScreen.kt:1627`, and an Android SDK XML version mismatch warning during initial configuration. They did not fail these tasks and should be cleaned up separately.
+
+Scope: this verifies local Android unit tests and the Debug APK build task only. The APK was not independently installed or launched on an emulator or physical device, so diagnostic UI/API runtime behavior, permissions, offline states and device-specific integrations remain unverified. No GitHub Actions, Codemagic or other cloud CI was triggered.

@@ -570,7 +570,17 @@ The pasted package rows contain merged/misaligned columns, so use only the aggre
 
 ### UI flows already included in the instrumentation source
 
-The test source includes initial vehicle form, session tabs, symptom and DTC creation, Armenian language switching, new-session cancel/confirm, symptom edit/delete, DTC edit/delete, analysis evidence/hypothesis/recommendation and test-result recording, and disconnected Live Data. The latest successful report is developer-provided; Gradle was not run by this documentation environment. The exact number of executed test cases was not included in the pasted output.
+The latest successful instrumentation report was produced after the selector fix and includes tests for initial vehicle form, session tabs, symptom and DTC creation, Armenian language switching, new-session cancel/confirm, symptom edit/delete, DTC edit/delete, analysis evidence/hypothesis/recommendation and result recording, and disconnected Live Data.
+
+Additional tests have now been committed for the next run:
+
+- `vehicleCanEnterEditModeAndSave` — session tab's vehicle edit/save path.
+- `wifiConnectButtonRequiresANonBlankHost` — Wi-Fi Connect stays disabled for a blank host and becomes enabled after a host is entered, without opening a network connection.
+- `testResultDialogCanBeCancelledWithoutSavingAResult` — cancelling the recommendation result dialog leaves the analysis page intact and doesn't create a recorded outcome.
+
+Commit: `55e3b51` — [test(android): cover vehicle edit Wi-Fi validation and result cancel](https://github.com/Grigor1995/AI-CAR-SCANER/commit/55e3b51d56fd33c32e71f391f5576ed096c8320e).
+
+**These three additional tests have not yet been run locally.** The 55% instruction / 22% branch / 63.2% line coverage figures above are from the preceding successful run, before this latest commit. Do not present them as the post-change result.
 
 ### Coverage target and next steps
 

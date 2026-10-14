@@ -81,9 +81,9 @@ class WifiObdClientTest {
                                 commandBuffer.setLength(0)
                                 commands.add(command)
                                 val response = when (command.uppercase()) {
-                                    "010C" -> "SEARCHING...\\r410C1AF8\\r>"
-                                    "03" -> "430102\\r>"
-                                    else -> "OK\\r>"
+                                    "010C" -> "SEARCHING...\r410C1AF8\r>"
+                                    "03" -> "430102\r>"
+                                    else -> "OK\r>"
                                 }
                                 output.write(response.toByteArray(StandardCharsets.US_ASCII))
                                 output.flush()

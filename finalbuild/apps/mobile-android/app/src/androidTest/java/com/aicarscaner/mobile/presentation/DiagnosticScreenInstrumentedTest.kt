@@ -398,7 +398,10 @@ class DiagnosticScreenInstrumentedTest {
 
         composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
         composeRule.onNodeWithText("Add DTC").assertExists()
-        composeRule.onNodeWithText("P0302").assertExists()
+        // P0302 appears in both the input placeholder and the saved DTC row.
+        // Verify the persisted fake API state so a placeholder alone cannot pass this test.
+        assertTrue(composeRule.onAllNodesWithText("P0302").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(fakeApi.savedDtcCodes() == listOf("P0302"))
         assertTrue(
             composeRule.onAllNodesWithText("P0300")
                 .fetchSemanticsNodes().isEmpty()
@@ -410,12 +413,23 @@ class DiagnosticScreenInstrumentedTest {
         launchScreen()
         createSession()
 
-        composeRule.onNodeWithText("Analysis").performClick()
+        // Both tabs are in a horizontally scrollable tab row, so bring them into view
+        // before clicking (as in the OBD instrumentation test).
+        composeRule.onNodeWithText("Analysis").performScrollTo().performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText(
+                "No analysis results yet. Add symptoms or DTCs and run analysis."
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText(
             "No analysis results yet. Add symptoms or DTCs and run analysis."
         ).assertExists()
 
-        composeRule.onNodeWithText("Activity").performClick()
+        composeRule.onNodeWithText("Activity").performScrollTo().performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("No activity recorded yet")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText("No activity recorded yet").assertExists()
     }
 
@@ -499,6 +513,8 @@ private class FakeDiagnosticApi : DiagnosticApi {
         session_id = "session-test-123456",
         state = "CREATED"
     )
+
+    fun savedDtcCodes(): List<String> = current.dtcs.map { it.code }
 
     override suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto> = listOf(
         VehicleCatalogEntryDto(

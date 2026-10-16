@@ -39,11 +39,19 @@ def stage_icons(source: Path, output_dir: Path) -> tuple[Path, ...]:
         icon.save(outputs[2], format="WEBP", lossless=True, quality=100, method=6)
         icon.save(outputs[3], format="ICO", sizes=ICON_SIZES)
 
-    for path in outputs:
-        if not path.is_file() or path.stat().st_size < 128:
-            raise RuntimeError(f"Staged icon missing/invalid: {path}")
+    # Lossless WEBP compresses very simple (e.g. solid-color) valid icons to
+    # well under 128 bytes. File size is not an image-validity check.
+    for path, expected_format in zip(outputs, ("PNG", "PNG", "WEBP", "ICO")):
+        if not path.is_file() or path.stat().st_size == 0:
+            raise RuntimeError(f"Staged icon missing or empty: {path}")
+        with Image.open(path) as image:
+            if image.format != expected_format:
+                raise ValueError(
+                    f"Staged icon has unexpected format: {path}: {image.format}"
+                )
+            image.verify()
     with Image.open(outputs[3]) as ico:
-        if ico.format != "ICO" or (256, 256) not in ico.ico.sizes():
+        if (256, 256) not in ico.ico.sizes():
             raise ValueError("Staged ICO requires the 256x256 Windows icon frame")
     return outputs
 

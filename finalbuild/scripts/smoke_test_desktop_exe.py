@@ -104,14 +104,26 @@ def main() -> int:
         timeout_happened = False
         try:
             with console_path.open("wb") as output:
-                completed = subprocess.run(
+                process = subprocess.Popen(
                     [str(exe)], cwd=exe.parent, env=env,
                     stdout=output, stderr=subprocess.STDOUT,
-                    timeout=args.timeout, check=False,
                 )
-            returncode = completed.returncode
-        except subprocess.TimeoutExpired:
-            timeout_happened = True
+                try:
+                    returncode = process.wait(timeout=args.timeout)
+                except subprocess.TimeoutExpired:
+                    timeout_happened = True
+                    # PyInstaller onefile may spawn a child process. On timeout
+                    # terminate the entire Windows process tree, not just the
+                    # bootloader parent; never leave a hung UI on the runner.
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        capture_output=True, timeout=20, check=False,
+                    )
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=5)
         finally:
             server.shutdown()
             server.server_close()

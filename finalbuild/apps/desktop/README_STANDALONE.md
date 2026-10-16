@@ -33,10 +33,21 @@ bash -n scripts/build_desktop_git_bash.sh
 bash scripts/build_desktop_git_bash.sh
 ```
 
-Python **3.13 x64** must be installed on Windows. The script creates an isolated
-`build-release/venv-icon-preview`, runs targeted regression tests, generates
+The Git Bash builder **reuses the existing Python 3.14 x64 virtual environment**.
+It checks `apps/desktop/.venv`, `Desktop/.venv`, `finalbuild/.venv`,
+the parent `.venv`, and `~/Desktop/.venv` (as well as an activated venv).
+Select the exact location explicitly when needed:
+
+```bash
+export AI_CAR_DESKTOP_VENV="$HOME/Desktop/.venv"
+bash scripts/build_desktop_git_bash.sh
+```
+
+There is no new virtual environment and no Python 3.13 installation.
+The existing venv receives any missing backend/Desktop test/build dependencies
+through `pip install -r`. The script runs targeted regression tests, generates
 PNG/WEBP/ICO from the Desktop master, builds both executables, verifies the
-embedded EXE icon and creates `dist-release/AICarScanner-icon-preview.zip`.
+embedded EXE icon, and creates `dist-release/AICarScanner-icon-preview.zip`.
 It never deletes `dist/` or arbitrary uncommitted source files. Changes to
 generated tracked icons require an explicit save/commit before regeneration.
 

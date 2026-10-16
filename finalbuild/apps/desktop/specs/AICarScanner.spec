@@ -35,7 +35,10 @@ a = Analysis(
         "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
         "requests", "apps.desktop.ui", "apps.desktop.api_client",
     ],
-    hookspath=[], hooksconfig={}, runtime_hooks=[],
+    hookspath=[], hooksconfig={},
+    # User-verified workaround: load PySide6.QtCore before PyInstaller's
+    # cryptography/Qt runtime hooks on Windows Python 3.14 frozen GUI startup.
+    runtime_hooks=[str(project_root / "apps" / "desktop" / "qt_early_runtime_hook.py")],
     excludes=["tkinter"], noarchive=False,
 )
 pyz = PYZ(a.pure)

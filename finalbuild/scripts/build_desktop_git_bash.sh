@@ -16,23 +16,48 @@ WORK=build-release/icon-preview
 PY=build-release/venv-icon-preview/Scripts/python.exe
 ZIP=dist-release/AICarScanner-icon-preview.zip
 
-echo "[1/8] Check Windows Python 3.13 x64"
-if command -v py >/dev/null 2>&1 && py -3.13 -c "import sys; assert sys.version_info[:2]==(3,13)" >/dev/null 2>&1; then
-  py -3.13 -c 'import sys,struct; assert sys.platform=="win32" and struct.calcsize("P")==8'
-  mkdir -p build-release
-  if [[ ! -f "$PY" ]]; then py -3.13 -m venv build-release/venv-icon-preview; fi
-elif command -v python >/dev/null 2>&1 && python -c "import sys; assert sys.version_info[:2]==(3,13)" >/dev/null 2>&1; then
-  python -c 'import sys,struct; assert sys.platform=="win32" and struct.calcsize("P")==8'
-  mkdir -p build-release
-  if [[ ! -f "$PY" ]]; then python -m venv build-release/venv-icon-preview; fi
+echo "[1/8] Locate the existing Python 3.14 x64 Desktop virtual environment"
+# Override in Git Bash when necessary:
+#   export AI_CAR_DESKTOP_VENV="$HOME/Desktop/.venv"
+# No Python installation or virtual environment creation takes place here.
+VENV_CANDIDATES=()
+if [[ -n "${AI_CAR_DESKTOP_VENV:-}" ]]; then
+  VENV_CANDIDATES+=("$AI_CAR_DESKTOP_VENV")
 else
-  echo "[ERROR] Install Windows Python 3.13 x64, verify with: py -3.13 --version" >&2
+  if [[ -n "${VIRTUAL_ENV:-}" ]]; then VENV_CANDIDATES+=("$VIRTUAL_ENV"); fi
+  VENV_CANDIDATES+=(
+    "apps/desktop/.venv"
+    "Desktop/.venv"
+    ".venv"
+    "../.venv"
+    "$HOME/Desktop/.venv"
+  )
+fi
+
+PY=""
+for candidate in "${VENV_CANDIDATES[@]}"; do
+  # Accept both Git Bash paths (/c/...) and Windows C:\... paths.
+  candidate="$(cygpath -u "$candidate")"
+  executable="$candidate/Scripts/python.exe"
+  if [[ ! -f "$executable" ]]; then continue; fi
+  if "$executable" -c 'import sys,struct; assert sys.platform=="win32" and sys.version_info[:2]==(3,14) and struct.calcsize("P")==8 and sys.prefix!=sys.base_prefix' >/dev/null 2>&1; then
+    PY="$executable"
+    break
+  fi
+  echo "[SKIP] Not a Python 3.14 x64 venv: $executable"
+done
+if [[ -z "$PY" ]]; then
+  echo "[ERROR] Could not find an existing Windows Python 3.14 x64 .venv." >&2
+  echo "Set its exact directory in Git Bash, then rerun:" >&2
+  echo '  export AI_CAR_DESKTOP_VENV="$HOME/Desktop/.venv"' >&2
+  echo "  bash scripts/build_desktop_git_bash.sh" >&2
   exit 2
 fi
-"$PY" -c 'import sys,struct; assert sys.platform=="win32" and sys.version_info[:2]==(3,13) and struct.calcsize("P")==8, "Stale or incorrect venv"'
+echo "Using existing venv Python: $PY"
+"$PY" -c 'import sys; print("Version:",sys.version.split()[0]); print("Executable:",sys.executable); print("Environment:",sys.prefix)'
 
-echo "[2/8] Install Desktop and backend requirements"
-"$PY" -m pip install --upgrade pip setuptools wheel
+echo "[2/8] Ensure Desktop and backend dependencies in the existing venv"
+"$PY" -m pip --version
 "$PY" -m pip install -r requirements.txt -r apps/desktop/requirements-dev.txt
 
 echo "[3/8] Run targeted regression tests before packaging"

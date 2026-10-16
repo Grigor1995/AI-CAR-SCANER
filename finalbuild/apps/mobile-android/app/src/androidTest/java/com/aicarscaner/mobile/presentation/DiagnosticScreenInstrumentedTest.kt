@@ -3,6 +3,7 @@ package com.aicarscaner.mobile.presentation
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.performClick
@@ -322,6 +323,59 @@ class DiagnosticScreenInstrumentedTest {
         composeRule.onNodeWithText("Connect Wi‑Fi").assertIsNotEnabled()
         composeRule.onNodeWithText("Host").performTextInput("192.0.2.10")
         composeRule.onNodeWithText("Connect Wi‑Fi").assertIsEnabled()
+    }
+
+    @Test
+    fun emptyAnalysisAndActivityTabsShowHelpfulMessages() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Analysis").performClick()
+        composeRule.onNodeWithText(
+            "No analysis results yet. Add symptoms or DTCs and run analysis."
+        ).assertExists()
+
+        composeRule.onNodeWithText("Activity").performClick()
+        composeRule.onNodeWithText("No activity recorded yet").assertExists()
+    }
+
+    @Test
+    fun settingsCanSwitchRussianThemeAndReturnToEnglish() {
+        launchScreen()
+
+        composeRule.onNodeWithText("⚙").performClick()
+        composeRule.onNodeWithText("RU").performClick()
+        composeRule.onNodeWithText("Настройки").assertExists()
+        composeRule.onNodeWithText("Светлая").performClick()
+        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Создать диагностическую сессию")
+            .performScrollTo().assertExists()
+
+        composeRule.onNodeWithText("⚙").performClick()
+        composeRule.onNodeWithText("EN").performClick()
+        composeRule.onNodeWithText("Settings").assertExists()
+        composeRule.onNodeWithText("Light").assertExists()
+        composeRule.onNodeWithText("Close").performClick()
+        composeRule.onNodeWithText("Create Diagnostic Session")
+            .performScrollTo().assertExists()
+    }
+
+    @Test
+    fun vehicleEditCanBeCancelledWithoutSaving() {
+        launchScreen()
+        createSession()
+
+        composeRule.onAllNodesWithText("Session")[1].performClick()
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
+        composeRule.onNodeWithText("Save Session").performScrollTo().assertExists()
+        composeRule.onNodeWithText("Cancel").performClick()
+
+        composeRule.onNodeWithText("Edit").assertExists()
+        composeRule.onNodeWithText("Save Session").assertDoesNotExist()
+        assertTrue(
+            composeRule.onAllNodesWithText("E-Class", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        )
     }
 
     @Test

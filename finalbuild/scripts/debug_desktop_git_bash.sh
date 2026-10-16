@@ -47,14 +47,26 @@ export AI_CAR_DEBUG_FAULT_LOG="$(cygpath -w "$ROOT/$DIST/python-faults.log")"
 echo "[DIAG] Current Qt-related environment:"
 env | grep -E '^(QT_|PYTHONPATH|PYTHONHOME)' || true
 
+echo "[DIAG] Verify source assets before invoking PyInstaller"
+for asset in \
+  assets/AI-Car-Scanner-mobile.png \
+  assets/AI-Car-Scanner.webp \
+  assets/AI-Car-Scanner.ico \
+  shared/vehicle_catalog.json; do
+  if [[ ! -f "$ROOT/$asset" ]]; then
+    echo "[ERROR] Missing source asset: $ROOT/$asset" >&2
+    exit 3
+  fi
+done
+
 echo "[3/6] Freeze a MINIMAL PySide6 Qt probe as a console + onedir EXE"
 "$PY" -m PyInstaller --noconfirm --clean --onedir --console \
   --debug bootloader --name AIQtProbe \
   --distpath "$DIST" --workpath "$WORK/qt" --specpath "$WORK" \
   --paths "$(cygpath -w "$ROOT")" \
-  --runtime-hook apps/desktop/debug_runtime_hook.py \
-  --add-data "assets/AI-Car-Scanner-mobile.png;assets" \
-  apps/desktop/qt_freeze_probe.py
+  --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/debug_runtime_hook.py")" \
+  --add-data "$(cygpath -w "$ROOT/assets/AI-Car-Scanner-mobile.png");assets" \
+  "$(cygpath -w "$ROOT/apps/desktop/qt_freeze_probe.py")"
 
 echo "[4/6] Run minimal Qt probe (auto-closes after about one second)"
 set +e
@@ -72,14 +84,14 @@ echo "[5/6] Freeze ACTUAL Desktop GUI as console + onedir (without overwriting r
   --debug bootloader --name AICarScannerDebug \
   --distpath "$DIST" --workpath "$WORK/desktop" --specpath "$WORK" \
   --paths "$(cygpath -w "$ROOT")" \
-  --runtime-hook apps/desktop/debug_runtime_hook.py \
+  --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/debug_runtime_hook.py")" \
   --hidden-import apps.desktop.ui \
   --hidden-import apps.desktop.api_client \
-  --add-data "shared/vehicle_catalog.json;shared" \
-  --add-data "assets/AI-Car-Scanner.ico;assets" \
-  --add-data "assets/AI-Car-Scanner.webp;assets" \
-  --add-data "assets/AI-Car-Scanner-mobile.png;assets" \
-  apps/desktop/main.py
+  --add-data "$(cygpath -w "$ROOT/shared/vehicle_catalog.json");shared" \
+  --add-data "$(cygpath -w "$ROOT/assets/AI-Car-Scanner.ico");assets" \
+  --add-data "$(cygpath -w "$ROOT/assets/AI-Car-Scanner.webp");assets" \
+  --add-data "$(cygpath -w "$ROOT/assets/AI-Car-Scanner-mobile.png");assets" \
+  "$(cygpath -w "$ROOT/apps/desktop/main.py")"
 
 echo "[6/6] Debug build finished; run the real GUI manually (close it to finish logging)"
 echo ""

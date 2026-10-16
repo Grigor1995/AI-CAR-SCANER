@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops
 from PySide6.QtGui import QGuiApplication, QIcon
 
 
@@ -78,8 +78,24 @@ def verify_icons() -> int:
         with Image.open(png_path) as png, Image.open(webp_path) as webp:
             if png.width < 256 or png.height < 256:
                 raise ValueError("PNG launcher icon is smaller than 256 pixels")
-            if png.convert("RGBA").tobytes() != webp.convert("RGBA").tobytes():
-                raise ValueError("PNG and WEBP Desktop icons contain different artwork")
+            foreground = png.convert("RGBA")
+            comparison = webp.convert("RGBA")
+            if foreground.size != comparison.size:
+                raise ValueError("PNG and WEBP Desktop icon dimensions differ")
+            if ImageChops.difference(
+                foreground.getchannel("A"), comparison.getchannel("A")
+            ).getbbox():
+                raise ValueError("PNG and WEBP Desktop icon alpha channels differ")
+            # WEBP codecs may normalize invisible RGB values below fully
+            # transparent pixels. Compare the visible icon on both black
+            # and white backgrounds instead of rejecting invisible RGB data.
+            for background in ((0, 0, 0, 255), (255, 255, 255, 255)):
+                base = Image.new("RGBA", foreground.size, background)
+                a = Image.alpha_composite(base, foreground).convert("RGB")
+                b = Image.alpha_composite(base, comparison).convert("RGB")
+                maximum = max(hi for _lo, hi in ImageChops.difference(a, b).getextrema())
+                if maximum > 1:
+                    raise ValueError("PNG and WEBP Desktop icons differ visually")
             checks["png_webp_parity"] = True
 
         with Image.open(ico_path) as ico:

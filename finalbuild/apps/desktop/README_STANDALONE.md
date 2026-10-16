@@ -45,11 +45,30 @@ bash scripts/build_desktop_git_bash.sh
 
 There is no new virtual environment and no Python 3.13 installation.
 The existing venv receives any missing backend/Desktop test/build dependencies
-through `pip install -r`. The script runs targeted regression tests, generates
-PNG/WEBP/ICO from the Desktop master, builds both executables, verifies the
+through `pip install -r`. The script runs targeted regression tests, then
+creates a matching PNG/WEBP/ICO set in **`build-release/icon-staged-assets/`**.
+For an unmodified working tree the source is the committed Desktop master;
+when `assets/AI-Car-Scanner-mobile.png` has local changes, that edited PNG
+is automatically selected as the artwork source. Neither the build script
+nor `AICarScanner.spec` overwrites the tracked `assets/` files.
+The script builds both executables, verifies the staged artwork and
 embedded EXE icon, and creates `dist-release/AICarScanner-icon-preview.zip`.
-It never deletes `dist/` or arbitrary uncommitted source files. Changes to
-generated tracked icons require an explicit save/commit before regeneration.
+It never deletes `dist/` or uncommitted source files.
+
+To verify which original icon is edited without discarding it:
+
+```bash
+git status --short assets/
+git diff --numstat -- assets/AI-Car-Scanner-mobile.png
+```
+
+The stage helper can also be used explicitly:
+
+```bash
+python apps/desktop/stage_windows_icons.py \
+  --source assets/AI-Car-Scanner-mobile.png \
+  --output-dir build-release/icon-staged-assets
+```
 
 To launch the preview using the hosted API, from `finalbuild/`:
 

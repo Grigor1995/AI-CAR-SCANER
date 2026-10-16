@@ -85,3 +85,69 @@ Outputs: `dist-debug/qt-crypto-probe.log` and `dist-debug/crypto-probe-faults.lo
 If experiment B passes, the failure requires some other Desktop-specific dependency or native initialization difference. If it fails at the same runtime hook, narrow the cryptography/OpenSSL load-order hypothesis with a controlled runtime-hook exclusion and compare dependency graph before changing release builds.
 
 **Release gate remains FAIL until the normal executable opens and passes a diagnostic workflow.**
+
+## Update: frozen GUI now launches with early QtCore; separate shutdown regression (October 16)
+
+User's new onedir diagnostic run with `--early-qtcore`:
+
+- **Desktop GUI displayed successfully**, proving that the QtCore import-order
+  workaround changes frozen startup from the previous Windows access violation.
+- Upon closing the GUI, **exit status 127** (as reported by the runner), with
+  the Qt diagnostic message **`QThread: Destroyed while thread '' is still running`**.
+  The user's prose also calls this exit 139, but the pasted new run reports 127;
+  previous frozen runs did report 139. Do not conflate these exit statuses.
+- Startup and shutdown must be treated as **two independent regressions**.
+  Native taskbar icon fallback remained disabled in the working-startup run.
+
+### Applied code changes; Windows verification still required
+
+1. `apps/desktop/qt_early_runtime_hook.py` is now registered in the canonical
+   `apps/desktop/specs/AICarScanner.spec` and the onedir debug builder so
+   QtCore initializes before PyInstaller's later runtime hooks **without a
+   command-line opt-in**. This is a narrow Windows frozen-startup workaround,
+   not a claim that the original third-party native conflict is explained.
+2. `apps/desktop/ui.py` now tracks and owns its `Worker(QThread)` instances.
+   A window close with active jobs is **deferred**; it stops polling timers,
+   requests interruption, and waits asynchronously for worker-completion
+   signals without blocking the GUI event loop. It does **not** forcibly kill
+   an active HTTP request, which may run until its configured timeout.
+3. Only after `QThread.finished`, on the GUI thread, the slot joins the
+   already-completed native thread (`wait()`), removes the strong reference,
+   and schedules deletion. After the last worker exits, it retries window close.
+4. Late worker completions/errors are not allowed to update a closing GUI
+   or open modal error dialogs.
+5. Frozen Windows defaults to Qt-managed QIcon/window/executable artwork
+   (which already loads correctly); the unverified low-level Win32 ctypes
+   fallback can be re-enabled explicitly with
+   `AI_CAR_DISABLE_NATIVE_TASKBAR_ICON=0` in a controlled test.
+6. Added unit/regression tests for shutdown deferral and new-job blocking,
+   plus a static packaging test for the QtCore runtime hook.
+
+### Verify on the user's Windows computer, from finalbuild/ Git Bash
+
+```bash
+git status --short
+git pull --ff-only origin main
+python -m pytest -q tests/desktop/test_phase25_standalone.py \
+  apps/desktop/tests/test_main_helpers.py
+bash scripts/debug_desktop_git_bash.sh --desktop-only 2>&1 | tee desktop-debug-build.log
+bash scripts/run_debug_desktop_git_bash.sh
+```
+
+If the window opens, let backend health/device requests finish, then close it.
+Check `GUI exit status` for `0`. If the Qt worker error persists, inspect
+`dist-debug/desktop-run.log` and the new `python-faults.log` segment.
+
+Then (only after a clean debug exit) generate a fresh release EXE:
+
+```bash
+bash scripts/build_desktop_git_bash.sh 2>&1 | tee desktop-build.log
+export AI_CAR_BACKEND_URL=https://ai-car-scaner.onrender.com
+export AI_CAR_DISABLE_LLM_AUTOSTART=1
+./dist-release/icon-preview/AICarScanner.exe
+echo "Release exit code: $?"
+```
+
+A build check, static unit test, or a successful initial window appearance
+alone does not establish a stable production release. A source-compatible fix
+has been committed, but actual **Windows clean shutdown remains unverified**.

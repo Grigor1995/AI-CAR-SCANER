@@ -1,24 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
-import subprocess
-import sys
+import os
 
 spec_path = Path(SPEC).resolve()
 project_root = next(
     (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "main.py").is_file()),
     spec_path.parent,
 )
-# Rebuild the Windows icon from the dedicated Desktop master asset.
-subprocess.run(
-    [sys.executable, str(project_root / "apps" / "desktop" / "prepare_windows_icon.py")],
-    cwd=str(project_root),
-    check=True,
-)
+# Consume existing artwork only. Never regenerate/overwrite tracked icons
+# from inside PyInstaller (especially important for uncommitted local artwork).
+# Git Bash builds set AI_CAR_ICON_STAGE_DIR to isolated build-release assets.
+asset_root = Path(os.environ.get("AI_CAR_ICON_STAGE_DIR") or (project_root / "assets")).resolve()
+for filename in ("AI-Car-Scanner-mobile.png", "AI-Car-Scanner.webp", "AI-Car-Scanner.ico"):
+    if not (asset_root / filename).is_file():
+        raise FileNotFoundError(f"Required Desktop icon missing: {asset_root / filename}")
 # Optional llama-server is a separately managed runtime dependency. Never
 # embed an arbitrary PATH executable in the GUI: it is packaged separately
 # by the standalone release script when explicitly available.
 binaries = []
-icon_file = project_root / "assets" / "AI-Car-Scanner.ico"
+icon_file = asset_root / "AI-Car-Scanner.ico"
 if not icon_file.is_file():
     raise FileNotFoundError(f"Required application icon not found: {icon_file}")
 
@@ -26,9 +26,9 @@ a = Analysis(
     [str(project_root / "apps" / "desktop" / "main.py")],
     pathex=[str(project_root)],
     binaries=binaries,
-    datas=[(str(project_root / "assets" / "AI-Car-Scanner.ico"), "assets"),
-           (str(project_root / "assets" / "AI-Car-Scanner.webp"), "assets"),
-           (str(project_root / "assets" / "AI-Car-Scanner-mobile.png"), "assets"),
+    datas=[(str(asset_root / "AI-Car-Scanner.ico"), "assets"),
+           (str(asset_root / "AI-Car-Scanner.webp"), "assets"),
+           (str(asset_root / "AI-Car-Scanner-mobile.png"), "assets"),
            (str(project_root / "shared" / "vehicle_catalog.json"), "shared"),
           ],
     hiddenimports=[

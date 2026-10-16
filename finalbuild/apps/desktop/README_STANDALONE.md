@@ -63,3 +63,52 @@ A successful build or icon report does **not** establish that the GUI starts
 without crashing; visually inspect the Explorer, taskbar and window icons
 and manually test a complete diagnostic flow.
 
+
+## Troubleshooting: packaged EXE exits with Segmentation fault
+
+If `python apps/desktop/main.py` works but the frozen executable exits immediately,
+isolate bootloader, Qt plugins, and native taskbar handling before changing UI code.
+The existing release EXE is `onefile` with no console; it suppresses details that
+a console/debug build can expose. **Keep using the existing Python 3.14 x64 venv.**
+
+From `finalbuild/` in Git Bash:
+
+```bash
+git pull --ff-only origin main
+bash -n scripts/debug_desktop_git_bash.sh
+bash -n scripts/run_debug_desktop_git_bash.sh
+bash scripts/debug_desktop_git_bash.sh 2>&1 | tee desktop-debug-build.log
+```
+
+The command creates a **minimal Qt test app** and a full Desktop app using
+`--onedir --console --debug bootloader` in `dist-debug/`. It does not remove
+`dist-release/`, `dist/`, or the Python venv. The minimal Qt test starts,
+shows a small window, then closes automatically.
+
+After building:
+
+```bash
+bash scripts/run_debug_desktop_git_bash.sh
+```
+
+Close the GUI normally if it opens. The script shows process status and the end
+of `dist-debug/desktop-run.log` and `dist-debug/python-faults.log`. The first
+run disables only the custom ctypes-based Windows taskbar icon fallback, while
+still using normal Qt and EXE icons. To compare, **only if the first run works**:
+
+```bash
+bash scripts/run_debug_desktop_git_bash.sh --native-icon
+```
+
+Interpretation:
+- **Qt probe crashes**: investigate Qt/PySide6 package and plugin paths first.
+- **Qt probe works, Desktop debug crashes**: inspect the final Python/native
+  stack and module loading; isolate Desktop import and startup code.
+- **Debug Desktop works, normal onefile crashes**: investigate onefile extraction,
+  windowed bootloader and DLL/runtime conditions. Prefer a stable onedir
+  distribution over prematurely shipping a crashing onefile build.
+- **Native-icon-disabled works; enabled crashes**: isolate the custom Win32
+  icon creation path before using it in any release.
+
+**Do not mark this regression fixed** until the target Windows executable
+actually launches, runs a diagnostic session, and exits cleanly.

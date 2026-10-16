@@ -50,3 +50,19 @@ def test_stage_rejects_missing_source_and_source_inside_output(tmp_path):
     Image.new("RGBA", (256, 256), (10, 12, 15, 255)).save(source)
     with pytest.raises(ValueError, match="separate from the source"):
         stage_icons(source, folder)
+
+
+
+def test_staging_accepts_tiny_but_valid_lossless_webp(tmp_path):
+    """Simple artwork can encode to <128 bytes; decoding must decide validity."""
+    source = tmp_path / "solid.png"
+    Image.new("RGBA", (512, 512), (47, 120, 201, 233)).save(source)
+    staged = tmp_path / "staged"
+    stage_icons(source, staged)
+
+    webp = staged / "AI-Car-Scanner.webp"
+    assert webp.stat().st_size > 0
+    with Image.open(webp) as image:
+        assert image.format == "WEBP"
+        assert image.size == (512, 512)
+        image.verify()

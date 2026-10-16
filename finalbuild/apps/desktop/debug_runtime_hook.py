@@ -22,3 +22,15 @@ if _log_name:
         f"bundle: {getattr(sys, '_MEIPASS', '<missing>')}\n"
     )
     faulthandler.enable(file=_frozen_fault_log, all_threads=True)
+
+# Experimental load-order test: PyInstaller's Qt runtime hook imports
+# PySide6.QtCore to create embedded qt.conf. On the failing desktop bundle
+# that native import raises 0xC0000005. Test it *before* other runtime hooks
+# (notably pyi_rth_cryptography_openssl) without changing release behavior.
+if os.environ.get("AI_CAR_EARLY_QTCORE", "0") == "1":
+    _diagnostic_stream = globals().get("_frozen_fault_log", sys.stderr)
+    print("[ISOLATION] importing PySide6.QtCore before other runtime hooks",
+          file=_diagnostic_stream, flush=True)
+    from PySide6 import QtCore
+    print("[ISOLATION] PySide6.QtCore imported successfully: " + QtCore.__file__,
+          file=_diagnostic_stream, flush=True)

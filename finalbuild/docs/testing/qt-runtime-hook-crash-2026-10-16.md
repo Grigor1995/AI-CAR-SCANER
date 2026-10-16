@@ -151,3 +151,76 @@ echo "Release exit code: $?"
 A build check, static unit test, or a successful initial window appearance
 alone does not establish a stable production release. A source-compatible fix
 has been committed, but actual **Windows clean shutdown remains unverified**.
+
+
+## Update: Qt runs, but packaged GUI still exits abnormally on close
+
+The user's latest successful-launch log shows `LOADER: OK`, `manually flushing
+stdout and stderr`, `cleaning up Python interpreter`, `unloading Python
+shared library`, `end of process reached`, then Qt library unload messages
+for `qmodernwindowsstyle.dll` and `qwindows.dll`. The user reports **exit
+139 on window close**. The latest pasted tail does **not** show the prior
+`QThread: Destroyed while thread ... is still running` diagnostic.
+
+**Do not assign root cause to the unloaded DLLs based on the tail alone:**
+Qt plugins can unload during a normal application shutdown, and the native
+crash could instead occur during unrelated teardown. Exit 139 remains FAIL.
+
+The code now supports an **opt-in teardown experiment**, enabled only by
+`AI_CAR_QT_EXPLICIT_CLEANUP=1` in a frozen Windows process: after
+`QApplication.exec()` returns, `MainWindow` is scheduled for deletion,
+pending `DeferredDelete` events are delivered and the GUI event queue is
+processed before control returns to the Desktop entrypoint. This is
+experimental and is **off by default**, including in production builds.
+
+Lifecycle checkpoints (closeEvent, QThread.finished, QApplication.exec
+exit, optional explicit cleanup, return to main, and backend/LLM cleanup)
+are emitted **only when** `AI_CAR_SHUTDOWN_TRACE_PATH` is set.
+
+Run from `finalbuild/` in Windows Git Bash:
+
+```bash
+git status --short
+git pull --ff-only origin main
+python -m pytest -q apps/desktop/test_smoke.py
+QT_QPA_PLATFORM=offscreen python -m pytest -q \
+  apps/desktop/tests/test_ui_pom.py \
+  -k "shutdown_trace_is_opt_in or close_waits_for_active_api_workers or run_worker_rejects_new_background_jobs"
+bash scripts/debug_desktop_git_bash.sh --desktop-only 2>&1 | tee desktop-debug-build.log
+
+# A: baseline
+bash scripts/run_debug_desktop_git_bash.sh
+
+# B: Windows style-plugin isolation; Fusion avoids the native Windows style
+bash scripts/run_debug_desktop_git_bash.sh --fusion
+
+# C: opt-in Qt object cleanup; no native DLLs are manually unloaded
+bash scripts/run_debug_desktop_git_bash.sh --explicit-cleanup
+
+# Optional D: combine Fusion style with explicit cleanup
+bash scripts/run_debug_desktop_git_bash.sh --fusion --explicit-cleanup
+```
+
+For each run, **open the GUI, allow any initial API requests to finish,
+then close normally**. The script prints the actual exit code and writes
+independent logs under `dist-debug/`, including
+`shutdown-trace-baseline.log`,
+`shutdown-trace-baseline-fusion.log`, and
+`shutdown-trace-baseline-cleanup.log` as well as matching
+`desktop-run-*.log` and `python-faults-*.log` files. Baseline still uses
+`dist-debug/desktop-run.log` for compatibility.
+
+### Decision table
+
+- **Baseline 139, Fusion 0:** investigate the Windows native Qt style plugin
+  or style-related destruction path before considering `Fusion` as default.
+- **Baseline 139, cleanup 0:** confirm deterministic Qt object destruction
+  as a stable frozen shutdown strategy, then promote it to release code with
+  regression tests.
+- **All variants 139, trace shows `ui: returning to main.run`:**
+  inspect backend cleanup, interpreter teardown and native DLL detach using
+  a real Windows dump (WER/WinDbg); the tail alone cannot locate a native fault.
+- **Trace never reaches `ui: QApplication.exec returned`:** investigate
+  callbacks and QThread/UI destruction still happening during event-loop exit.
+
+No build, live Windows test, or clean process exit is claimed in this report.

@@ -353,11 +353,24 @@ def run() -> None:
         backend_error = str(exc)
         print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
 
+    def trace_shutdown(stage: str) -> None:
+        path = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
+        if path:
+            try:
+                with open(path, "a", encoding="utf-8") as stream:
+                    stream.write("main: " + stage + "\n")
+            except OSError:
+                pass
+
     try:
+        trace_shutdown("entering ui.run")
         run_ui()
+        trace_shutdown("ui.run returned")
     finally:
+        trace_shutdown("starting backend/LLM cleanup")
         stop_backend()
         stop_llama_server()
+        trace_shutdown("backend/LLM cleanup complete")
 
     if backend_error:
         raise SystemExit(1)

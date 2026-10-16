@@ -11,6 +11,12 @@ esac
 
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
+DESKTOP_ONLY=0
+case "${1:-}" in
+  "") ;;
+  --desktop-only) DESKTOP_ONLY=1 ;;
+  *) echo "Usage: bash scripts/debug_desktop_git_bash.sh [--desktop-only]" >&2; exit 2 ;;
+esac
 DIST="dist-debug"
 WORK="build-debug"
 
@@ -59,6 +65,8 @@ for asset in \
   fi
 done
 
+QT_RC="not rechecked"
+if [[ "$DESKTOP_ONLY" -eq 0 ]]; then
 echo "[3/6] Freeze a MINIMAL PySide6 Qt probe as a console + onedir EXE"
 "$PY" -m PyInstaller --noconfirm --clean --onedir --console \
   --debug bootloader --name AIQtProbe \
@@ -77,6 +85,10 @@ echo "[DIAG] Qt probe exit status: $QT_RC"
 tail -n 45 "$DIST/qt-probe.log" || true
 if [[ "$QT_RC" -ne 0 ]]; then
   echo "[WARN] Qt probe failed. Check dist-debug/qt-probe.log and python-faults.log."
+fi
+
+else
+  echo "[SKIP] Minimal Qt probe already passed; rebuild only the Desktop diagnostic EXE."
 fi
 
 echo "[5/6] Freeze ACTUAL Desktop GUI as console + onedir (without overwriting release)"

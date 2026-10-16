@@ -20,6 +20,13 @@ import time
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
+# Product runtime modules. Debug probes and PyInstaller-only hooks are still
+# included in the full-inventory number, but not the production-core subtotal.
+PRODUCTION_MODULES = frozenset({
+    "api_client.py", "models.py", "storage.py", "main.py",
+    "backend_worker.py", "ui.py", "prepare_windows_icon.py",
+    "stage_windows_icons.py", "verify_icons.py",
+})
 GROUPS = {
     "logic": (
         "apps/desktop/test_smoke.py",
@@ -105,10 +112,16 @@ def main() -> int:
         "--min-coverage", type=float, default=0.0,
         help="Optional combined Desktop coverage gate (0 disables, 90 is the target)",
     )
+    parser.add_argument(
+        "--min-core-coverage", type=float, default=0.0,
+        help="Optional coverage gate for 9 production runtime modules (separate from all-source coverage)",
+    )
     parser.add_argument("--reports-dir", default="desktop-test-reports")
     args = parser.parse_args()
     if not 0 <= args.min_coverage <= 100:
         parser.error("--min-coverage must be between 0 and 100")
+    if not 0 <= args.min_core_coverage <= 100:
+        parser.error("--min-core-coverage must be between 0 and 100")
 
     reports = (ROOT / args.reports_dir).resolve()
     reports.mkdir(parents=True, exist_ok=True)
@@ -128,6 +141,7 @@ def main() -> int:
     results = [run_group(name, items, reports, env) for name, items in selection.items()]
 
     percent = None
+    core_percent = None
     if coverage_file.exists():
         for fmt, flag, filename in (
             ("XML", "xml", "coverage.xml"),
@@ -163,6 +177,24 @@ def main() -> int:
                     "missing_lines": record.get("missing_lines", []),
                 })
             per_file.sort(key=lambda row: (-row["missing"], row["file"]))
+            core = [
+                row for row in per_file
+                if row["file"].replace("\\", "/").startswith("apps/desktop/")
+                and row["file"].replace("\\", "/").rsplit("/", 1)[-1] in PRODUCTION_MODULES
+            ]
+            if core:
+                total = sum(row["statements"] for row in core)
+                missing = sum(row["missing"] for row in core)
+                core_percent = round((total - missing) * 100 / total, 2) if total else None
+                print(
+                    f"[DESKTOP] Production core source coverage: {core_percent}% "
+                    f"({len(core)}/{len(PRODUCTION_MODULES)} modules, target >=90%)"
+                )
+            # Never pass a production-core gate with missing modules.
+            if len(core) != len(PRODUCTION_MODULES):
+                core_percent = None
+                print("[DESKTOP] Production core coverage incomplete: expected "
+                      f"{len(PRODUCTION_MODULES)} module reports; found {len(core)}")
             coverage_gaps = reports / "coverage-gaps.json"
             coverage_gaps.write_text(
                 json.dumps(per_file, indent=2) + "\n", encoding="utf-8"
@@ -180,6 +212,10 @@ def main() -> int:
     if args.min_coverage and (percent is None or percent < args.min_coverage):
         print(f"[DESKTOP] Coverage gate FAIL: {percent} < {args.min_coverage}")
         results.append({"name": "coverage-gate", "status": "FAIL", "threshold": args.min_coverage})
+    if args.min_core_coverage and (core_percent is None or core_percent < args.min_core_coverage):
+        print(f"[DESKTOP] Production core coverage gate FAIL: {core_percent} < {args.min_core_coverage}")
+        results.append({"name": "core-coverage-gate", "status": "FAIL",
+                        "threshold": args.min_core_coverage})
     passed = sum(entry["status"] == "PASS" for entry in results)
     failures = sum(entry["status"] != "PASS" for entry in results)
     data = {
@@ -188,8 +224,11 @@ def main() -> int:
         "passed_groups": passed,
         "failed_groups": failures,
         "combined_coverage_percent": percent,
+        "production_core_coverage_percent": core_percent,
+        "production_module_names": sorted(PRODUCTION_MODULES),
         "coverage_target_percent": 90,
         "coverage_gate_applied_percent": args.min_coverage,
+        "core_coverage_gate_applied_percent": args.min_core_coverage,
         "report_dir": str(reports),
     }
     summary = reports / "summary.json"

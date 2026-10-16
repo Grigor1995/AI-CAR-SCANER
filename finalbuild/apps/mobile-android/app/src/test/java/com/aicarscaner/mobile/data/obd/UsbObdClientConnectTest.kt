@@ -98,6 +98,55 @@ class UsbObdClientConnectTest {
         verify(exactly = 1) { handle.close() }
     }
 
+    @Test
+    fun successfulUsbConnectionInitializesAdapterAndReadsResponses() = runTest {
+        val manager = mockk<UsbManager>()
+        val (device, intf, input, output) = bulkDevice()
+        val handle = mockk<UsbDeviceConnection>()
+        val sentCommands = mutableListOf<String>()
+        val responses = ArrayDeque(
+            listOf("OK\r>", "OK\r>", "OK\r>", "OK\r>", "OK\r>",
+                "SEARCHING...\r410C1AF8\r>", "430102\r>")
+        )
+
+        every { manager.hasPermission(device) } returns true
+        every { manager.openDevice(device) } returns handle
+        every { device.productName } returns "USB ELM327"
+        every { handle.claimInterface(intf, true) } returns true
+        every { handle.releaseInterface(intf) } returns true
+        every { handle.close() } returns Unit
+        every { handle.bulkTransfer(output, any<ByteArray>(), any(), any()) } answers {
+            val bytes = secondArg<ByteArray>()
+            val length = thirdArg<Int>()
+            sentCommands.add(String(bytes, 0, length, Charsets.US_ASCII))
+            length
+        }
+        every { handle.bulkTransfer(input, any<ByteArray>(), any(), any()) } answers {
+            val buffer = secondArg<ByteArray>()
+            val bytes = responses.removeFirst().toByteArray(Charsets.US_ASCII)
+            bytes.copyInto(buffer)
+            bytes.size
+        }
+
+        val client = UsbObdClient()
+        val connected = client.connect(manager, device)
+
+        assertTrue(connected.isSuccess)
+        assertEquals("Connected to USB USB ELM327", connected.getOrThrow())
+        assertTrue(client.isConnected)
+        assertEquals("410C1AF8", client.readRpm().getOrThrow())
+        assertEquals("430102", client.readDtcs().getOrThrow())
+        assertEquals(
+            listOf("ATZ\r", "ATE0\r", "ATL0\r", "ATS0\r", "ATSP0\r", "010C\r", "03\r"),
+            sentCommands
+        )
+
+        client.close()
+        assertFalse(client.isConnected)
+        verify(exactly = 1) { handle.releaseInterface(intf) }
+        verify(exactly = 1) { handle.close() }
+    }
+
     private fun bulkDevice(): Quadruple<UsbDevice, UsbInterface, UsbEndpoint, UsbEndpoint> {
         val device = mockk<UsbDevice>()
         val intf = mockk<UsbInterface>()

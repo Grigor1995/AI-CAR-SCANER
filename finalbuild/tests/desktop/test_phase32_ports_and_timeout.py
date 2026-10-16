@@ -31,5 +31,6 @@ def test_phase32_custom_backend_port_updates_default_url(monkeypatch):
         reloaded = importlib.reload(desktop_main)
         assert reloaded.PORT == 8002
         assert reloaded.BACKEND_URL == "http://127.0.0.1:8002"
+        assert DiagnosticApiClient().base_url == reloaded.BACKEND_URL
 
     importlib.reload(desktop_main)

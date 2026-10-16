@@ -126,3 +126,70 @@ smoke tests and uploads test/coverage reports. Both source and EXE smoke
 errors **fail CI**; no `continue-on-error` on the QA gate.
 
 No job result is represented as PASS until GitHub Actions finishes.
+
+
+## October 16 Windows results: icon test repaired, coverage gaps visible
+
+The user's new full desktop suite result before these changes:
+
+- `ui-widgets`: **17 passed, 1 failed**; the failing test was
+  `test_desktop_icon_assets_are_generated_from_android_launcher`.
+- **All-source Desktop coverage: 82.67%** (90% target NOT achieved).
+- Overall Desktop QA: **FAIL**.
+
+The failing widget test called the *legacy* `prepare_windows_icon()`
+directly in the real tracked `assets/` folder and compared the result
+against the Android launcher. That contradicted the newer Windows build
+contract, which preserves local edited artwork and stages new PNG/WEBP/ICO
+inside `build-release/`. The test now uses an isolated temporary edited
+PNG and verifies format parity and input preservation. No real icon is
+overwritten by the widget suite.
+
+Added real tests for `backend_worker` source/frozen launch (no real
+port), and positive and negative icon verification (corrupt, missing,
+mismatched alpha/dimensions/colors, invalid ICO, invalid Windows EXE
+resource, Qt decoding failures). These cover meaningful untested paths,
+not mock-only line execution.
+
+The automation now reports:
+
+1. **All-source coverage** (same `--cov=apps.desktop` denominator as
+   the user's 82.67% baseline). It includes optional tooling, diagnostic
+   hooks/probes, the GUI, main, API and supporting scripts.
+2. **Production-core coverage** subtotal, covering exactly nine runtime
+   modules (`api_client`, `models`, `storage`, `main`,
+   `backend_worker`, `ui`, `prepare_windows_icon`,
+   `stage_windows_icons`, `verify_icons`). No unreported production
+   module is silently excluded from this subtotal; the report lists
+   its exact scope.
+3. **File-level uncovered statement counts** and line previews in
+   `desktop-test-reports/coverage-gaps.json` and the terminal.
+
+These are separate metrics. A 90% production-core PASS does not mean
+the *all-source* 90% target has passed.
+
+### Verify from Git Bash (no EXE rebuild needed)
+
+```bash
+git pull --ff-only origin main
+QT_QPA_PLATFORM=offscreen python -m pytest -q \
+  apps/desktop/tests/test_ui_widgets.py \
+  apps/desktop/tests/test_verify_icons_negative.py \
+  apps/desktop/tests/test_backend_worker_coverage.py
+
+bash scripts/run_full_desktop_qa_git_bash.sh
+```
+
+To request independent blocking gates:
+
+```bash
+# All measured apps.desktop source, including debugging tooling:
+bash scripts/run_full_desktop_qa_git_bash.sh --coverage-90
+
+# Explicitly scoped production runtime only, while also reporting all source:
+bash scripts/run_full_desktop_qa_git_bash.sh --core-coverage-90
+```
+
+Neither threshold is declared achieved until a fresh Windows coverage
+JSON file confirms it. Report `summary.json` and `coverage-gaps.json`
+if uncovered modules remain after this batch.

@@ -17,6 +17,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 GROUPS = {
@@ -66,9 +67,29 @@ def run_group(name: str, arguments: tuple[str, ...], reports: Path, env: dict[st
     if state != "PASS":
         tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-45:]
         print("\n".join(tail), flush=True)
+    cases = {}
+    if junit.is_file():
+        try:
+            xml_root = ElementTree.parse(junit).getroot()
+            suite = xml_root.find("testsuite") if xml_root.tag == "testsuites" else xml_root
+            if suite is not None:
+                cases = {
+                    label: int(suite.attrib.get(attribute, "0"))
+                    for label, attribute in (
+                        ("total", "tests"), ("failed", "failures"),
+                        ("errors", "errors"), ("skipped", "skipped"),
+                    )
+                }
+                cases["passed"] = max(
+                    0, cases["total"] - cases["failed"] - cases["errors"] - cases["skipped"]
+                )
+        except (OSError, ValueError, ElementTree.ParseError) as exc:
+            print(f"[DESKTOP] {name}: could not parse JUnit summary: {exc}", flush=True)
+    if cases:
+        print(f"[DESKTOP] {name} cases: {cases}", flush=True)
     return {
         "name": name, "status": state, "returncode": code,
-        "duration_seconds": duration,
+        "duration_seconds": duration, "cases": cases,
         "log": str(log.relative_to(ROOT)),
         "junit_xml": str(junit.relative_to(ROOT)),
     }

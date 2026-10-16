@@ -907,6 +907,10 @@ class MainWindow(QMainWindow):
     def _on_worker_finished(self) -> None:
         worker = self.sender()
         if worker in self._workers:
+            # Qt emits finished immediately before native thread teardown.
+            # Synchronize only at this already-finished boundary to avoid
+            # QThread: Destroyed while thread is still running.
+            worker.wait()
             self._workers.remove(worker)
             worker.deleteLater()
         if self._closing and not self._workers:

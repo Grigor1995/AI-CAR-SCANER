@@ -11,7 +11,7 @@ protocol libraries, device support, data catalogs, tests, and documentation.
 Evidence method: GitHub file/tree inspection plus the previous root
 `report.md` audit. No local user checkout was mounted; the local uncommitted
 changes and whether the *latest* artwork was pushed cannot be established.
-A GitHub asset existing is **not** proof that it matches the user's local icon.
+The `main` commit `4f75d7d` (2026-10-16 08:48 UTC) is confirmed to contain `assets: install D&A TOOL icons on iOS Android and Desktop`, including newly added Desktop master/ICO/PNG and Android and iOS icon assets. Newer uncommitted local artwork, if any, cannot be inspected from GitHub.
 
 This audit does **not** claim any newly measured code coverage, test success,
 Windows executable run, Android emulator run, or iOS simulator result.
@@ -44,9 +44,9 @@ but does **not** claim to fix the historical runtime crash.
 ### P1 — Icon provenance and visual parity
 
 The Desktop spec regenerates Windows ICO, Desktop PNG and WEBP from
-`assets/AI-Car-Scanner-master.png` via `prepare_windows_icon.py`. If a newer
-icon exists only as an uncommitted local ICO/PNG or on an unmerged branch, a
-GitHub build from `main` will **not** include it. The Android launcher and
+`assets/AI-Car-Scanner-master.png` via `prepare_windows_icon.py`. The D&A TOOL icon commit is present on GitHub `main`. If any newer icon
+exists only as an uncommitted local ICO/PNG or unmerged branch, a GitHub build
+from `main` will not include those *later* local edits. The Android launcher and
 iOS app icon have their own assets; exact visual parity still requires review.
 
 The PySide6 UI formerly selected WEBP before PNG. The code now prioritizes
@@ -143,7 +143,8 @@ report says `PASS`.
 | --- | --- |
 | GitHub source, assets and workflow configuration inspected | Completed |
 | New builder, verifier and workflow committed | Completed |
-| New icons present in user's uncommitted local working tree | Unknown |
+| D&A TOOL icon source committed on GitHub main | **Confirmed** (`4f75d7d`) |
+| Any newer unpublished icon changes in user's local working tree | Unknown |
 | Python tests on new source | **Not run** |
 | Windows PyInstaller build | **Not run** |
 | Native icon test on compiled executable | **Not run** |

@@ -8,7 +8,10 @@ class ApiError(RuntimeError):
 
 class DiagnosticApiClient:
     def __init__(self, base_url: str | None = None, timeout: float = 8.0) -> None:
-        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL", "http://127.0.0.1:8001")).rstrip("/")
+        # Match the launcher's local port when no explicit API URL is supplied.
+        # Desktop and API client must not silently connect to different servers.
+        default_url = f"http://127.0.0.1:{os.environ.get('AI_CAR_BACKEND_PORT', '8001')}"
+        self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL") or default_url).rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})

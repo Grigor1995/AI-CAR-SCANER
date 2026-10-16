@@ -1,0 +1,133 @@
+name: Desktop Full QA - Windows
+
+# Real Windows + Python 3.14 matrix: source tests, negative tests and frozen EXE.
+# Test failures are blocking; no continue-on-error shortcuts.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "finalbuild/apps/desktop/**"
+      - "finalbuild/tests/desktop/**"
+      - "finalbuild/scripts/run_desktop_tests.py"
+      - "finalbuild/scripts/smoke_test_desktop_exe.py"
+      - ".github/workflows/desktop-full-qa.yml"
+  pull_request:
+    paths:
+      - "finalbuild/apps/desktop/**"
+      - "finalbuild/tests/desktop/**"
+      - "finalbuild/scripts/run_desktop_tests.py"
+      - "finalbuild/scripts/smoke_test_desktop_exe.py"
+      - ".github/workflows/desktop-full-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-full-qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop-windows:
+    name: Windows 2022 / Python 3.14 / Desktop QA
+    runs-on: windows-2022
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: finalbuild
+    env:
+      QT_QPA_PLATFORM: offscreen
+      QT_STYLE_OVERRIDE: Fusion
+      AI_CAR_DISABLE_LLM_AUTOSTART: "1"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Windows Python 3.14 x64
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          architecture: x64
+          cache: pip
+          cache-dependency-path: |
+            finalbuild/requirements.txt
+            finalbuild/apps/desktop/requirements.txt
+            finalbuild/apps/desktop/requirements-dev.txt
+
+      - name: Install app and test dependencies
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements.txt -r apps/desktop/requirements-dev.txt
+          python -m pip check
+
+      - name: Run logic, negative, UI POM and widget groups independently
+        shell: pwsh
+        run: python scripts/run_desktop_tests.py --reports-dir desktop-test-reports
+
+      - name: Build frozen backend_service.exe
+        shell: pwsh
+        run: >-
+          python -m PyInstaller --noconfirm --clean
+          --distpath dist-desktop-ci --workpath build-desktop-ci/backend
+          apps/desktop/specs/backend_service.spec
+
+      - name: Build frozen AICarScanner.exe with QtCore startup fix
+        shell: pwsh
+        run: >-
+          python -m PyInstaller --noconfirm --clean
+          --distpath dist-desktop-ci --workpath build-desktop-ci/gui
+          apps/desktop/specs/AICarScanner.spec
+
+      - name: Smoke test real frozen GUI from launch to clean close
+        shell: pwsh
+        run: >-
+          python scripts/smoke_test_desktop_exe.py
+          --exe dist-desktop-ci/AICarScanner.exe
+          --reports-dir desktop-test-reports
+          --timeout 60
+
+      - name: Smoke test frozen GUI with validated Fusion and Qt cleanup
+        shell: pwsh
+        run: >-
+          python scripts/smoke_test_desktop_exe.py
+          --exe dist-desktop-ci/AICarScanner.exe
+          --reports-dir desktop-test-reports
+          --timeout 60 --fusion --explicit-cleanup
+
+      - name: Publish test summary to GitHub job summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "desktop-test-reports/summary.json") {
+            "## Desktop QA Results" >> $env:GITHUB_STEP_SUMMARY
+            "```json" >> $env:GITHUB_STEP_SUMMARY
+            Get-Content "desktop-test-reports/summary.json" >> $env:GITHUB_STEP_SUMMARY
+            "```" >> $env:GITHUB_STEP_SUMMARY
+          }
+          foreach ($file in (Get-ChildItem "desktop-test-reports/packaged-*-result.json" -ErrorAction SilentlyContinue)) {
+            "### Frozen EXE: $($file.BaseName)" >> $env:GITHUB_STEP_SUMMARY
+            "```json" >> $env:GITHUB_STEP_SUMMARY
+            Get-Content $file.FullName >> $env:GITHUB_STEP_SUMMARY
+            "```" >> $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Upload QA evidence (JUnit, coverage, HTML, EXE logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-full-qa-reports
+          path: |
+            finalbuild/desktop-test-reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Windows Desktop executables
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-tested-executables
+          path: |
+            finalbuild/dist-desktop-ci/AICarScanner.exe
+            finalbuild/dist-desktop-ci/backend_service.exe
+          if-no-files-found: error
+          retention-days: 14

@@ -2,9 +2,9 @@
 
 Date: 2026-10-16  
 Repository scope: `finalbuild/apps/mobile-android`  
-Status: **static review complete for the main Android sources; new tests awaiting local execution**  
+Status: **Android source audit completed; local unit tests pass, latest expanded full UI suite is 17/19 with two failures pending a full rerun**  
 Working branch: `test/android-coverage-local-20261016`  
-CI policy: **no workflow dispatch, no PR before local validation**.
+CI policy: **no workflow dispatch and no PR; owner explicitly requested fast-forward promotion to main despite pending complete UI-suite verification**.
 
 ## Baseline: distinguish test execution from coverage
 
@@ -81,3 +81,16 @@ Record test totals, exact coverage table, branch and commit, test device/API lev
 3. Both coverage reports are supplied and improvements attributed to their respective suites.
 4. No tests weakened, no production sources excluded solely to inflate percentage, and no regression in user-facing diagnostic behavior.
 5. Merge only after the preceding conditions have been checked and an explicit no-CI merge path has been confirmed.
+
+
+## Promotion checkpoint (2026-10-16)
+
+The owner has explicitly requested to transfer the coverage changes to `main` and pause further work.
+
+- Developer's latest expanded full instrumented run: **17/19 passed; 2 failed**. The failures concerned empty analysis/activity tab text and a nonunique saved DTC node. Targeted follow-up corrections are present in source; a successful full 19-test rerun has **not** been supplied.
+- The developer also reported `compileDebugAndroidTestKotlin`, `testDebugUnitTest --rerun-tasks`, and `createDebugUnitTestCoverageReport` successful locally.
+- Newest user-provided Android debug coverage: **65% instructions**, **27% branches**, approximately **70.2% lines**. The earlier unit-test JaCoCo report had different percentages; unique combined coverage remains unmeasured.
+- Direct fast-forward of `main` does not match the current workflow `pull_request` trigger and will not dispatch CI. No PR is created.
+- Outstanding after promotion: execute all 19 instrumented tests again; inspect both failures if they recur; separately collect JVM unit coverage and instrumented coverage; evaluate merging JaCoCo execution data before claiming progress toward 90%.
+
+**Important:** code promotion does not change the observed test verdict to PASS.

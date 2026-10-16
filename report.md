@@ -613,7 +613,7 @@ Relevant changes: [OBD wait/scroll](https://github.com/Grigor1995/AI-CAR-SCANER/
 
 ### Coverage target and next steps
 
-The latest debug coverage table provided on 2026-10-14 reports **62% instruction**, **26% branch**, and approximately **63.7% line coverage** (1,426 of 2,238 lines covered). The 90% target remains unmet.
+The latest Android instrumentation coverage table provided on 2026-10-14 reports **62% instruction**, **26% branch**, and approximately **68.3% line coverage** (1,528 of 2,238 lines covered). The 90% target remains unmet.
 
 The package table reports `com.aicarscaner.mobile.data.obd` at only **3% instruction / 2% branch coverage**. Since the repository already contains JVM unit tests for `LiveDataReader`, the Wi-Fi client, and Bluetooth/USB connection failure paths, this very low OBD figure likely comes from the **instrumentation-test coverage report**, not the separate unit-test coverage report. Keep the two report types separate until the unit-test table is confirmed.
 
@@ -631,14 +631,45 @@ Next, capture the **unit-test report** at `app/build/reports/coverage/test/debug
 
 ## Android coverage audit — 2026-10-16 (local-only validation)
 
-**Validation:** The user reported `BUILD SUCCESSFUL` for `compileDebugAndroidTestKotlin`, `testDebugUnitTest --rerun-tasks`, and `createDebugUnitTestCoverageReport` on their local Windows development environment. These commands ran before the test branch was checked out, so the new branch tests are **not yet verified**. No new coverage percentages were supplied for the unit-test report.
+**Local builds reported by developer:** `compileDebugAndroidTestKotlin`, `testDebugUnitTest --rerun-tasks`, and `createDebugUnitTestCoverageReport` each reported `BUILD SUCCESSFUL`. These logs do not independently establish that **all tests currently committed on the coverage branch** have been executed locally. No CI was run.
 
-**Coverage baseline:** The supplied `debug` coverage table shows 62% instruction, 26% branch and about 68% lines (1,528 covered of 2,238; 710 missed). The `data.obd` package shows 3% instruction and 2% branch in that table. This table should not be conflated with the separate JVM unit-test coverage report. Verify which report produced it before combining estimates.
+**JVM unit-test JaCoCo report:**
+- Total: **24% instruction**, **22% branch**, **36.0% line** coverage (806 of 2,238 lines).
+- `presentation`: 10% instruction / 8% branch.
+- `data.obd`: **88% instruction / 74% branch**.
+- `settings`: 73% instruction / 66% branch.
+- `data.api`: 37% instruction, `data.repository`: 85% instruction.
 
-**Source audit:** Native Android uses Kotlin, Jetpack Compose, Retrofit and Bluetooth/USB/Wi-Fi OBD transports. The large `DiagnosticScreen.kt` combines many state and transport workflows; `DiagnosticViewModel.kt` starts asynchronous requests without a stale-result guard; OBD clients handle real I/O, timeouts and teardown. Review OBD timeout/partial-frame behavior, initialization handling, concurrent ViewModel requests and screen-level negative paths before making production changes.
+**Android instrumentation JaCoCo report (separate):**
+- Total: **62% instruction**, **26% branch**, **68.3% line** coverage (1,528 of 2,238 lines).
+- `presentation`: **70% instruction / 31% branch**.
+- `data.obd`: 3% instruction / 2% branch.
+- `settings`: 68% instruction / 40% branch.
+- `data.api`: 70% instruction, `data.repository`: 85% instruction.
 
-**Tests added on branch `test/android-coverage-local-20261016` (pending local run):** Bluetooth connection/setup/RPM/DTC happy path; USB connection/setup/RPM/DTC happy path; Wi-Fi truncated prompt timeout and subsequent command; ViewModel loading state during a delayed request; guards for session-dependent actions.
+**Interpretation:** These percentages come from two different execution-data sets. Do **not** add or average them, and do not claim 90% combined coverage. A merged JaCoCo run against the same production classes is needed to measure unique coverage across both suites. The 90% target remains unmet or unverified until that merged report is available.
 
-**CI isolation:** `.github/workflows/ci.yml` is configured for `pull_request` and manual dispatch, and `.github/workflows/ios.yml` is configured for manual dispatch. No PR or workflow was started for this test branch. Keep validation local and defer merging until tests pass.
+**Source audit:** Native Android uses Kotlin, Jetpack Compose, Retrofit and Bluetooth/USB/Wi-Fi OBD transports. `DiagnosticScreen.kt` is a 1,712-line Compose screen combining session, OBD, analysis and UI state. `DiagnosticViewModel.kt` uses concurrent coroutines without a stale-result guard. Audit findings for future consideration include initialization failures ignored in OBD transport clients; hardware connection/partial-frame/timeouts; error presentation; and unnecessary unrestricted cleartext allowance in the Android manifest. These are review observations; runtime bug claims require reproduction and dedicated tests.
 
-**Local test instructions:** Check out `test/android-coverage-local-20261016`, run `./gradlew testDebugUnitTest --rerun-tasks`, then `./gradlew createDebugUnitTestCoverageReport`, and inspect `app/build/reports/coverage/test/debug/index.html`. Do not infer a 90% pass from a successful Gradle build.
+**Pending local verification on branch `test/android-coverage-local-20261016`:**
+- Bluetooth connection/init/RPM/DTC success path.
+- USB connection/init/RPM/DTC success path.
+- Wi-Fi response without a trailing ELM prompt and subsequent command.
+- ViewModel pending loading state and guards for missing session.
+- Compose UI tests for empty Analysis/Activity, RU/EN theme, cancelled vehicle edit, invalid symptom/DTC input, cancelled symptom edit and cancelled DTC edit.
+- Previously verified main-branch suite of **13/13 instrumentation PASS** remains the last confirmed *full instrumentation-suite* result.
+
+**CI isolation:** `.github/workflows/ci.yml` only triggers on `pull_request` for `finalbuild/**` or by manual dispatch. `.github/workflows/ios.yml` is manual only. No PR or workflow was started. Keep code on this branch and do not merge before developer local validation.
+
+**Suggested local verification:**
+
+```bash
+cd apps/mobile-android
+./gradlew compileDebugAndroidTestKotlin
+./gradlew testDebugUnitTest --rerun-tasks
+./gradlew createDebugUnitTestCoverageReport
+./gradlew connectedDebugAndroidTest --rerun-tasks
+./gradlew createDebugAndroidTestCoverageReport
+```
+
+Check both report types separately until a merged report task is implemented and confirmed.

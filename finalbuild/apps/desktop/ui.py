@@ -1207,12 +1207,12 @@ def run() -> None:
     # byte-identical to Android's launcher icon; ICO/PNG are fallbacks.
     app = QApplication([])
     app.setApplicationName("AI Auto Diagnostic Workstation")
-    # Keep the verified current artwork first on every platform. The ICO is a fallback
-    # only; older ICO artwork must not replace the correct WEBP window icon.
+    # Prefer PNG for Qt across Windows builds (WEBP requires an image plugin).
+    # Both are generated from the same master; ICO is the last fallback.
     icon_candidates = (
+        _resource_path("assets/AI-Car-Scanner-mobile.png"),
         _resource_path("assets/AI-Car-Scanner.webp"),
         _resource_path("assets/AI-Car-Scanner.ico"),
-        _resource_path("assets/AI-Car-Scanner-mobile.png"),
     )
     icon_path = next((candidate for candidate in icon_candidates if candidate.is_file()), None)
     app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()

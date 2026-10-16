@@ -1,7 +1,8 @@
 """Verify the assets and native icon of a PyInstaller Desktop preview build.
 
-Use `AICarScanner.exe --verify-icons` in an isolated smoke test. This does
-not start a backend, LLM, or application window.
+Run `python apps/desktop/verify_icons.py` from finalbuild; the Windows
+builder also sets AI_CAR_VERIFY_EXE_PATH to inspect the built EXE resource.
+This checks icons only, without starting the backend, LLM or full GUI.
 """
 from __future__ import annotations
 

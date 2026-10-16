@@ -95,6 +95,15 @@ The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1
 Adaptive llama-server context handling was added. The client reads `/props`, compacts live diagnostic context to fit the actual server limit, and defaults the managed server to 8192 context.
 
 
+## Windows Desktop icon-preview builder
+
+The clean Windows preview build uses `scripts/build_windows_icon_preview.ps1`
+and creates `dist-release/AICarScanner-icon-preview.zip`. The GitHub Actions
+`Windows Desktop Icon Preview` workflow is manual-only. This preview validates
+icon assets and the executable's native icon, not full app startup or
+diagnostic correctness. See [the October 16 audit](docs/testing/repository-audit-2026-10-16.md)
+for cleanup decisions and remaining release risks.
+
 ## Shared native-client contract
 
 The shared options and workflow are specified in [config/client_contract.json](config/client_contract.json). The backend vehicle catalog is the online source of truth for Desktop, Android, and iOS. Language codes are en, ru, and hy; theme modes are dark and light; diagnostic results use PASS, FAIL, and INCOMPLETE. Platform-specific feature gaps are documented in [PLATFORM_FEATURE_PARITY.md](PLATFORM_FEATURE_PARITY.md).

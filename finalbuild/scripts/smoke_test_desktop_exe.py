@@ -86,6 +86,9 @@ def main() -> int:
         env = os.environ.copy()
         env["APPDATA"] = temp
         env["AI_CAR_BACKEND_URL"] = f"http://127.0.0.1:{server.server_port}"
+        # Force all backend requests to stay on the in-process mock server.
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+        env["no_proxy"] = "127.0.0.1,localhost"
         env["AI_CAR_DISABLE_LLM_AUTOSTART"] = "1"
         env["AI_CAR_TEST_AUTOCLOSE_MS"] = str(args.auto_close_ms)
         env["AI_CAR_SHUTDOWN_TRACE_PATH"] = str(trace_path)

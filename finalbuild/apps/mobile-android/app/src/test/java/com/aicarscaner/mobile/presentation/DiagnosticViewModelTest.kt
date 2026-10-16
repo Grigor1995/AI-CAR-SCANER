@@ -8,12 +8,14 @@ import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okhttp3.MediaType.Companion.toMediaType
@@ -264,6 +266,50 @@ class DiagnosticViewModelTest {
         coVerify(exactly = 1) { repository.analyze("session-1", "hy") }
         coVerify(exactly = 1) {
             repository.recordTestResult("session-1", "fuel-pressure", "PASS", "pressure stable", "hy")
+        }
+    }
+
+    @Test
+    fun loadingStaysTrueUntilPendingSessionRequestCompletes() = runTest(mainDispatcherRule.dispatcher) {
+        val pending = CompletableDeferred<DiagnosticSessionDto>()
+        val viewModel = DiagnosticViewModel(repository)
+        coEvery { repository.createSession(vehicle) } coAnswers { pending.await() }
+
+        viewModel.createSession(vehicle)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.loading)
+        assertNull(viewModel.uiState.value.session)
+        assertNull(viewModel.uiState.value.error)
+
+        pending.complete(session)
+        advanceUntilIdle()
+
+        assertEquals(session, viewModel.uiState.value.session)
+        assertFalse(viewModel.uiState.value.loading)
+        assertNull(viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun everySessionDependentActionRejectsMissingSession() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = DiagnosticViewModel(repository)
+        val actions: List<() -> Unit> = listOf(
+            { viewModel.updateVehicle(vehicle) },
+            { viewModel.updateSymptom("symptom-1", "rough idle") },
+            { viewModel.deleteSymptom("symptom-1") },
+            { viewModel.addDtc("P0302") },
+            { viewModel.updateDtc("dtc-1", "P0300") },
+            { viewModel.deleteDtc("dtc-1") },
+            { viewModel.analyze() },
+            { viewModel.recordTestResult("check-ignition", "INCOMPLETE", null) }
+        )
+
+        actions.forEach { action ->
+            action()
+            advanceUntilIdle()
+            assertEquals("Create a session first", viewModel.uiState.value.error)
+            assertNull(viewModel.uiState.value.session)
+            assertFalse(viewModel.uiState.value.loading)
         }
     }
 

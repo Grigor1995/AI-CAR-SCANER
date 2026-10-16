@@ -13,13 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from apps.desktop.models import Session, Vehicle
 from PIL import Image, ImageChops
 
-from apps.desktop.prepare_windows_icon import (
-    ANDROID_ICON,
-    DESKTOP_ICO,
-    DESKTOP_PNG,
-    DESKTOP_WEBP,
-    main as prepare_windows_icon,
-)
+from apps.desktop.stage_windows_icons import stage_icons
 from apps.desktop.ui import (
     DashboardPage,
     DevicesPage,
@@ -117,22 +111,30 @@ def test_ui_translation_covers_pages_and_switches_languages(qapp):
     assert _translate_ui_text("INCOMPLETE", "hy") == "Անորոշ"
     assert _translate_ui_block("Model: Tesla Model S", "ru") == "Модель: Tesla Model S"
 
-def test_desktop_icon_assets_are_generated_from_android_launcher():
-    prepare_windows_icon()
+def test_desktop_icon_stage_preserves_input_and_generates_matching_formats(tmp_path):
+    """Build-time artwork must never overwrite a locally edited icon."""
+    source = tmp_path / "edited-desktop-icon.png"
+    Image.new("RGBA", (512, 512), (20, 90, 140, 255)).save(source, format="PNG")
+    before = source.read_bytes()
 
-    with Image.open(ANDROID_ICON) as android_icon, Image.open(DESKTOP_WEBP) as desktop_icon:
-        assert desktop_icon.format == "WEBP"
-        assert desktop_icon.size == android_icon.size
-        assert ImageChops.difference(android_icon.convert("RGBA"), desktop_icon.convert("RGBA")).convert("RGB").getbbox() is None
+    staged = tmp_path / "staged"
+    stage_icons(source, staged)
 
-    with Image.open(DESKTOP_PNG) as desktop_png:
-        assert desktop_png.format == "PNG"
-        assert desktop_png.size == Image.open(ANDROID_ICON).size
+    assert source.read_bytes() == before
+    with Image.open(source) as original, Image.open(staged / "AI-Car-Scanner.webp") as webp:
+        assert webp.format == "WEBP"
+        assert webp.size == original.size
+        assert ImageChops.difference(
+            original.convert("RGBA"), webp.convert("RGBA")
+        ).getbbox() is None
 
-    with Image.open(DESKTOP_ICO) as desktop_ico:
-        assert desktop_ico.format == "ICO"
-        assert desktop_ico.width >= 16
-        assert desktop_ico.height >= 16
+    with Image.open(staged / "AI-Car-Scanner-mobile.png") as png:
+        assert png.format == "PNG"
+        assert png.size == (512, 512)
+
+    with Image.open(staged / "AI-Car-Scanner.ico") as ico:
+        assert ico.format == "ICO"
+        assert (256, 256) in ico.ico.sizes()
 
 
 def test_sparkline_limits_values_and_paints(qapp):

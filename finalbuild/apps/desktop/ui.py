@@ -1286,7 +1286,15 @@ def run() -> None:
         native_window = win.windowHandle()
         if native_window is not None:
             native_window.setIcon(app_icon)
-        if sys.platform == "win32" and os.environ.get("AI_CAR_DISABLE_NATIVE_TASKBAR_ICON", "0") != "1":
+        # The Qt/EXE icons work without this custom ctypes fallback. The
+        # frozen Windows release defaults to Qt-managed icons until the
+        # Win32 GDI fallback is independently validated; developers can opt in
+        # with AI_CAR_DISABLE_NATIVE_TASKBAR_ICON=0 for comparison.
+        native_icon_disabled = os.environ.get(
+            "AI_CAR_DISABLE_NATIVE_TASKBAR_ICON",
+            "1" if getattr(sys, "frozen", False) else "0",
+        ) == "1"
+        if sys.platform == "win32" and not native_icon_disabled:
             try:
                 _set_windows_taskbar_icon(int(win.winId()), app_icon)
             except Exception as exc:

@@ -1,6 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
-from shutil import which
 import subprocess
 import sys
 
@@ -9,14 +8,16 @@ project_root = next(
     (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "main.py").is_file()),
     spec_path.parent,
 )
-# Always regenerate the packaged Windows icon from the Android launcher asset.
+# Rebuild the Windows icon from the dedicated Desktop master asset.
 subprocess.run(
     [sys.executable, str(project_root / "apps" / "desktop" / "prepare_windows_icon.py")],
     cwd=str(project_root),
     check=True,
 )
-server = which("llama-server.exe")
-binaries = [(server, ".")] if server else []
+# Optional llama-server is a separately managed runtime dependency. Never
+# embed an arbitrary PATH executable in the GUI: it is packaged separately
+# by the standalone release script when explicitly available.
+binaries = []
 icon_file = project_root / "assets" / "AI-Car-Scanner.ico"
 if not icon_file.is_file():
     raise FileNotFoundError(f"Required application icon not found: {icon_file}")

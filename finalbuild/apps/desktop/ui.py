@@ -1313,6 +1313,17 @@ def run() -> None:
                 _set_windows_taskbar_icon(int(win.winId()), app_icon)
             except Exception as exc:
                 print(f"Windows taskbar icon fallback: {exc}", file=sys.stderr)
+    # Strictly opt-in packaged EXE smoke automation. This runs against the
+    # actual frozen GUI and verifies the full Qt event loop and clean shutdown.
+    # Normal desktop launches are unaffected when the env var is absent.
+    smoke_delay = os.environ.get("AI_CAR_TEST_AUTOCLOSE_MS")
+    if smoke_delay is not None and getattr(sys, "frozen", False):
+        delay_ms = int(smoke_delay)
+        if not 200 <= delay_ms <= 30000:
+            raise ValueError("AI_CAR_TEST_AUTOCLOSE_MS must be 200..30000")
+        _trace_shutdown("smoke: main_window_shown")
+        QTimer.singleShot(delay_ms, win.close)
+
     app.aboutToQuit.connect(
         lambda: [
             __import__("ctypes").windll.user32.DestroyIcon(handle)

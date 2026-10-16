@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 DIST=dist-release/icon-preview
 WORK=build-release/icon-preview
-PY=build-release/venv-icon-preview/Scripts/python.exe
+# PY is set after locating the user's existing Python 3.14 virtual environment.
 ZIP=dist-release/AICarScanner-icon-preview.zip
 
 echo "[1/8] Locate the existing Python 3.14 x64 Desktop virtual environment"

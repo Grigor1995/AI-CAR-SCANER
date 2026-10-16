@@ -112,7 +112,8 @@ def main() -> int:
             ("HTML", "html", "htmlcov"),
             ("JSON", "json", "coverage.json"),
         ):
-            cmd = [sys.executable, "-m", "coverage", flag, "-o", str(reports / filename)]
+            cmd = [sys.executable, "-m", "coverage", flag,
+                   "-d" if flag == "html" else "-o", str(reports / filename)]
             completed = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True)
             if completed.returncode != 0:
                 print(f"[DESKTOP] Coverage {fmt}: FAIL: {completed.stderr.strip()}")

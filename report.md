@@ -651,12 +651,14 @@ Next, capture the **unit-test report** at `app/build/reports/coverage/test/debug
 
 **Source audit:** Native Android uses Kotlin, Jetpack Compose, Retrofit and Bluetooth/USB/Wi-Fi OBD transports. `DiagnosticScreen.kt` is a 1,712-line Compose screen combining session, OBD, analysis and UI state. `DiagnosticViewModel.kt` uses concurrent coroutines without a stale-result guard. Audit findings for future consideration include initialization failures ignored in OBD transport clients; hardware connection/partial-frame/timeouts; error presentation; and unnecessary unrestricted cleartext allowance in the Android manifest. These are review observations; runtime bug claims require reproduction and dedicated tests.
 
+**Local instrumentation follow-up (2026-10-16):** The first full attempt of the expanded 19-test Compose suite finished **17 passed / 2 failed**. After the targeted test corrections, the developer independently reran `emptyAnalysisAndActivityTabsShowHelpfulMessages` and `cancelledDtcEditKeepsPreviouslySavedCode`; **both targeted reruns reported BUILD SUCCESSFUL (1/1 tests, 0 failures)** on `Pixel_6_Pro(AVD) - 17`. This validates those two targeted scenarios, **not yet the 19-test suite as a whole**. The emulator `emulator-5554` was OFFLINE and skipped; `Pixel_6_Pro(AVD) - 17` executed the tests. Non-fatal native-library stripping warnings were observed. Re-run the full suite locally next.
+
 **Pending local verification on branch `test/android-coverage-local-20261016`:**
 - Bluetooth connection/init/RPM/DTC success path.
 - USB connection/init/RPM/DTC success path.
 - Wi-Fi response without a trailing ELM prompt and subsequent command.
 - ViewModel pending loading state and guards for missing session.
-- Compose UI tests for empty Analysis/Activity, RU/EN theme, cancelled vehicle edit, invalid symptom/DTC input, cancelled symptom edit and cancelled DTC edit.
+- Expanded Compose suite (19 tests) as a whole: pending full rerun. The two previous failures (empty Analysis/Activity and cancelled DTC edit) now pass focused reruns; other added Compose tests require confirmation in a full successful rerun.
 - Previously verified main-branch suite of **13/13 instrumentation PASS** remains the last confirmed *full instrumentation-suite* result.
 
 **CI isolation:** `.github/workflows/ci.yml` only triggers on `pull_request` for `finalbuild/**` or by manual dispatch. `.github/workflows/ios.yml` is manual only. No PR or workflow was started. Keep code on this branch and do not merge before developer local validation.

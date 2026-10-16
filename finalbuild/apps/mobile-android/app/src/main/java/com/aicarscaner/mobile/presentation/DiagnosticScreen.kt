@@ -34,6 +34,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
@@ -1631,7 +1632,7 @@ private fun VehicleSelectionField(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
             label = { Text(label) },
             trailingIcon = {
                 androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)

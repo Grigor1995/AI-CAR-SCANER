@@ -36,10 +36,12 @@ GROUPS = {
         "--ignore=apps/desktop/tests/test_ui_widgets.py",
         "--ignore=apps/desktop/tests/test_negative_api_contract.py",
         "--ignore=apps/desktop/tests/test_negative_storage.py",
+        "--ignore=apps/desktop/tests/test_verify_icons_negative.py",
     ),
     "negative": (
         "apps/desktop/tests/test_negative_api_contract.py",
         "apps/desktop/tests/test_negative_storage.py",
+        "apps/desktop/tests/test_verify_icons_negative.py",
     ),
     "ui-pom": ("apps/desktop/tests/test_ui_pom.py",),
     "ui-widgets": ("apps/desktop/tests/test_ui_widgets.py",),

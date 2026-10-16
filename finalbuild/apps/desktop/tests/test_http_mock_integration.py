@@ -71,6 +71,8 @@ def local_api():
     worker.start()
     try:
         client = DiagnosticApiClient(f"http://127.0.0.1:{server.server_port}", timeout=3)
+        # Never allow a corporate/system proxy to intercept the local fake API.
+        client.session.trust_env = False
         yield client, events, state
     finally:
         server.shutdown()

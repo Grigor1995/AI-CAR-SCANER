@@ -627,3 +627,18 @@ Generate and inspect both reports separately:
 ```
 
 Next, capture the **unit-test report** at `app/build/reports/coverage/test/debug/index.html` and compare it with the instrumentation report. Use the unit report to find remaining untested client branches; use the instrumentation report to prioritize UI behavior. Do not weaken assertions or exclude production code merely to inflate coverage.
+
+
+## Android coverage audit — 2026-10-16 (local-only validation)
+
+**Validation:** The user reported `BUILD SUCCESSFUL` for `compileDebugAndroidTestKotlin`, `testDebugUnitTest --rerun-tasks`, and `createDebugUnitTestCoverageReport` on their local Windows development environment. These commands ran before the test branch was checked out, so the new branch tests are **not yet verified**. No new coverage percentages were supplied for the unit-test report.
+
+**Coverage baseline:** The supplied `debug` coverage table shows 62% instruction, 26% branch and about 68% lines (1,528 covered of 2,238; 710 missed). The `data.obd` package shows 3% instruction and 2% branch in that table. This table should not be conflated with the separate JVM unit-test coverage report. Verify which report produced it before combining estimates.
+
+**Source audit:** Native Android uses Kotlin, Jetpack Compose, Retrofit and Bluetooth/USB/Wi-Fi OBD transports. The large `DiagnosticScreen.kt` combines many state and transport workflows; `DiagnosticViewModel.kt` starts asynchronous requests without a stale-result guard; OBD clients handle real I/O, timeouts and teardown. Review OBD timeout/partial-frame behavior, initialization handling, concurrent ViewModel requests and screen-level negative paths before making production changes.
+
+**Tests added on branch `test/android-coverage-local-20261016` (pending local run):** Bluetooth connection/setup/RPM/DTC happy path; USB connection/setup/RPM/DTC happy path; Wi-Fi truncated prompt timeout and subsequent command; ViewModel loading state during a delayed request; guards for session-dependent actions.
+
+**CI isolation:** `.github/workflows/ci.yml` is configured for `pull_request` and manual dispatch, and `.github/workflows/ios.yml` is configured for manual dispatch. No PR or workflow was started for this test branch. Keep validation local and defer merging until tests pass.
+
+**Local test instructions:** Check out `test/android-coverage-local-20261016`, run `./gradlew testDebugUnitTest --rerun-tasks`, then `./gradlew createDebugUnitTestCoverageReport`, and inspect `app/build/reports/coverage/test/debug/index.html`. Do not infer a 90% pass from a successful Gradle build.

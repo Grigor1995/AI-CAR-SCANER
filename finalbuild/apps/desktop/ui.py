@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, QRectF, QTimer, QSettings
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QTimer, QSettings
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
@@ -765,7 +765,10 @@ class MainWindow(QMainWindow):
         self.selected_device_id = None
         self.test_candidates = []
         self.online = False
-        self._workers = []
+        # Workers own real HTTP operations, which can outlive a window close.
+        # Never destroy a running QThread during Qt interpreter teardown.
+        self._workers: list[Worker] = []
+        self._closing = False
         self.stack = QStackedWidget()
         self.pages = []
         self._build_pages()
@@ -883,8 +886,53 @@ class MainWindow(QMainWindow):
             self, self.tr_text("About"), self.tr_text("AI Auto Diagnostic Workstation") + "\n" + self.tr_text("Evidence-driven automotive diagnostics.")
         ))
         helpm.addAction(about)
-    def run_worker(self,fn:Callable[[],Any],done:Callable[[Any],None]) -> None:
-        worker=Worker(fn); self._workers.append(worker); worker.finished_ok.connect(done); worker.failed.connect(self.show_error); worker.finished.connect(lambda: self._workers.remove(worker) if worker in self._workers else None); worker.start()
+    def run_worker(self, fn: Callable[[], Any], done: Callable[[Any], None]) -> None:
+        if self._closing:
+            return
+        worker = Worker(fn)
+        self._workers.append(worker)
+        # Suppress late GUI mutations and modal error dialogs once closing.
+        worker.finished_ok.connect(
+            lambda result: done(result) if not self._closing else None
+        )
+        worker.failed.connect(
+            lambda message: self.show_error(message) if not self._closing else None
+        )
+        # Use a QObject receiver on the GUI thread, not a closure that removes
+        # the final strong reference while QThread is still finishing.
+        worker.finished.connect(self._on_worker_finished)
+        worker.start()
+
+    @Slot()
+    def _on_worker_finished(self) -> None:
+        worker = self.sender()
+        if worker in self._workers:
+            self._workers.remove(worker)
+            worker.deleteLater()
+        if self._closing and not self._workers:
+            # Process the final finished signal before invoking closeEvent again.
+            QTimer.singleShot(0, self.close)
+
+    def closeEvent(self, event) -> None:
+        if self._workers:
+            if not self._closing:
+                self._closing = True
+                for page in self.pages:
+                    timer = getattr(page, "timer", None)
+                    if isinstance(timer, QTimer):
+                        timer.stop()
+                for worker in self._workers:
+                    worker.requestInterruption()
+                self.statusBar().showMessage(
+                    "Finishing active requests before closing..."
+                )
+                self.setEnabled(False)
+            # Abort this close event; requests may be blocking on a bounded
+            # network timeout. Do not call terminate() or wait() on the UI thread.
+            event.ignore()
+            return
+        super().closeEvent(event)
+
     def show_error(self,msg:str):
         translated = self.tr_text(msg)
         QMessageBox.critical(self, self.tr_text("Error"), translated)

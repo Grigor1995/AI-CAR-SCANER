@@ -26,7 +26,7 @@ python -m pytest -p no:benchmark -p no:asyncio apps/desktop/tests
 python -m pytest -p no:benchmark -p no:asyncio apps/desktop/test_smoke.py
 ~~~
 
-The Python test suite covers the API client, models, persistence, main-window helpers, and selected UI behavior. A passing unit test suite does not by itself prove that a packaged Windows executable runs correctly.
+Run the smoke test through **pytest**, not `python apps/desktop/test_smoke.py`: the latter only defines a test and performs no assertions.\n\nThe Python test suite covers the API client, models, persistence, main-window helpers, and selected UI behavior. A passing unit test suite does not by itself prove that a packaged Windows executable runs correctly.
 
 ## Shared backend
 

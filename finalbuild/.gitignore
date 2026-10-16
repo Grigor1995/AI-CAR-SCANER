@@ -34,3 +34,8 @@ postgres_data/
 /dist/
 dist-release/
 build-release/
+
+# Desktop QA and Windows CI build outputs (not source)
+desktop-test-reports/
+dist-desktop-ci/
+build-desktop-ci/

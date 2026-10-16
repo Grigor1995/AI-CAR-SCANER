@@ -64,17 +64,21 @@ echo "[3/8] Run targeted regression tests before packaging"
 # Keep default-port assertions reproducible even if the user has custom shell settings.
 unset AI_CAR_BACKEND_URL AI_CAR_BACKEND_PORT LOCAL_LLM_SERVER_URL LOCAL_LLM_SERVER_PORT LOCAL_LLM_SERVER_HOST
 export QT_QPA_PLATFORM=offscreen
-"$PY" -m pytest -q apps/desktop/test_smoke.py   apps/desktop/tests/test_api_client.py   apps/desktop/tests/test_prepare_windows_icon_coverage.py   tests/desktop/test_phase32_ports_and_timeout.py   tests/desktop/test_phase25_standalone.py
+"$PY" -m pytest -q apps/desktop/test_smoke.py   apps/desktop/tests/test_api_client.py   apps/desktop/tests/test_prepare_windows_icon_coverage.py apps/desktop/tests/test_stage_windows_icons.py   tests/desktop/test_phase32_ports_and_timeout.py   tests/desktop/test_phase25_standalone.py
 
-echo "[4/8] Check unsaved generated icons before regeneration"
-for asset in assets/AI-Car-Scanner-mobile.png assets/AI-Car-Scanner.webp assets/AI-Car-Scanner.ico; do
-  if ! git diff --quiet HEAD -- "$asset"; then
-    echo "[ERROR] Uncommitted changes would be overwritten in $asset" >&2
-    echo "Preserve or commit the modified icon first. No files were removed." >&2
-    exit 3
-  fi
-done
-"$PY" apps/desktop/prepare_windows_icon.py
+echo "[4/8] Stage consistent icon formats without modifying tracked artwork"
+# Keep the committed master for ordinary builds. If the Desktop PNG was edited
+# locally, use that artwork instead of silently discarding it.
+ICON_SOURCE="assets/AI-Car-Scanner-master.png"
+if ! git diff --quiet HEAD -- assets/AI-Car-Scanner-mobile.png; then
+  ICON_SOURCE="assets/AI-Car-Scanner-mobile.png"
+  echo "[ICON] Locally edited Desktop PNG detected; using it as build source."
+fi
+STAGED_ICONS="build-release/icon-staged-assets"
+"$PY" apps/desktop/stage_windows_icons.py \
+  --source "$ICON_SOURCE" --output-dir "$STAGED_ICONS"
+export AI_CAR_ICON_STAGE_DIR="$(cygpath -w "$ROOT/$STAGED_ICONS")"
+export AI_CAR_VERIFY_ASSET_DIR="$AI_CAR_ICON_STAGE_DIR"
 
 echo "[5/8] Create an isolated PyInstaller build (do not touch dist/)"
 mkdir -p dist-release build-release
@@ -89,7 +93,7 @@ done
 
 echo "[6/8] Validate generated icons, Qt preview and EXE icon resource"
 mkdir -p "$DIST/icons"
-cp assets/AI-Car-Scanner-master.png assets/AI-Car-Scanner-mobile.png   assets/AI-Car-Scanner.webp assets/AI-Car-Scanner.ico "$DIST/icons/"
+cp "$STAGED_ICONS"/AI-Car-Scanner-master.png "$STAGED_ICONS"/AI-Car-Scanner-mobile.png "$STAGED_ICONS"/AI-Car-Scanner.webp "$STAGED_ICONS"/AI-Car-Scanner.ico "$DIST/icons/"
 export AI_CAR_VERIFY_EXE_PATH="$(cygpath -w "$ROOT/$DIST/AICarScanner.exe")"
 export AI_CAR_ICON_REPORT_PATH="$(cygpath -w "$ROOT/$DIST/desktop-icon-report.json")"
 "$PY" apps/desktop/verify_icons.py

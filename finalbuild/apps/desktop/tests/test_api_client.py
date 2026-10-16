@@ -36,10 +36,24 @@ def test_request_normalizes_base_url_and_sets_timeout(client, monkeypatch):
 
 def test_default_backend_uses_local_fastapi_and_short_timeout(monkeypatch):
     monkeypatch.delenv("AI_CAR_BACKEND_URL", raising=False)
+    monkeypatch.delenv("AI_CAR_BACKEND_PORT", raising=False)
     client = DiagnosticApiClient()
     assert client.base_url == "http://127.0.0.1:8001"
     assert client.timeout == 8.0
 
+
+
+def test_backend_port_is_shared_with_desktop_launcher(monkeypatch):
+    monkeypatch.delenv("AI_CAR_BACKEND_URL", raising=False)
+    monkeypatch.setenv("AI_CAR_BACKEND_PORT", "8102")
+    assert DiagnosticApiClient().base_url == "http://127.0.0.1:8102"
+
+
+def test_explicit_backend_url_overrides_local_port(monkeypatch):
+    monkeypatch.setenv("AI_CAR_BACKEND_PORT", "8102")
+    monkeypatch.setenv("AI_CAR_BACKEND_URL", "https://example.test:8443/")
+    assert DiagnosticApiClient().base_url == "https://example.test:8443"
+    assert DiagnosticApiClient("http://override.test/").base_url == "http://override.test"
 
 def test_empty_response_returns_empty_object(client, monkeypatch):
     monkeypatch.setattr(client.session, "request", Mock(return_value=FakeResponse(content=b"")))

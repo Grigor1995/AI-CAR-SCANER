@@ -145,6 +145,35 @@ def main() -> int:
                 json.loads(summary_file.read_text(encoding="utf-8"))["totals"]["percent_covered"], 2
             )
             print(f"[DESKTOP] Combined source coverage: {percent}% (target >=90%)")
+            # Preserve the complete inventory: low-coverage production code
+            # stays in the denominator instead of silently excluding files.
+            data = json.loads(summary_file.read_text(encoding="utf-8"))
+            per_file = []
+            for filename, record in data.get("files", {}).items():
+                counts = record.get("summary", {})
+                missed = counts.get("missing_lines", 0)
+                statements = counts.get("num_statements", 0)
+                if not statements:
+                    continue
+                per_file.append({
+                    "file": filename,
+                    "statements": statements,
+                    "missing": missed,
+                    "coverage": round(counts.get("percent_covered", 0), 2),
+                    "missing_lines": record.get("missing_lines", []),
+                })
+            per_file.sort(key=lambda row: (-row["missing"], row["file"]))
+            coverage_gaps = reports / "coverage-gaps.json"
+            coverage_gaps.write_text(
+                json.dumps(per_file, indent=2) + "\n", encoding="utf-8"
+            )
+            print("[DESKTOP] Largest uncovered source modules:")
+            for item in per_file[:15]:
+                line_preview = item["missing_lines"][:18]
+                print(f"  {item['file']}: {item['coverage']}%, "
+                      f"missing={item['missing']}/{item['statements']}, "
+                      f"lines={line_preview}", flush=True)
+            print(f"[DESKTOP] Full file-by-file gaps: {coverage_gaps}")
     if percent is None:
         print("[DESKTOP] No coverage result available.")
 

@@ -1444,3 +1444,19 @@ def test_run_worker_rejects_new_background_jobs_after_shutdown_requested(window_
     window._closing = True
     window.run_worker(lambda: object(), lambda _result: None)
     assert window._workers == []
+
+
+
+def test_shutdown_trace_is_opt_in_and_records_event_loop_stages(monkeypatch, tmp_path):
+    trace_path = tmp_path / "qt-shutdown.log"
+    monkeypatch.delenv("AI_CAR_SHUTDOWN_TRACE_PATH", raising=False)
+    ui._trace_shutdown("before")
+    assert not trace_path.exists()
+
+    monkeypatch.setenv("AI_CAR_SHUTDOWN_TRACE_PATH", str(trace_path))
+    ui._trace_shutdown("ui: QApplication.exec returned rc=0")
+    ui._trace_shutdown("ui: returning to main.run")
+    assert trace_path.read_text(encoding="utf-8").splitlines() == [
+        "ui: QApplication.exec returned rc=0",
+        "ui: returning to main.run",
+    ]

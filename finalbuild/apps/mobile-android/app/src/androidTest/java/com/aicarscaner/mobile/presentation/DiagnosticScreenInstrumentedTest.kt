@@ -325,6 +325,87 @@ class DiagnosticScreenInstrumentedTest {
     }
 
     @Test
+    fun symptomAndDtcButtonsRequireValidInput() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Add Symptom").assertIsNotEnabled()
+        composeRule.onNodeWithText("Driver symptom")
+            .performScrollTo()
+            .performTextInput("ab")
+        composeRule.onNodeWithText("Add Symptom").assertIsNotEnabled()
+
+        composeRule.onNodeWithText("Driver symptom").performTextClearance()
+        composeRule.onNodeWithText("Driver symptom").performTextInput("rough idle")
+        composeRule.onNodeWithText("Add Symptom").assertIsEnabled()
+
+        composeRule.onNodeWithText("Add DTC").assertIsNotEnabled()
+        composeRule.onNodeWithText("Diagnostic trouble code")
+            .performScrollTo()
+            .performTextInput("P0302")
+        composeRule.onNodeWithText("Add DTC").assertIsEnabled()
+    }
+
+    @Test
+    fun cancelledSymptomEditKeepsPreviouslySavedText() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Driver symptom")
+            .performScrollTo()
+            .performTextInput("Rough idle on LPG")
+        composeRule.onNodeWithText("Add Symptom")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Rough idle on LPG")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
+        composeRule.onNodeWithText("Driver symptom").performTextClearance()
+        composeRule.onNodeWithText("Driver symptom").performTextInput("Do not save this")
+
+        composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
+        composeRule.onNodeWithText("Add Symptom").assertExists()
+        composeRule.onNodeWithText("Rough idle on LPG").assertExists()
+        assertTrue(
+            composeRule.onAllNodesWithText("Do not save this")
+                .fetchSemanticsNodes().isEmpty()
+        )
+    }
+
+    @Test
+    fun cancelledDtcEditKeepsPreviouslySavedCode() {
+        launchScreen()
+        createSession()
+
+        composeRule.onNodeWithText("Diagnostic trouble code")
+            .performScrollTo()
+            .performTextInput("P0302")
+        composeRule.onNodeWithText("Add DTC")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("P0302").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText("Edit").performScrollTo().performClick()
+        composeRule.onNodeWithText("Diagnostic trouble code").performTextClearance()
+        composeRule.onNodeWithText("Diagnostic trouble code").performTextInput("P0300")
+
+        composeRule.onNodeWithText("Cancel").performScrollTo().performClick()
+        composeRule.onNodeWithText("Add DTC").assertExists()
+        composeRule.onNodeWithText("P0302").assertExists()
+        assertTrue(
+            composeRule.onAllNodesWithText("P0300")
+                .fetchSemanticsNodes().isEmpty()
+        )
+    }
+
+    @Test
     fun emptyAnalysisAndActivityTabsShowHelpfulMessages() {
         launchScreen()
         createSession()

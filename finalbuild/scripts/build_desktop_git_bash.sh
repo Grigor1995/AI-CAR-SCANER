@@ -36,6 +36,8 @@ echo "[2/8] Install Desktop and backend requirements"
 "$PY" -m pip install -r requirements.txt -r apps/desktop/requirements-dev.txt
 
 echo "[3/8] Run targeted regression tests before packaging"
+# Keep default-port assertions reproducible even if the user has custom shell settings.
+unset AI_CAR_BACKEND_URL AI_CAR_BACKEND_PORT LOCAL_LLM_SERVER_URL LOCAL_LLM_SERVER_PORT LOCAL_LLM_SERVER_HOST
 export QT_QPA_PLATFORM=offscreen
 "$PY" -m pytest -q apps/desktop/test_smoke.py   apps/desktop/tests/test_api_client.py   apps/desktop/tests/test_prepare_windows_icon_coverage.py   tests/desktop/test_phase32_ports_and_timeout.py   tests/desktop/test_phase25_standalone.py
 

@@ -1416,3 +1416,31 @@ def test_live_ai_analysis_guards_missing_session_and_renders_fallback_or_success
     assert window.telemetry == {"sample_count": 1}
     assert window.session_json == {"state": "ANALYZED"}
     refresh_pages.assert_called_once()
+
+
+
+def test_close_waits_for_active_api_workers_before_destroying_qthreads(window_factory):
+    """Closing a window must not destroy a still-running native QThread."""
+    window = window_factory()
+    active_worker = Mock()
+    window._workers.append(active_worker)
+
+    window.close()
+
+    assert window._closing is True
+    assert window.isVisible() is True
+    assert window.isEnabled() is False
+    active_worker.requestInterruption.assert_called_once()
+
+    # Mimic delivery of the QThread.finished signal once the HTTP call ends.
+    # The QObject receiver handles actual finished-signal bookkeeping.
+    window._workers.clear()
+    window.close()
+    assert window.isVisible() is False
+
+
+def test_run_worker_rejects_new_background_jobs_after_shutdown_requested(window_factory):
+    window = window_factory()
+    window._closing = True
+    window.run_worker(lambda: object(), lambda _result: None)
+    assert window._workers == []

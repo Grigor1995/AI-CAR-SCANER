@@ -23,7 +23,8 @@ def _resource_root() -> Path:
 
 
 def _embedded_icon_count() -> int | None:
-    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+    exe_path = os.environ.get("AI_CAR_VERIFY_EXE_PATH")
+    if sys.platform != "win32" or not (exe_path or getattr(sys, "frozen", False)):
         return None
     from ctypes import wintypes
 
@@ -36,7 +37,10 @@ def _embedded_icon_count() -> int | None:
         wintypes.UINT,
     ]
     extract.restype = wintypes.UINT
-    return int(extract(str(Path(sys.executable).resolve()), -1, None, None, 0))
+    target = Path(exe_path).resolve() if exe_path else Path(sys.executable).resolve()
+    if not target.is_file():
+        raise FileNotFoundError(f"Windows executable does not exist: {target}")
+    return int(extract(str(target), -1, None, None, 0))
 
 
 def verify_icons() -> int:

@@ -46,7 +46,10 @@ def _embedded_icon_count() -> int | None:
 
 def verify_icons() -> int:
     """Return 0 only when the bundled images, Qt icon, and EXE icon verify."""
-    assets = _resource_root() / "assets"
+    # Git Bash preview builds verify staged assets so a user-edited PNG can
+    # be packaged without rewriting the tracked PNG/WEBP/ICO source files.
+    staged = os.environ.get("AI_CAR_VERIFY_ASSET_DIR")
+    assets = Path(staged).expanduser() if staged else _resource_root() / "assets"
     filenames = (
         "AI-Car-Scanner-mobile.png",
         "AI-Car-Scanner.webp",

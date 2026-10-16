@@ -73,6 +73,7 @@ echo "[3/6] Freeze a MINIMAL PySide6 Qt probe as a console + onedir EXE"
   --distpath "$DIST" --workpath "$WORK/qt" --specpath "$WORK" \
   --paths "$(cygpath -w "$ROOT")" \
   --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/debug_runtime_hook.py")" \
+  --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/qt_early_runtime_hook.py")" \
   --add-data "$(cygpath -w "$ROOT/assets/AI-Car-Scanner-mobile.png");assets" \
   "$(cygpath -w "$ROOT/apps/desktop/qt_freeze_probe.py")"
 
@@ -97,6 +98,7 @@ echo "[5/6] Freeze ACTUAL Desktop GUI as console + onedir (without overwriting r
   --distpath "$DIST" --workpath "$WORK/desktop" --specpath "$WORK" \
   --paths "$(cygpath -w "$ROOT")" \
   --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/debug_runtime_hook.py")" \
+  --runtime-hook "$(cygpath -w "$ROOT/apps/desktop/qt_early_runtime_hook.py")" \
   --hidden-import apps.desktop.ui \
   --hidden-import apps.desktop.api_client \
   --add-data "$(cygpath -w "$ROOT/shared/vehicle_catalog.json");shared" \

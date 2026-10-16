@@ -49,3 +49,39 @@ the minimal Qt probe bundle and the actual frozen Desktop bundle.
 ## Current status
 
 **FAIL — frozen Windows runtime startup**; build output existing, application not usable as an EXE. No pass status or release approval claimed. The Python source UI remains working; Python 3.14 virtual environment is preserved. All debug files go to `dist-debug/`, and the existing release artifacts remain untouched.
+
+## Update after real Qt probe and bundle audit (2026-10-16)
+
+User-local results:
+
+- **AIQtProbe.exe: exit 0.** QtCore/QtGui/QtWidgets, QApplication, application icon and the minimal event loop all worked.
+- **AICarScannerDebug.exe: exit 139**, in `pyi_rth_pyside6.py` before the application entrypoint, even with native taskbar icon fallback disabled.
+- Both bundles contain 29 matching native DLL/PYD files included by the selected Qt/SSL audit filter; **no hash differences** in that subset. This does not establish that all collected native binaries are identical.
+- `pip check`: **No broken requirements found.**
+- Versions: Windows Python 3.14.7, PySide6 / PySide6_Essentials / PySide6_Addons / shiboken6 6.11.2, PyInstaller 6.22.3, pyinstaller-hooks-contrib 2026.8.
+
+PyInstaller 6.22.3 `pyi_rth_pyside6.py` calls `create_embedded_qt_conf("PySide6", ...)`, which imports QtCore on the reported stack. The actual Desktop bundle also executes `pyi_rth_cryptography_openssl.py` before the Qt runtime hook. This suggests a **testable DLL/import-order interaction**, not a proven cryptography bug.
+
+Two optional isolation tests are now available. Both preserve the source UI, the existing Python venv and prior release outputs:
+
+**Experiment A — early QtCore module import before other PyInstaller runtime hooks**
+
+```bash
+git pull --ff-only origin main
+bash scripts/debug_desktop_git_bash.sh --desktop-only 2>&1 | tee desktop-debug-build.log
+bash scripts/run_debug_desktop_git_bash.sh --early-qtcore
+```
+
+The first command rebuilds only the diagnostic Desktop EXE using the already passing minimal Qt probe as a baseline. The second toggles `AI_CAR_EARLY_QTCORE=1` to import `PySide6.QtCore` in the diagnostic hook before subsequent built-in hooks. This is an **experiment**, not production startup code. Success would narrow the problem to runtime initialization order. Failure still leaves the application source code unimplicated.
+
+**Experiment B — reproduce Desktop's extra cryptography runtime hook in minimal Qt probe**
+
+```bash
+bash scripts/probe_qt_crypto_git_bash.sh 2>&1 | tee qt-crypto-build.log
+```
+
+Outputs: `dist-debug/qt-crypto-probe.log` and `dist-debug/crypto-probe-faults.log`. The isolated Qt probe is frozen with `--hidden-import cryptography.hazmat.bindings._rust` to collect cryptography's PyInstaller hook and native dependencies. Compare `Crypto Qt probe exit status` with the original `AIQtProbe` exit 0.
+
+If experiment B passes, the failure requires some other Desktop-specific dependency or native initialization difference. If it fails at the same runtime hook, narrow the cryptography/OpenSSL load-order hypothesis with a controlled runtime-hook exclusion and compare dependency graph before changing release builds.
+
+**Release gate remains FAIL until the normal executable opens and passes a diagnostic workflow.**

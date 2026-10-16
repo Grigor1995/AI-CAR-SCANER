@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import json
+import os
 import re
 import sys
 from typing import Any, Callable
@@ -1233,7 +1234,7 @@ def run() -> None:
         native_window = win.windowHandle()
         if native_window is not None:
             native_window.setIcon(app_icon)
-        if sys.platform == "win32":
+        if sys.platform == "win32" and os.environ.get("AI_CAR_DISABLE_NATIVE_TASKBAR_ICON", "0") != "1":
             try:
                 _set_windows_taskbar_icon(int(win.winId()), app_icon)
             except Exception as exc:

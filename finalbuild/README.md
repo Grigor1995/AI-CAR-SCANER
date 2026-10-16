@@ -41,7 +41,7 @@ docker compose up --build
 ```
 
 ## Architecture
-See `docs/architecture/phase-1.md`.
+See [system overview](docs/architecture/system-overview.md) and [domain flow](docs/architecture/domain-and-flow.md).
 
 ## Phase 2 — Generic OBD
 
@@ -64,7 +64,7 @@ Run tests from repository root:
 python -m pytest tests -q
 ```
 
-See `docs/architecture/phase-2.md` for decisions and limitations.
+See [system overview](docs/architecture/system-overview.md) for implementation boundaries and [component hierarchy](docs/architecture/component-hierarchy.md) for adapters.
 
 ## Phase 4
 Professional VCI abstraction is included: device registry/capabilities, adapter lifecycle, generic vendor SDK seam, J2534 Pass-Thru interface, Windows DLL loading seam, VCI simulator and tests.
@@ -73,11 +73,11 @@ Professional VCI abstraction is included: device registry/capabilities, adapter 
 Production security and observability foundations are included in `backend/security`, `backend/observability`, and `backend/platform/tenant.py`.
 
 ## Phase 9
-Real RAG/local LLM foundations, pgvector persistence, retrieval reranking, safe prompt context, grounding checks, and golden-case AI evaluation are included. See `README_PHASE9.md`.
+Real RAG/local LLM foundations, pgvector persistence, retrieval reranking, safe prompt context, grounding checks, and golden-case AI evaluation are included. See [architecture overview](docs/architecture/system-overview.md) for current LLM/RAG boundaries.
 
 
 ## Phase 11
-See `README_PHASE11.md` for persistent pgvector hybrid retrieval and evaluation.
+See [architecture overview](docs/architecture/system-overview.md) and [dependency map](docs/architecture/dependency-map.md) for the retrieval architecture.
 
 ## Phase 19 — Vehicle Network Discovery
 - Passive multi-bus CAN arbitration-ID profiling
@@ -89,7 +89,7 @@ See `README_PHASE11.md` for persistent pgvector hybrid retrieval and evaluation.
 
 ## Phase 32 — Clean local AI runtime
 
-The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1:8000` and FastAPI on `127.0.0.1:8001`. The Desktop launcher starts both services automatically. No Ollama runtime and no Python `llama_cpp` binding are required. See `README_PHASE32.md`.
+The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1:8000` and FastAPI on `127.0.0.1:8001`. The Desktop launcher starts both services automatically. No Ollama runtime and no Python `llama_cpp` binding are required. See [Windows setup](START_HERE_WINDOWS.md) for runtime setup.
 
 ## Phase 35
 Adaptive llama-server context handling was added. The client reads `/props`, compacts live diagnostic context to fit the actual server limit, and defaults the managed server to 8192 context.

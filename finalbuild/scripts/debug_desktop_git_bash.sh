@@ -51,7 +51,7 @@ echo "[3/6] Freeze a MINIMAL PySide6 Qt probe as a console + onedir EXE"
 "$PY" -m PyInstaller --noconfirm --clean --onedir --console \
   --debug bootloader --name AIQtProbe \
   --distpath "$DIST" --workpath "$WORK/qt" --specpath "$WORK" \
-  --paths "$ROOT" \
+  --paths "$(cygpath -w "$ROOT")" \
   --runtime-hook apps/desktop/debug_runtime_hook.py \
   --add-data "assets/AI-Car-Scanner-mobile.png;assets" \
   apps/desktop/qt_freeze_probe.py
@@ -71,7 +71,7 @@ echo "[5/6] Freeze ACTUAL Desktop GUI as console + onedir (without overwriting r
 "$PY" -m PyInstaller --noconfirm --clean --onedir --console \
   --debug bootloader --name AICarScannerDebug \
   --distpath "$DIST" --workpath "$WORK/desktop" --specpath "$WORK" \
-  --paths "$ROOT" \
+  --paths "$(cygpath -w "$ROOT")" \
   --runtime-hook apps/desktop/debug_runtime_hook.py \
   --hidden-import apps.desktop.ui \
   --hidden-import apps.desktop.api_client \

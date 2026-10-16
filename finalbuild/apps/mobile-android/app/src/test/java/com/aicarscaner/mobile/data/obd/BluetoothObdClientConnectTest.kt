@@ -39,8 +39,7 @@ class BluetoothObdClientConnectTest {
         val socket = mockk<BluetoothSocket>()
         val commands = ByteArrayOutputStream()
         val replies = ByteArrayInputStream(
-            ("OK\\r>".repeat(5) + "SEARCHING...\\r410C1AF8\\r>" + "430102\\r>")
-                .replace("\\r", "\r")
+            ("OK\r>".repeat(5) + "SEARCHING...\r410C1AF8\r>" + "430102\r>")
                 .toByteArray(Charsets.US_ASCII)
         )
 

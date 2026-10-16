@@ -21,3 +21,15 @@ def test_build_script_is_present():
     assert script.exists()
     assert "backend_service.spec" in text
     assert "AICarScanner.spec" in text
+
+
+
+def test_canonical_gui_spec_loads_early_qtcore_before_pyinstaller_qt_hook():
+    """Regression guard for the Windows Python 3.14 frozen startup crash."""
+    root = Path(__file__).resolve().parents[2]
+    spec = (root / "apps" / "desktop" / "specs" / "AICarScanner.spec").read_text(encoding="utf-8")
+    hook = root / "apps" / "desktop" / "qt_early_runtime_hook.py"
+
+    assert hook.is_file()
+    assert "qt_early_runtime_hook.py" in spec
+    assert "from PySide6 import QtCore" in hook.read_text(encoding="utf-8")

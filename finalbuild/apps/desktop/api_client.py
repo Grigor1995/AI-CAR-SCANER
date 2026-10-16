@@ -38,13 +38,19 @@ class DiagnosticApiClient:
             raise ApiError(f"API request failed: {exc}") from exc
         if not response.ok:
             try:
-                detail = response.json().get("detail", response.text)
-            except Exception:
+                body = response.json()
+                detail = body.get("detail", response.text) if isinstance(body, dict) else response.text
+            except ValueError:
                 detail = response.text
             raise ApiError(f"HTTP {response.status_code}: {detail}")
         if not response.content:
             return {}
-        return response.json()
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise ApiError(
+                f"FastAPI at {self.base_url} returned invalid JSON for {method} {path}."
+            ) from exc
 
     def health(self) -> dict[str, Any]:
         return self._request("GET", "/health")

@@ -27,6 +27,7 @@ GROUPS = {
         "--ignore=apps/desktop/tests/test_ui_pom.py",
         "--ignore=apps/desktop/tests/test_ui_widgets.py",
         "--ignore=apps/desktop/tests/test_negative_api_contract.py",
+        "--ignore=apps/desktop/tests/test_negative_storage.py",
     ),
     "negative": (
         "apps/desktop/tests/test_negative_api_contract.py",

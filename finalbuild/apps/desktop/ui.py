@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QTimer, QSettings
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QTimer, QSettings, QCoreApplication, QEvent
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
@@ -913,11 +913,13 @@ class MainWindow(QMainWindow):
             worker.wait()
             self._workers.remove(worker)
             worker.deleteLater()
+        _trace_shutdown(f"worker.finished: remaining={len(self._workers)}")
         if self._closing and not self._workers:
             # Process the final finished signal before invoking closeEvent again.
             QTimer.singleShot(0, self.close)
 
     def closeEvent(self, event) -> None:
+        _trace_shutdown(f"closeEvent: active_workers={len(self._workers)}")
         if self._workers:
             if not self._closing:
                 self._closing = True
@@ -1245,6 +1247,18 @@ def _set_windows_taskbar_icon(hwnd: int, icon: QIcon) -> None:
             gdi32.DeleteObject(mask_bitmap)
 
 
+def _trace_shutdown(stage: str) -> None:
+    """Write durable checkpoints for frozen Windows teardown (opt-in)."""
+    destination = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
+    if not destination:
+        return
+    try:
+        with open(destination, "a", encoding="utf-8") as stream:
+            stream.write(stage + "\n")
+    except OSError:
+        pass
+
+
 _WINDOWS_TASKBAR_ICONS: list[int] = []
 
 
@@ -1305,4 +1319,24 @@ def run() -> None:
             for handle in _WINDOWS_TASKBAR_ICONS
         ] if sys.platform == "win32" else None
     )
-    app.exec()
+    _trace_shutdown("ui: entering QApplication.exec")
+    result = app.exec()
+    _trace_shutdown(f"ui: QApplication.exec returned rc={result}, remaining_workers={len(win._workers) if hasattr(win, '_workers') else 'unknown'}")
+
+    # Controlled experiment for packaged Windows interpreter/DLL teardown.
+    # Do not force it on all users until a Windows debug run confirms exit 0.
+    if (
+        getattr(sys, "frozen", False)
+        and sys.platform == "win32"
+        and os.environ.get("AI_CAR_QT_EXPLICIT_CLEANUP", "0") == "1"
+    ):
+        _trace_shutdown("ui: explicit native widget cleanup start")
+        # Ensure the Qt-owned windows and icon pixmaps are released before
+        # PyInstaller unloads Python and the Qt platform/style plugins.
+        win.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        app.processEvents()
+        _trace_shutdown("ui: explicit native widget cleanup done")
+
+    _trace_shutdown("ui: returning to main.run")
+    return result

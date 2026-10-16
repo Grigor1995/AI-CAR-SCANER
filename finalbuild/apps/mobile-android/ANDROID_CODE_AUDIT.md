@@ -9,7 +9,7 @@ CI policy: **no workflow dispatch, no PR before local validation**.
 ## Baseline: distinguish test execution from coverage
 
 - Latest confirmed Android instrumented test run: **13 passed, 0 failed, 0 skipped** on `Pixel_6_Pro(AVD) - 17`.
-- User-supplied `debug` report: **62% instruction coverage** (10,488 missed of 28,334); **26% branch coverage** (1,074 missed of 1,455); approximately **63.7% line coverage** (710 missed of 2,238). The table appears to be from the Android instrumentation report but report provenance has **not** been independently confirmed.
+- User-supplied `debug` report: **62% instruction coverage** (10,488 missed of 28,334); **26% branch coverage** (1,074 missed of 1,455); approximately **68.3% line coverage** (710 missed of 2,238; 1,528 covered). The table appears to be from the Android instrumentation report but report provenance has **not** been independently confirmed.
 - By package, reported instruction coverage: presentation 70%, OBD 3%, settings 68%, API 70%, repository 85%, application entrypoint 0%.
 - Existing JVM OBD unit tests are present. Their execution coverage cannot be inferred from the instrumentation table. Avoid interpreting OBD's 3% as combined unit+instrumentation coverage.
 - **90% remains a target, not a measured result.** No new coverage percentage is claimed from the additions below.

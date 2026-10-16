@@ -45,6 +45,29 @@ class WifiObdClientTest {
     }
 
     @Test
+    fun commandWithoutPromptReturnsPartialResponseAtTimeoutAndConnectionCanContinue() = runTest {
+        FakeElmServer(partialResponseFor = "010C").use { server ->
+            val client = WifiObdClient()
+            try {
+                assertTrue(client.connect("127.0.0.1", server.port, timeoutMs = 1_000).isSuccess)
+
+                // A truncated ELM327 frame must not leave the command loop hanging forever.
+                val partial = client.command("010C", timeoutMs = 700)
+                assertTrue(partial.isSuccess)
+                assertEquals("410C1AF8", partial.getOrThrow())
+
+                // The next fully terminated frame must still be consumable.
+                assertTrue(client.isConnected)
+                assertEquals("430102", client.readDtcs().getOrThrow())
+                assertTrue(server.commands.containsAll(listOf("010C", "03")))
+            } finally {
+                client.close()
+            }
+            assertFalse(client.isConnected)
+        }
+    }
+
+    @Test
     fun invalidPortReturnsFailureAndLeavesClientDisconnected() = runTest {
         val client = WifiObdClient()
 
@@ -60,7 +83,7 @@ class WifiObdClientTest {
      * Small in-process ELM327-style TCP endpoint. It replies to adapter setup commands
      * and emits representative RPM/DTC responses for command-contract tests.
      */
-    private class FakeElmServer : AutoCloseable {
+    private class FakeElmServer(private val partialResponseFor: String? = null) : AutoCloseable {
         private val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
         val port: Int = server.localPort
         val commands = CopyOnWriteArrayList<String>()
@@ -85,7 +108,12 @@ class WifiObdClientTest {
                                     "03" -> "430102\r>"
                                     else -> "OK\r>"
                                 }
-                                output.write(response.toByteArray(StandardCharsets.US_ASCII))
+                                val payload = if (command.equals(partialResponseFor, ignoreCase = true)) {
+                                    response.removeSuffix(">")
+                                } else {
+                                    response
+                                }
+                                output.write(payload.toByteArray(StandardCharsets.US_ASCII))
                                 output.flush()
                             }
                             10 -> Unit

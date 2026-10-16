@@ -18,13 +18,16 @@ export PYTHONFAULTHANDLER=1
 export AI_CAR_DEBUG_FAULT_LOG="$(cygpath -w "$FAULT")"
 unset QT_QPA_PLATFORM QT_PLUGIN_PATH QT_QPA_PLATFORM_PLUGIN_PATH QT_QPA_FONTDIR
 export AI_CAR_DISABLE_NATIVE_TASKBAR_ICON=1
-if [[ "${1:-}" == "--native-icon" ]]; then
-  export AI_CAR_DISABLE_NATIVE_TASKBAR_ICON=0
-elif [[ -n "${1:-}" ]]; then
-  echo "Usage: bash scripts/run_debug_desktop_git_bash.sh [--native-icon]" >&2
-  exit 2
-fi
+export AI_CAR_EARLY_QTCORE=0
+for option in "$@"; do
+  case "$option" in
+    --native-icon) export AI_CAR_DISABLE_NATIVE_TASKBAR_ICON=0 ;;
+    --early-qtcore) export AI_CAR_EARLY_QTCORE=1 ;;
+    *) echo "Usage: bash scripts/run_debug_desktop_git_bash.sh [--early-qtcore] [--native-icon]" >&2; exit 2 ;;
+  esac
+done
 echo "[DIAG] Launching onedir GUI. Close its window normally when finished."
+echo "[DIAG] Early QtCore before cryptography hook: $AI_CAR_EARLY_QTCORE"
 echo "[DIAG] Native ctypes icon enabled: $([[ "$AI_CAR_DISABLE_NATIVE_TASKBAR_ICON" == 0 ]] && echo yes || echo no)"
 set +e
 "$EXE" > "$LOG" 2>&1

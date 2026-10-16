@@ -8,15 +8,13 @@ on:
     paths:
       - "finalbuild/apps/desktop/**"
       - "finalbuild/tests/desktop/**"
-      - "finalbuild/scripts/run_desktop_tests.py"
-      - "finalbuild/scripts/smoke_test_desktop_exe.py"
+      - "finalbuild/scripts/**"
       - ".github/workflows/desktop-full-qa.yml"
   pull_request:
     paths:
       - "finalbuild/apps/desktop/**"
       - "finalbuild/tests/desktop/**"
-      - "finalbuild/scripts/run_desktop_tests.py"
-      - "finalbuild/scripts/smoke_test_desktop_exe.py"
+      - "finalbuild/scripts/**"
       - ".github/workflows/desktop-full-qa.yml"
   workflow_dispatch:
 
@@ -100,15 +98,13 @@ jobs:
         run: |
           if (Test-Path "desktop-test-reports/summary.json") {
             "## Desktop QA Results" >> $env:GITHUB_STEP_SUMMARY
-            "```json" >> $env:GITHUB_STEP_SUMMARY
-            Get-Content "desktop-test-reports/summary.json" >> $env:GITHUB_STEP_SUMMARY
-            "```" >> $env:GITHUB_STEP_SUMMARY
+            Get-Content "desktop-test-reports/summary.json" |
+              ForEach-Object { "    $_" >> $env:GITHUB_STEP_SUMMARY }
           }
           foreach ($file in (Get-ChildItem "desktop-test-reports/packaged-*-result.json" -ErrorAction SilentlyContinue)) {
             "### Frozen EXE: $($file.BaseName)" >> $env:GITHUB_STEP_SUMMARY
-            "```json" >> $env:GITHUB_STEP_SUMMARY
-            Get-Content $file.FullName >> $env:GITHUB_STEP_SUMMARY
-            "```" >> $env:GITHUB_STEP_SUMMARY
+            Get-Content $file.FullName |
+              ForEach-Object { "    $_" >> $env:GITHUB_STEP_SUMMARY }
           }
 
       - name: Upload QA evidence (JUnit, coverage, HTML, EXE logs)

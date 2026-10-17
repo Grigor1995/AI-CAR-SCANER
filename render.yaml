@@ -4,5 +4,3 @@ services:
     runtime: static
     buildCommand: echo "Static PWA - no build step required"
     staticPublishPath: finalbuild/apps/web
-    plan: free
-    autoDeploy: true

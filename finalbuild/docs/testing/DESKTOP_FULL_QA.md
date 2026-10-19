@@ -193,3 +193,53 @@ bash scripts/run_full_desktop_qa_git_bash.sh --core-coverage-90
 Neither threshold is declared achieved until a fresh Windows coverage
 JSON file confirms it. Report `summary.json` and `coverage-gaps.json`
 if uncovered modules remain after this batch.
+
+
+## Follow-up — October 19 negative collection and LLM autostart regression
+
+The user's first new Windows run of `--core-coverage-90` reported:
+
+- Logic: **134 passed, 1 failed**. The failed test,
+  `tests/desktop/test_phase31_llm_autostart.py::test_start_llama_server_starts_when_unhealthy`,
+  was executed with `AI_CAR_DISABLE_LLM_AUTOSTART=1` inherited from the safe
+  full-QA runner. The test mocked process startup but forgot to explicitly
+  enable the feature it intended to exercise. The tests now use
+  `monkeypatch.delenv("AI_CAR_DISABLE_LLM_AUTOSTART", raising=False)`
+  when asserting enabled LLM startup, leaving real LLM autostart disabled
+  during all other QA cases.
+- Negative: **pytest collection error**, caused by `requests.SSLError`.
+  The correct exception class is `requests.exceptions.SSLError`.
+  The test reference has been corrected, allowing the negative API/storage/
+  icon verification cases to collect again.
+- UI POM: **69 passed**.
+- UI Widgets: **18 passed**.
+- Total Desktop source: **82.67%**; production core: **85.80%**.
+  The icon verifier showed **0%** on that run because the Negative group
+  failed *during collection*, so none of the new icon-verification tests
+  actually executed. These measurements must not be reported as the
+  post-fix coverage result.
+
+Added safe, isolated coverage exercises for the staged-icon command line,
+corrupted staged source, worker-finished cleanup and graceful trace I/O
+failure. These add real negative behavior coverage without touching the
+user's tracked source icons.
+
+### Recheck in Git Bash
+
+```bash
+git pull --ff-only origin main
+
+python -m pytest -q \
+  tests/desktop/test_phase31_llm_autostart.py \
+  apps/desktop/tests/test_negative_api_contract.py \
+  apps/desktop/tests/test_negative_storage.py \
+  apps/desktop/tests/test_verify_icons_negative.py
+
+bash scripts/run_full_desktop_qa_git_bash.sh --core-coverage-90
+```
+
+Only classify the core 90% gate as PASS when the **new** run's
+`desktop-test-reports/summary.json` reports `status: PASS` and at least
+90% production-core coverage. Use `coverage-gaps.json` for any remaining
+module-level holes. A clean source suite still does not certify frozen EXE
+runtime behavior; use `--with-exe` separately.

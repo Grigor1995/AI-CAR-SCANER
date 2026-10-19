@@ -338,3 +338,44 @@ Windows environment**. The previous 294 PASS / 92.44% core report is the
 verified Phase 1 baseline, *not* evidence that these new Phase 3 tests passed.
 Frozen executable verification is a separate gate, confirmed only by actual
 `packaged-*-result.json` files with `status: PASS` and `returncode: 0`.
+
+
+## Phase 3 SQLAlchemy collection blocker — October 19, 2026
+
+User-reported Windows `diagnostic-e2e` result:
+
+```text
+ERROR apps/desktop/tests/test_real_backend_diagnostic_e2e.py - sqlalchemy.exc...
+1 error in 275.49s (0:04:35)
+[DESKTOP] No coverage result available.
+[DESKTOP] OVERALL: FAIL
+```
+
+The exception's full traceback was not included, so the exact SQLAlchemy
+driver error remains unverified. Code inspection revealed a concrete unsafe
+path: `api.main` was imported **at pytest collection time**, and that import
+creates `diagnostic.session_persistence.persistence`. If the user's
+environment includes `DATABASE_URL`, its constructor eagerly calls
+`SessionStateBase.metadata.create_all(engine)` and may attempt a remote
+PostgreSQL connection, blocking or failing before E2E tests are collected.
+
+The E2E test now delays importing the actual FastAPI app until its pytest
+fixture has removed `DATABASE_URL`. The separate `diagnostic-e2e` runner
+also strips `DATABASE_URL` from **only that subprocess** before collection,
+protecting against early pytest-plugin imports. All API routes, decision
+logic and session state remain real; persistence is intentionally **in-memory
+for this offline test**. Other test groups and the production runtime's
+database configuration remain unchanged.
+
+Verify the fix in Git Bash:
+
+```bash
+git pull --ff-only origin main
+python scripts/run_desktop_tests.py --group diagnostic-e2e
+
+# Inspect complete traceback if the problem persists (the summary truncates)
+tail -n 120 desktop-test-reports/diagnostic-e2e.log
+```
+
+The prior 294 Desktop PASS / 92.44% production-core measurement remains
+verified for Phase 1. This Phase 3 suite is **not yet validated on Windows**.

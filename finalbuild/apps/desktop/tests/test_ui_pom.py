@@ -1460,3 +1460,27 @@ def test_shutdown_trace_is_opt_in_and_records_event_loop_stages(monkeypatch, tmp
         "ui: QApplication.exec returned rc=0",
         "ui: returning to main.run",
     ]
+
+
+
+def test_shutdown_trace_ignores_unwritable_report_directory(monkeypatch, tmp_path):
+    """A failed diagnostics log write must not break GUI teardown."""
+    monkeypatch.setenv(
+        "AI_CAR_SHUTDOWN_TRACE_PATH", str(tmp_path / "missing-dir" / "shutdown.log")
+    )
+    ui._trace_shutdown("closing with missing parent directory")
+    assert not (tmp_path / "missing-dir").exists()
+
+
+def test_worker_finished_waits_then_releases_strong_reference(window_factory, monkeypatch):
+    """A finished QThread must be joined before destroying its wrapper."""
+    window = window_factory()
+    worker = Mock()
+    window._workers.append(worker)
+    monkeypatch.setattr(ui.MainWindow, "sender", lambda self: worker)
+
+    window._on_worker_finished()
+
+    worker.wait.assert_called_once_with()
+    worker.deleteLater.assert_called_once_with()
+    assert worker not in window._workers

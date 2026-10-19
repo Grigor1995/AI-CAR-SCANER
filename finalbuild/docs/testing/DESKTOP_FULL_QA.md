@@ -243,3 +243,42 @@ Only classify the core 90% gate as PASS when the **new** run's
 90% production-core coverage. Use `coverage-gaps.json` for any remaining
 module-level holes. A clean source suite still does not certify frozen EXE
 runtime behavior; use `--with-exe` separately.
+
+
+## Verified Windows test evidence — October 19, 2026
+
+The developer ran the full local Desktop test automation on Windows with the
+project's existing **Python 3.14 x64** virtual environment using
+`bash scripts/run_full_desktop_qa_git_bash.sh --core-coverage-90` and supplied
+the resulting `desktop-test-reports/summary.json`:
+
+| Group | Passed | Failed | Errors | Skipped |
+| --- | ---: | ---: | ---: | ---: |
+| Logic | 137 | 0 | 0 | 0 |
+| Negative | 68 | 0 | 0 | 0 |
+| UI POM | 71 | 0 | 0 | 0 |
+| UI Widgets | 18 | 0 | 0 | 0 |
+| **Total** | **294** | **0** | **0** | **0** |
+
+- **Runner summary: PASS**, 4 passed groups, 0 failed groups.
+- **Production-core coverage: 92.44%**, exceeding the 90% blocking gate
+  requested and applied by the user (`core_coverage_gate_applied_percent: 90.0`).
+- **All-source Desktop coverage: 89.08%**, still **0.92 percentage points**
+  below the separate 90% all-source target. The all-source gate was not
+  applied (`coverage_gate_applied_percent: 0.0`).
+- Previous measured baseline for these metrics was 85.80% core /
+  82.67% all-source, before the corrected negative-test collection and
+  additional source coverage tests.
+
+**Evidence scope:** These are results pasted by the developer from their
+own Windows machine. The logs were not uploaded to this repository, and no
+packaged Windows `AICarScanner.exe` automated smoke result was included in
+this `summary.json`. Do not present this source-level result as a frozen EXE,
+production hardware/OBD, live backend, or Windows GitHub Actions CI PASS.
+
+Next release QA gates:
+1. `bash scripts/run_full_desktop_qa_git_bash.sh --coverage-90` once
+   meaningful new tests cover the remaining all-source gap.
+2. `bash scripts/run_full_desktop_qa_git_bash.sh --with-exe` and inspect
+   `desktop-test-reports/packaged-*-result.json` for frozen EXE startup,
+   mock API requests, and clean exit code 0.

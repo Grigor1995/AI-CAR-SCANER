@@ -9,7 +9,25 @@ import sys
 
 import pytest
 
-from scripts import benchmark_desktop as perf
+import importlib.util
+from pathlib import Path
+
+BENCHMARK_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "scripts"
+    / "benchmark_desktop.py"
+)
+
+spec = importlib.util.spec_from_file_location(
+    "desktop_benchmark_under_test",
+    BENCHMARK_PATH,
+)
+
+assert spec is not None and spec.loader is not None
+
+perf = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(perf)
+
 
 
 def test_percentile_interpolation_and_single_sample():

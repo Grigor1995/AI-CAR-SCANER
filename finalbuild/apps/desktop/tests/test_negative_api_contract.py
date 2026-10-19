@@ -73,7 +73,7 @@ def test_negative_html_error_body_falls_back_to_server_text(api):
         (requests.ConnectTimeout("connection timed out"), "Cannot connect to FastAPI"),
         (requests.ReadTimeout("slow backend"), "did not respond within 2 seconds"),
         (requests.ConnectionError("connection refused"), "connection failed"),
-        (requests.SSLError("invalid certificate"), "connection failed"),
+        (requests.exceptions.SSLError("invalid certificate"), "connection failed"),
         (requests.RequestException("connection interrupted"), "API request failed"),
     ],
 )

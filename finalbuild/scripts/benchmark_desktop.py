@@ -60,6 +60,9 @@ def benchmark_qt_source(iterations: int) -> dict:
     from apps.desktop import ui
 
     class EphemeralSettings:
+        def __init__(self, *_args):
+            pass
+
         def value(self, _name, default=None, type=None):
             return default
         def setValue(self, *_args):

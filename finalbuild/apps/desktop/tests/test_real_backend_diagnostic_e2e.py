@@ -12,7 +12,6 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from api.main import app
 from apps.desktop.api_client import ApiError, DiagnosticApiClient
 
 
@@ -59,6 +58,22 @@ class _CompatibleResponse:
 def desktop_with_real_backend(monkeypatch):
     """Desktop API client talking to REAL FastAPI handlers, not fake JSON."""
 
+    # DATABASE_URL can be set in a developer's shell to a production/remote
+    # PostgreSQL database. Importing api.main during pytest collection would
+    # then run SessionStateBase.metadata.create_all() over the network,
+    # possibly blocking for minutes or failing before any tests are collected.
+    # Disable DB persistence BEFORE importing FastAPI (never mutate real DB).
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    from api.main import app
+    from api.state import sessions
+    from diagnostic.session_persistence import persistence
+
+    assert not persistence.enabled, (
+        "Offline E2E test must not connect to an external database. "
+        "Check whether api.main was imported before fixture isolation."
+    )
+    # Keep E2E sessions isolated from other cases in this test process.
+    sessions._cache.clear()
     server = TestClient(app)
     desktop = DiagnosticApiClient("http://desktop-e2e.invalid", timeout=4)
     calls = []
@@ -83,6 +98,7 @@ def desktop_with_real_backend(monkeypatch):
     finally:
         desktop.session.close()
         server.close()
+        sessions._cache.clear()
 
 
 def _assert_no_unproven_hardware_diagnosis(payload):

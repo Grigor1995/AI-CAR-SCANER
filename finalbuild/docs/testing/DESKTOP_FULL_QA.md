@@ -379,3 +379,92 @@ tail -n 120 desktop-test-reports/diagnostic-e2e.log
 
 The prior 294 Desktop PASS / 92.44% production-core measurement remains
 verified for Phase 1. This Phase 3 suite is **not yet validated on Windows**.
+
+
+## Phase 4 — Desktop latency, stability, and all-source coverage automation
+
+Added `scripts/benchmark_desktop.py` and opt-in
+`--with-performance` to the Windows Git Bash full QA runner.
+
+### Source-mode performance metrics
+
+The tool opens the **real PySide6 MainWindow**, while replacing QSettings,
+local vehicle storage and API access with disposable in-memory stand-ins.
+It records:
+
+- Window initialization and first show/processEvents timing in milliseconds.
+- 70 navigation + event processing timings: sample count, mean, p50, p95,
+  maximum milliseconds.
+- Qt timer/event-loop turnaround over the same number of iterations.
+- Python-owned allocation growth/peak via `tracemalloc`.
+
+This is an **offline, Qt-offscreen responsiveness baseline**: navigation
+timing is not FPS, GPU frame time, or production network latency.
+`tracemalloc` excludes native Qt/C++ memory. No real user settings,
+vehicle profiles or endpoints are modified or contacted.
+
+Run it from `finalbuild/`:
+
+```bash
+git pull --ff-only origin main
+python scripts/benchmark_desktop.py
+# Report: desktop-test-reports/performance.json
+```
+
+A benchmark with **no explicit latency budgets** reports `MEASURED`, not
+`PASS` against an invented performance SLA. An optional user-selected
+p95 budget can make the result blocking:
+
+```bash
+python scripts/benchmark_desktop.py \
+  --iterations 100 --max-navigation-p95-ms 150 --max-qt-p95-ms 100
+```
+
+Thresholds are examples for an operator to validate against target hardware;
+do not present them as previously verified on the user's PC.
+
+### Frozen Windows EXE repeatability
+
+After building the release EXE, the benchmark can run the existing
+**real frozen application** with a local mock backend for three separate
+start/open/close cycles. Each cycle must have the mock HTTP contract,
+Qt lifecycle markers, bounded timeout and `returncode: 0`; any failed run
+is a blocking `FAIL`:
+
+```bash
+python scripts/benchmark_desktop.py \
+  --exe dist-release/icon-preview/AICarScanner.exe --exe-runs 3
+
+# Full regression + release build + smoke + the above performance checks:
+bash scripts/run_full_desktop_qa_git_bash.sh --with-exe --with-performance
+```
+
+Metrics and native smoke receipts appear in
+`desktop-test-reports/performance.json` and
+`desktop-test-reports/packaged-stability/run-XX/`.
+
+### All-source coverage: instrument useful bootstrap code
+
+Added `apps/desktop/tests/test_frozen_hook_contract.py` to the normal
+Desktop logic suite. This verifies diagnostic runtime hook opt-in behavior,
+persistent fault-log creation, early QtCore load and unconfigured silent
+mode. These are real Windows shutdown investigation paths previously missing
+from source coverage (with separate actual EXE smoke still required).
+
+```bash
+python -m pytest -q apps/desktop/tests/test_frozen_hook_contract.py \
+  tests/desktop/test_performance_tool.py
+bash scripts/run_full_desktop_qa_git_bash.sh --coverage-90
+```
+
+The **previous verified** coverage was 92.44% production-core, 89.08%
+all-source. No new coverage value, latency SLA or frozen stability PASS is
+claimed until the new test/benchmark JSON files are produced on Windows.
+
+### CI
+
+The `desktop-full-qa.yml` workflow now also enforces the independently
+verified 90% **production-core coverage** gate, records source Qt latency,
+and repeats native EXE smoke three times. JUnit, coverage and performance
+evidence is uploaded together. Native FPS, actual OBD hardware and live AI
+provider SLA remain out of scope for this phase.

@@ -282,3 +282,59 @@ Next release QA gates:
 2. `bash scripts/run_full_desktop_qa_git_bash.sh --with-exe` and inspect
    `desktop-test-reports/packaged-*-result.json` for frozen EXE startup,
    mock API requests, and clean exit code 0.
+
+
+## Phase 3 — Desktop → real FastAPI → diagnostic reasoning E2E
+
+Added a separate `diagnostic-e2e` group to the existing Desktop runner
+(`apps/desktop/tests/test_real_backend_diagnostic_e2e.py`). The tests call
+the **real** FastAPI routing, evidence extraction, deterministic reasoning,
+decision prioritization, result recording, re-analysis and persistence
+interfaces through the real `DiagnosticApiClient`. FastAPI `TestClient`
+is used as the transport, so **no cloud API, no PostgreSQL service, no LLM,
+and no physical OBD adapter** are required. Each request is restricted to
+a deliberately non-routable test host and forwarded inside the process.
+
+The golden case is a 2006 Mercedes-Benz W211 E350, M272 3.5 petrol/LPG,
+with LPG-only shaking under load below 2,000 RPM and DTC P0302.
+The test explicitly verifies:
+
+- Vehicle/session creation and UUID.
+- Manual evidence ingestion and P0302 attachment.
+- Hypothesis coverage: LPG fuel delivery/mixture, ignition/combustion and
+  intake/air-fuel.
+- Positive, nonzero recommendation priority, estimated information gain
+  and estimated cost.
+- Read-only decision-plan candidates with test UUIDs.
+- Three result-language combinations: English/FAIL,
+  Armenian/INCOMPLETE, Russian/PASS.
+- Result recording with structured RPM/fuel-mode measurements and notes,
+  repeated analysis, a refreshed decision plan that does **not** suggest
+  the just-completed test again, and persisted canonical result statuses.
+- No unproven or "confirmed ignition coil failure" claim.
+- Negative flows: unknown diagnostic session (404), invalid result or
+  test UUID (422), unchanged session after rejection, and request for a
+  decision plan before analysis (no candidates and an explicit reason).
+
+The group runs separately from PySide6 QWidget suites so Qt interpreter
+teardown does not mask backend E2E problems. It is part of the normal
+full-runner JUnit/coverage summary and the Windows workflow.
+
+Run it without building the EXE:
+
+```bash
+git pull --ff-only origin main
+python scripts/run_desktop_tests.py --group diagnostic-e2e
+```
+
+Or run the entire Desktop QA gate including this group:
+
+```bash
+bash scripts/run_full_desktop_qa_git_bash.sh --core-coverage-90
+```
+
+**Acceptance status:** code committed, **not yet verified on the user's
+Windows environment**. The previous 294 PASS / 92.44% core report is the
+verified Phase 1 baseline, *not* evidence that these new Phase 3 tests passed.
+Frozen executable verification is a separate gate, confirmed only by actual
+`packaged-*-result.json` files with `status: PASS` and `returncode: 0`.

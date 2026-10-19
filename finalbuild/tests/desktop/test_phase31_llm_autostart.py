@@ -21,6 +21,9 @@ def test_resolve_llama_server_prefers_explicit_path(monkeypatch, tmp_path):
 
 
 def test_start_llama_server_builds_expected_command(monkeypatch, tmp_path):
+    # This case verifies enabled startup even if the outer QA runner
+    # disables real model autostart in its process environment.
+    monkeypatch.delenv("AI_CAR_DISABLE_LLM_AUTOSTART", raising=False)
     exe = tmp_path / "llama-server.exe"
     exe.write_bytes(b"x")
     model = tmp_path / "Qwen3.gguf"
@@ -51,6 +54,9 @@ def test_start_llama_server_builds_expected_command(monkeypatch, tmp_path):
 
 
 def test_start_llama_server_starts_when_unhealthy(monkeypatch, tmp_path):
+    # This case verifies enabled startup even if the outer QA runner
+    # disables real model autostart in its process environment.
+    monkeypatch.delenv("AI_CAR_DISABLE_LLM_AUTOSTART", raising=False)
     exe = tmp_path / "llama-server.exe"
     exe.write_bytes(b"x")
     model = tmp_path / "Qwen3.gguf"

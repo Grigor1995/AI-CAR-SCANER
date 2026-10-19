@@ -58,9 +58,15 @@ jobs:
           python -m pip install -r requirements.txt -r apps/desktop/requirements-dev.txt
           python -m pip check
 
-      - name: Run logic, negative, UI POM and widget groups independently
+      - name: Run logic, negative, diagnostic E2E, UI POM and widget groups independently
         shell: pwsh
-        run: python scripts/run_desktop_tests.py --reports-dir desktop-test-reports
+        run: >-
+          python scripts/run_desktop_tests.py
+          --min-core-coverage 90 --reports-dir desktop-test-reports
+
+      - name: Measure offscreen Qt latency (informational, no assumed FPS SLA)
+        shell: pwsh
+        run: python scripts/benchmark_desktop.py --reports-dir desktop-test-reports
 
       - name: Build frozen backend_service.exe
         shell: pwsh
@@ -91,6 +97,13 @@ jobs:
           --exe dist-desktop-ci/AICarScanner.exe
           --reports-dir desktop-test-reports
           --timeout 60 --fusion --explicit-cleanup
+
+      - name: Repeat baseline EXE smoke for native shutdown stability
+        shell: pwsh
+        run: >-
+          python scripts/benchmark_desktop.py
+          --exe dist-desktop-ci/AICarScanner.exe
+          --exe-runs 3 --reports-dir desktop-test-reports
 
       - name: Publish test summary to GitHub job summary
         if: always()

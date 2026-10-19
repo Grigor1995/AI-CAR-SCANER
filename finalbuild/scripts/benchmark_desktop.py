@@ -27,6 +27,10 @@ import tracemalloc
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+# Executing `python scripts/benchmark_desktop.py` puts scripts/, not the
+# repository root, at sys.path[0]. Make apps.desktop importable explicitly.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def percentile(values: list[float], target: float) -> float:

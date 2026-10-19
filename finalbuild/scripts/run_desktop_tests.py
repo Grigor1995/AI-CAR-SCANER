@@ -6,6 +6,8 @@ Usage (from finalbuild/):
     python scripts/run_desktop_tests.py --min-coverage 90
 
 A process per group isolates Qt lifecycle issues between UI/widget tests.
+The diagnostic-e2e group exercises actual FastAPI routes with an in-process
+Desktop transport adapter, without a running network backend.
 No physical OBD device, remote API, cloud AI provider or PostgreSQL needed.
 """
 from __future__ import annotations
@@ -37,6 +39,10 @@ GROUPS = {
         "--ignore=apps/desktop/tests/test_negative_api_contract.py",
         "--ignore=apps/desktop/tests/test_negative_storage.py",
         "--ignore=apps/desktop/tests/test_verify_icons_negative.py",
+        "--ignore=apps/desktop/tests/test_real_backend_diagnostic_e2e.py",
+    ),
+    "diagnostic-e2e": (
+        "apps/desktop/tests/test_real_backend_diagnostic_e2e.py",
     ),
     "negative": (
         "apps/desktop/tests/test_negative_api_contract.py",
@@ -108,7 +114,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--group", choices=("all", *GROUPS), default="all",
-        help="Run a single independent test group or all four",
+        help="Run a single independent test group or all five",
     )
     parser.add_argument(
         "--min-coverage", type=float, default=0.0,

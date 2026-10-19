@@ -65,6 +65,13 @@ def run_group(name: str, arguments: tuple[str, ...], reports: Path, env: dict[st
         *arguments,
     ]
     print(f"[DESKTOP] Running {name}: {len(arguments)} selection arguments", flush=True)
+    # Phase 3 exercises the real API in offline/in-memory mode. Prevent a
+    # shell DATABASE_URL from triggering SQLAlchemy create_all() on a remote
+    # Postgres instance even if pytest plugins import api.main during collect.
+    if name == "diagnostic-e2e":
+        env = env.copy()
+        env.pop("DATABASE_URL", None)
+        print("[DESKTOP] diagnostic-e2e: external database disabled", flush=True)
     start = time.perf_counter()
     try:
         with log.open("w", encoding="utf-8") as output:

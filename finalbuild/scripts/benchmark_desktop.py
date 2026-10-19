@@ -190,7 +190,7 @@ def main() -> int:
     reports = (ROOT / args.reports_dir).resolve()
     reports.mkdir(parents=True, exist_ok=True)
     result = {
-        "status": "PASS",
+        "status": "MEASURED",
         "performance_budget_ms": {
             "navigation_p95": args.max_navigation_p95_ms,
             "qt_timer_p95": args.max_qt_p95_ms,
@@ -211,8 +211,15 @@ def main() -> int:
         if result["packaged_exe"]["status"] != "PASS":
             result["violations"].append("Frozen Windows EXE did not exit 0 in every repeat")
 
+    has_gate = bool(
+        args.max_navigation_p95_ms or args.max_qt_p95_ms or args.exe
+    )
     if result["violations"]:
         result["status"] = "FAIL"
+    elif has_gate:
+        result["status"] = "PASS"
+    # Without any explicit budget or frozen-EXE checks, report MEASURED,
+    # not PASS. A successful benchmark invocation is not an SLA verdict.
     path = reports / "performance.json"
     path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"[DESKTOP-PERF] Qt navigation p95: {nav}ms, event-loop p95: {qt}ms")

@@ -43,6 +43,7 @@ class BackendRecoverySupervisor:
         self._thread: threading.Thread | None = None
         self._attempts: deque[float] = deque()
         self._last_owned: ChildProcess | None = None
+        self._next_allowed = 0.0
         self.exhausted = False
 
     def start(self) -> None:
@@ -62,7 +63,7 @@ class BackendRecoverySupervisor:
         self._stop.set()
         thread = self._thread
         if thread is not None and threading.current_thread() is not thread:
-            thread.join(timeout=7.0)
+            thread.join(timeout=20.0)
 
     def _loop(self) -> None:
         while not self._stop.wait(self.poll_seconds):
@@ -83,6 +84,8 @@ class BackendRecoverySupervisor:
         if self.healthy():
             return "external"
         now = time.monotonic()
+        if now < self._next_allowed:
+            return "backoff"
         while self._attempts and now - self._attempts[0] >= self.window_seconds:
             self._attempts.popleft()
         if len(self._attempts) >= self.max_restarts:
@@ -90,6 +93,7 @@ class BackendRecoverySupervisor:
             log.error("FastAPI auto-recovery exhausted (%d attempts / %.0fs)", self.max_restarts, self.window_seconds)
             return "exhausted"
         self._attempts.append(now)
+        self._next_allowed = now + min(self.poll_seconds * (2 ** (len(self._attempts) - 1)), 30.0)
         if self._stop.is_set():
             return "stopped"
         log.warning("FastAPI exited unexpectedly; attempting local restart %d/%d", len(self._attempts), self.max_restarts)

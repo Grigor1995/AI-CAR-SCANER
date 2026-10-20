@@ -134,3 +134,39 @@ def test_owned_process_monitor_starts_and_stops_cleanly():
     monitor.stop()
     assert monitor.check_once() == "stopped"
     assert not monitor._thread.is_alive()
+
+
+def test_initial_start_failure_can_recover_once(monkeypatch):
+    import apps.desktop.backend_recovery as module
+    monkeypatch.setattr(module.time, "monotonic", lambda: 300.0)
+    running = [None]
+    restarts = []
+
+    def restart():
+        restarts.append(1)
+        running[0] = SimpleNamespace(poll=lambda: None)
+        return running[0]
+
+    supervisor = BackendRecoverySupervisor(
+        process=lambda: running[0],
+        restart=restart,
+        healthy=lambda: bool(restarts),
+        allow_initial_retry=True,
+        poll_seconds=10,
+    )
+    assert supervisor.check_once() == "recovered"
+    assert supervisor.check_once() == "running"
+    assert restarts == [1]
+
+
+def test_initial_failure_does_not_restart_healthy_unowned_api():
+    starts = []
+    monitor = BackendRecoverySupervisor(
+        process=lambda: None,
+        restart=lambda: starts.append(1),
+        healthy=lambda: True,
+        allow_initial_retry=True,
+    )
+    monitor.start()
+    assert monitor.check_once() == "external"
+    assert starts == []

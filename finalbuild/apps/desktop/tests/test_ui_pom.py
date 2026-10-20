@@ -1484,3 +1484,40 @@ def test_worker_finished_waits_then_releases_strong_reference(window_factory, mo
     worker.wait.assert_called_once_with()
     worker.deleteLater.assert_called_once_with()
     assert worker not in window._workers
+
+
+def test_backend_health_autoreconnect_is_non_modal(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+    assert window._health_timer.interval() == 12000
+
+    fake_api.health.side_effect = ConnectionError("temporary backend outage")
+    window.refresh_health()
+    work, done = jobs.pop()
+    assert work()["status"] == "offline"
+    done(work())
+    assert window.online is False
+    assert window.statusBar().currentMessage() == "Backend offline"
+    assert window._health_pending is False
+
+    fake_api.health.side_effect = None
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend online"
+
+    fake_api.health.return_value = {"status": "not_ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is False
+
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.statusBar().currentMessage() == "Backend recovered"

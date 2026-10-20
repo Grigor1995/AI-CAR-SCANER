@@ -830,6 +830,7 @@ class MainWindow(QMainWindow):
         # Periodically re-check FastAPI connectivity. This is safe for both
         # local auto-restarted FastAPI and a temporarily unavailable remote API.
         self._health_pending = False
+        self._ever_connected = False
         self._health_timer = QTimer(self)
         self._health_timer.setInterval(12000)
         self._health_timer.timeout.connect(self.refresh_health)
@@ -1019,11 +1020,14 @@ class MainWindow(QMainWindow):
         def done(data):
             self._health_pending = False
             previously_online = self.online
+            had_connected = getattr(self, "_ever_connected", False)
             self.online = data.get("status") == "ok"
+            if self.online:
+                self._ever_connected = True
             self.statusBar().showMessage(
-                "Backend recovered" if self.online and not previously_online
+                "Backend recovered" if self.online and not previously_online and had_connected
                 else "Backend online" if self.online
-                else "Backend offline – retrying automatically"
+                else "Backend offline"
             )
             self.refresh_pages()
 

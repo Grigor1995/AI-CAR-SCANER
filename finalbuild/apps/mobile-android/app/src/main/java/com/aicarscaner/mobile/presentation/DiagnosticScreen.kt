@@ -9,6 +9,8 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -82,33 +85,36 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
+// Color tokens follow the shared blue / cyan / violet automotive UI reference.
+// Semantic status colors remain independently green (PASS), red (FAIL), amber (INCOMPLETE).
 private val AutomotiveDarkColors = darkColorScheme(
-    primary = Color.White,
-    onPrimary = Color.Black,
-    secondary = Color(0xFFE5E5E5),
-    onSecondary = Color.Black,
-    tertiary = Color(0xFFD0D0D0),
-    background = Color.Black,
-    surface = Color(0xFF101010),
-    surfaceVariant = Color(0xFF1C1C1C),
-    onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFB8B8B8),
-    error = Color(0xFFFF5A5A)
+    primary = Color(0xFF188AFF),
+    onPrimary = Color.White,
+    secondary = Color(0xFF9C74FF),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF28D5FF),
+    background = Color(0xFF061121),
+    surface = Color(0xFF0C1B35),
+    surfaceVariant = Color(0xFF102545),
+    onSurface = Color(0xFFEAF4FF),
+    onSurfaceVariant = Color(0xFFAAC8E5),
+    error = Color(0xFFFF617A)
 )
 
 private val AutomotiveLightColors = lightColorScheme(
-    primary = Color.Black,
+    primary = Color(0xFF096BCD),
     onPrimary = Color.White,
-    secondary = Color(0xFF222222),
+    secondary = Color(0xFF7050BA),
     onSecondary = Color.White,
-    tertiary = Color(0xFF444444),
-    background = Color(0xFFF7F7F7),
+    tertiary = Color(0xFF096E98),
+    background = Color(0xFFF0F6FC),
     surface = Color.White,
-    surfaceVariant = Color(0xFFEAEAEA),
-    onSurface = Color.Black,
-    onSurfaceVariant = Color(0xFF555555),
-    error = Color(0xFFB00020)
+    surfaceVariant = Color(0xFFE2EFFC),
+    onSurface = Color(0xFF10243F),
+    onSurfaceVariant = Color(0xFF4F6D8F),
+    error = Color(0xFFB71E43)
 )
+
 
 @Composable
 fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
@@ -381,7 +387,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 if (testOutcome == value) {
                                     Button(
                                         onClick = { testOutcome = value },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = when (value) {
+                                                "PASS" -> Color(0xFF0B956E)
+                                                "FAIL" -> Color(0xFFC83253)
+                                                else -> Color(0xFF54729C)
+                                            }
+                                        )
                                     ) { Text(label, maxLines = 1) }
                                 } else {
                                     OutlinedButton(
@@ -427,7 +440,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             )
         }
 
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(
+            modifier = Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    colors = if (appSettings.darkTheme) listOf(
+                        Color(0xFF051329), Color(0xFF061121), Color(0xFF07172D)
+                    ) else listOf(Color(0xFFF0F6FC), Color(0xFFEAF4FF))
+                )
+            ),
+            color = Color.Transparent
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -446,9 +468,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                text.appName,
+                                "AI CAR SCANNER",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "SMART DIAGNOSTICS  •  AI ANALYSIS",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                             state.session?.let {
                                 Text(
@@ -465,7 +494,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 enabled = true,
                                 modifier = Modifier
                             ) {
-                                Text("⚙", style = MaterialTheme.typography.titleLarge)
+                                Icon(
+                                    Icons.Outlined.Settings,
+                                    contentDescription = text.settings,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                             if (state.session != null) {
                                 IconButton(
@@ -596,6 +629,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -607,7 +643,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
                     }
 
-                    ScrollableTabRow(selectedTabIndex = selectedTab) {
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        edgePadding = 4.dp
+                    ) {
                         tabs.forEachIndexed { index, title ->
                             Tab(
                                 selected = selectedTab == index,
@@ -672,6 +713,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -751,6 +795,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                     Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
@@ -906,6 +953,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -955,6 +1005,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                             Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -1026,6 +1079,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                             Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -1109,6 +1165,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -1158,6 +1217,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                     Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
@@ -1203,6 +1265,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                     Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
@@ -1227,6 +1292,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Card(
                                     Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                                     )
@@ -1254,6 +1322,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -1306,6 +1377,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f)
                                         )
@@ -1339,6 +1413,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f)
                                         )
@@ -1356,6 +1433,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f)
                                         )
@@ -1395,6 +1475,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         Card(
                                             Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                             colors = CardDefaults.cardColors(
                                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                             )
@@ -1475,6 +1558,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
@@ -1530,6 +1616,9 @@ private fun LiveDataTile(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
         colors = CardDefaults.cardColors(
             containerColor = if (highlight) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)

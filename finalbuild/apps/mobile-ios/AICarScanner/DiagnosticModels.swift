@@ -115,3 +115,19 @@ struct AppSettings {
     var darkTheme = true
     var apiURL = "https://ai-car-scaner.onrender.com"
 }
+struct LiveRecord: Decodable {
+    let channel: String?
+    private let recordedPID: String?
+    let numeric_value: Double?
+    let unit: String?
+    let source_type: String?
+    let metadata: LiveRecordMetadata?
+    var pid: String { channel ?? recordedPID ?? "Unknown channel" }
+    var sourceLabel: String { metadata?.adapter == "simulator" ? "Simulator / synthetic data" : source_type ?? "—" }
+    enum CodingKeys: String, CodingKey {
+        case channel, numeric_value, unit, source_type, metadata
+        case recordedPID = "pid"
+    }
+}
+struct LiveRecordMetadata: Decodable { let adapter: String? }
+struct LiveRecordResponse: Decodable { let records: [LiveRecord] }

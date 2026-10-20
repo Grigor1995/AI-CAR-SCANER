@@ -9,9 +9,30 @@ import socket
 import sys
 import tempfile
 import time
+import shutil
+from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+
+
+@contextmanager
+def check_directory():
+    folder = tempfile.mkdtemp(prefix="ai-car-backend-check-")
+    try:
+        yield folder
+    finally:
+        # Windows virus scanners can hold a recently closed log briefly.
+        # Never replace the actual check result with a cleanup traceback.
+        for attempt in range(20):
+            try:
+                shutil.rmtree(folder)
+                break
+            except PermissionError:
+                if attempt == 19:
+                    print(f"WARNING: diagnostics retained because a file is still locked: {folder}", file=sys.stderr)
+                else:
+                    time.sleep(0.1)
 
 
 def main():
@@ -20,7 +41,7 @@ def main():
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
-    with tempfile.TemporaryDirectory(prefix="ai-car-backend-check-") as folder:
+    with check_directory() as folder:
         os.environ.update({
             "APPDATA": folder,
             "AI_CAR_BACKEND_HOST": "127.0.0.1",

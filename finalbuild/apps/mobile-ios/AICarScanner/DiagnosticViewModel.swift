@@ -4,6 +4,8 @@ import SwiftUI
 @MainActor
 final class DiagnosticViewModel: ObservableObject {
     @Published var session: DiagnosticSession?
+    @Published var history: [DiagnosticSession] = []
+    @Published var liveRecords: [LiveRecord] = []
     @Published var catalog: [VehicleCatalogEntry] = []
     @Published var loading = false
     @Published var error: String?
@@ -134,7 +136,26 @@ final class DiagnosticViewModel: ObservableObject {
         }
     }
 
+    func loadHistory() async {
+        do { history = try await api.listSessions() }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func openSession(_ id: String) async {
+        liveRecords = []
+        await execute { try await self.api.getSession(id) }
+    }
+
+    func refreshLiveData() async {
+        guard let id = session?.session_id else { liveRecords = []; return }
+        do {
+            let response = try await api.liveRecords(id)
+            if session?.session_id == id { liveRecords = response.records }
+        } catch { self.error = error.localizedDescription }
+    }
+
     func clearSession() {
+        liveRecords = []
         session = nil
     }
 

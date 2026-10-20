@@ -303,15 +303,15 @@ def window_factory(monkeypatch, qapp, fake_api, vehicle):
 
 # --------------------------------- UI tests ----------------------------------
 
-def test_main_window_builds_all_seven_navigation_pages(window_factory):
+def test_main_window_builds_reference_navigation_pages(window_factory):
     window = window_factory()
     assert window.windowTitle() == "AI Auto Diagnostic Workstation"
-    assert window.nav.count() == 7
-    assert len(window.pages) == 7
+    assert window.nav.count() == 11
+    assert len(window.pages) == 11
     assert window.stack.count() == 1
     assert window.nav.currentRow() == 0
     assert [window.nav.item(i).text().split()[-1] for i in range(window.nav.count())] == [
-        "Dashboard", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests"
+        "Dashboard", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
     ]
 
 
@@ -1242,6 +1242,7 @@ def test_ui_run_starts_without_optional_icon_assets(qapp, monkeypatch, tmp_path)
         def __init__(self):
             self.aboutToQuit = FakeSignal()
             self.setApplicationName = Mock()
+            self.setFont = Mock()
             self.setWindowIcon = Mock()
             self.exec = Mock()
 
@@ -1281,6 +1282,7 @@ def test_ui_run_applies_first_existing_icon_to_app_window_and_handle(qapp, monke
         def __init__(self):
             self.aboutToQuit = FakeSignal()
             self.setApplicationName = Mock()
+            self.setFont = Mock()
             self.setWindowIcon = Mock()
             self.exec = Mock()
 
@@ -1484,3 +1486,81 @@ def test_worker_finished_waits_then_releases_strong_reference(window_factory, mo
     worker.wait.assert_called_once_with()
     worker.deleteLater.assert_called_once_with()
     assert worker not in window._workers
+
+
+def test_demo_dashboard_quick_actions_open_real_diagnostic_pages(window_factory):
+    window = window_factory()
+    dashboard = window.pages[0]
+    button = next(b for b in dashboard.findChildren(QPushButton) if 'DTC list' in b.text())
+    button.click()
+    assert window.nav.currentRow() == 7
+    window.session_json = {'dtcs': [{'code': 'P0302', 'description': 'Cylinder 2', 'source': 'USER_REPORTED'}]}
+    window.pages[7].refresh()
+    assert 'P0302' in window.pages[7].list.item(0).text()
+    assert 'USER_REPORTED' in window.pages[7].list.item(0).text()
+
+
+def test_demo_signals_never_mix_independent_channels(window_factory):
+    window = window_factory()
+    grid = window.pages[0].signals
+    grid.set_records([
+        {'pid': 'RPM', 'numeric_value': 800, 'unit': 'rpm'},
+        {'pid': 'coolant', 'numeric_value': 88, 'unit': 'C'},
+        {'pid': 'RPM', 'numeric_value': 900, 'unit': 'rpm'},
+    ])
+    assert grid.cards[0].trace.values == [800, 900]
+    assert grid.cards[1].trace.values == [88]
+    assert grid.cards[2].trace.values == []
+
+
+def test_report_export_escapes_session_content(window_factory, monkeypatch, tmp_path):
+    from apps.desktop import demo_ui
+    window = window_factory()
+    window.session_json = {'session_id': 'test', 'symptom': '<script>unsafe</script>'}
+    destination = tmp_path / 'report.html'
+    monkeypatch.setattr(demo_ui.QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'HTML'))
+    window.pages[9].export()
+    contents = destination.read_text()
+    assert '&lt;script&gt;' in contents
+    assert '<script>' not in contents
+
+
+def test_native_pdf_export_contains_actual_session_id(window_factory, monkeypatch, tmp_path):
+    from apps.desktop import demo_ui
+    from pypdf import PdfReader
+    window = window_factory()
+    window.session_json = {'session_id': 'pdf-session-123', 'dtcs': [{'code': 'P0302'}]}
+    destination = tmp_path / 'report.pdf'
+    monkeypatch.setattr(demo_ui.QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'PDF'))
+    window.pages[9].export()
+    assert destination.read_bytes().startswith(b'%PDF')
+    text = ''.join(page.extract_text() for page in PdfReader(destination).pages)
+    assert 'pdf-session-123' in text
+    assert 'P0302' in text
+
+
+def test_history_open_clears_previous_vehicle_telemetry(window_factory):
+    window = window_factory()
+    window.telemetry = {'signals': [{'pid': 'RPM', 'mean': 2000}]}
+    window.pages[4]._records_data = [{'channel': 'RPM', 'numeric_value': 2000}]
+    window.network = {'ecus': [{'ecu_id': 'old'}]}
+    window.pages[9].opened({'session_id': 'reopened-session', 'state': 'CREATED', 'recommendations': []})
+    assert window.session.session_id == 'reopened-session'
+    assert window.pages[4]._records_data == []
+    assert window.telemetry == {}
+    assert window.network == {}
+    assert window.nav.currentRow() == 8
+
+
+def test_live_details_from_previous_session_cannot_overwrite_current_session(window_factory, monkeypatch):
+    window = window_factory()
+    window.online = True
+    window.session = Session('old-session')
+    callbacks = []
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done: callbacks.append(done))
+    live = window.pages[4]
+    live.request_refresh()
+    window.session = Session('new-session')
+    callbacks[0]({'records': {'records': [{'channel': 'RPM', 'numeric_value': 2000}]}})
+    assert live._records_data == []
+    assert live._details_in_flight is False

@@ -3,6 +3,9 @@ package com.aicarscaner.mobile.data.repository
 import com.aicarscaner.mobile.data.api.*
 
 class DiagnosticRepository(private val api: DiagnosticApi) {
+    suspend fun listSessions() = api.listSessions()
+    suspend fun getSession(id: String) = api.getSession(id)
+
     suspend fun vehicleCatalog() = api.vehicleCatalog()
 
     suspend fun createSession(vehicle: VehicleDto) =

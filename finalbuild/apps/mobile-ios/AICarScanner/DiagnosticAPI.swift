@@ -70,6 +70,18 @@ final class DiagnosticAPI {
         return try JSONDecoder().decode(T.self, from: data)
     }
 
+    func listSessions() async throws -> [DiagnosticSession] {
+        try await request("/api/v1/sessions")
+    }
+
+    func getSession(_ id: String) async throws -> DiagnosticSession {
+        try await request("/api/v1/sessions/\(id)")
+    }
+
+    func liveRecords(_ id: String) async throws -> LiveRecordResponse {
+        try await request("/api/v1/acquisition/sessions/\(id)/records")
+    }
+
     func vehicleCatalog() async throws -> [VehicleCatalogEntry] {
         try await request("/api/v1/vehicle-catalog/entries")
     }

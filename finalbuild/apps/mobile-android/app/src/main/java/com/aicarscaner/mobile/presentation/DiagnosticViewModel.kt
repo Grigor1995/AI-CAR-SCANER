@@ -15,6 +15,7 @@ import retrofit2.HttpException
 
 data class DiagnosticUiState(
     val session: DiagnosticSessionDto? = null,
+    val history: List<DiagnosticSessionDto> = emptyList(),
     val vehicleCatalog: List<VehicleCatalogEntryDto> = emptyList(),
     val loading: Boolean = false,
     val error: String? = null
@@ -23,6 +24,16 @@ data class DiagnosticUiState(
 class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(DiagnosticUiState())
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
+
+    fun openSession(id: String) = execute { repository.getSession(id) }
+
+    fun loadHistory() {
+        viewModelScope.launch {
+            try { _uiState.value = _uiState.value.copy(history = repository.listSessions(), error = null) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _uiState.value = _uiState.value.copy(error = error.message) }
+        }
+    }
 
     fun loadVehicleCatalog() {
         viewModelScope.launch {

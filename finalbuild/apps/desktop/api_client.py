@@ -168,3 +168,12 @@ class DiagnosticApiClient:
 
     def active_map(self, session_id: str) -> dict[str, Any]:
         return self._request("GET", f"/api/v1/network-discovery/sessions/{session_id}/active-map")
+
+    def list_sessions(self) -> list[dict[str, Any]]:
+        return self._request("GET", "/api/v1/sessions")
+
+    def ingest_reference(self, title: str, text: str) -> dict[str, Any]:
+        return self._request("POST", "/api/v1/knowledge/ingest/text", json={
+            "title": title, "text": text,
+            "metadata": {"source": "user-reported-repair", "document_type": "repair_note"},
+        })

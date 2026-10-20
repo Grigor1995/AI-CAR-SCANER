@@ -32,6 +32,20 @@ class DiagnosticApiContractTest {
         server.shutdown()
     }
 
+    @Test
+    fun historyListsAndReopensActualSessionEndpoint() = runTest {
+        val json = """{"session_id":"stored-1","state":"COLLECTING","dtcs":[],"symptoms":[],"evidence":[],"hypotheses":[],"recommendations":[],"test_results":[],"audit_log":[]}"""
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("[$json]"))
+        val history = api.listSessions()
+        assertEquals("/api/v1/sessions", server.takeRequest().path)
+        assertEquals("stored-1", history.single().session_id)
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(json))
+        val reopened = api.getSession(history.single().session_id)
+        assertEquals("/api/v1/sessions/stored-1", server.takeRequest().path)
+        assertEquals(history.single().session_id, reopened.session_id)
+        assertTrue(reopened.dtcs.isEmpty())
+    }
+
     private fun enqueueSession() {
         server.enqueue(
             MockResponse()

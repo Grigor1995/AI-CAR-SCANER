@@ -51,6 +51,7 @@ def test_backend_worker_routes_to_uvicorn_with_explicit_config(
             host=configured_host or "127.0.0.1",
             port=int(configured_port or "8001"),
             log_level=configured_log or "info",
+            workers=1,
         )
         # A repeated call must not add duplicate sys.path entries.
         backend_worker.main()

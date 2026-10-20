@@ -34,6 +34,7 @@ def main() -> None:
         host=host,
         port=port,
         log_level=os.environ.get("AI_CAR_BACKEND_LOG_LEVEL", "info"),
+        workers=1,  # Desktop owns one process; ignore inherited WEB_CONCURRENCY.
     )
 
 

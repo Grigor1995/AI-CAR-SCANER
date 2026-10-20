@@ -124,6 +124,12 @@ data class DiagnosticSessionDto(
 )
 
 interface DiagnosticApi {
+    @GET("api/v1/sessions")
+    suspend fun listSessions(): List<DiagnosticSessionDto>
+
+    @GET("api/v1/sessions/{sessionId}")
+    suspend fun getSession(@Path("sessionId") sessionId: String): DiagnosticSessionDto
+
     @GET("api/v1/vehicle-catalog/entries")
     suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto>
 

@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -152,7 +155,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var editingSymptomId by remember { mutableStateOf<String?>(null) }
     var dtc by remember { mutableStateOf("") }
     var editingDtcId by remember { mutableStateOf<String?>(null) }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(6) }
     var editingVehicle by remember { mutableStateOf(false) }
     var obdDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
     var usbDevices by remember { mutableStateOf<List<UsbDevice>>(emptyList()) }
@@ -163,6 +166,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var obdTransport by remember { mutableStateOf("bluetooth") }
     var liveDataRunning by remember { mutableStateOf(false) }
     var liveData by remember { mutableStateOf<LiveDataSnapshot?>(null) }
+    var channelHistory by remember { mutableStateOf<List<LiveDataSnapshot>>(emptyList()) }
+    LaunchedEffect(liveData, state.session?.session_id) {
+        val sample = liveData
+        if (sample != null) channelHistory = (channelHistory + sample).takeLast(60)
+    }
+    LaunchedEffect(state.session?.session_id) { channelHistory = emptyList(); liveData = null; liveDataRunning = false }
+    fun demo(en: String, ru: String, hy: String): String = when (appSettings.language) {
+        AppLanguage.RU -> ru
+        AppLanguage.HY -> hy
+        else -> en
+    }
     var liveDataError by remember { mutableStateOf<String?>(null) }
     var testResultDialogOpen by remember { mutableStateOf(false) }
     var selectedTestId by remember { mutableStateOf<String?>(null) }
@@ -231,7 +245,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     fun resetForNewSession() {
         closeAllObd()
         viewModel.clearSession()
-        selectedTab = 0
+        selectedTab = 6
         editingVehicle = false
         editingSymptomId = null
         symptom = ""
@@ -458,9 +472,19 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             ),
             color = Color.Transparent
         ) {
+            Scaffold(containerColor = Color.Transparent, bottomBar = {
+                if (state.session != null) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    listOf(6 to "⌂", 1 to "▣", 3 to "▥", 8 to "✓", 9 to "▤").forEach { (destination, symbol) ->
+                        NavigationBarItem(selected = selectedTab == destination,
+                            onClick = { selectedTab = destination },
+                            icon = { Text(symbol, style = MaterialTheme.typography.titleLarge) },
+                            label = { Text(when(destination) { 6 -> demo("Home", "Обзор", "Գլխավոր"); 1 -> text.vehicle; 3 -> text.liveData; 8 -> demo("Tests", "Тесты", "Թեստեր"); else -> demo("Reports", "Отчёты", "Հաշվետվություններ") }, maxLines = 1) })
+                    }
+                }
+            }) { insets ->
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxSize().padding(insets)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -531,6 +555,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 }
 
                 if (state.session == null) {
+                    OutlinedButton(onClick = { selectedTab = 9; viewModel.loadHistory() }, modifier = Modifier.fillMaxWidth()) {
+                        Text(demo("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն"))
+                    }
+                    if (selectedTab == 9) state.history.forEach { previous ->
+                        DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
+                            Text("${previous.session_id.take(8)} • ${previous.state}")
+                            Button(onClick = { viewModel.openSession(previous.session_id); selectedTab = 6 }) {
+                                Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան"))
+                            }
+                        }
+                    }
                     Text(
                         text.newSession,
                         style = MaterialTheme.typography.headlineSmall,
@@ -637,9 +672,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         text.obd,
                         text.liveData,
                         text.analysis,
-                        text.activity
+                        text.activity,
+                        demo("Home", "Обзор", "Գլխավոր"),
+                        "DTC",
+                        demo("Guided Tests", "Тесты", "Փորձարկումներ"),
+                        demo("Reports", "Отчёты", "Հաշվետվություններ"),
+                        demo("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին")
                     )
 
+                    if (selectedTab != 6) {
                     Card(
                                         Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
@@ -662,13 +703,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
                     }
 
+                    }
+                    val displayOrder = listOf(6, 1, 2, 0, 7, 4, 8, 3, 9, 10, 5)
                     ScrollableTabRow(
-                        selectedTabIndex = selectedTab,
+                        selectedTabIndex = displayOrder.indexOf(selectedTab),
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.primary,
                         edgePadding = 4.dp
                     ) {
-                        tabs.forEachIndexed { index, title ->
+                        displayOrder.forEach { index ->
+                            val title = tabs[index]
                             Tab(
                                 selected = selectedTab == index,
                                 onClick = {
@@ -1272,6 +1316,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
                             }
 
+                            DemoLiveCharts(channelHistory)
                             liveDataError?.let {
                                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
@@ -1568,6 +1613,27 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) { Text(text.analyzeSession) }
                         }
 
+                        6 -> DemoHome(session, tabs) { selectedTab = it }
+                        7 -> DemoDtcList(session, "DTC")
+                        8 -> DemoGuidedTests(session, tabs[8]) { id, title ->
+                            selectedTestId = id
+                            selectedTestTitle = title
+                            testOutcome = "INCOMPLETE"
+                            testNotes = ""
+                            testResultDialogOpen = true
+                        }
+                        9 -> {
+                            LaunchedEffect(Unit) { viewModel.loadHistory() }
+                            OutlinedButton(onClick = { viewModel.loadHistory() }) { Text(demo("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) }
+                            state.history.forEach { previous ->
+                                DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
+                                    Text("${previous.session_id.take(8)} • DTC: ${previous.dtcs.size} • ${previous.state}")
+                                    Button(onClick = { viewModel.openSession(previous.session_id); selectedTab = 6 }) { Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան")) }
+                                }
+                            }
+                            DemoReports(session, tabs[9], demo("Share session report", "Поделиться отчётом", "Կիսվել հաշվետվությամբ"))
+                        }
+                        10 -> DemoTeach(tabs[10], demo("Draft saved on this device; no model training", "Черновик на устройстве; без обучения модели", "Սևագիրը պահվում է սարքում․ մոդելը չի ուսուցանվում"), demo("Share note", "Поделиться", "Կիսվել նշումով"))
                         5 -> {
                             Text(text.activity, style = MaterialTheme.typography.titleLarge)
                             if (session.audit_log.isEmpty()) {
@@ -1596,6 +1662,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 }
             }
 
+            }
             if (state.loading) CircularProgressIndicator()
             state.error?.let { Text("${extra.error}: ${it}", color = MaterialTheme.colorScheme.error) }
         }
@@ -1822,7 +1889,7 @@ private fun SettingsDialog(
 
 /** Generated portraits use an exact catalog key and native image rendering. */
 @Composable
-private fun VehicleModelArtwork(make: String, model: String, chassis: String) {
+internal fun VehicleModelArtwork(make: String, model: String, chassis: String) {
     fun keyPart(value: String): String = value.lowercase(java.util.Locale.ROOT)
         .replace(Regex("[^a-z0-9]+"), "-").trim('-')
     val file = "vehicle_models/" +

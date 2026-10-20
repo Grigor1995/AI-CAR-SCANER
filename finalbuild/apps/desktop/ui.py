@@ -5,8 +5,8 @@ import os
 import re
 import sys
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QTimer, QSettings, QCoreApplication, QEvent
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QSize, QTimer, QSettings, QCoreApplication, QEvent
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -18,9 +18,18 @@ from .api_client import DiagnosticApiClient, ApiError
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
 from .vehicle_artwork import vehicle_pixmap
+from .demo_ui import DemoDashboard, DTCPage, HypothesesPage, ReportsPage, TeachPage, SignalGrid
 
 APP_QSS = """
-QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size: 13px; }
+QPushButton#topNav { min-height: 38px; background: #0A243B; border: 1px solid #116AB5; padding: 9px 12px; }
+QLabel#metricValue { font-size: 21pt; font-weight: 700; }
+QLabel#signalValue { font-size: 18pt; font-weight: 700; }
+QLabel[accent="red"] { color: #FF5D79; }
+QLabel[accent="green"] { color: #20C995; }
+QLabel[accent="violet"] { color: #AA7CFF; }
+QScrollArea { border: none; }
+
+QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size:10pt; }
 QLabel { background: transparent; border: none; }
 QMainWindow { border: 1px solid #1C4B89; }
 QGroupBox { background: #0C1B35; border: 1px solid #24518F; border-radius: 14px; }
@@ -45,9 +54,9 @@ QHeaderView::section, QTableWidget { background: #0C1E3A; color: #DCEEFF; border
 QTableWidget { gridline-color: #1F426D; }
 QProgressBar { background: #07172C; border: 1px solid #27558D; border-radius: 6px; height: 11px; text-align: center; }
 QProgressBar::chunk { background: #0B8DFF; border-radius: 6px; }
-QLabel#title { font-size: 23px; font-weight: 750; color: #F3FAFF; }
-QLabel#heroTitle { font-size: 29px; color: #F4FAFF; font-weight: 800; }
-QLabel#heroSubtitle { color: #72BEFF; font-size: 12px; letter-spacing: 2px; font-weight: 700; }
+QLabel#title { font-size:17pt; font-weight: 750; color: #F3FAFF; }
+QLabel#heroTitle { font-size:22pt; color: #F4FAFF; font-weight: 800; }
+QLabel#heroSubtitle { color: #72BEFF; font-size:9pt; letter-spacing: 2px; font-weight: 700; }
 QLabel#muted { color: #93B7D8; }
 QLabel#ok { color: #27DB98; font-weight: 700; }
 QLabel#warn { color: #FFCC65; font-weight: 700; }
@@ -58,7 +67,15 @@ QScrollBar::handle:vertical { background: #26568F; border-radius: 5px; min-heigh
 """
 
 APP_QSS_LIGHT = """
-QMainWindow, QWidget, QDialog { background: #F0F6FC; color: #10243F; font-family: Segoe UI, Arial; font-size: 13px; }
+QPushButton#topNav { min-height: 38px; background: #FFFFFF; border: 1px solid #B1CAE5; padding: 9px 12px; }
+QLabel#metricValue { font-size: 21pt; font-weight: 700; }
+QLabel#signalValue { font-size: 18pt; font-weight: 700; }
+QLabel[accent="red"] { color: #FF5D79; }
+QLabel[accent="green"] { color: #20C995; }
+QLabel[accent="violet"] { color: #AA7CFF; }
+QScrollArea { border: none; }
+
+QMainWindow, QWidget, QDialog { background: #F0F6FC; color: #10243F; font-family: Segoe UI, Arial; font-size:10pt; }
 QLabel { background: transparent; border: none; }
 QGroupBox { background: #FFFFFF; border: 1px solid #B7D1EC; border-radius: 14px; }
 QGroupBox { margin-top: 15px; padding: 15px 12px 12px; font-weight: 650; }
@@ -81,9 +98,9 @@ QTabBar::tab:selected { background: #1673DB; color: #FFFFFF; border-color: #126C
 QHeaderView::section, QTableWidget { background: #F4F9FF; color: #12365A; border: 1px solid #BCD1E8; padding: 5px; }
 QProgressBar { background: #E6F0FA; border: 1px solid #B2D0EC; border-radius: 6px; height: 11px; text-align: center; }
 QProgressBar::chunk { background: #0877EF; border-radius: 6px; }
-QLabel#title { font-size: 23px; font-weight: 750; color: #14385B; }
-QLabel#heroTitle { font-size: 29px; color: #123A68; font-weight: 800; }
-QLabel#heroSubtitle { color: #1169BD; font-size: 12px; letter-spacing: 2px; font-weight: 700; }
+QLabel#title { font-size:17pt; font-weight: 750; color: #14385B; }
+QLabel#heroTitle { font-size:22pt; color: #123A68; font-weight: 800; }
+QLabel#heroSubtitle { color: #1169BD; font-size:9pt; letter-spacing: 2px; font-weight: 700; }
 QLabel#muted { color: #547492; }
 QLabel#ok { color: #078D63; font-weight: 700; }
 QLabel#warn { color: #B66B05; font-weight: 700; }
@@ -227,6 +244,32 @@ _UI_TRANSLATIONS = {
 }
 
 
+_UI_TRANSLATIONS["hy"].update({
+    "Home / Summary": "Գլխավոր / Ամփոփում", "Selected vehicle": "Ընտրված մեքենա",
+    "Quick actions": "Արագ գործողություններ", "Recorded tests": "Գրանցված թեստեր",
+    "Testing progress": "Փորձարկման ընթացք", "Reports": "Հաշվետվություններ",
+    "History": "Պատմություն", "Teach AI": "Սովորեցրու AI-ին", "AI Analysis": "AI վերլուծություն",
+    "Guided Tests": "Ուղղորդվող փորձարկումներ", "Diagnostics": "Ախտորոշում",
+    "Search vehicle": "Փնտրել մեքենա", "DTC list & details": "DTC ցանկ և մանրամասներ",
+    "Your solution": "Քո լուծումը", "Custom dashboard": "Անհատական վահանակ",
+    "Save draft": "Պահել սևագիրը", "Ingest reference note": "Ներմուծել տեղեկատու նշումը",
+    "Export current report": "Արտահանել հաշվետվությունը", "Refresh history": "Թարմացնել պատմությունը",
+    "Open selected": "Բացել ընտրվածը", "Repair / observation title": "Վերանորոգման / դիտարկման վերնագիր",
+})
+_UI_TRANSLATIONS["ru"].update({
+    "Home / Summary": "Обзор / Сводка", "Selected vehicle": "Выбранный автомобиль",
+    "Quick actions": "Быстрые действия", "Recorded tests": "Записанные тесты",
+    "Testing progress": "Ход тестирования", "Reports": "Отчёты", "History": "История",
+    "Teach AI": "Обучить ИИ", "AI Analysis": "ИИ-анализ", "Guided Tests": "Пошаговые тесты",
+    "Diagnostics": "Диагностика", "Search vehicle": "Поиск автомобиля",
+    "DTC list & details": "Список и сведения DTC", "Your solution": "Ваше решение",
+    "Custom dashboard": "Настраиваемая панель", "Save draft": "Сохранить черновик",
+    "Ingest reference note": "Добавить справочный материал", "Export current report": "Экспорт отчёта",
+    "Refresh history": "Обновить историю", "Open selected": "Открыть выбранное",
+    "Repair / observation title": "Название ремонта / наблюдения",
+})
+
+
 def _translate_ui_text(text: str, language: str) -> str:
     if not isinstance(text, str):
         return text
@@ -316,7 +359,7 @@ class Sparkline(QWidget):
 class MetricCard(QGroupBox):
     def __init__(self, title: str, value: str = "—") -> None:
         super().__init__(); self.setTitle(title)
-        layout = QVBoxLayout(self); self.value = QLabel(value); self.value.setObjectName("vehicleMetricValue" if title == "Vehicle" else ""); self.value.setStyleSheet("font-size:26px;font-weight:700;"); layout.addWidget(self.value)
+        layout = QVBoxLayout(self); self.value = QLabel(value); self.value.setObjectName("vehicleMetricValue" if title == "Vehicle" else ""); self.value.setStyleSheet("font-size:20pt;font-weight:700;"); layout.addWidget(self.value)
     def set_value(self, value: str) -> None: self.value.setText(value)
 
 class VehicleDialog(QDialog):
@@ -496,41 +539,8 @@ class VehicleDialog(QDialog):
             self.ecu.currentText().strip(),
         )
 
-class DashboardPage(QWidget):
-    def __init__(self, app: "MainWindow") -> None:
-        super().__init__(); self.app=app
-        lay=QVBoxLayout(self)
-        banner=QHBoxLayout()
-        branding=QVBoxLayout()
-        hero=QLabel("AI CAR SCANNER"); hero.setObjectName("heroTitle")
-        branding.addWidget(hero)
-        subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING")
-        subtitle.setObjectName("heroSubtitle")
-        branding.addWidget(subtitle)
-        banner.addLayout(branding, 1)
-        self.model_artwork = QLabel()
-        self.model_artwork.setObjectName("dashboardVehicleArtwork")
-        self.model_artwork.setAlignment(Qt.AlignCenter)
-        self.model_artwork.setPixmap(vehicle_pixmap("", "", "", 360, 180))
-        banner.addWidget(self.model_artwork)
-        lay.addLayout(banner)
-        title=QLabel("AI Auto Diagnostic Workstation"); title.setObjectName("title"); lay.addWidget(title)
-        cards=QGridLayout(); self.backend=MetricCard("Backend", "OFFLINE"); self.vehicle=MetricCard("Vehicle", "—"); self.session=MetricCard("Session", "—"); self.ecus=MetricCard("ECUs", "—")
-        for i,c in enumerate((self.backend,self.vehicle,self.session,self.ecus)): cards.addWidget(c,0,i)
-        lay.addLayout(cards)
-        info=QGroupBox("Diagnostic workflow"); il=QVBoxLayout(info); il.addWidget(QLabel("Evidence → Reasoning → Next Test → Result → Re-analysis")); il.addWidget(QLabel("LLM explains and orchestrates; deterministic rules and measured evidence remain authoritative.")); lay.addWidget(info)
-        self.refresh_btn=QPushButton("Refresh status"); self.refresh_btn.clicked.connect(app.refresh_all); lay.addWidget(self.refresh_btn, alignment=Qt.AlignLeft); lay.addStretch()
-    def refresh(self):
-        self.backend.set_value("ONLINE" if self.app.online else "OFFLINE")
-        selected = self.app.active_vehicle or (self.app.vehicles[0] if self.app.vehicles else None)
-        self.model_artwork.setPixmap(vehicle_pixmap(
-            selected.make if selected else "",
-            selected.model if selected else "",
-            selected.chassis if selected else "", 360, 180
-        ))
-        self.vehicle.set_value(f"{self.app.active_vehicle.make} {self.app.active_vehicle.model}" if self.app.active_vehicle else "—")
-        self.session.set_value(self.app.session.session_id[:8] if self.app.session else "—")
-        self.ecus.set_value(str(len(self.app.network.get("ecus", []))) if self.app.network else "—")
+class DashboardPage(DemoDashboard):
+    pass
 
 class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
@@ -540,12 +550,16 @@ class VehiclesPage(QWidget):
         self.model_artwork.setAlignment(Qt.AlignCenter)
         self.model_artwork.setMaximumHeight(185)
         lay.addWidget(self.model_artwork)
-        split=QSplitter(); self.list=QListWidget(); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
+        split=QSplitter(); self.list=QListWidget(); self.list.setIconSize(QSize(112,56)); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search vehicle")
+        lay.insertWidget(1, self.search)
+        self.search.textChanged.connect(lambda text: [self.list.item(i).setHidden(text.casefold() not in self.list.item(i).text().casefold()) for i in range(self.list.count())])
         self.list.itemSelectionChanged.connect(self.show_selected)
     def refresh(self):
         self.list.clear()
         for idx,v in enumerate(self.app.vehicles):
-            item=QListWidgetItem(f"{v.make} {v.model} ({v.year or '—'})"); item.setData(Qt.UserRole, idx); self.list.addItem(item)
+            item=QListWidgetItem(f"{v.make} {v.model} ({v.year or '—'})"); item.setData(Qt.UserRole, idx); item.setIcon(QIcon(vehicle_pixmap(v.make,v.model,v.chassis,112,56))); self.list.addItem(item)
         self.delete_btn.setEnabled(bool(self.app.vehicles))
         if self.app.active_vehicle:
             self.show_vehicle(self.app.active_vehicle)
@@ -598,7 +612,7 @@ class LiveDataPage(QWidget):
         lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
         self.start.clicked.connect(app.start_simulator); self.stop.clicked.connect(app.stop_simulator); self.analyze.clicked.connect(app.analyze_telemetry); self.ai_analyze.clicked.connect(app.ai_analyze_live_data)
         bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
-        self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); lay.addWidget(self.chart)
+        self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setMaximumHeight(110); lay.addWidget(self.chart); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
         self._poll_in_flight = False
@@ -626,7 +640,11 @@ class LiveDataPage(QWidget):
                     result[key] = {"_error": str(exc)}
             return result
 
-        self.app.run_worker(load, self._details_loaded)
+        def loaded(data):
+            self._details_in_flight = False
+            if self.app.session and self.app.session.session_id == session_id:
+                self._details_loaded(data)
+        self.app.run_worker(load, loaded)
 
     def _details_loaded(self, data):
         self._details_in_flight = False
@@ -719,20 +737,48 @@ class LiveDataPage(QWidget):
             for column, value in enumerate(vals):
                 self.table.setItem(row, column, QTableWidgetItem(str(value)))
         values = [float(record["numeric_value"]) for record in self._records_data if record.get("numeric_value") is not None]
+        first_pid = next(((r.get("pid") or r.get("channel")) for r in self._records_data if r.get("numeric_value") is not None), None)
+        values = [float(r["numeric_value"]) for r in self._records_data if r.get("numeric_value") is not None and (r.get("pid") or r.get("channel")) == first_pid]
         self.chart.set_values(values)
+        self.signals.set_records(self._records_data)
 
 class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        lay=QVBoxLayout(self); self.list=QListWidget(); lay.addWidget(self.list)
+        lay=QVBoxLayout(self); title=QLabel("Guided Tests"); title.setObjectName("title"); title.setMaximumHeight(42); lay.addWidget(title)
+        self.progress=QProgressBar(); self.progress.setFixedHeight(18); lay.addWidget(self.progress)
+        self.list=QListWidget(); self.instructions=QPlainTextEdit(); self.instructions.setReadOnly(True); self.instructions.setPlaceholderText("Select a recommended test to view prerequisites and safety notes")
+        split=QSplitter(); split.addWidget(self.list); split.addWidget(self.instructions); lay.addWidget(split,1)
+        self.list.itemSelectionChanged.connect(self._show_instructions)
+        outcomes=QHBoxLayout()
+        for code, color in [("PASS", "#17B884"),("FAIL", "#E24C65"),("INCOMPLETE", "#CE9E31")]:
+            button=QPushButton(code); button.setStyleSheet(f"border: 1px solid {color}; color: {color}; padding: 18px;")
+            button.clicked.connect(lambda _=False, value=code:self.result.setCurrentIndex(self.result.findData(value))); outcomes.addWidget(button)
+        lay.addLayout(outcomes)
         bar=QHBoxLayout(); language = getattr(app, "language", "en")
-        self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+        self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.result.setCurrentIndex(2); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+    def _show_instructions(self):
+        selected=self.list.currentItem()
+        if selected is None:
+            self.instructions.clear(); return
+        data=next((x for x in self.app.decision.get("candidates",[]) if str(x.get("test_id") or x.get("id")) == selected.data(Qt.UserRole)), {})
+        lines=[data.get("name",""), data.get("purpose",""), ""]
+        lines += [f"{i+1}. {step}" for i,step in enumerate(data.get("prerequisites",[]))]
+        lines += ["", data.get("expected_observation") or "", ""] + data.get("safety_notes",[])
+        self.instructions.setPlainText("\n".join(lines))
+
     def refresh(self):
+        total=len(self.app.decision.get("candidates",[]))
+        completed={x.get("test_id") for x in self.app.session_json.get("test_results",[]) if x.get("result") in {"PASS","FAIL"}}
+        current={str(x.get("test_id") or x.get("id")) for x in self.app.decision.get("candidates",[])}
+        done=len(completed & current)
+        self.progress.setRange(0,max(1,total)); self.progress.setValue(done); self.progress.setFormat(f"{done}/{total}")
         self.list.clear(); self.app.test_candidates=[]
         for item in self.app.decision.get("candidates",[]):
             c=TestCandidate.from_json(item); self.app.test_candidates.append(c)
             label=f"{c.priority_score:.2f} • {c.name} • risk={c.risk_level}\n{c.purpose}"
             q=QListWidgetItem(label); q.setData(Qt.UserRole,c.test_id); self.list.addItem(q)
+        if self.list.count(): self.list.setCurrentRow(0)
 
 class DevicesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
@@ -899,7 +945,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.tr_text("AI Auto Diagnostic Workstation"))
         for widget in self.findChildren(QWidget):
             if isinstance(widget, QLabel):
-                if widget.objectName() != "vehicleMetricValue":
+                if widget.objectName() != "vehicleMetricValue" and widget.text():
                     widget.setText(self.tr_text(widget.text()))
             elif isinstance(widget, QPushButton):
                 widget.setText(self.tr_text(widget.text()))
@@ -938,16 +984,25 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(self.tr_text(self.statusBar().currentMessage()))
 
     def _build_pages(self):
-        container=QWidget(); root=QHBoxLayout(container); root.setContentsMargins(0,0,0,0)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(234); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage)]
+        container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
+        header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
+        subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
+        header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
+        for title, target in [("⚙  Diagnostics",3),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
+            button=QPushButton(title); button.setObjectName("topNav"); button.clicked.connect(lambda _=False, index=target:self.nav.setCurrentRow(index)); header_buttons.addWidget(button)
+        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
+        settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
+        root=QHBoxLayout(); shell.addLayout(root,1)
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage)]
         self.nav=nav
         for text,_cls in entries: nav.addItem(text)
         root.addWidget(nav)
         content=QStackedWidget(); root.addWidget(content,1)
         for _text, cls in entries:
-            page=cls(self); self.pages.append(page); content.addWidget(page)
+            page=cls(self); self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(content.setCurrentIndex)
         nav.currentRowChanged.connect(lambda index: self.pages[4].request_refresh() if index == 4 else None)
+        nav.currentRowChanged.connect(lambda index: self.pages[9].load() if index == 9 and self.online else None)
         nav.setCurrentRow(0)
         self.stack.addWidget(container)
     def _build_menu(self):
@@ -1176,6 +1231,7 @@ class MainWindow(QMainWindow):
                 return
             self.telemetry = data["summary"]
             self.pages[4]._records_data = LiveDataPage._records_data_from(data.get("records", {}))
+            self.pages[0].refresh()
             self.refresh_pages()
 
         self.run_worker(work, done)
@@ -1352,6 +1408,7 @@ def run() -> None:
     # Runtime startup must not depend on Pillow. The tracked Desktop WEBP is
     # byte-identical to Android's launcher icon; ICO/PNG are fallbacks.
     app = QApplication([])
+    app.setFont(QFont("Segoe UI", 10))
     app.setApplicationName("AI Auto Diagnostic Workstation")
     # Prefer PNG for Qt across Windows builds (WEBP requires an image plugin).
     # Both are generated from the same master; ICO is the last fallback.

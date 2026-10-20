@@ -20,7 +20,7 @@ def test_backend_worker_uses_source_root_and_environment(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "uvicorn", SimpleNamespace(run=lambda *args, **kwargs: calls.update(args=args, kwargs=kwargs)))
     backend_worker.main()
     assert calls["args"] == ("api.main:app",)
-    assert calls["kwargs"] == {"host": "0.0.0.0", "port": 8123, "log_level": "warning"}
+    assert calls["kwargs"] == {"host": "0.0.0.0", "port": 8123, "log_level": "warning", "workers": 1}
     assert str(backend_dir) in sys.path
 
 

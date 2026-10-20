@@ -348,12 +348,27 @@ def stop_backend() -> None:
     global _backend_process, _backend_log
     process = _backend_process
     _backend_process = None
-    if process is not None and process.poll() is None:
-        try:
-            process.terminate(); process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill(); process.wait(timeout=2)
-    _close_backend_log()
+    try:
+        if process is not None and process.poll() is None:
+            if sys.platform == "win32":
+                try:
+                    # Stop descendants too: a Windows child can retain the
+                    # inherited log handle after its parent has exited.
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        capture_output=True, check=True, timeout=5,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    )
+                    process.wait(timeout=5)
+                    return
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            try:
+                process.terminate(); process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill(); process.wait(timeout=2)
+    finally:
+        _close_backend_log()
 
 
 def run() -> None:

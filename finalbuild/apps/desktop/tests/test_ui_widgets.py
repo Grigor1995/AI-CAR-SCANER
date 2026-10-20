@@ -45,6 +45,10 @@ def qapp():
 
 class FakeApp:
     def __init__(self):
+        self.settings_store = Mock()
+        self.settings_store.value.return_value = ""
+        self.pages = []
+        self.nav = Mock()
         self.online = True
         self.active_vehicle = Vehicle("Mercedes-Benz", "E-Class", "W211", 2006, "M272", ["petrol", "lpg"], "ME9.7")
         self.session = Session("session-123456", "ANALYSIS_READY", self.active_vehicle)

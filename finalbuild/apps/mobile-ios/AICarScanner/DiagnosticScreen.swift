@@ -1,9 +1,12 @@
 import SwiftUI
+import Charts
 
 struct DiagnosticScreen: View {
     @ObservedObject var viewModel: DiagnosticViewModel
     @StateObject private var obd = OBDService()
-    @State private var tab = 0
+    @State private var tab = 5
+    @AppStorage("repairTitle") private var repairTitle = ""
+    @AppStorage("repairDraft") private var repairDraft = ""
     @State private var make = "Mercedes-Benz"
     @State private var model = "E-Class"
     @State private var chassis = "W211"
@@ -26,7 +29,7 @@ struct DiagnosticScreen: View {
 
     private var t:T { T(language:viewModel.settings.language) }
 
-    init(viewModel: DiagnosticViewModel, initialTab: Int = 0) {
+    init(viewModel: DiagnosticViewModel, initialTab: Int = 5) {
         self.viewModel = viewModel
         self._tab = State(initialValue: initialTab)
     }
@@ -58,11 +61,11 @@ struct DiagnosticScreen: View {
                     }
                     ScrollView(.horizontal, showsIndicators:false) {
                         HStack(spacing:8) {
-                            ForEach(0..<5, id:\.self) { index in
-                                let titles = [t.vehicle, t.inputs, t.analysis, t.obd, t.activity]
+                            ForEach([5, 0, 3, 1, 6, 2, 7, 8, 9, 10, 4], id:\.self) { index in
+                                let titles = [t.vehicle, t.inputs, t.analysis, t.obd, t.activity, t.tr("Home", "Обзор", "Գլխավոր"), "DTC", t.nextTests, t.tr("Live Data", "Данные", "Ուղիղ տվյալներ"), t.tr("Reports", "Отчёты", "Հաշվետվություններ"), t.tr("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին")]
                                 let symbols = ["car.side.fill", "exclamationmark.bubble.fill",
                                                "brain.head.profile", "waveform.path.ecg",
-                                               "clock.arrow.circlepath"]
+                                               "clock.arrow.circlepath", "house.fill", "exclamationmark.triangle", "checklist", "chart.xyaxis.line", "doc.text", "brain.head.profile"]
                                 Button {
                                     tab = index
                                 } label: {
@@ -90,8 +93,30 @@ struct DiagnosticScreen: View {
                         }
                     }
 
-                    if tab==0 { vehicleView } else if tab==1 { inputsView } else if tab==2 { analysisView } else if tab==3 { obdView } else { activityView }
+                    switch tab {
+                    case 0: vehicleView
+                    case 1: inputsView
+                    case 2: analysisView
+                    case 3: obdView
+                    case 4: activityView
+                    case 5: demoHome
+                    case 6: demoDTC
+                    case 7: demoTests
+                    case 8: demoLive
+                    case 9: demoReports
+                    default: demoTeach
+                    }
                 }.padding(16)
+            }
+            .safeAreaInset(edge: .bottom) {
+                HStack {
+                    ForEach(Array(zip([5, 0, 8, 7, 9], ["house.fill", "car.side.fill", "chart.xyaxis.line", "checklist", "doc.text"])), id: \.0) { item in
+                        Button { tab = item.0 } label: {
+                            Image(systemName: item.1).frame(maxWidth: .infinity).padding(.vertical, 14)
+                        }.foregroundStyle(tab == item.0 ? AutomotivePalette.cyan : Color.secondary)
+                        .accessibilityLabel([5:"Home", 0:t.vehicle, 8:"Live Data", 7:t.nextTests, 9:"Reports"][item.0] ?? "")
+                    }
+                }.background(viewModel.settings.darkTheme ? AutomotivePalette.panel : .white)
             }
             .background(AutomotivePalette.background(dark:viewModel.settings.darkTheme).ignoresSafeArea())
             .tint(AutomotivePalette.electricBlue)
@@ -108,7 +133,168 @@ struct DiagnosticScreen: View {
                 Button(t.save){ if let s=editSymptom { Task{ await updateSymptomLocally(s); editSymptom=nil } } }
             }
             .alert("Error",isPresented:Binding(get:{viewModel.error != nil},set:{if !$0{viewModel.error=nil}})){Button("OK"){}}
+            .onChange(of: viewModel.session?.session_id) { _, _ in
+                guard let vehicle = viewModel.session?.vehicle else { return }
+                make = vehicle.make; model = vehicle.model; chassis = vehicle.chassis ?? ""
+                year = vehicle.year.map(String.init) ?? ""; engine = vehicle.engine ?? ""; ecu = vehicle.ecu ?? ""
+                petrol = vehicle.fuel.contains { $0.lowercased() == "petrol" }
+                lpg = vehicle.fuel.contains { $0.lowercased() == "lpg" }
+            }
             .preferredColorScheme(viewModel.settings.darkTheme ? .dark:.light)
+        }
+    }
+
+    private var demoHome: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VehicleModelArtwork(make: viewModel.session?.vehicle?.make ?? make,
+                                model: viewModel.session?.vehicle?.model ?? model,
+                                chassis: viewModel.session?.vehicle?.chassis ?? chassis)
+            Text("\(viewModel.session?.vehicle?.make ?? make) \(viewModel.session?.vehicle?.model ?? model)")
+                .font(.title2.bold()).frame(maxWidth: .infinity)
+            Text(viewModel.session?.vehicle.map { "\($0.chassis ?? "") • \($0.year.map(String.init) ?? "") • \($0.engine ?? "")" } ?? "\(chassis) • \(year) • \(engine)")
+                .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+            HStack(spacing: 10) {
+                demoMetric("DTC", viewModel.session?.dtcs.count ?? 0, "exclamationmark.triangle.fill", .red)
+                demoMetric(t.tr("Tests", "Тесты", "Թեստեր"), viewModel.session?.test_results.count ?? 0, "checkmark.shield.fill", .green)
+                demoMetric(t.hypotheses, viewModel.session?.hypotheses.count ?? 0, "brain.head.profile", AutomotivePalette.violet)
+            }
+            Text(t.tr("Quick actions", "Быстрые действия", "Արագ գործողություններ")).font(.headline)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                demoShortcut("DTC", "exclamationmark.triangle", 6)
+                demoShortcut(t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ"), "chart.xyaxis.line", 8)
+                demoShortcut(t.nextTests, "checklist", 7)
+                demoShortcut(t.analysis, "brain.head.profile", 2)
+            }
+            Button(t.vehicle) { tab = 0 }.buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+            if let session = viewModel.session {
+                SectionCard(t.tr("Testing progress", "Прогресс тестов", "Փորձարկման ընթացք")) {
+                    let finished = Set(session.test_results.filter { $0.result == "PASS" || $0.result == "FAIL" }.map(\.test_id))
+                    let total = Set(session.recommendations.map(\.id))
+                    let count = finished.intersection(total).count
+                    ProgressView(value: Double(count), total: Double(max(total.count, 1)))
+                    Text("\(count)/\(total.count)").font(.caption.monospacedDigit())
+                }
+            }
+        }.padding(16).modifier(AutomotiveCardStyle())
+    }
+
+    private func demoMetric(_ title: String, _ value: Int, _ symbol: String, _ color: Color) -> some View {
+        VStack(spacing: 9) {
+            Image(systemName: symbol).font(.title2).foregroundStyle(color)
+            Text(String(value)).font(.title2.bold())
+            Text(title).font(.caption2).lineLimit(2)
+        }.frame(maxWidth: .infinity, minHeight: 110).modifier(AutomotiveCardStyle(compact: true))
+    }
+
+    private func demoShortcut(_ title: String, _ symbol: String, _ destination: Int) -> some View {
+        Button { tab = destination } label: {
+            Label(title, systemImage: symbol).font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 62)
+                .modifier(AutomotiveCardStyle(compact: true))
+        }.buttonStyle(.plain)
+    }
+
+    private var demoDTC: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("DTC").font(.title2.bold())
+            ForEach(viewModel.session?.dtcs ?? []) { code in
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(code.code).font(.headline).foregroundStyle(.red)
+                        Text(code.description ?? code.source ?? "—").font(.subheadline)
+                    }
+                    Spacer()
+                }.padding(16).modifier(AutomotiveCardStyle())
+            }
+            if (viewModel.session?.dtcs ?? []).isEmpty { Text(t.tr("No recorded DTCs", "Нет записанных DTC", "Գրանցված DTC չկա")) }
+            Button(t.inputs) { tab = 1 }.buttonStyle(.borderedProminent)
+        }
+    }
+
+    private var demoTests: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(t.nextTests).font(.title2.bold())
+            ForEach(viewModel.session?.recommendations ?? []) { recommendation in
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(recommendation.name, systemImage: "checklist").font(.headline)
+                    Text(recommendation.purpose)
+                    ForEach(recommendation.prerequisites, id: \.self) { Text("• " + $0).font(.caption) }
+                    ForEach(recommendation.safety_notes, id: \.self) { Text($0).foregroundStyle(.orange).font(.caption) }
+                    Button(t.record) { testResult = "INCOMPLETE"; testNotes = ""; test = recommendation }.buttonStyle(.borderedProminent)
+                }.padding(16).modifier(AutomotiveCardStyle())
+            }
+            ForEach(viewModel.session?.test_results ?? []) { result in
+                HStack { Text(result.test_name ?? result.test_id); Spacer(); Text(result.result).bold().foregroundStyle(AutomotivePalette.resultColor(result.result)) }
+                    .padding(14).modifier(AutomotiveCardStyle())
+            }
+            if (viewModel.session?.recommendations ?? []).isEmpty { Text(t.noSession) }
+        }
+    }
+
+    private var demoLive: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ")).font(.title2.bold())
+            Text(t.tr("Backend acquisition samples • no generated measurements", "Данные сбора сервера", "Սերվերից ստացված չափումներ")).font(.caption).foregroundStyle(.secondary)
+            Button(t.tr("Refresh channels", "Обновить каналы", "Թարմացնել ալիքները")) { Task { await viewModel.refreshLiveData() } }
+                .buttonStyle(.borderedProminent).disabled(viewModel.session == nil)
+            ForEach(Array(Dictionary(grouping: viewModel.liveRecords, by: \.pid).keys.sorted()), id: \.self) { pid in
+                let records = viewModel.liveRecords.filter { $0.pid == pid }
+                SectionCard(pid) {
+                    if let last = records.last, let value = last.numeric_value {
+                        Text("\(value, specifier: "%.2f") \(last.unit ?? "")").font(.title2.bold())
+                    }
+                    Chart(Array(records.enumerated()), id: \.offset) { item in
+                        if let value = item.element.numeric_value {
+                            LineMark(x: .value("Sample", item.offset), y: .value("Value", value))
+                                .foregroundStyle(AutomotivePalette.cyan)
+                        }
+                    }.frame(height: 110)
+                    Text(records.last?.sourceLabel ?? "—").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if viewModel.liveRecords.isEmpty { Text(t.tr("No samples. Start backend acquisition to view channels.", "Нет данных. Запустите сбор на сервере.", "Տվյալներ չկան․ գործարկեք սերվերի չափումների հավաքումը։")) }
+        }.task {
+            while !Task.isCancelled && viewModel.session != nil {
+                await viewModel.refreshLiveData()
+                if viewModel.error != nil { return }
+                do { try await Task.sleep(nanoseconds: 2_000_000_000) }
+                catch { return }
+            }
+        }
+    }
+
+    private var demoReports: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(t.tr("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն")).font(.title2.bold())
+            Button(t.tr("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) { Task { await viewModel.loadHistory() } }
+            ForEach(viewModel.history, id: \.session_id) { previous in
+                SectionCard("\(previous.vehicle?.make ?? "") \(previous.vehicle?.model ?? "")") {
+                    Text("\(previous.session_id.prefix(8)) • DTC: \(previous.dtcs.count) • \(previous.state)").font(.caption)
+                    Button(t.tr("Open session", "Открыть сеанс", "Բացել սեսիան")) { Task { await viewModel.openSession(previous.session_id); tab = 5 } }
+                }
+            }
+            if let session = viewModel.session {
+                SectionCard(session.session_id) {
+                    Text("DTC: \(session.dtcs.count) • \(t.nextTests): \(session.test_results.count)")
+                    ShareLink(item: String(data: (try? JSONEncoder().encode(session)) ?? Data(), encoding: .utf8) ?? "") {
+                        Label(t.tr("Share session report", "Поделиться отчётом", "Կիսվել հաշվետվությամբ"), systemImage: "square.and.arrow.up")
+                    }.buttonStyle(.borderedProminent)
+                }
+                activityView
+            } else { Text(t.noSession) }
+        }.task { await viewModel.loadHistory() }
+    }
+
+    private var demoTeach: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(t.tr("Teach AI / Your solution", "Обучить ИИ / Ваше решение", "Սովորեցրու AI-ին / Քո լուծումը")).font(.title2.bold())
+            TextField(t.tr("Repair title", "Название ремонта", "Վերանորոգման վերնագիր"), text: $repairTitle).textFieldStyle(.roundedBorder)
+            TextEditor(text: $repairDraft).frame(minHeight: 180).padding(8).modifier(AutomotiveCardStyle())
+            Text(t.tr("Draft stored on this device. Sharing does not train the AI model.", "Черновик на этом устройстве. Это не обучение модели.", "Սևագիրը պահվում է սարքում․ սա մոդելի ուսուցում չէ։")).font(.caption).foregroundStyle(.secondary)
+            ShareLink(item: repairTitle + "\n" + repairDraft) { Label(t.tr("Share repair note", "Поделиться заметкой", "Կիսվել վերանորոգման նշումով"), systemImage: "square.and.arrow.up") }
+                .buttonStyle(.borderedProminent).disabled(repairDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
     }
 
@@ -131,6 +317,11 @@ struct DiagnosticScreen: View {
             Button(viewModel.session == nil ? t.create:t.save){Task{await saveVehicle()}}
                 .buttonStyle(.borderedProminent).frame(maxWidth:.infinity)
         }
+        .onChange(of: make) { _, _ in if !models.contains(model) { model = models.first ?? "" } }
+        .onChange(of: model) { _, _ in if !chassisOptions.contains(chassis) { chassis = chassisOptions.first ?? "" } }
+        .onChange(of: chassis) { _, _ in if !years.contains(year) { year = years.first ?? "" } }
+        .onChange(of: year) { _, _ in if !engines.contains(engine) { engine = engines.first ?? "" } }
+        .onChange(of: engine) { _, _ in if !ecus.contains(ecu) { ecu = ecus.first ?? "" } }
     }
 
     private var inputsView:some View {
@@ -157,7 +348,7 @@ struct DiagnosticScreen: View {
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in
                     VStack(alignment:.leading,spacing:5){Text(x.name).bold();Text(x.purpose);Text("Information gain: \(x.expected_information_gain,specifier:"%.2f") • Cost: \(x.estimated_cost,specifier:"%.2f")").font(.caption).foregroundStyle(.secondary)
-                    Button(t.record){test=x}.buttonStyle(.bordered)}
+                    Button(t.record){testResult="INCOMPLETE";testNotes="";test=x}.buttonStyle(.bordered)}
                 }}
             } else {Text(t.noSession)}
         }
@@ -216,10 +407,42 @@ private struct SectionCard<C:View>:View{
     var body:some View{VStack(alignment:.leading,spacing:8){Text(title).font(.headline);content}.frame(maxWidth:.infinity,alignment:.leading).padding(14).modifier(AutomotiveCardStyle())}
 }
 private struct StatusCard:View{let title:String;let value:String;var body:some View{HStack{Text(title);Spacer();Text(value).bold()}.padding(14).modifier(AutomotiveCardStyle())}}
-private struct TestSheet:View{
-    let test:Recommendation;@Binding var result:String;@Binding var notes:String;let save:()->Void
-    var body:some View{NavigationStack{Form{Text(test.name).font(.headline);Picker("Result",selection:$result){Text("PASS").tag("PASS");Text("FAIL").tag("FAIL");Text("INCOMPLETE").tag("INCOMPLETE")};TextField("Diagnostic notes",text:$notes,axis:.vertical).lineLimit(3...7)}.navigationTitle("Test result").toolbar{ToolbarItem(placement:.confirmationAction){Button("Record",action:save)}}}}
+private struct TestSheet: View {
+    let test: Recommendation
+    @Binding var result: String
+    @Binding var notes: String
+    let save: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(test.name).font(.title2.bold())
+                    Text(test.purpose)
+                    ForEach(test.safety_notes, id: \.self) { Text($0).foregroundStyle(.orange) }
+                    HStack(spacing: 10) {
+                        ForEach(["PASS", "FAIL", "INCOMPLETE"], id: \.self) { code in
+                            Button { result = code } label: {
+                                VStack(spacing: 12) {
+                                    Image(systemName: code == "PASS" ? "checkmark.shield.fill" : code == "FAIL" ? "exclamationmark.triangle.fill" : "shield.lefthalf.filled").font(.title)
+                                    Text(code).font(.caption.bold())
+                                }.frame(maxWidth: .infinity, minHeight: 115)
+                                    .foregroundStyle(AutomotivePalette.resultColor(code))
+                                    .background(AutomotivePalette.resultColor(code).opacity(result == code ? 0.18 : 0.04))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(AutomotivePalette.resultColor(code).opacity(result == code ? 1 : 0.3)))
+                            }.buttonStyle(.plain).accessibilityAddTraits(result == code ? .isSelected : [])
+                        }
+                    }
+                    TextField("Diagnostic notes / measurements", text: $notes, axis: .vertical)
+                        .lineLimit(4...9).padding(14).modifier(AutomotiveCardStyle())
+                    Button("Record result", action: save).buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
+                }.padding(16)
+            }.navigationTitle("Test result")
+        }
+    }
 }
+
 struct T{
     let language:AppLanguage
     func tr(_ e:String,_ r:String,_ h:String)->String{language == .en ? e : language == .ru ? r:h}

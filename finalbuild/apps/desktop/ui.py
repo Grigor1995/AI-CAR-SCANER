@@ -88,6 +88,199 @@ QMenuBar, QMenu, QStatusBar { background: #E3EFFA; color: #12365A; }
 QMenu::item:selected { background: #B2DCFF; }
 """
 
+
+_UI_TRANSLATIONS = {
+    "ru": {
+        "AI Auto Diagnostic Workstation": "Рабочая станция диагностики автомобилей с ИИ", "Evidence-driven automotive diagnostics.": "Диагностика на основе доказательств.", "Settings saved": "Настройки сохранены",
+        "Add Vehicle": "Добавить автомобиль", "OK": "ОК", "Make": "Марка", "Model": "Модель",
+        "Chassis": "Кузов", "Year": "Год", "Engine": "Двигатель", "Fuel": "Топливо", "ECU": "ЭБУ",
+        "Dashboard": "Обзор", "Vehicles": "Автомобили", "VCI / Devices": "VCI / Устройства",
+        "Diagnostic": "Диагностика", "Live Data": "Текущие данные", "ECU Network": "Сеть ЭБУ", "Tests": "Тесты",
+        "Backend": "Сервер", "Vehicle": "Автомобиль", "Session": "Сеанс", "ECUs": "ЭБУ",
+        "Diagnostic workflow": "Процесс диагностики",
+        "Evidence → Reasoning → Next Test → Result → Re-analysis": "Данные → Анализ → Следующий тест → Результат → Повторный анализ",
+        "LLM explains and orchestrates; deterministic rules and measured evidence remain authoritative.": "LLM объясняет и координирует; правила и измеренные данные остаются основой выводов.",
+        "Refresh status": "Обновить статус", "+ Add vehicle": "+ Добавить автомобиль", "Delete selected": "Удалить выбранное",
+        "No active session": "Нет активного сеанса", "New session": "Новый сеанс",
+        "Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal.": "Опишите симптом. Пример: двигатель трясётся ниже 2000 об/мин при разгоне на LPG, на бензине работает нормально.",
+        "Symptoms / observations": "Симптомы / наблюдения", "DTC": "Код неисправности (DTC)",
+        "Add evidence + Analyze": "Добавить данные и анализировать", "Analysis": "Анализ", "Evidence": "Данные", "Hypotheses": "Гипотезы", "Missing info": "Недостающие данные",
+        "No evidence yet.": "Пока нет данных.", "No hypotheses yet.": "Пока нет гипотез.",
+        "No high-value missing information identified.": "Не выявлена критически важная недостающая информация.",
+        "Session state:": "Состояние сеанса:", "Current diagnostic interpretation:": "Текущая диагностическая интерпретация:",
+        "No diagnostic hypotheses generated yet.": "Диагностические гипотезы ещё не сформированы.",
+        "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence.": "Важно: гипотезы не подтверждают неисправность детали. Подтверждение требует измерений или результатов тестов.",
+        "Stopped": "Остановлено", "Start simulator": "Запустить симулятор", "Stop": "Остановить",
+        "Analyze telemetry": "Анализировать телеметрию", "AI Analyze Live Data": "ИИ-анализ текущих данных",
+        "PID / Channel": "PID / Канал", "Count": "Количество", "Min": "Мин.", "Max": "Макс.", "Mean": "Среднее", "Events": "События",
+        "AI live-data interpretation will appear here...": "Здесь появится интерпретация текущих данных ИИ...",
+        "Technician notes / measurements": "Заметки техника / измерения", "Record selected result": "Сохранить результат",
+        "PASS": "Пройден", "FAIL": "Не пройден", "INCOMPLETE": "Неполно",
+        "VCI / Adapter Connection": "Подключение VCI / адаптера",
+        "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Найдите USB/BLE-адаптеры или подключитесь к Wi-Fi OBD. Запись и программирование блоков здесь недоступны.",
+        "Scan USB": "Поиск USB", "Scan BLE": "Поиск BLE", "Add Simulator": "Добавить симулятор", "Probe Wi-Fi": "Проверить Wi-Fi",
+        "Selected device": "Выбранное устройство", "Wi-Fi host": "Хост Wi-Fi", "Wi-Fi port": "Порт Wi-Fi",
+        "USB baudrate": "Скорость USB", "BLE TX UUID": "UUID BLE TX", "BLE RX UUID": "UUID BLE RX",
+        "Connect": "Подключить", "Disconnect": "Отключить", "Reconnect": "Переподключить",
+        "Read VIN": "Считать VIN", "Read DTCs": "Считать DTC", "Read Live Data": "Считать текущие данные", "Device result": "Результат устройства",
+        "Refresh network map": "Обновить карту сети", "Active read-only probe": "Активная проверка (только чтение)",
+        "PASSIVE / INFERRED NETWORK": "ПАССИВНАЯ / ПРЕДПОЛАГАЕМАЯ СЕТЬ", "ACTIVE CORRELATION": "АКТИВНАЯ КОРРЕЛЯЦИЯ",
+        "No discovered ECU candidates yet.": "Кандидаты ЭБУ ещё не обнаружены.",
+        "Application": "Приложение", "Settings…": "Настройки…", "Exit": "Выход", "Help": "Справка", "About": "О программе",
+        "Application settings": "Настройки приложения", "Language": "Язык", "Theme": "Тема", "Dark": "Тёмная", "Light": "Светлая",
+        "Save": "Сохранить", "Cancel": "Отмена", "Ready": "Готово", "Error": "Ошибка",
+        "Select a vehicle to delete.": "Выберите автомобиль для удаления.",
+        "Selected vehicle is no longer available.": "Выбранный автомобиль больше недоступен.",
+        "Delete vehicle": "Удалить автомобиль", "Delete": "Удалить", "from local vehicle profiles?": "из локальных профилей автомобилей?",
+        "Existing diagnostic sessions are not deleted.": "Существующие диагностические сеансы не удаляются.",
+        "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Введите адрес Wi-Fi OBD-адаптера, например 192.168.0.10.",
+        "Select a VCI/device first.": "Сначала выберите VCI/устройство.", "Device connected": "Устройство подключено",
+        "Device disconnected": "Устройство отключено", "Device reconnected": "Устройство переподключено",
+        "No active session.": "Нет активного сеанса.", "Select a diagnostic test first.": "Сначала выберите диагностический тест.",
+        "Backend is offline. Start the FastAPI backend first.": "Сервер недоступен. Сначала запустите FastAPI backend.",
+        "Enter a symptom, observation or DTC.": "Введите симптом, наблюдение или DTC.",
+        "Create a diagnostic session first.": "Сначала создайте диагностический сеанс.",
+        "AI is analyzing live vehicle data...": "ИИ анализирует текущие данные автомобиля...",
+        "Diagnostic session created": "Диагностический сеанс создан", "Diagnostic reasoning updated": "Диагностический анализ обновлён",
+        "Telemetry analysis completed": "Анализ телеметрии завершён", "Network map refreshed": "Карта сети обновлена",
+        "Active read-only ECU probe completed": "Активная проверка ЭБУ завершена", "Live-data AI analysis completed": "ИИ-анализ текущих данных завершён",
+        "Vehicle deleted:": "Автомобиль удалён:", "Backend online": "Сервер доступен", "Backend offline": "Сервер недоступен",
+        "ONLINE": "В СЕТИ", "OFFLINE": "НЕ В СЕТИ", "RUNNING": "РАБОТАЕТ", "Unknown": "Неизвестно",
+        "AI: checking...": "ИИ: проверка...", "AI: unavailable": "ИИ: недоступен", "AI: READY": "ИИ: ГОТОВ",
+        "AI: OFFLINE": "ИИ: НЕ В СЕТИ", "No active session": "Нет активного сеанса", "Risk": "Риск", "Purpose": "Цель",
+        "Make:": "Марка:", "Model:": "Модель:", "Chassis:": "Кузов:", "Year:": "Год:", "Engine:": "Двигатель:", "Fuel:": "Топливо:", "ECU:": "ЭБУ:",
+        "ID:": "ID:", "Manufacturer:": "Производитель:", "Connection:": "Подключение:", "Protocol:": "Протокол:", "Status:": "Статус:",
+        "Firmware:": "Прошивка:", "Capabilities:": "Возможности:", "Metadata:": "Метаданные:", "VIN:": "VIN:",
+        "Not available": "Недоступно", "No stored generic OBD-II DTCs": "Нет сохранённых стандартных OBD-II DTC",
+        "DTCs:": "Коды неисправностей:", "Provider:": "Провайдер:", "Model:": "Модель:", "Available:": "Доступен:",
+        "No AI result.": "Нет результата ИИ.", "Provider error:": "Ошибка провайдера:",
+        "Session": "Сеанс", "Risk": "Риск", "Purpose": "Цель",
+    },
+    "hy": {
+        "AI Auto Diagnostic Workstation": "Ավտոմեքենաների AI ախտորոշման աշխատակայան", "Evidence-driven automotive diagnostics.": "Ապացույցների վրա հիմնված ախտորոշում։", "Settings saved": "Կարգավորումները պահպանվել են",
+        "Add Vehicle": "Ավելացնել մեքենա", "OK": "Լավ", "Make": "Արտադրող", "Model": "Մոդել",
+        "Chassis": "Թափք", "Year": "Տարի", "Engine": "Շարժիչ", "Fuel": "Վառելիք", "ECU": "ԷԿՀ",
+        "Dashboard": "Գլխավոր", "Vehicles": "Մեքենաներ", "VCI / Devices": "VCI / Սարքեր",
+        "Diagnostic": "Ախտորոշում", "Live Data": "Ընթացիկ տվյալներ", "ECU Network": "ԷԿՀ ցանց", "Tests": "Թեստեր",
+        "Backend": "Սերվեր", "Vehicle": "Մեքենա", "Session": "Սեսիա", "ECUs": "ԷԿՀ-ներ",
+        "Diagnostic workflow": "Ախտորոշման ընթացք",
+        "Evidence → Reasoning → Next Test → Result → Re-analysis": "Տվյալներ → Վերլուծություն → Հաջորդ թեստ → Արդյունք → Կրկնակի վերլուծություն",
+        "LLM explains and orchestrates; deterministic rules and measured evidence remain authoritative.": "LLM-ը բացատրում և համակարգում է, իսկ կանոններն ու չափված տվյալները մնում են հիմնական ապացույցը։",
+        "Refresh status": "Թարմացնել կարգավիճակը", "+ Add vehicle": "+ Ավելացնել մեքենա", "Delete selected": "Ջնջել ընտրվածը",
+        "No active session": "Ակտիվ սեսիա չկա", "New session": "Նոր սեսիա",
+        "Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal.": "Նկարագրեք ախտանիշը։ Օրինակ՝ LPG-ով արագացնելիս շարժիչը դողում է 2000 RPM-ից ցածր, բենզինով՝ նորմալ։",
+        "Symptoms / observations": "Ախտանիշներ / դիտարկումներ", "DTC": "Սխալի կոդ (DTC)",
+        "Add evidence + Analyze": "Ավելացնել տվյալներ և վերլուծել", "Analysis": "Վերլուծություն", "Evidence": "Ապացույցներ", "Hypotheses": "Վարկածներ", "Missing info": "Բացակայող տվյալներ",
+        "No evidence yet.": "Դեռ տվյալներ չկան։", "No hypotheses yet.": "Դեռ վարկածներ չկան։",
+        "No high-value missing information identified.": "Կարևոր բացակայող տեղեկություն չի հայտնաբերվել։",
+        "Session state:": "Սեսիայի վիճակ՝", "Current diagnostic interpretation:": "Ընթացիկ ախտորոշիչ մեկնաբանություն՝",
+        "No diagnostic hypotheses generated yet.": "Ախտորոշիչ վարկածներ դեռ չեն ստեղծվել։",
+        "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence.": "Կարևոր է․ վարկածները մասի խափանման հաստատում չեն։ Հաստատման համար անհրաժեշտ են չափումներ կամ թեստի արդյունքներ։",
+        "Stopped": "Կանգնեցված է", "Start simulator": "Գործարկել սիմուլյատորը", "Stop": "Կանգնեցնել",
+        "Analyze telemetry": "Վերլուծել հեռաչափությունը", "AI Analyze Live Data": "AI վերլուծել ընթացիկ տվյալները",
+        "PID / Channel": "PID / ալիք", "Count": "Քանակ", "Min": "Նվազագույն", "Max": "Առավելագույն", "Mean": "Միջին", "Events": "Իրադարձություններ",
+        "AI live-data interpretation will appear here...": "Այստեղ կհայտնվի ընթացիկ տվյալների AI մեկնաբանությունը...",
+        "Technician notes / measurements": "Տեխնիկի նշումներ / չափումներ", "Record selected result": "Գրանցել արդյունքը",
+        "PASS": "Անցավ", "FAIL": "Չանցավ", "INCOMPLETE": "Անորոշ",
+        "VCI / Adapter Connection": "VCI / ադապտերի միացում",
+        "Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here.": "Գտեք USB/BLE ադապտերներ կամ միացեք Wi-Fi OBD-ին։ Կառավարման բլոկների գրանցումն ու ծրագրավորումն այստեղ հասանելի չեն։",
+        "Scan USB": "Փնտրել USB", "Scan BLE": "Փնտրել BLE", "Add Simulator": "Ավելացնել սիմուլյատոր", "Probe Wi-Fi": "Ստուգել Wi-Fi",
+        "Selected device": "Ընտրված սարք", "Wi-Fi host": "Wi-Fi հասցե", "Wi-Fi port": "Wi-Fi պորտ",
+        "USB baudrate": "USB արագություն", "BLE TX UUID": "BLE TX UUID", "BLE RX UUID": "BLE RX UUID",
+        "Connect": "Միացնել", "Disconnect": "Անջատել", "Reconnect": "Կրկին միացնել",
+        "Read VIN": "Կարդալ VIN", "Read DTCs": "Կարդալ DTC-ները", "Read Live Data": "Կարդալ ընթացիկ տվյալները", "Device result": "Սարքի արդյունք",
+        "Refresh network map": "Թարմացնել ցանցի քարտեզը", "Active read-only probe": "Ակտիվ ստուգում (միայն ընթերցում)",
+        "PASSIVE / INFERRED NETWORK": "ՊԱՍԻՎ / ԵՆԹԱԴՐՎՈՂ ՑԱՆՑ", "ACTIVE CORRELATION": "ԱԿՏԻՎ ՀԱՄԱԴՐՈՒՄ",
+        "No discovered ECU candidates yet.": "ԷԿՀ-ի հնարավոր թեկնածուներ դեռ չեն հայտնաբերվել։",
+        "Application": "Հավելված", "Settings…": "Կարգավորումներ…", "Exit": "Ելք", "Help": "Օգնություն", "About": "Մասին",
+        "Application settings": "Հավելվածի կարգավորումներ", "Language": "Լեզու", "Theme": "Թեմա", "Dark": "Մուգ", "Light": "Բաց",
+        "Save": "Պահպանել", "Cancel": "Չեղարկել", "Ready": "Պատրաստ է", "Error": "Սխալ",
+        "Select a vehicle to delete.": "Ընտրեք ջնջվող մեքենան։",
+        "Selected vehicle is no longer available.": "Ընտրված մեքենան այլևս հասանելի չէ։",
+        "Delete vehicle": "Ջնջել մեքենան", "Delete": "Ջնջել", "from local vehicle profiles?": "տեղական մեքենաների պրոֆիլներից՞",
+        "Existing diagnostic sessions are not deleted.": "Գոյություն ունեցող ախտորոշիչ սեսիաները չեն ջնջվի։",
+        "Enter the Wi-Fi OBD adapter host, for example 192.168.0.10.": "Մուտքագրեք Wi-Fi OBD ադապտերի հասցեն, օրինակ՝ 192.168.0.10։",
+        "Select a VCI/device first.": "Նախ ընտրեք VCI/սարքը։", "Device connected": "Սարքը միացված է",
+        "Device disconnected": "Սարքն անջատված է", "Device reconnected": "Սարքը կրկին միացված է",
+        "No active session.": "Ակտիվ սեսիա չկա։", "Select a diagnostic test first.": "Նախ ընտրեք ախտորոշիչ թեստը։",
+        "Backend is offline. Start the FastAPI backend first.": "Սերվերն անհասանելի է։ Նախ գործարկեք FastAPI backend-ը։",
+        "Enter a symptom, observation or DTC.": "Մուտքագրեք ախտանիշ, դիտարկում կամ DTC։",
+        "Create a diagnostic session first.": "Նախ ստեղծեք ախտորոշիչ սեսիա։",
+        "AI is analyzing live vehicle data...": "AI-ն վերլուծում է մեքենայի ընթացիկ տվյալները...",
+        "Diagnostic session created": "Ախտորոշիչ սեսիան ստեղծվել է", "Diagnostic reasoning updated": "Ախտորոշիչ վերլուծությունը թարմացվել է",
+        "Telemetry analysis completed": "Հեռաչափության վերլուծությունն ավարտվել է", "Network map refreshed": "Ցանցի քարտեզը թարմացվել է",
+        "Active read-only ECU probe completed": "ԷԿՀ-ի ակտիվ ստուգումն ավարտվել է", "Live-data AI analysis completed": "Ընթացիկ տվյալների AI վերլուծությունն ավարտվել է",
+        "Vehicle deleted:": "Մեքենան ջնջվել է՝", "Backend online": "Սերվերը հասանելի է", "Backend offline": "Սերվերն անհասանելի է",
+        "ONLINE": "ՀԱՍԱՆԵԼԻ", "OFFLINE": "ԱՆՀԱՍԱՆԵԼԻ", "RUNNING": "ԱՇԽԱՏՈՒՄ Է", "Unknown": "Անհայտ",
+        "AI: checking...": "AI՝ ստուգվում է...", "AI: unavailable": "AI-ն հասանելի չէ", "AI: READY": "AI՝ ՊԱՏՐԱՍՏ",
+        "AI: OFFLINE": "AI՝ ԱՆՀԱՍԱՆԵԼԻ", "Risk": "Ռիսկ", "Purpose": "Նպատակ",
+        "Make:": "Արտադրող՝", "Model:": "Մոդել՝", "Chassis:": "Թափք՝", "Year:": "Տարի՝", "Engine:": "Շարժիչ՝", "Fuel:": "Վառելիք՝", "ECU:": "ԷԿՀ՝",
+        "ID:": "ID:", "Manufacturer:": "Արտադրող՝", "Connection:": "Միացում՝", "Protocol:": "Արձանագրություն՝", "Status:": "Կարգավիճակ՝",
+        "Firmware:": "Ծրագրային ապահովում՝", "Capabilities:": "Հնարավորություններ՝", "Metadata:": "Մետատվյալներ՝", "VIN:": "VIN:",
+        "Not available": "Հասանելի չէ", "No stored generic OBD-II DTCs": "Պահված ստանդարտ OBD-II DTC-ներ չկան",
+        "DTCs:": "Սխալի կոդեր՝", "Provider:": "Մատակարար՝", "Available:": "Հասանելի է՝",
+        "No AI result.": "AI արդյունք չկա։", "Provider error:": "Մատակարարի սխալ՝",
+    }
+}
+
+
+def _translate_ui_text(text: str, language: str) -> str:
+    if not isinstance(text, str):
+        return text
+    # Normalize all known translations back to English first, including phrases
+    # inside dynamic status messages and multiline diagnostic summaries.
+    canonical = text
+    for translations in _UI_TRANSLATIONS.values():
+        for source, translated in sorted(translations.items(), key=lambda item: len(item[1]), reverse=True):
+            canonical = re.sub(r"(?<!\w)" + re.escape(translated) + r"(?!\w)", source, canonical)
+    if language == "en":
+        return canonical
+    translations = _UI_TRANSLATIONS.get(language, {})
+    for source in sorted(translations, key=len, reverse=True):
+        canonical = re.sub(r"(?<!\w)" + re.escape(source) + r"(?!\w)", translations[source], canonical)
+    return canonical
+
+
+
+def _translate_ui_block(text: str, language: str) -> str:
+    """Translate UI labels/static messages without rewriting vehicle or ECU values."""
+    if not isinstance(text, str):
+        return text
+    return "\n".join(_translate_known_ui_line(line, language) for line in text.splitlines())
+
+
+def _translate_known_ui_line(line: str, language: str) -> str:
+    bullet = ""
+    body = line
+    if body.startswith("• "):
+        bullet, body = "• ", body[2:]
+    all_maps = list(_UI_TRANSLATIONS.values())
+    known = any(body == key or body == value for mapping in all_maps for key, value in mapping.items())
+    if known:
+        return bullet + _translate_ui_text(body, language)
+    label_keys = (
+        "Current diagnostic interpretation:", "Session state:", "Important:",
+        "Manufacturer:", "Capabilities:", "Connection:", "Protocol:", "Metadata:",
+        "Provider:", "Available:", "Firmware:", "Chassis:", "Engine:", "Status:",
+        "DTCs:", "Make:", "Model:", "Year:", "Fuel:", "ECU:", "VIN:", "ID:",
+    )
+    translated = body
+    # Normalize translated labels back to their English keys before applying the
+    # selected language, allowing RU ↔ HY ↔ EN switching without touching values.
+    for label in sorted(label_keys, key=len, reverse=True):
+        for mapping in all_maps:
+            localized = mapping.get(label)
+            if localized and localized != label:
+                translated = re.sub(r"(?<!\w)" + re.escape(localized), label, translated)
+    for label in sorted(label_keys, key=len, reverse=True):
+        translated = re.sub(
+            r"(?<!\w)" + re.escape(label),
+            _translate_ui_text(label, language),
+            translated,
+        )
+    return bullet + translated
+
+
 class Worker(QThread):
     finished_ok = Signal(object)
     failed = Signal(str)

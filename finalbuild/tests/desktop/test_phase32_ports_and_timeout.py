@@ -34,3 +34,24 @@ def test_phase32_custom_backend_port_updates_default_url(monkeypatch):
         assert DiagnosticApiClient().base_url == reloaded.BACKEND_URL
 
     importlib.reload(desktop_main)
+
+
+def test_local_backend_url_port_is_used_by_launcher(monkeypatch):
+    with monkeypatch.context() as env:
+        env.setenv("AI_CAR_BACKEND_URL", "http://127.0.0.1:8123")
+        env.delenv("AI_CAR_BACKEND_PORT", raising=False)
+        reloaded = importlib.reload(desktop_main)
+        assert reloaded.LOCAL_BACKEND is True
+        assert reloaded.PORT == 8123
+        assert reloaded.HEALTH_URL == "http://127.0.0.1:8123/health"
+        assert DiagnosticApiClient().base_url == reloaded.BACKEND_URL
+    importlib.reload(desktop_main)
+
+
+def test_fake_localhost_prefix_is_not_treated_as_local(monkeypatch):
+    with monkeypatch.context() as env:
+        env.setenv("AI_CAR_BACKEND_URL", "http://localhost.attacker.example:8123")
+        env.delenv("AI_CAR_BACKEND_PORT", raising=False)
+        reloaded = importlib.reload(desktop_main)
+        assert reloaded.LOCAL_BACKEND is False
+    importlib.reload(desktop_main)

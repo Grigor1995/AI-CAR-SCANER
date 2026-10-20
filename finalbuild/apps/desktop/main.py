@@ -361,7 +361,10 @@ def run() -> None:
     # Only supervise the FastAPI child created by this launcher. Remote APIs
     # and an already-running externally owned local API are not restarted.
     if LOCAL_BACKEND and os.environ.get("AI_CAR_BACKEND_AUTO_RECOVER", "1").lower() in {"1", "true", "yes"}:
-        from .backend_recovery import BackendRecoverySupervisor
+        try:
+            from .backend_recovery import BackendRecoverySupervisor
+        except ImportError:
+            from apps.desktop.backend_recovery import BackendRecoverySupervisor
         backend_recovery = BackendRecoverySupervisor(
             process=lambda: _backend_process,
             restart=start_backend,

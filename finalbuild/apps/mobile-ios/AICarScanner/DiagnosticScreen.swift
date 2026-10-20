@@ -115,6 +115,7 @@ struct DiagnosticScreen: View {
     private var vehicleView:some View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.vehicle).font(.title3.bold())
+            VehicleModelArtwork(make: make, model: model, chassis: chassis)
             if viewModel.catalog.isEmpty {
                 Text(t.tr(
                     "Offline catalog: options may differ from the server catalog.",

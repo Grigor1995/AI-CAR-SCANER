@@ -369,6 +369,9 @@ def run() -> None:
             process=lambda: _backend_process,
             restart=start_backend,
             healthy=_backend_healthy,
+            # An initial import/missing-module failure may clear the child
+            # before the GUI appears. Retry it without blocking Qt startup.
+            allow_initial_retry=backend_error is not None,
         )
         backend_recovery.start()
 
@@ -393,7 +396,8 @@ def run() -> None:
         stop_llama_server()
         trace_shutdown("backend/LLM cleanup complete")
 
-    if backend_error:
+    if backend_error and not _backend_healthy():
+        # A recovered initial failure is not an EXE shutdown failure.
         raise SystemExit(1)
 
 

@@ -90,3 +90,47 @@ def test_healthy_external_backend_prevents_duplicate_start():
     )
     assert monitor.check_once() == "external"
     assert calls == []
+
+
+def test_invalid_config_is_rejected():
+    import pytest
+    with pytest.raises(ValueError):
+        BackendRecoverySupervisor(
+            process=lambda: None,
+            restart=lambda: None,
+            healthy=lambda: False,
+            poll_seconds=0,
+        )
+
+
+def test_expired_attempt_window_allows_future_recovery(monkeypatch):
+    import apps.desktop.backend_recovery as recovery
+    time_source = [100.0]
+    monkeypatch.setattr(recovery.time, "monotonic", lambda: time_source[0])
+    dead = SimpleNamespace(poll=lambda: 1)
+    restart_calls = []
+    monitor = BackendRecoverySupervisor(
+        process=lambda: dead,
+        restart=lambda: restart_calls.append(1),
+        healthy=lambda: False,
+        poll_seconds=1, max_restarts=1, window_seconds=10,
+    )
+    assert monitor.check_once() == "failed"
+    time_source[0] += 12
+    assert monitor.check_once() == "failed"
+    assert len(restart_calls) == 2
+
+
+def test_owned_process_monitor_starts_and_stops_cleanly():
+    own = SimpleNamespace(poll=lambda: None)
+    monitor = BackendRecoverySupervisor(
+        process=lambda: own,
+        restart=lambda: (_ for _ in ()).throw(AssertionError("unexpected restart")),
+        healthy=lambda: True,
+        poll_seconds=0.01,
+    )
+    monitor.start()
+    assert monitor._thread is not None
+    monitor.stop()
+    assert monitor.check_once() == "stopped"
+    assert not monitor._thread.is_alive()

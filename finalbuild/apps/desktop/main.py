@@ -239,6 +239,10 @@ def _backend_log_path() -> Path:
 
 def start_backend() -> subprocess.Popen[bytes] | None:
     global _backend_process, _backend_log
+    # A previous child may have crashed after a successful startup.
+    if _backend_process is not None and _backend_process.poll() is not None:
+        _backend_process = None
+        _close_backend_log()
     if not LOCAL_BACKEND:
         # The default is the shared cloud API. Do not spawn an unused local API
         # process when Desktop is configured for Render or another remote host.
@@ -341,6 +345,7 @@ def run() -> None:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
+    backend_recovery = None
     if LOCAL_BACKEND:
         try:
             start_llama_server(wait_for_ready=False)
@@ -352,6 +357,17 @@ def run() -> None:
     except Exception as exc:
         backend_error = str(exc)
         print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
+
+    # Only supervise the FastAPI child created by this launcher. Remote APIs
+    # and an already-running externally owned local API are not restarted.
+    if LOCAL_BACKEND and os.environ.get("AI_CAR_BACKEND_AUTO_RECOVER", "1").lower() in {"1", "true", "yes"}:
+        from .backend_recovery import BackendRecoverySupervisor
+        backend_recovery = BackendRecoverySupervisor(
+            process=lambda: _backend_process,
+            restart=start_backend,
+            healthy=_backend_healthy,
+        )
+        backend_recovery.start()
 
     def trace_shutdown(stage: str) -> None:
         path = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
@@ -368,6 +384,8 @@ def run() -> None:
         trace_shutdown("ui.run returned")
     finally:
         trace_shutdown("starting backend/LLM cleanup")
+        if backend_recovery is not None:
+            backend_recovery.stop()
         stop_backend()
         stop_llama_server()
         trace_shutdown("backend/LLM cleanup complete")

@@ -827,6 +827,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
         self.statusBar().showMessage("Ready")
         self.refresh_all()
+        # Periodically re-check FastAPI connectivity. This is safe for both
+        # local auto-restarted FastAPI and a temporarily unavailable remote API.
+        self._health_pending = False
+        self._health_timer = QTimer(self)
+        self._health_timer.setInterval(12000)
+        self._health_timer.timeout.connect(self.refresh_health)
+        self._health_timer.start()
 
     def _apply_theme(self) -> None:
         self.setStyleSheet(APP_QSS if self.dark_theme else APP_QSS_LIGHT)
@@ -971,6 +978,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         _trace_shutdown(f"closeEvent: active_workers={len(self._workers)}")
+        if hasattr(self, "_health_timer"):
+            self._health_timer.stop()
         if self._workers:
             if not self._closing:
                 self._closing = True
@@ -995,8 +1004,30 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, self.tr_text("Error"), translated)
         self.statusBar().showMessage(translated)
     def refresh_health(self):
-        def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage("Backend online" if self.online else "Backend offline"); self.refresh_pages()
-        self.run_worker(self.api.health,done)
+        if getattr(self, "_health_pending", False) or self._closing:
+            return
+        self._health_pending = True
+
+        def work():
+            try:
+                return self.api.health()
+            except Exception as exc:
+                # A transient network outage must not repeatedly open modal
+                # error windows or leave the UI permanently offline.
+                return {"status": "offline", "_error": str(exc)}
+
+        def done(data):
+            self._health_pending = False
+            previously_online = self.online
+            self.online = data.get("status") == "ok"
+            self.statusBar().showMessage(
+                "Backend recovered" if self.online and not previously_online
+                else "Backend online" if self.online
+                else "Backend offline – retrying automatically"
+            )
+            self.refresh_pages()
+
+        self.run_worker(work, done)
     def refresh_all(self): self.refresh_health(); self.refresh_devices(); self.refresh_pages()
     def refresh_pages(self):
         for p in self.pages:

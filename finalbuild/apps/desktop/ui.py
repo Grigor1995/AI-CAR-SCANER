@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from .api_client import DiagnosticApiClient, ApiError
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
+from .vehicle_artwork import vehicle_pixmap
 
 APP_QSS = """
 QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size: 13px; }
@@ -357,6 +358,11 @@ class VehicleDialog(QDialog):
         self._catalog = list(merged.values())
 
         form = QFormLayout(self)
+        self.artwork_preview = QLabel()
+        self.artwork_preview.setObjectName("vehicleArtworkPreview")
+        self.artwork_preview.setMinimumHeight(140)
+        self.artwork_preview.setAlignment(Qt.AlignCenter)
+        form.addRow(self.artwork_preview)
         if not self._catalog_from_server:
             language = getattr(parent, "language", "en")
             fallback_notice = {
@@ -390,12 +396,20 @@ class VehicleDialog(QDialog):
         self.engine.currentTextChanged.connect(self._refresh_ecus)
 
         self._refresh_makes()
+        for combo in (self.make, self.model, self.chassis):
+            combo.currentTextChanged.connect(self._update_artwork_preview)
+        self._update_artwork_preview()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText(_translate_ui_text("OK", language))
         buttons.button(QDialogButtonBox.Cancel).setText(_translate_ui_text("Cancel", language))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)
+
+    def _update_artwork_preview(self, *_args: Any) -> None:
+        self.artwork_preview.setPixmap(vehicle_pixmap(
+            self.make.currentText(), self.model.currentText(), self.chassis.currentText(), 270, 144
+        ))
 
     def _items(self, **filters: Any) -> list[dict[str, Any]]:
         rows = self._catalog
@@ -492,11 +506,11 @@ class DashboardPage(QWidget):
         subtitle.setObjectName("heroSubtitle")
         branding.addWidget(subtitle)
         banner.addLayout(branding, 1)
-        artwork=_resource_path("assets/AI-Car-Scanner-mobile.png")
-        if artwork.is_file():
-            visual=QLabel()
-            visual.setPixmap(QIcon(str(artwork)).pixmap(125, 95))
-            banner.addWidget(visual)
+        self.model_artwork = QLabel()
+        self.model_artwork.setObjectName("dashboardVehicleArtwork")
+        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork.setPixmap(vehicle_pixmap("", "", "", 220, 108))
+        banner.addWidget(self.model_artwork)
         lay.addLayout(banner)
         title=QLabel("AI Auto Diagnostic Workstation"); title.setObjectName("title"); lay.addWidget(title)
         cards=QGridLayout(); self.backend=MetricCard("Backend", "OFFLINE"); self.vehicle=MetricCard("Vehicle", "—"); self.session=MetricCard("Session", "—"); self.ecus=MetricCard("ECUs", "—")
@@ -506,6 +520,11 @@ class DashboardPage(QWidget):
         self.refresh_btn=QPushButton("Refresh status"); self.refresh_btn.clicked.connect(app.refresh_all); lay.addWidget(self.refresh_btn, alignment=Qt.AlignLeft); lay.addStretch()
     def refresh(self):
         self.backend.set_value("ONLINE" if self.app.online else "OFFLINE")
+        selected = self.app.active_vehicle or (self.app.vehicles[0] if self.app.vehicles else None)
+        if selected is not None:
+            self.model_artwork.setPixmap(vehicle_pixmap(
+                selected.make, selected.model, selected.chassis, 220, 108
+            ))
         self.vehicle.set_value(f"{self.app.active_vehicle.make} {self.app.active_vehicle.model}" if self.app.active_vehicle else "—")
         self.session.set_value(self.app.session.session_id[:8] if self.app.session else "—")
         self.ecus.set_value(str(len(self.app.network.get("ecus", []))) if self.app.network else "—")
@@ -514,6 +533,10 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); bar.addStretch(); lay.addLayout(bar)
+        self.model_artwork = QLabel()
+        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork.setMaximumHeight(185)
+        lay.addWidget(self.model_artwork)
         split=QSplitter(); self.list=QListWidget(); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
         self.list.itemSelectionChanged.connect(self.show_selected)
     def refresh(self):
@@ -527,12 +550,14 @@ class VehiclesPage(QWidget):
             self.list.setCurrentRow(0)
         else:
             self.details.clear()
+            self.model_artwork.clear()
     def show_selected(self):
         items=self.list.selectedItems()
         self.delete_btn.setEnabled(bool(items))
         if not items: return
         v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
     def show_vehicle(self,v:Vehicle):
+        self.model_artwork.setPixmap(vehicle_pixmap(v.make, v.model, v.chassis, 340, 175))
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
 class DiagnosticPage(QWidget):

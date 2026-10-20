@@ -74,7 +74,6 @@ def probe(mode: str, exe: Path | None, timeout: float) -> dict:
     env = os.environ.copy()
     env.pop("DATABASE_URL", None)  # Never connect to a developer's real DB.
     env["AI_CAR_DISABLE_LLM_AUTOSTART"] = "1"
-    env["DIAGNOSTIC_LLM_PROVIDER"] = "none"
     env["AI_CAR_BACKEND_HOST"] = "127.0.0.1"
     env["AI_CAR_BACKEND_PORT"] = str(port)
     env["NO_PROXY"] = "127.0.0.1,localhost"

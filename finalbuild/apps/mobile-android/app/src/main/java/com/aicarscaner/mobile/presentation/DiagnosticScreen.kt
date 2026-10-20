@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.webkit.WebView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -60,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -543,6 +546,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                    VehicleModelArtwork(make, model, chassis)
                     VehicleFields(
                         text = text,
                         catalog = state.vehicleCatalog,
@@ -647,6 +651,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     ) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(text.session, style = MaterialTheme.typography.labelLarge)
+                            VehicleModelArtwork(
+                                make = session.vehicle?.make ?: make,
+                                model = session.vehicle?.model ?: model,
+                                chassis = session.vehicle?.chassis ?: chassis
+                            )
                             Text(session.vehicle?.let { "${it.make} ${it.model}${if (it.chassis.isNullOrBlank()) "" else " / ${it.chassis}"}" } ?: extra.vehicleNotIdentified)
                             Text("${extra.state}: ${localizedState(appSettings.language, session.state)}", style = MaterialTheme.typography.bodySmall)
                         }
@@ -1805,6 +1814,50 @@ private fun SettingsDialog(
             confirmButton = {
                 TextButton(onClick = onClose) { Text(text.close) }
             }
+        )
+    }
+}
+
+
+/** Offline illustrations are tied to make/model/chassis, not generic brand logos.
+ * WebView only loads application-bundled assets: no JavaScript, no network.
+ * An unfamiliar model falls back to the existing branded app icon.
+ */
+@Composable
+private fun VehicleModelArtwork(make: String, model: String, chassis: String) {
+    fun keyPart(value: String): String = value.lowercase()
+        .replace(Regex("[^a-z0-9]+"), "-").trim('-')
+    val file = "vehicle_models/" +
+        listOf(make, model, chassis).joinToString("_", transform = ::keyPart) + ".svg"
+    val context = LocalContext.current
+    val exists = remember(file) {
+        runCatching { context.assets.open(file).use { it.read() } }.isSuccess
+    }
+    if (exists) {
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    settings.javaScriptEnabled = false
+                    settings.domStorageEnabled = false
+                    settings.allowContentAccess = false
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    setBackgroundColor(android.graphics.Color.rgb(8, 27, 56))
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(170.dp),
+            update = { webView ->
+                if (webView.tag != file) {
+                    webView.tag = file
+                    webView.loadUrl("file:///android_asset/$file")
+                }
+            }
+        )
+    } else {
+        Image(
+            painter = painterResource(id = R.drawable.app_icon),
+            contentDescription = "$make $model $chassis",
+            modifier = Modifier.fillMaxWidth().height(145.dp)
         )
     }
 }

@@ -48,8 +48,19 @@ def is_our_backend(url: str) -> bool:
         return False
 
 
-def terminate_owned_process(process: subprocess.Popen, timeout: int = 10) -> None:
+def terminate_owned_process(
+    process: subprocess.Popen, timeout: int = 10, frozen: bool = False
+) -> None:
     if process.poll() is not None:
+        return
+    if frozen and sys.platform == "win32":
+        # PyInstaller onefile bootloader owns a second child process. Kill the
+        # precise launched PID and its children so no backend is left behind.
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            check=False, capture_output=True, timeout=20,
+        )
+        process.wait(timeout=10)
         return
     process.terminate()
     try:
@@ -118,7 +129,7 @@ def probe(mode: str, exe: Path | None, timeout: float) -> dict:
                     time.sleep(0.5)
             finally:
                 # Stop ONLY the process launched by this test, not an existing API.
-                terminate_owned_process(process)
+                terminate_owned_process(process, frozen=mode == "frozen")
     report = {
         "mode": mode,
         "status": "PASS" if healthy else "FAIL",

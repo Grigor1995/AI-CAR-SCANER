@@ -784,7 +784,7 @@ def test_vehicle_dialog_falls_back_when_offline_catalog_is_unreadable(qapp, monk
     assert dialog.make.currentText() == "Mercedes-Benz"
     assert dialog.model.currentText() == "E-Class"
     assert dialog.chassis.currentText() == "W211"
-    assert "Օֆլայն կատալոգ" in dialog.findChildren(ui.QLabel)[0].text()
+    assert any("Օֆլայն կատալոգ" in label.text() for label in dialog.findChildren(ui.QLabel))
     dialog.close()
 
 

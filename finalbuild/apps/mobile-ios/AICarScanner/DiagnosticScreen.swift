@@ -36,21 +36,65 @@ struct DiagnosticScreen: View {
             ScrollView {
                 VStack(alignment:.leading,spacing:12) {
                     HStack {
-                        VStack(alignment:.leading) {
-                            Text("AI CAR SCANER").font(.title2.bold())
-                            if let id=viewModel.session?.session_id { Text("Session \(id.prefix(8))…").font(.caption).foregroundStyle(.secondary) }
+                        Image(systemName:"car.side.fill")
+                            .font(.system(size:28,weight:.bold))
+                            .foregroundStyle(AutomotivePalette.cyan)
+                            .accessibilityHidden(true)
+                        VStack(alignment:.leading,spacing:3) {
+                            Text("AI CAR SCANNER")
+                                .font(.title2.weight(.heavy))
+                                .foregroundStyle(viewModel.settings.darkTheme ? .white : AutomotivePalette.navy)
+                            Text("SMART DIAGNOSTICS • AI ANALYSIS")
+                                .font(.system(size:9,weight:.bold))
+                                .tracking(1.1)
+                                .foregroundStyle(AutomotivePalette.electricBlue)
+                            if let id=viewModel.session?.session_id {
+                                Text("Session \(id.prefix(8))…").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                         Spacer()
                         Button("⚙"){settingsOpen=true}
                         if viewModel.session != nil { Button("＋"){newSessionOpen=true} }
                     }
-                    Picker("",selection:$tab){
-                        Text(t.vehicle).tag(0);Text(t.inputs).tag(1);Text(t.analysis).tag(2);Text(t.obd).tag(3);Text(t.activity).tag(4)
-                    }.pickerStyle(.segmented)
+                    ScrollView(.horizontal, showsIndicators:false) {
+                        HStack(spacing:8) {
+                            ForEach(0..<5, id:\.self) { index in
+                                let titles = [t.vehicle, t.inputs, t.analysis, t.obd, t.activity]
+                                let symbols = ["car.side.fill", "exclamationmark.bubble.fill",
+                                               "brain.head.profile", "waveform.path.ecg",
+                                               "clock.arrow.circlepath"]
+                                Button {
+                                    tab = index
+                                } label: {
+                                    Label(titles[index], systemImage:symbols[index])
+                                        .font(.subheadline.weight(.semibold))
+                                        .lineLimit(1)
+                                        .padding(.horizontal,13)
+                                        .padding(.vertical,11)
+                                        .foregroundStyle(tab == index ? Color.white :
+                                            (viewModel.settings.darkTheme ? Color.white.opacity(0.82) :
+                                             AutomotivePalette.navy))
+                                        .background(
+                                            RoundedRectangle(cornerRadius:12)
+                                                .fill(tab == index ? AutomotivePalette.electricBlue :
+                                                      (viewModel.settings.darkTheme ?
+                                                       AutomotivePalette.panel : Color.white))
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius:12)
+                                                .strokeBorder(AutomotivePalette.electricBlue.opacity(tab == index ? 0.95 : 0.38))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
 
                     if tab==0 { vehicleView } else if tab==1 { inputsView } else if tab==2 { analysisView } else if tab==3 { obdView } else { activityView }
                 }.padding(16)
             }
+            .background(AutomotivePalette.background(dark:viewModel.settings.darkTheme).ignoresSafeArea())
+            .tint(AutomotivePalette.electricBlue)
             .overlay{if viewModel.loading{ProgressView().scaleEffect(1.3)}}
             .alert(t.newSession,isPresented:$newSessionOpen){
                 Button(t.cancel,role:.cancel){}
@@ -71,6 +115,7 @@ struct DiagnosticScreen: View {
     private var vehicleView:some View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.vehicle).font(.title3.bold())
+            VehicleModelArtwork(make: make, model: model, chassis: chassis)
             if viewModel.catalog.isEmpty {
                 Text(t.tr(
                     "Offline catalog: options may differ from the server catalog.",
@@ -158,19 +203,19 @@ struct DiagnosticScreen: View {
 private struct PickerField:View{
     let title:String;@Binding var value:String;let options:[String]
     init(_ title:String,_ value:Binding<String>,_ options:[String]){self.title=title;self._value=value;self.options=options}
-    var body:some View{Menu{ForEach(options,id:\.self){x in Button(x){value=x}}}label:{HStack{Text(title).foregroundStyle(.secondary);Spacer();Text(value);Image(systemName:"chevron.up.chevron.down").font(.caption)}.padding(12).background(RoundedRectangle(cornerRadius:12).fill(Color.secondary.opacity(0.12)))}}
+    var body:some View{Menu{ForEach(options,id:\.self){x in Button(x){value=x}}}label:{HStack{Text(title).foregroundStyle(.secondary);Spacer();Text(value);Image(systemName:"chevron.up.chevron.down").font(.caption)}.padding(12).modifier(AutomotiveCardStyle(compact:true))}}
 }
 private struct InputRow:View{
     let title:String;var subtitle="";let edit:()->Void;let delete:()->Void
     init(title:String,subtitle:String="",edit:@escaping()->Void,delete:@escaping()->Void={}){self.title=title;self.subtitle=subtitle;self.edit=edit;self.delete=delete}
-    var body:some View{HStack{VStack(alignment:.leading){Text(title).bold();if !subtitle.isEmpty{Text(subtitle).font(.caption).foregroundStyle(.secondary)}};Spacer();Button("✎",action:edit);Button(role:.destructive,action:delete){Image(systemName:"trash")}}.padding(12).background(RoundedRectangle(cornerRadius:12).fill(Color.secondary.opacity(0.1)))}
+    var body:some View{HStack{VStack(alignment:.leading){Text(title).bold();if !subtitle.isEmpty{Text(subtitle).font(.caption).foregroundStyle(.secondary)}};Spacer();Button("✎",action:edit);Button(role:.destructive,action:delete){Image(systemName:"trash")}}.padding(12).modifier(AutomotiveCardStyle(compact:true))}
 }
 private struct SectionCard<C:View>:View{
     let title:String;let content:C
     init(_ title:String,@ViewBuilder _ content:()->C){self.title=title;self.content=content()}
-    var body:some View{VStack(alignment:.leading,spacing:8){Text(title).font(.headline);content}.frame(maxWidth:.infinity,alignment:.leading).padding(14).background(RoundedRectangle(cornerRadius:16).fill(Color.secondary.opacity(0.1)))}
+    var body:some View{VStack(alignment:.leading,spacing:8){Text(title).font(.headline);content}.frame(maxWidth:.infinity,alignment:.leading).padding(14).modifier(AutomotiveCardStyle())}
 }
-private struct StatusCard:View{let title:String;let value:String;var body:some View{HStack{Text(title);Spacer();Text(value).bold()}.padding(14).background(RoundedRectangle(cornerRadius:14).fill(Color.secondary.opacity(0.12)))}}
+private struct StatusCard:View{let title:String;let value:String;var body:some View{HStack{Text(title);Spacer();Text(value).bold()}.padding(14).modifier(AutomotiveCardStyle())}}
 private struct TestSheet:View{
     let test:Recommendation;@Binding var result:String;@Binding var notes:String;let save:()->Void
     var body:some View{NavigationStack{Form{Text(test.name).font(.headline);Picker("Result",selection:$result){Text("PASS").tag("PASS");Text("FAIL").tag("FAIL");Text("INCOMPLETE").tag("INCOMPLETE")};TextField("Diagnostic notes",text:$notes,axis:.vertical).lineLimit(3...7)}.navigationTitle("Test result").toolbar{ToolbarItem(placement:.confirmationAction){Button("Record",action:save)}}}}

@@ -8,7 +8,7 @@ Evidence-driven automotive diagnostic platform with a shared FastAPI backend, de
 - **Android:** native Kotlin + Jetpack Compose app (finalbuild/apps/mobile-android).
 - **iOS:** native Swift + SwiftUI app (finalbuild/apps/mobile-ios).
 
-The repository uses native client implementations. The legacy Flutter client sources and their build scaffolding have been removed.
+The repository uses native client implementations. The browser/PWA client and its static Render deployment have been removed. The legacy Flutter client sources and their build scaffolding have been removed.
 
 ## Quick start
 

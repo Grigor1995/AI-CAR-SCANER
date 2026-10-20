@@ -10,6 +10,11 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: AICarScanner
+        excludes:
+          - VehicleModels/**
+      - path: AICarScanner/VehicleModels
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.aicarscaner.ios

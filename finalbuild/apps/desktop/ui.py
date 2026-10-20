@@ -17,40 +17,79 @@ from PySide6.QtWidgets import (
 from .api_client import DiagnosticApiClient, ApiError
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
+from .vehicle_artwork import vehicle_pixmap
 
 APP_QSS = """
-QMainWindow, QWidget { background: #0b0f14; color: #e9eef5; font-family: Segoe UI, Arial; }
-QFrame, QGroupBox { background: #111720; border: 1px solid #202a36; border-radius: 10px; }
-QGroupBox { margin-top: 12px; padding: 12px; font-weight: 600; }
-QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 5px; color: #a9b8c8; }
-QPushButton { background: #1c2a39; border: 1px solid #304155; border-radius: 8px; padding: 9px 14px; }
-QPushButton:hover { background: #24374a; }
-QPushButton:pressed { background: #172330; }
-QPushButton#primary { border: 1px solid #4d8fd4; background: #173b5d; font-weight: 700; }
-QLineEdit, QPlainTextEdit, QSpinBox, QComboBox { background: #0f141c; border: 1px solid #263243; border-radius: 7px; padding: 8px; }
-QListWidget { background: #0f141c; border: 0; }
-QListWidget::item { padding: 11px; border-radius: 6px; }
-QListWidget::item:selected { background: #1e3348; }
-QHeaderView::section, QTableWidget { background: #0f141c; color: #d9e3ee; border: 1px solid #263243; }
-QTableWidget { gridline-color: #202a36; }
-QProgressBar { background: #0f141c; border: 1px solid #263243; border-radius: 6px; height: 10px; }
-QProgressBar::chunk { background: #5595d9; border-radius: 6px; }
-QLabel#title { font-size: 22px; font-weight: 700; }
-QLabel#muted { color: #8e9bab; }
-QLabel#ok { color: #6ed0a4; font-weight: 600; }
-QLabel#warn { color: #e6be6c; font-weight: 600; }
+QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size: 13px; }
+QLabel { background: transparent; border: none; }
+QMainWindow { border: 1px solid #1C4B89; }
+QGroupBox { background: #0C1B35; border: 1px solid #24518F; border-radius: 14px; }
+QGroupBox { margin-top: 15px; padding: 15px 12px 12px; font-weight: 650; }
+QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 7px; color: #A9CFFF; }
+QPushButton { background: #132D56; color: #EAF4FF; border: 1px solid #2864AC; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
+QPushButton:hover { background: #1A4F92; border: 1px solid #2998FF; }
+QPushButton:pressed { background: #0D366A; }
+QPushButton:disabled { color: #6983A5; background: #10213B; border: 1px solid #1B3556; }
+QPushButton#primary { background: #0877EF; color: white; border: 1px solid #46ABFF; font-weight: 750; }
+QLineEdit, QPlainTextEdit, QSpinBox, QComboBox { background: #08182F; color: #EAF4FF; border: 1px solid #28538A; border-radius: 9px; padding: 9px; selection-background-color: #1465B5; }
+QLineEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus { border: 1px solid #2495FF; }
+QListWidget { background: #08172D; border: 1px solid #244575; border-radius: 12px; outline: 0; }
+QListWidget#sideNav { background: #081B39; border: 1px solid #1C5096; border-radius: 14px; font-weight: 600; }
+QListWidget::item { padding: 13px 11px; border-radius: 9px; margin: 2px 3px; }
+QListWidget::item:hover { background: #123562; }
+QListWidget::item:selected { background: #1054A5; color: white; border: 1px solid #268FF7; }
+QTabWidget::pane { border: 1px solid #26568E; border-radius: 10px; background: #0A1C37; }
+QTabBar::tab { background: #10284D; color: #C2DAF3; padding: 10px 17px; margin-right: 3px; border: 1px solid #24518F; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+QTabBar::tab:selected { background: #1666BE; color: white; border-color: #2898FF; }
+QHeaderView::section, QTableWidget { background: #0C1E3A; color: #DCEEFF; border: 1px solid #294E83; padding: 5px; }
+QTableWidget { gridline-color: #1F426D; }
+QProgressBar { background: #07172C; border: 1px solid #27558D; border-radius: 6px; height: 11px; text-align: center; }
+QProgressBar::chunk { background: #0B8DFF; border-radius: 6px; }
+QLabel#title { font-size: 23px; font-weight: 750; color: #F3FAFF; }
+QLabel#heroTitle { font-size: 29px; color: #F4FAFF; font-weight: 800; }
+QLabel#heroSubtitle { color: #72BEFF; font-size: 12px; letter-spacing: 2px; font-weight: 700; }
+QLabel#muted { color: #93B7D8; }
+QLabel#ok { color: #27DB98; font-weight: 700; }
+QLabel#warn { color: #FFCC65; font-weight: 700; }
+QMenuBar, QMenu, QStatusBar { background: #091B35; color: #D8ECFF; }
+QMenu::item:selected { background: #165CAC; }
+QScrollBar:vertical { background: #09172C; width: 12px; }
+QScrollBar::handle:vertical { background: #26568F; border-radius: 5px; min-height: 24px; }
 """
 
-APP_QSS_LIGHT = (
-    APP_QSS.replace("#0b0f14", "#f4f6f8").replace("#e9eef5", "#18212b")
-    .replace("#111720", "#ffffff").replace("#202a36", "#d9e0e7")
-    .replace("#a9b8c8", "#526170").replace("#1c2a39", "#e6edf3")
-    .replace("#304155", "#c6d0da").replace("#24374a", "#d8e3ec")
-    .replace("#172330", "#edf1f5").replace("#173b5d", "#d7eaff")
-    .replace("#0f141c", "#ffffff").replace("#263243", "#c6d0da")
-    .replace("#1e3348", "#d7eaff").replace("#d9e3ee", "#18212b")
-    .replace("#5595d9", "#3978b8").replace("#8e9bab", "#526170")
-)
+APP_QSS_LIGHT = """
+QMainWindow, QWidget, QDialog { background: #F0F6FC; color: #10243F; font-family: Segoe UI, Arial; font-size: 13px; }
+QLabel { background: transparent; border: none; }
+QGroupBox { background: #FFFFFF; border: 1px solid #B7D1EC; border-radius: 14px; }
+QGroupBox { margin-top: 15px; padding: 15px 12px 12px; font-weight: 650; }
+QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 7px; color: #315C88; }
+QPushButton { background: #E2EFFD; color: #0B3562; border: 1px solid #93BDE8; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
+QPushButton:hover { background: #B6DDFF; border-color: #2688EB; }
+QPushButton:pressed { background: #92C7FF; }
+QPushButton:disabled { color: #8098AE; background: #EAF1F7; }
+QPushButton#primary { background: #0877EF; color: #FFFFFF; border: 1px solid #0673E3; font-weight: 750; }
+QLineEdit, QPlainTextEdit, QSpinBox, QComboBox { background: #FFFFFF; color: #12365A; border: 1px solid #B1CAE5; border-radius: 9px; padding: 9px; selection-background-color: #70B5F8; }
+QLineEdit:focus, QPlainTextEdit:focus { border-color: #0877EF; }
+QListWidget { background: #FFFFFF; border: 1px solid #B9D2EA; border-radius: 12px; outline: 0; }
+QListWidget#sideNav { background: #E2EFFC; border: 1px solid #A5C5E9; border-radius: 14px; font-weight: 600; }
+QListWidget::item { padding: 13px 11px; border-radius: 9px; margin: 2px 3px; }
+QListWidget::item:hover { background: #C5E1FF; }
+QListWidget::item:selected { background: #1673DB; color: #FFFFFF; border: 1px solid #0965C7; }
+QTabWidget::pane { border: 1px solid #ADCBE8; border-radius: 10px; background: #FFFFFF; }
+QTabBar::tab { background: #E5F0FA; color: #285078; padding: 10px 17px; margin-right: 3px; border: 1px solid #B6CFE7; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+QTabBar::tab:selected { background: #1673DB; color: #FFFFFF; border-color: #126CCE; }
+QHeaderView::section, QTableWidget { background: #F4F9FF; color: #12365A; border: 1px solid #BCD1E8; padding: 5px; }
+QProgressBar { background: #E6F0FA; border: 1px solid #B2D0EC; border-radius: 6px; height: 11px; text-align: center; }
+QProgressBar::chunk { background: #0877EF; border-radius: 6px; }
+QLabel#title { font-size: 23px; font-weight: 750; color: #14385B; }
+QLabel#heroTitle { font-size: 29px; color: #123A68; font-weight: 800; }
+QLabel#heroSubtitle { color: #1169BD; font-size: 12px; letter-spacing: 2px; font-weight: 700; }
+QLabel#muted { color: #547492; }
+QLabel#ok { color: #078D63; font-weight: 700; }
+QLabel#warn { color: #B66B05; font-weight: 700; }
+QMenuBar, QMenu, QStatusBar { background: #E3EFFA; color: #12365A; }
+QMenu::item:selected { background: #B2DCFF; }
+"""
 
 
 _UI_TRANSLATIONS = {
@@ -321,6 +360,11 @@ class VehicleDialog(QDialog):
         self._catalog = list(merged.values())
 
         form = QFormLayout(self)
+        self.artwork_preview = QLabel()
+        self.artwork_preview.setObjectName("vehicleArtworkPreview")
+        self.artwork_preview.setMinimumHeight(140)
+        self.artwork_preview.setAlignment(Qt.AlignCenter)
+        form.addRow(self.artwork_preview)
         if not self._catalog_from_server:
             language = getattr(parent, "language", "en")
             fallback_notice = {
@@ -354,12 +398,20 @@ class VehicleDialog(QDialog):
         self.engine.currentTextChanged.connect(self._refresh_ecus)
 
         self._refresh_makes()
+        for combo in (self.make, self.model, self.chassis):
+            combo.currentTextChanged.connect(self._update_artwork_preview)
+        self._update_artwork_preview()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText(_translate_ui_text("OK", language))
         buttons.button(QDialogButtonBox.Cancel).setText(_translate_ui_text("Cancel", language))
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)
+
+    def _update_artwork_preview(self, *_args: Any) -> None:
+        self.artwork_preview.setPixmap(vehicle_pixmap(
+            self.make.currentText(), self.model.currentText(), self.chassis.currentText(), 270, 144
+        ))
 
     def _items(self, **filters: Any) -> list[dict[str, Any]]:
         rows = self._catalog
@@ -447,7 +499,22 @@ class VehicleDialog(QDialog):
 class DashboardPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        lay=QVBoxLayout(self); title=QLabel("AI Auto Diagnostic Workstation"); title.setObjectName("title"); lay.addWidget(title)
+        lay=QVBoxLayout(self)
+        banner=QHBoxLayout()
+        branding=QVBoxLayout()
+        hero=QLabel("AI CAR SCANNER"); hero.setObjectName("heroTitle")
+        branding.addWidget(hero)
+        subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING")
+        subtitle.setObjectName("heroSubtitle")
+        branding.addWidget(subtitle)
+        banner.addLayout(branding, 1)
+        self.model_artwork = QLabel()
+        self.model_artwork.setObjectName("dashboardVehicleArtwork")
+        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork.setPixmap(vehicle_pixmap("", "", "", 360, 180))
+        banner.addWidget(self.model_artwork)
+        lay.addLayout(banner)
+        title=QLabel("AI Auto Diagnostic Workstation"); title.setObjectName("title"); lay.addWidget(title)
         cards=QGridLayout(); self.backend=MetricCard("Backend", "OFFLINE"); self.vehicle=MetricCard("Vehicle", "—"); self.session=MetricCard("Session", "—"); self.ecus=MetricCard("ECUs", "—")
         for i,c in enumerate((self.backend,self.vehicle,self.session,self.ecus)): cards.addWidget(c,0,i)
         lay.addLayout(cards)
@@ -455,6 +522,12 @@ class DashboardPage(QWidget):
         self.refresh_btn=QPushButton("Refresh status"); self.refresh_btn.clicked.connect(app.refresh_all); lay.addWidget(self.refresh_btn, alignment=Qt.AlignLeft); lay.addStretch()
     def refresh(self):
         self.backend.set_value("ONLINE" if self.app.online else "OFFLINE")
+        selected = self.app.active_vehicle or (self.app.vehicles[0] if self.app.vehicles else None)
+        self.model_artwork.setPixmap(vehicle_pixmap(
+            selected.make if selected else "",
+            selected.model if selected else "",
+            selected.chassis if selected else "", 360, 180
+        ))
         self.vehicle.set_value(f"{self.app.active_vehicle.make} {self.app.active_vehicle.model}" if self.app.active_vehicle else "—")
         self.session.set_value(self.app.session.session_id[:8] if self.app.session else "—")
         self.ecus.set_value(str(len(self.app.network.get("ecus", []))) if self.app.network else "—")
@@ -463,6 +536,10 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); bar.addStretch(); lay.addLayout(bar)
+        self.model_artwork = QLabel()
+        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork.setMaximumHeight(185)
+        lay.addWidget(self.model_artwork)
         split=QSplitter(); self.list=QListWidget(); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
         self.list.itemSelectionChanged.connect(self.show_selected)
     def refresh(self):
@@ -476,12 +553,14 @@ class VehiclesPage(QWidget):
             self.list.setCurrentRow(0)
         else:
             self.details.clear()
+            self.model_artwork.clear()
     def show_selected(self):
         items=self.list.selectedItems()
         self.delete_btn.setEnabled(bool(items))
         if not items: return
         v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
     def show_vehicle(self,v:Vehicle):
+        self.model_artwork.setPixmap(vehicle_pixmap(v.make, v.model, v.chassis, 340, 175))
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
 class DiagnosticPage(QWidget):
@@ -860,7 +939,7 @@ class MainWindow(QMainWindow):
 
     def _build_pages(self):
         container=QWidget(); root=QHBoxLayout(container); root.setContentsMargins(0,0,0,0)
-        nav=QListWidget(); nav.setFixedWidth(210); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(234); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage)]
         self.nav=nav
         for text,_cls in entries: nav.addItem(text)
         root.addWidget(nav)

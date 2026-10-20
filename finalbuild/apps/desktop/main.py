@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
+from urllib.parse import urlsplit
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
 if getattr(sys, "frozen", False):
@@ -21,9 +22,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
-PORT = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
-BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", f"http://127.0.0.1:{PORT}").rstrip("/")
-LOCAL_BACKEND = BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost"))
+_configured_backend_url = os.environ.get("AI_CAR_BACKEND_URL", "").rstrip("/")
+_configured_backend_port = os.environ.get("AI_CAR_BACKEND_PORT", "8001")
+_parsed_backend_url = urlsplit(_configured_backend_url) if _configured_backend_url else None
+LOCAL_BACKEND = bool(
+    _parsed_backend_url is None or (
+        _parsed_backend_url.scheme == "http"
+        and _parsed_backend_url.hostname in {"127.0.0.1", "localhost"}
+    )
+)
+# Local URL port is authoritative. Otherwise Desktop could launch FastAPI on
+# :8001 while its API client waits forever for http://localhost:8123/health.
+PORT = int(
+    _parsed_backend_url.port
+    if LOCAL_BACKEND and _parsed_backend_url is not None and _parsed_backend_url.port
+    else _configured_backend_port
+)
+BACKEND_URL = _configured_backend_url or f"http://127.0.0.1:{PORT}"
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))
 LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/")
@@ -262,6 +277,9 @@ def start_backend() -> subprocess.Popen[bytes] | None:
     if backend_path.exists():
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = str(backend_path) if not existing else str(backend_path) + os.pathsep + existing
+    # Keep the child bind address/port in sync with the URL Desktop is polling.
+    env["AI_CAR_BACKEND_HOST"] = HOST
+    env["AI_CAR_BACKEND_PORT"] = str(PORT)
     env.setdefault("DIAGNOSTIC_LLM_PROVIDER", "llama-server")
     env.setdefault("LOCAL_LLM_SERVER_URL", LLM_BASE_URL)
     env.setdefault("LOCAL_LLM_SERVER_MODEL", LLM_MODEL)

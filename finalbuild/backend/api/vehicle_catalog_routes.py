@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import os
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 from diagnostic.db_models import VehicleCatalogEntryRow
+from diagnostic.database import database_engine
 
 
 router = APIRouter(prefix="/api/v1/vehicle-catalog", tags=["vehicle-catalog"])
@@ -16,7 +18,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://diagnostic:diagnostic@localhost:5432/diagnostic",
 )
-_engine = create_engine(DATABASE_URL, future=True, pool_pre_ping=True)
+_engine = database_engine(DATABASE_URL)
 
 
 class CatalogEntry(BaseModel):
@@ -39,7 +41,13 @@ def _run_all(sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
     try:
         _ensure_catalog_table()
         with _engine.connect() as conn:
-            return [dict(row) for row in conn.execute(text(sql), params).mappings().all()]
+            rows = [dict(row) for row in conn.execute(text(sql), params).mappings().all()]
+            # Raw SQL returns SQLite JSON columns as strings; PostgreSQL
+            # already decodes them. Preserve the shared list-valued API.
+            for row in rows:
+                if isinstance(row.get("fuel"), str):
+                    row["fuel"] = json.loads(row["fuel"])
+            return rows
     except Exception as exc:
         raise HTTPException(503, f"Vehicle catalog database unavailable: {exc}") from exc
 

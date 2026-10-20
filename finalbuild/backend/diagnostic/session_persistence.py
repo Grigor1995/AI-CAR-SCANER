@@ -4,10 +4,11 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, String, create_engine, select
+from sqlalchemy import JSON, DateTime, String, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session as DbSession, mapped_column
 
 from diagnostic.models import DiagnosticSession
+from diagnostic.database import database_engine
 
 log = logging.getLogger(__name__)
 
@@ -44,14 +45,16 @@ class DiagnosticSessionPersistence:
         if not self.enabled:
             return
 
-        connect_args = {"check_same_thread": False} if self.database_url.startswith("sqlite") else {}
-        self.engine = create_engine(
-            self.database_url,
-            future=True,
-            pool_pre_ping=True,
-            connect_args=connect_args,
-        )
-        SessionStateBase.metadata.create_all(self.engine)
+        self.engine = database_engine(self.database_url)
+        try:
+            SessionStateBase.metadata.create_all(self.engine)
+        except Exception as exc:
+            self.engine.dispose()
+            raise RuntimeError(
+                "Configured DATABASE_URL is unavailable. Start the database service or, "
+                "for Desktop local storage, set AI_CAR_USE_LOCAL_DATABASE=1. "
+                "No fallback database was selected and no existing data was moved."
+            ) from exc
 
     def close(self) -> None:
         """Dispose the connection pool owned by this persistence instance."""

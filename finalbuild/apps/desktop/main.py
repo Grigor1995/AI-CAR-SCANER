@@ -6,6 +6,7 @@ import socket
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -30,7 +31,7 @@ LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_P
 LLM_MODEL = os.environ.get("LOCAL_LLM_SERVER_MODEL", "Qwen3-8B-Q4_K_M.gguf")
 HEALTH_URL = f"{BACKEND_URL}/health"
 LLM_HEALTH_URL = f"{LLM_BASE_URL}/health"
-_STARTUP_TIMEOUT = float(os.environ.get("AI_CAR_BACKEND_STARTUP_TIMEOUT", "15"))
+_STARTUP_TIMEOUT = float(os.environ.get("AI_CAR_BACKEND_STARTUP_TIMEOUT", "60"))
 _LLM_STARTUP_TIMEOUT = float(os.environ.get("LOCAL_LLM_SERVER_STARTUP_TIMEOUT_S", "180"))
 
 _backend_process: subprocess.Popen[bytes] | None = None
@@ -254,6 +255,25 @@ def start_backend() -> subprocess.Popen[bytes] | None:
     backend_log_path = _backend_log_path()
     _backend_log = backend_log_path.open("ab")
     env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env.pop("AI_CAR_DESKTOP_LOCAL_DB", None)
+    force_local = env.get("AI_CAR_USE_LOCAL_DATABASE", "").lower() in {"1", "true", "yes"}
+    if force_local or not env.get("DATABASE_URL", "").strip():
+        database_file = backend_log_path.parent / "diagnostic.sqlite"
+        env["DATABASE_URL"] = "sqlite:///" + database_file.resolve().as_posix()
+        env["AI_CAR_DESKTOP_LOCAL_DB"] = "1"
+    _backend_log.write((
+        f"\n[launcher] {datetime.now(timezone.utc).isoformat()} root={ROOT}; "
+        f"python={sys.executable}; storage="
+        f"{'local SQLite' if env.get('AI_CAR_DESKTOP_LOCAL_DB') == '1' else 'configured DATABASE_URL'}\n"
+    ).encode("utf-8"))
+    _backend_log.flush()
+    storage_hint = (
+        " Check configured DATABASE_URL and start its database service; "
+        "or explicitly select Desktop SQLite with AI_CAR_USE_LOCAL_DATABASE=1."
+        if env.get("AI_CAR_DESKTOP_LOCAL_DB") != "1" else
+        " Check local SQLite permissions and the active Python dependencies."
+    )
     backend_path = BUNDLE_ROOT / "backend" if getattr(sys, "frozen", False) else ROOT / "backend"
     if backend_path.exists():
         existing = env.get("PYTHONPATH")
@@ -271,7 +291,9 @@ def start_backend() -> subprocess.Popen[bytes] | None:
             raise RuntimeError("Bundled backend_service.exe was not found next to AICarScanner.exe.")
         command = [str(backend_exe)]
     else:
-        command = [sys.executable, "-m", "uvicorn", "api.main:app", "--host", HOST, "--port", str(PORT)]
+        command = [sys.executable, "-m", "apps.desktop.backend_worker"]
+        env["AI_CAR_BACKEND_HOST"] = HOST
+        env["AI_CAR_BACKEND_PORT"] = str(PORT)
 
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
     try:
@@ -299,7 +321,7 @@ def start_backend() -> subprocess.Popen[bytes] | None:
             _backend_process = None
             _close_backend_log()
             raise RuntimeError(
-                f"Backend exited during startup with code {returncode}. Log: {backend_log_path}"
+                f"Backend exited during startup with code {returncode}. Log: {backend_log_path}{storage_hint}"
             )
         if _backend_healthy():
             return _backend_process
@@ -319,7 +341,7 @@ def start_backend() -> subprocess.Popen[bytes] | None:
             pass
     _backend_process = None
     _close_backend_log()
-    raise RuntimeError(f"Backend did not become healthy within {_STARTUP_TIMEOUT:g}s. Log: {backend_log_path}")
+    raise RuntimeError(f"Backend did not become healthy within {_STARTUP_TIMEOUT:g}s. Log: {backend_log_path}{storage_hint}")
 
 
 def stop_backend() -> None:

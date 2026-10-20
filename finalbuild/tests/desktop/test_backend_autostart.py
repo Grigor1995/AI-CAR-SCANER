@@ -51,11 +51,10 @@ def test_start_backend_uses_current_python_and_backend_path(monkeypatch, tmp_pat
     assert desktop_main._backend_log is None
     assert desktop_main._backend_process is None
 
-    assert calls["command"][:4] == [
+    assert calls["command"] == [
         desktop_main.sys.executable,
         "-m",
-        "uvicorn",
-        "api.main:app",
+        "apps.desktop.backend_worker",
     ]
     env = calls["kwargs"]["env"]
     assert str(desktop_main.ROOT / "backend") in env["PYTHONPATH"].split(desktop_main.os.pathsep)

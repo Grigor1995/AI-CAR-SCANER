@@ -31,3 +31,13 @@ Run the smoke test through **pytest**, not `python apps/desktop/test_smoke.py`: 
 ## Shared backend
 
 The Desktop client defaults to the local FastAPI service at `http://127.0.0.1:8001` and starts it automatically when needed. Set `AI_CAR_BACKEND_URL=https://ai-car-scaner.onrender.com` to use the hosted API instead. Standard API requests use an 8-second timeout so unavailable endpoints fail promptly; live AI analysis has its own longer timeout. The backend's deterministic analysis remains authoritative; optional LLM output must preserve uncertainty and evidence provenance.
+
+## Local database and startup diagnosis
+
+Desktop uses persistent local SQLite when `DATABASE_URL` is unset. To explicitly
+use local storage instead of an unavailable configured PostgreSQL server, launch
+with `AI_CAR_USE_LOCAL_DATABASE=1 python -m apps.desktop.main` in Git Bash.
+Close any previous backend process before changing storage settings.
+Run `python scripts/check_local_backend.py` from `finalbuild` for a real
+startup/catalog/diagnostic/persistence check. See
+[backend startup diagnosis](../../docs/testing/BACKEND_LOCAL_STARTUP.md).

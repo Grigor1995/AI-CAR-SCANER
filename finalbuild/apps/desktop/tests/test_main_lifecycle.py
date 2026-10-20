@@ -59,7 +59,7 @@ def test_start_backend_starts_source_mode_and_waits_for_health(monkeypatch, tmp_
     result = main.start_backend()
     assert result is process
     call_args, kwargs = main.subprocess.Popen.call_args
-    assert call_args[0][1:4] == ["-m", "uvicorn", "api.main:app"]
+    assert call_args[0][1:] == ["-m", "apps.desktop.backend_worker"]
     assert kwargs["cwd"] == str(tmp_path)
     assert kwargs["stdout"] is not None
     assert log_path.exists()
@@ -312,3 +312,30 @@ def test_run_reports_backend_start_error_after_ui_and_cleanup(monkeypatch, capsy
     assert error.value.code == 1
     assert calls == ["run ui", "stop backend", "stop llm"]
     assert "Backend startup failed: bind failed" in capsys.readouterr().err
+
+@pytest.mark.parametrize('configured,force_local,expect_local', [
+    (None, False, True),
+    ('postgresql+psycopg://localhost/diagnostic', False, False),
+    ('postgresql+psycopg://localhost/diagnostic', True, True),
+])
+def test_launcher_storage_selection_is_explicit(monkeypatch, tmp_path, configured, force_local, expect_local):
+    _prepare_local_backend(monkeypatch, tmp_path)
+    if configured is None:
+        monkeypatch.delenv('DATABASE_URL', raising=False)
+    else:
+        monkeypatch.setenv('DATABASE_URL', configured)
+    monkeypatch.setenv('AI_CAR_USE_LOCAL_DATABASE', '1' if force_local else '0')
+    # A stale inherited internal marker must not seed a configured database.
+    monkeypatch.setenv('AI_CAR_DESKTOP_LOCAL_DB', '1')
+    try:
+        main.start_backend()
+        env = main.subprocess.Popen.call_args.kwargs['env']
+        assert (env.get('AI_CAR_DESKTOP_LOCAL_DB') == '1') is expect_local
+        if expect_local:
+            assert env['DATABASE_URL'].startswith('sqlite:///')
+            assert env['DATABASE_URL'].endswith('/diagnostic.sqlite')
+        else:
+            assert env['DATABASE_URL'] == configured
+        assert env['PYTHONUNBUFFERED'] == '1'
+    finally:
+        main._close_backend_log()

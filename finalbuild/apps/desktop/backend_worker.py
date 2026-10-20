@@ -18,6 +18,13 @@ def main() -> None:
     if str(backend) not in sys.path:
         sys.path.insert(0, str(backend))
 
+    print(f"[backend] Python {sys.version.split()[0]}; loading from {root}", flush=True)
+    if os.getenv("AI_CAR_DESKTOP_LOCAL_DB") == "1":
+        from diagnostic.local_database import prepare_local_database
+        inserted = prepare_local_database(os.environ["DATABASE_URL"], root)
+        print(f"[backend] Local SQLite catalog ready; added {inserted} rows", flush=True)
+
+    print("[backend] Importing Uvicorn and application routes", flush=True)
     import uvicorn
 
     host = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")

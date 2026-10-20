@@ -52,6 +52,17 @@ def main() -> int:
     if visible.get('status') != 'PASS' or visible.get('failed') != 0 or not visible.get('tests_total'):
         issues.append('Visible UI automated acceptance must PASS')
     packaged = a.mode != 'source'
+    # The old packaged smoke uses a mock HTTP API. Real FastAPI startup is a
+    # separate blocking gate to catch missing PyInstaller hidden imports.
+    for backend_mode in (('source', 'frozen') if packaged else ('source',)):
+        try:
+            backend_result = read_fresh(
+                REPORT / 'fastapi-startup' / f'{backend_mode}.json', a.since
+            )
+            if backend_result.get('status') != 'PASS' or not backend_result.get('healthy'):
+                issues.append(f'Real FastAPI {backend_mode} startup did not PASS')
+        except (OSError, ValueError, RuntimeError) as exc:
+            issues.append(str(exc))
     hash_value = None
     if packaged:
         frozen = perf.get('packaged_exe') or {}
@@ -101,7 +112,10 @@ def main() -> int:
         'evidence_paths': ['desktop-test-reports/summary.json',
                            'desktop-test-reports/performance.json',
                            'desktop-test-reports/real-ui-acceptance/results.json',
-                           'desktop-test-reports/real-ui-acceptance/report.html'],
+                           'desktop-test-reports/real-ui-acceptance/report.html',
+                           'desktop-test-reports/fastapi-startup/source.json',
+                           'desktop-test-reports/fastapi-startup/frozen.json' if packaged
+                           else 'desktop-test-reports/fastapi-startup/source.json'],
         'limitations': 'Fake GUI/backend tests do not validate production FastAPI/LLM/OBD; manual review is mandatory.',
     }
     REPORT.mkdir(parents=True, exist_ok=True)

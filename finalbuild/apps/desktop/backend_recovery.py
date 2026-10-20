@@ -30,6 +30,7 @@ class BackendRecoverySupervisor:
         poll_seconds: float = 3.0,
         max_restarts: int = 3,
         window_seconds: float = 120.0,
+        allow_initial_retry: bool = False,
     ) -> None:
         if poll_seconds <= 0 or max_restarts < 1 or window_seconds <= 0:
             raise ValueError("Invalid recovery configuration")
@@ -39,6 +40,7 @@ class BackendRecoverySupervisor:
         self.poll_seconds = poll_seconds
         self.max_restarts = max_restarts
         self.window_seconds = window_seconds
+        self.allow_initial_retry = allow_initial_retry
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._attempts: deque[float] = deque()
@@ -51,7 +53,9 @@ class BackendRecoverySupervisor:
             return
         # Only a process created by THIS launcher is eligible for recovery.
         self._last_owned = self.process()
-        if self._last_owned is None:
+        if self._last_owned is None and (
+            not self.allow_initial_retry or self.healthy()
+        ):
             log.info("FastAPI auto-recovery disabled: backend is external or absent")
             return
         self._thread = threading.Thread(
@@ -76,7 +80,7 @@ class BackendRecoverySupervisor:
         owned = self.process()
         if owned is not None:
             self._last_owned = owned
-        elif self._last_owned is None:
+        elif self._last_owned is None and not self.allow_initial_retry:
             return "external"
         if owned is not None and owned.poll() is None:
             return "running"

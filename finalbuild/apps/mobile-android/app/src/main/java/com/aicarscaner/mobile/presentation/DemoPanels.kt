@@ -326,12 +326,12 @@ internal fun DemoTeach(title:String,draftLabel:String,shareLabel:String) {
 internal fun DemoAdapterHeader(connected:Boolean,status:String){
     val color=if(connected) Color(0xFF21D6A0) else MaterialTheme.colorScheme.primary
     DemoPanel(dashboardLabel("Adapter connection")) {
-        Canvas(Modifier.fillMaxWidth().height(100.dp)) {
-            val w=size.width;val h=size.height
-            val body=Path().apply{moveTo(w*.2f,h*.2f);lineTo(w*.8f,h*.2f);lineTo(w*.73f,h*.85f);lineTo(w*.27f,h*.85f);close()}
-            drawPath(body,color.copy(alpha=.12f));drawPath(body,color,style=Stroke(2.dp.toPx()))
-            for(row in 0..1) for(pin in 0..7) drawCircle(color,2.dp.toPx(),Offset(w*(.31f+pin*.054f),h*(.4f+row*.22f)))
-        }
+        Icon(
+            painter = androidx.compose.ui.res.painterResource(com.aicarscaner.mobile.R.drawable.ic_obd_connector),
+            contentDescription = "OBD-II",
+            tint = color,
+            modifier = Modifier.align(Alignment.CenterHorizontally).size(width = 144.dp, height = 96.dp)
+        )
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             DashboardIcon(if(connected) 8 else 2,color=color)
             Column {Text("OBD-II",fontWeight=FontWeight.Bold,color=color);Text(status,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)}

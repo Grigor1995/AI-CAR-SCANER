@@ -187,6 +187,23 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var selectedTestTitle by remember { mutableStateOf("") }
     var testOutcome by remember { mutableStateOf("INCOMPLETE") }
     var testNotes by remember { mutableStateOf("") }
+    var pendingTestRevision by remember { mutableStateOf<Int?>(null) }
+    val pageScrollState = rememberScrollState()
+    LaunchedEffect(selectedTab, state.testResultRevision) {
+        pageScrollState.scrollTo(0)
+    }
+    LaunchedEffect(state.testResultRevision, state.testResultCompletion, state.loading, state.error) {
+        val submittedAt = pendingTestRevision
+        if (submittedAt != null && !state.loading) {
+            if (state.testResultRevision > submittedAt) {
+                pendingTestRevision = null
+                testResultDialogOpen = false
+                selectedTab = 4
+            } else if (state.error != null) {
+                pendingTestRevision = null
+            }
+        }
+    }
 
     val bluetoothPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         arrayOf(
@@ -396,10 +413,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
         if (testResultDialogOpen) {
             AlertDialog(
-                onDismissRequest = { testResultDialogOpen = false },
+                onDismissRequest = { if (pendingTestRevision == null) testResultDialogOpen = false },
                 title = { Text(selectedTestTitle) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (pendingTestRevision != null) {
+                            CircularProgressIndicator()
+                            Text(dashboardLabel("Updating diagnosis…"))
+                        }
+                        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Text(extra.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
                         Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.labelLarge)
                         Row(
@@ -447,7 +469,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         onClick = {
                             val id = selectedTestId
                             if (id != null) {
-                                testResultDialogOpen = false
+                                pendingTestRevision = state.testResultRevision
                                 viewModel.recordTestResult(
                                     id,
                                     testOutcome,
@@ -456,11 +478,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 )
                             }
                         },
-                        enabled = selectedTestId != null && testOutcome.isNotBlank() && !state.loading
+                        enabled = selectedTestId != null && testOutcome.isNotBlank() && !state.loading && pendingTestRevision == null
                     ) { Text(extra.recordResult) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { testResultDialogOpen = false }) {
+                    TextButton(onClick = { testResultDialogOpen = false }, enabled = pendingTestRevision == null) {
                         Text(text.cancel)
                     }
                 }
@@ -502,7 +524,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxSize().padding(insets)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(pageScrollState)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -1207,8 +1229,17 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         4 -> {
-                            DemoHypotheses(session)
-                            Button(onClick={viewModel.analyze(appSettings.language.code)},enabled=!state.loading,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Analyze session")) }
+                            AnalysisWorkspace(
+                                session=session, loading=state.loading,
+                                resultRevision=state.testResultRevision,
+                                onAnalyze={viewModel.analyze(appSettings.language.code)},
+                                onRecord={id,title ->
+                                    selectedTestId=id
+                                    selectedTestTitle=title
+                                    testOutcome="INCOMPLETE"
+                                    testNotes=""
+                                    testResultDialogOpen=true
+                                })
                             var advanced by remember { mutableStateOf(false) }
                             TextButton(onClick={advanced=!advanced}) { Text(dashboardLabel(if(advanced) "Hide details" else "Advanced analysis")) }
                             if(advanced) {

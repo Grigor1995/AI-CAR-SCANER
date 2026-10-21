@@ -18,7 +18,9 @@ data class DiagnosticUiState(
     val history: List<DiagnosticSessionDto> = emptyList(),
     val vehicleCatalog: List<VehicleCatalogEntryDto> = emptyList(),
     val loading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val testResultRevision: Int = 0,
+    val testResultCompletion: Int = 0
 )
 
 class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewModel() {
@@ -100,27 +102,34 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         result: String,
         notes: String?,
         language: String = "en"
-    ) = execute {
+    ) = execute(resultRecorded = true) {
         val id = _uiState.value.session?.session_id ?: error("Create a session first")
         repository.recordTestResult(id, testId, result, notes, language)
     }
 
-    private fun execute(block: suspend () -> DiagnosticSessionDto) {
+    private fun execute(resultRecorded: Boolean = false, block: suspend () -> DiagnosticSessionDto) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 val result = block()
-                _uiState.value = DiagnosticUiState(
+                val previous = _uiState.value
+                val revision = if (previous.session?.session_id == result.session_id) previous.testResultRevision else 0
+                // The result endpoint already recalculates the diagnostic session.
+                // Publish that complete response without a second analysis overwriting it.
+                _uiState.value = previous.copy(
                     session = result,
-                    vehicleCatalog = _uiState.value.vehicleCatalog,
-                    loading = false
+                    loading = false,
+                    error = null,
+                    testResultRevision = revision + if (resultRecorded) 1 else 0,
+                    testResultCompletion = previous.testResultCompletion + if (resultRecorded) 1 else 0
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = friendlyError(error)
+                    error = friendlyError(error),
+                    testResultCompletion = _uiState.value.testResultCompletion + if (resultRecorded) 1 else 0
                 )
             }
         }

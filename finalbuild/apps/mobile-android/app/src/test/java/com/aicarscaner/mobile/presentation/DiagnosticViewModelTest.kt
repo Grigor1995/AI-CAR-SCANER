@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
+import com.aicarscaner.mobile.data.api.HypothesisDto
+import com.aicarscaner.mobile.data.api.RecommendationDto
+import com.aicarscaner.mobile.data.api.TestResultDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -267,6 +270,69 @@ class DiagnosticViewModelTest {
         coVerify(exactly = 1) {
             repository.recordTestResult("session-1", "fuel-pressure", "PASS", "pressure stable", "hy")
         }
+    }
+
+    @Test
+    fun everyTestOutcomePublishesTheRecalculatedSessionWithoutASecondAnalysis() = runTest(mainDispatcherRule.dispatcher) {
+        for (outcome in listOf("PASS", "FAIL", "INCOMPLETE")) {
+            val viewModel = DiagnosticViewModel(repository)
+            coEvery { repository.createSession(vehicle) } returns session
+            viewModel.createSession(vehicle)
+            advanceUntilIdle()
+            val pending = CompletableDeferred<DiagnosticSessionDto>()
+            coEvery { repository.recordTestResult("session-1", "test-1", outcome, "measurement", "hy") } coAnswers { pending.await() }
+            val recalculated = session.copy(
+                state="HYPOTHESIS_VALIDATION",
+                hypotheses=listOf(HypothesisDto("h1", "ignition", "Updated after $outcome", status="possible:0.65")),
+                recommendations=listOf(RecommendationDto("test-2", "Follow-up", "Isolate the cause", .8)),
+                test_results=listOf(TestResultDto("test-1", outcome)))
+            viewModel.recordTestResult("test-1", outcome, "measurement", "hy")
+            runCurrent()
+            assertTrue(viewModel.uiState.value.loading)
+            assertEquals(0, viewModel.uiState.value.testResultRevision)
+            pending.complete(recalculated)
+            advanceUntilIdle()
+            assertEquals(recalculated, viewModel.uiState.value.session)
+            assertEquals(1, viewModel.uiState.value.testResultRevision)
+            assertFalse(viewModel.uiState.value.loading)
+        }
+        coVerify(exactly=0) { repository.analyze(any(), any()) }
+    }
+
+    @Test
+    fun failedTestSubmissionKeepsThePreviousDiagnosisAndDoesNotReportRecalculation() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel=DiagnosticViewModel(repository)
+        coEvery {repository.createSession(vehicle)} returns session
+        coEvery {repository.recordTestResult("session-1", "test-1", "FAIL", null, "en")} throws IllegalStateException("offline")
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+        viewModel.recordTestResult("test-1", "FAIL", null)
+        advanceUntilIdle()
+        assertEquals(session,viewModel.uiState.value.session)
+        assertEquals(0,viewModel.uiState.value.testResultRevision)
+        assertEquals("offline",viewModel.uiState.value.error)
+        assertEquals(1,viewModel.uiState.value.testResultCompletion)
+        viewModel.recordTestResult("test-1", "FAIL", null)
+        advanceUntilIdle()
+        assertEquals(2,viewModel.uiState.value.testResultCompletion)
+        assertEquals(0,viewModel.uiState.value.testResultRevision)
+        assertFalse(viewModel.uiState.value.loading)
+    }
+
+    @Test
+    fun openingAnotherSessionClearsThePreviousTestUpdateNotice() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel=DiagnosticViewModel(repository)
+        coEvery {repository.createSession(vehicle)} returns session
+        coEvery {repository.recordTestResult("session-1", "test-1", "PASS", null, "en")} returns session
+        coEvery {repository.getSession("other", "en")} returns session.copy(session_id="other")
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+        viewModel.recordTestResult("test-1", "PASS", null)
+        advanceUntilIdle()
+        assertEquals(1,viewModel.uiState.value.testResultRevision)
+        viewModel.openSession("other")
+        advanceUntilIdle()
+        assertEquals(0,viewModel.uiState.value.testResultRevision)
     }
 
     @Test

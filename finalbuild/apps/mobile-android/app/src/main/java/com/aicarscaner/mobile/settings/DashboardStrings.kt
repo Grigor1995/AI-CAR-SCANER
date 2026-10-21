@@ -2,6 +2,9 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Results" to Pair("Արդյունքներ", "Результаты"),
+    "Diagnosis updated from the latest test result" to Pair("Ախտորոշումը թարմացվել է վերջին թեստի արդյունքով", "Диагноз обновлён по последнему результату теста"),
+    "Updating diagnosis…" to Pair("Ախտորոշումը թարմացվում է…", "Обновление диагноза…"),
     "Adapter" to Pair("Միացում", "Адаптер"),
     "Data" to Pair("Տվյալներ", "Данные"),
     "Search models" to Pair("Փնտրել մոդելներ", "Поиск моделей"),

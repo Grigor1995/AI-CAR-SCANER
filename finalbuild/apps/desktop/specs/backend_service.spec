@@ -16,7 +16,7 @@ sys.path.insert(0, str(backend_root))
 api_packages = (
     "api", "diagnostic", "ai", "device", "acquisition",
     "telemetry", "vehicle", "vehicle_diagnostic", "multi_ecu",
-    "multi_bus", "network_discovery", "simulator",
+    "network_discovery", "simulator",
     "professional_platform", "security", "observability",
 )
 api_hiddenimports = ["api.main", "global_data", "backend.scripts.seed_vehicle_catalog"]

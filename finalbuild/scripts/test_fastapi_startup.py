@@ -101,6 +101,7 @@ def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
     port = ephemeral_port()
     started = time.monotonic()
     status = "FAIL"
+    health_reached = False
     exit_code = None
     error = None
 
@@ -145,6 +146,7 @@ def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
                         if exit_code is not None:
                             break
                         if is_healthy(port):
+                            health_reached = True
                             status = "PASS"
                             break
                         time.sleep(0.4)
@@ -170,7 +172,7 @@ def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
             error = f"{error}; {cleanup_error}" if error else cleanup_error
 
     result = {
-        "status": status, "mode": mode, "health": status == "PASS",
+        "status": status, "mode": mode, "health": health_reached,
         "port": port, "elapsed_seconds": round(time.monotonic() - started, 2),
         "exit_code_before_cleanup": exit_code,
         "error": error, "log": str(log_path.relative_to(ROOT)),

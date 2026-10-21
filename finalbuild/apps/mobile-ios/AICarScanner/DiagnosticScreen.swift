@@ -126,7 +126,19 @@ struct DiagnosticScreen: View {
                 Button(t.start){viewModel.clearSession();reset()}
             }message:{Text(t.confirm)}
             .sheet(isPresented:$settingsOpen){settingsView}
-            .sheet(item:$test){x in TestSheet(test:x,language:viewModel.settings.language,result:$testResult,notes:$testNotes){Task{await viewModel.recordTest(x,testResult,testNotes.isEmpty ? nil:testNotes);test=nil}}}
+            .sheet(item: $test) { recommendation in
+                TestSheet(test: recommendation, language: viewModel.settings.language,
+                          loading: viewModel.loading, error: viewModel.error,
+                          result: $testResult, notes: $testNotes) {
+                    Task {
+                        await viewModel.recordTest(recommendation, testResult, testNotes.isEmpty ? nil : testNotes)
+                        if viewModel.error == nil {
+                            test = nil
+                            tab = 2
+                        }
+                    }
+                }
+            }
             .alert(t.editSymptom,isPresented:Binding(get:{editSymptom != nil},set:{if !$0{editSymptom=nil}})){
                 TextField(t.symptom, text:$editText)
                 Button(t.cancel,role:.cancel){editSymptom=nil}
@@ -479,6 +491,8 @@ private struct AnalysisDiagram: View {
 private struct TestSheet: View {
     let test: Recommendation
     let language: AppLanguage
+    let loading: Bool
+    let error: String?
     private var t: T { T(language: language) }
     @Binding var result: String
     @Binding var notes: String
@@ -490,6 +504,10 @@ private struct TestSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(test.name).font(.title2.bold())
                     Text(test.purpose)
+                    if loading {
+                        ProgressView(t.tr("Updating diagnosis…", "Обновление диагноза…", "Ախտորոշումը թարմացվում է…"))
+                    }
+                    if let error { Text(error).foregroundStyle(.red) }
                     ForEach(test.safety_notes, id: \.self) { Text($0).foregroundStyle(.orange) }
                     VStack(spacing: 10) {
                         ForEach(["PASS", "FAIL", "INCOMPLETE"], id: \.self) { code in
@@ -502,14 +520,15 @@ private struct TestSheet: View {
                                     .background(AutomotivePalette.resultColor(code).opacity(result == code ? 0.18 : 0.04))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(AutomotivePalette.resultColor(code).opacity(result == code ? 1 : 0.3)))
-                            }.buttonStyle(.plain).accessibilityAddTraits(result == code ? .isSelected : [])
+                            }.buttonStyle(.plain).disabled(loading).accessibilityAddTraits(result == code ? .isSelected : [])
                         }
                     }
                     TextField(t.tr("Diagnostic notes / measurements", "Заметки / измерения", "Ախտորոշման նշումներ / չափումներ"), text: $notes, axis: .vertical)
-                        .lineLimit(4...9).padding(14).modifier(AutomotiveCardStyle())
-                    Button(t.record, action: save).buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
+                        .lineLimit(4...9).padding(14).modifier(AutomotiveCardStyle()).disabled(loading)
+                    Button(t.record, action: save).buttonStyle(.borderedProminent).frame(maxWidth: .infinity).disabled(loading)
                 }.padding(16)
             }.navigationTitle(t.tr("Test result", "Результат теста", "Թեստի արդյունք"))
+                .interactiveDismissDisabled(loading)
         }
     }
 }

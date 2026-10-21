@@ -35,10 +35,15 @@ from apps.desktop.ui import (
 def qapp():
     app = QApplication.instance() or QApplication([])
     yield app
-    app.closeAllWindows()
-    app.processEvents()
-    # Keep Qt-owned wrappers alive until pending events and deferred deletes drain.
+    # Destroy Qt widgets before Python tears down their application/callbacks.
+    import gc
     from PySide6.QtCore import QCoreApplication, QEvent
+    for widget in app.topLevelWidgets():
+        widget.close()
+        widget.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
+    gc.collect()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     app.processEvents()
 

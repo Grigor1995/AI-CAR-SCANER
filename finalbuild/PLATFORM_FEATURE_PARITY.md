@@ -51,8 +51,9 @@ This document records the shared contract for PySide6 Desktop, Kotlin/Jetpack Co
 - **FAIL** — test completed and failed.
 - **INCOMPLETE** — test was not completed or evidence was insufficient.
 - Legacy backend `UNKNOWN` values must be normalized to `INCOMPLETE` at the client boundary.
-- Armenian labels: ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆԱՎԱՐՏ.
-- Russian labels: ПРОЙДЕН / НЕ ПРОЙДЕН / НЕ ЗАВЕРШЁН.
+- Current Android/iOS Armenian labels: Նորմալ / Խնդիր կա / Անավարտ.
+- Current Android/iOS Russian labels: Норма / Есть проблема / Не завершён.
+- Desktop retains its legacy outcome labels; mobile wording parity does not yet extend to Desktop. Canonical API values remain unchanged.
 
 ## API URL contract
 

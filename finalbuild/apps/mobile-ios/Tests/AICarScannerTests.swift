@@ -22,6 +22,19 @@ final class AICarScannerTests: XCTestCase {
         }
     }
 
+    func testOutcomeLabelsFollowTheSelectedLanguage() {
+        let hy = T(language: .hy)
+        let ru = T(language: .ru)
+        XCTAssertEqual(hy.testResultLabel("PASS"), "Նորմալ")
+        XCTAssertEqual(hy.testResultLabel("FAIL"), "Խնդիր կա")
+        XCTAssertEqual(hy.testResultLabel("INCOMPLETE"), "Անավարտ")
+        XCTAssertEqual(ru.testResultLabel("PASS"), "Норма")
+        XCTAssertEqual(ru.testResultLabel("FAIL"), "Есть проблема")
+        XCTAssertEqual(ru.testResultLabel("INCOMPLETE"), "Не завершён")
+        XCTAssertEqual(T(language: .en).testResultLabel("PASS"), "PASS")
+        XCTAssertEqual(hy.testResultLabel("future", fallback: "server label"), "server label")
+    }
+
     func testVehicleRoundTrip() throws {
         let value = Vehicle(make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006, engine: "M272 E35 3.5", fuel: ["petrol", "lpg"], ecu: "ME9.7")
         let data = try JSONEncoder().encode(value)

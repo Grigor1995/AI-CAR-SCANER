@@ -10,6 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.CancellationException
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -82,4 +83,31 @@ class BluetoothObdClientConnectTest {
         assertEquals("RFCOMM socket unavailable", result.exceptionOrNull()?.message)
         assertFalse(client.isConnected)
     }
+    @Test
+    fun revokedPermissionReturnsFailureWithoutOpeningASocket() = runTest {
+        val device = mockk<BluetoothDevice>()
+        every { device.createRfcommSocketToServiceRecord(any<UUID>()) } throws SecurityException("permission revoked")
+        val client = BluetoothObdClient()
+        val result = client.connect(device)
+        assertTrue(result.exceptionOrNull() is SecurityException)
+        assertFalse(client.isConnected)
+    }
+
+    @Test
+    fun cancelledConnectionClosesSocketAndPropagatesCancellation() = runTest {
+        val device = mockk<BluetoothDevice>()
+        val socket = mockk<BluetoothSocket>()
+        every { device.createRfcommSocketToServiceRecord(any<UUID>()) } returns socket
+        every { socket.connect() } throws CancellationException("cancelled")
+        every { socket.close() } returns Unit
+        val client = BluetoothObdClient()
+        try {
+            client.connect(device)
+            org.junit.Assert.fail("Cancellation must propagate")
+        } catch (_: CancellationException) {
+            assertFalse(client.isConnected)
+            verify(exactly = 1) { socket.close() }
+        }
+    }
+
 }

@@ -1,5 +1,18 @@
 # Native iOS Test Report
 
+## Cloud audit — 2026-10-21
+
+The current source declares **28 XCTest cases**. All 10 Swift files pass a
+Tree-sitter Swift syntax check in the Linux cloud environment. XCTest, Swift
+compilation/type checking, simulator behavior and numeric iOS coverage were
+**not executed or measured** in this audit because Xcode/macOS is unavailable.
+Do not treat the historical CI baseline below as validation of the current UI.
+
+The audit fixes result entry so failed requests keep the sheet/notes available
+for retry, duplicate submissions are disabled while loading, and successful
+submissions return to the updated analysis. Selected-language result-label
+assertions have also been added; these require the next Xcode test run.
+
 ## Current status
 
 The native iOS CI suite has a previously verified baseline of **2 tests passed, 0 failures** (run #14). This branch expands the suite with URLProtocol-backed API contract tests; its final status must be taken from the GitHub Actions run triggered by this commit.

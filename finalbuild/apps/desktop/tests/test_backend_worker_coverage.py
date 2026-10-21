@@ -67,3 +67,34 @@ def test_backend_worker_fails_explicitly_for_invalid_backend_port(monkeypatch):
     with pytest.raises(ValueError, match="invalid literal"):
         backend_worker.main()
     mock_run.assert_not_called()
+
+
+@pytest.mark.parametrize("seed_error", [None, RuntimeError("catalog seed failed")])
+def test_local_database_preparation_precedes_server_and_failures_block_startup(monkeypatch, seed_error):
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(sys, "frozen", False, raising=False)
+    monkeypatch.setenv("AI_CAR_DESKTOP_LOCAL_DB", "1")
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///test-local.db")
+    monkeypatch.setenv("AI_CAR_BACKEND_PORT", "8001")
+    events = []
+
+    def prepare(url, root):
+        assert url == "sqlite:///test-local.db"
+        assert root == Path(backend_worker.__file__).resolve().parents[2]
+        events.append("seed")
+        if seed_error is not None:
+            raise seed_error
+        return 3
+
+    launch = Mock(side_effect=lambda *args, **kwargs: events.append("serve"))
+    monkeypatch.setitem(sys.modules, "diagnostic.local_database", SimpleNamespace(prepare_local_database=prepare))
+    monkeypatch.setitem(sys.modules, "uvicorn", SimpleNamespace(run=launch))
+    if seed_error is not None:
+        with pytest.raises(RuntimeError, match="catalog seed failed"):
+            backend_worker.main()
+        launch.assert_not_called()
+        assert events == ["seed"]
+    else:
+        backend_worker.main()
+        launch.assert_called_once()
+        assert events == ["seed", "serve"]

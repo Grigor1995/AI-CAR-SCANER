@@ -30,6 +30,8 @@ uvicorn api.main:app --host 127.0.0.1 --port 8001
 API: http://127.0.0.1:8001/docs
 
 ## Run tests
+
+See the [October 21 full QA audit](docs/testing/full-qa-audit-2026-10-21.md) for measured coverage, fixes, remaining gaps and reproduction commands.
 ```bash
 pip install -r backend/requirements-dev.txt
 pytest -q

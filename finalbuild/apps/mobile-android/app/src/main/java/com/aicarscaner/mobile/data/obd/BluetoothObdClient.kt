@@ -2,6 +2,7 @@ package com.aicarscaner.mobile.data.obd
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -20,21 +21,29 @@ class BluetoothObdClient {
 
     suspend fun connect(device: BluetoothDevice): Result<String> = withContext(Dispatchers.IO) {
         var pendingSocket: BluetoothSocket? = null
-        runCatching {
+        fun cleanUpFailedConnection() {
+            pendingSocket?.let { pending -> runCatching { pending.close() } }
+            close()
+        }
+        try {
             close()
             val s = device.createRfcommSocketToServiceRecord(SPP_UUID)
             pendingSocket = s
             s.connect()
             socket = s
             pendingSocket = null
-
             initialize()
-            "Connected to ${device.name ?: device.address}"
-        }.onFailure {
-            // A connect failure happens before the socket is stored on this client.
-            // Close the local socket explicitly so failed attempts do not leak it.
-            pendingSocket?.let { pending -> runCatching { pending.close() } }
-            close()
+            Result.success("Connected to ${device.name ?: device.address}")
+        } catch (cancelled: CancellationException) {
+            cleanUpFailedConnection()
+            throw cancelled
+        } catch (denied: SecurityException) {
+            // Permission may be revoked after the screen checks it.
+            cleanUpFailedConnection()
+            Result.failure(denied)
+        } catch (error: Exception) {
+            cleanUpFailedConnection()
+            Result.failure(error)
         }
     }
 

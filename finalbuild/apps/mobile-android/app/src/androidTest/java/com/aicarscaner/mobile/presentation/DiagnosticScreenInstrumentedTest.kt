@@ -46,13 +46,8 @@ class DiagnosticScreenInstrumentedTest {
             .clear()
             .commit()
 
-        composeRule.setContent {
-            DiagnosticScreen(
-                DiagnosticViewModel(
-                    DiagnosticRepository(fakeApi)
-                )
-            )
-        }
+        val viewModel = DiagnosticViewModel(DiagnosticRepository(fakeApi))
+        composeRule.setContent { DiagnosticScreen(viewModel) }
         composeRule.waitForIdle()
     }
 

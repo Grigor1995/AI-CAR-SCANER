@@ -72,7 +72,7 @@ def test_startup_probe_records_failure_instead_of_traceback_on_cleanup_lock(
     assert result == saved
     assert result["status"] == "FAIL"
     assert result["cleanup"] == "FAIL"
-    assert result["health"] is False
+    assert result["health"] is True  # /health succeeded; only cleanup failed
     assert "locked" in result["error"]
     assert result["temporary_directory_if_locked"] == str(temp_folder)
 

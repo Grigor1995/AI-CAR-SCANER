@@ -55,13 +55,13 @@ def analyze_telemetry(session_id: str):
 
 
 @router.post("/sessions/{session_id}/ai-analyze-live")
-async def ai_analyze_live(session_id: str):
+async def ai_analyze_live(session_id: str, language: str = "en"):
     if session_id not in sessions:
         raise HTTPException(404, "Session not found")
     session = sessions[session_id]
     summary = service.summarize(session.session_id)
     samples = service.samples(session.session_id)
-    result = await analyze_live_session(session, summary, samples)
+    result = await analyze_live_session(session, summary, samples, language=language)
     session.audit_log.append({
         "event": "LIVE_DATA_AI_ANALYSIS_COMPLETED",
         "sample_count": summary.sample_count,

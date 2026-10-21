@@ -220,7 +220,7 @@ def test_recommendations_and_test_result_follow_requested_language():
     assert all(item["id"] != test_id for item in localized["recommendations"])
     assert any("Թեստի արդյունք" in item["fact"] for item in localized["evidence"])
     assert any(item.get("test_name") for item in localized["test_results"])
-    assert any(item["result"] in {"ԱՆՑԱՎ", "ՉԱՆՑԱՎ", "ԱՆԱՎԱՐՏ"} for item in localized["test_results"])
+    assert any(item["result_label"] in {"ԱՆՑԱՎ", "ՉԱՆՑԱՎ", "ԱՆԱՎԱՐՏ"} for item in localized["test_results"])
 
     after_statuses = {item["category"]: item["status"] for item in localized["hypotheses"]}
     assert any(

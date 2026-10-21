@@ -53,9 +53,10 @@ internal fun DemoHome(session: DiagnosticSessionDto, titles: List<String>, navig
         OutlinedButton(onClick = { navigate(4) }, modifier = Modifier.weight(1f)) { Text("◈ ${titles[4]}") }
     }
     DemoPanel(titles[8]) {
-        val completed = session.test_results.filter { it.result == "PASS" || it.result == "FAIL" }.map { it.test_id }.toSet()
-        val ids = session.recommendations.map { it.id }.toSet()
-        val count = completed.intersect(ids).size
+        val latest = session.test_results.associateBy { it.test_id }
+        val completed = latest.values.filter { it.result == "PASS" || it.result == "FAIL" }.map { it.test_id }.toSet()
+        val ids = session.recommendations.map { it.id }.toSet() + latest.keys
+        val count = completed.size
         LinearProgressIndicator(progress = { if (ids.isEmpty()) 0f else count.toFloat() / ids.size }, modifier = Modifier.fillMaxWidth())
         Text("$count/${ids.size}", style = MaterialTheme.typography.titleLarge)
         Button(onClick = { navigate(8) }, modifier = Modifier.fillMaxWidth()) { Text(titles[8]) }
@@ -103,7 +104,7 @@ internal fun DemoGuidedTests(session: DiagnosticSessionDto, title: String, recor
     }
     session.test_results.forEach { result ->
         val color = when (result.result) { "PASS" -> Color(0xFF21D6A0); "FAIL" -> Color(0xFFFF5D79); else -> Color(0xFFFFC663) }
-        DemoPanel(result.testName ?: result.test_id) { Text(result.result, color = color, fontWeight = FontWeight.Bold) }
+        DemoPanel(result.testName ?: result.test_id) { Text(result.result_label ?: result.result, color = color, fontWeight = FontWeight.Bold) }
     }
     if (session.recommendations.isEmpty()) Text("—")
 }

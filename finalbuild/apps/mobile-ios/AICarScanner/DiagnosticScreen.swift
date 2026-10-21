@@ -169,9 +169,10 @@ struct DiagnosticScreen: View {
                 .frame(maxWidth: .infinity)
             if let session = viewModel.session {
                 SectionCard(t.tr("Testing progress", "Прогресс тестов", "Փորձարկման ընթացք")) {
-                    let finished = Set(session.test_results.filter { $0.result == "PASS" || $0.result == "FAIL" }.map(\.test_id))
-                    let total = Set(session.recommendations.map(\.id))
-                    let count = finished.intersection(total).count
+                    let latest = session.test_results.reduce(into: [String: String]()) { $0[$1.test_id] = $1.result }
+                    let finished = latest.filter { $0.value == "PASS" || $0.value == "FAIL" }
+                    let total = Set(session.recommendations.map(\.id)).union(latest.keys)
+                    let count = finished.count
                     ProgressView(value: Double(count), total: Double(max(total.count, 1)))
                     Text("\(count)/\(total.count)").font(.caption.monospacedDigit())
                 }
@@ -226,7 +227,7 @@ struct DiagnosticScreen: View {
                 }.padding(16).modifier(AutomotiveCardStyle())
             }
             ForEach(viewModel.session?.test_results ?? []) { result in
-                HStack { Text(result.test_name ?? result.test_id); Spacer(); Text(result.result).bold().foregroundStyle(AutomotivePalette.resultColor(result.result)) }
+                HStack { Text(result.test_name ?? result.test_id); Spacer(); Text(result.result_label ?? result.result).bold().foregroundStyle(AutomotivePalette.resultColor(result.result)) }
                     .padding(14).modifier(AutomotiveCardStyle())
             }
             if (viewModel.session?.recommendations ?? []).isEmpty { Text(t.noSession) }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from unittest.mock import Mock
@@ -339,3 +340,30 @@ def test_launcher_storage_selection_is_explicit(monkeypatch, tmp_path, configure
         assert env['PYTHONUNBUFFERED'] == '1'
     finally:
         main._close_backend_log()
+
+
+def test_with_backend_flag_selects_local_sqlite_before_ui(monkeypatch):
+    calls = []
+    monkeypatch.setattr(main, "BACKEND_URL", "https://example.test")
+    monkeypatch.setattr(main, "HEALTH_URL", "https://example.test/health")
+    monkeypatch.setattr(main, "LOCAL_BACKEND", False)
+    monkeypatch.setattr(main, "start_backend", lambda: calls.append(("backend", main.LOCAL_BACKEND, os.environ.get("AI_CAR_USE_LOCAL_DATABASE"))))
+    monkeypatch.setattr(main, "start_llama_server", lambda **kwargs: None)
+    monkeypatch.setattr(main, "stop_backend", lambda: None)
+    monkeypatch.setattr(main, "stop_llama_server", lambda: None)
+    monkeypatch.setattr("apps.desktop.ui.run", lambda: calls.append(("ui", os.environ.get("AI_CAR_BACKEND_URL"))))
+    monkeypatch.setenv("AI_CAR_BACKEND_URL", "https://example.test")
+    monkeypatch.setenv("AI_CAR_USE_LOCAL_DATABASE", "0")
+    main.run(["--with-backend"])
+    assert calls == [("backend", True, "1"), ("ui", f"http://127.0.0.1:{main.PORT}")]
+
+
+def test_no_backend_flag_does_not_spawn_services(monkeypatch):
+    start = Mock()
+    monkeypatch.setattr(main, "start_backend", start)
+    monkeypatch.setattr(main, "start_llama_server", start)
+    monkeypatch.setattr(main, "stop_backend", lambda: None)
+    monkeypatch.setattr(main, "stop_llama_server", lambda: None)
+    monkeypatch.setattr("apps.desktop.ui.run", lambda: None)
+    main.run(["--no-backend"])
+    start.assert_not_called()

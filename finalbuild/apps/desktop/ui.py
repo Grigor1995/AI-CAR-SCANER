@@ -4,6 +4,8 @@ import json
 import os
 import re
 import sys
+from functools import lru_cache
+import time
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QSize, QTimer, QSettings, QCoreApplication, QEvent
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont
@@ -64,6 +66,13 @@ QMenuBar, QMenu, QStatusBar { background: #091B35; color: #D8ECFF; }
 QMenu::item:selected { background: #165CAC; }
 QScrollBar:vertical { background: #09172C; width: 12px; }
 QScrollBar::handle:vertical { background: #26568F; border-radius: 5px; min-height: 24px; }
+
+QScrollBar:vertical { background: #09172C; width: 8px; margin: 0; }
+QScrollBar:horizontal { background: #09172C; height: 8px; margin: 0; }
+QScrollBar::handle:vertical { background: #2789DE; border-radius: 4px; min-height: 28px; }
+QScrollBar::handle:horizontal { background: #2789DE; border-radius: 4px; min-width: 28px; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 """
 
 APP_QSS_LIGHT = """
@@ -106,6 +115,13 @@ QLabel#ok { color: #078D63; font-weight: 700; }
 QLabel#warn { color: #B66B05; font-weight: 700; }
 QMenuBar, QMenu, QStatusBar { background: #E3EFFA; color: #12365A; }
 QMenu::item:selected { background: #B2DCFF; }
+
+QScrollBar:vertical { background: #E2EFFD; width: 8px; margin: 0; }
+QScrollBar:horizontal { background: #E2EFFD; height: 8px; margin: 0; }
+QScrollBar::handle:vertical { background: #448ECC; border-radius: 4px; min-height: 28px; }
+QScrollBar::handle:horizontal { background: #448ECC; border-radius: 4px; min-width: 28px; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 """
 
 
@@ -270,21 +286,32 @@ _UI_TRANSLATIONS["ru"].update({
 })
 
 
-def _translate_ui_text(text: str, language: str) -> str:
-    if not isinstance(text, str):
-        return text
-    # Normalize all known translations back to English first, including phrases
-    # inside dynamic status messages and multiline diagnostic summaries.
-    canonical = text
-    for translations in _UI_TRANSLATIONS.values():
-        for source, translated in sorted(translations.items(), key=lambda item: len(item[1]), reverse=True):
-            canonical = re.sub(r"(?<!\w)" + re.escape(translated) + r"(?!\w)", source, canonical)
-    if language == "en":
+_UI_TRANSLATIONS["hy"].update({"Edit vehicle": "Խմբագրել մեքենան"})
+_UI_TRANSLATIONS["ru"].update({"Edit vehicle": "Изменить автомобиль"})
+
+@lru_cache(maxsize=1)
+def _translation_patterns():
+    reverse = {}
+    for mapping in _UI_TRANSLATIONS.values():
+        for original, translated in sorted(mapping.items(), key=lambda pair: len(pair[1]), reverse=True):
+            reverse.setdefault(translated, original)
+    def pattern(mapping):
+        return re.compile(r"(?<!\w)(?:" + "|".join(re.escape(key) for key in sorted(mapping, key=len, reverse=True)) + r")(?!\w)")
+    return reverse, pattern(reverse), {language: pattern(mapping) for language, mapping in _UI_TRANSLATIONS.items()}
+
+
+@lru_cache(maxsize=4096)
+def _translated_text(text, language):
+    reverse, canonical_pattern, targets = _translation_patterns()
+    canonical = canonical_pattern.sub(lambda match: reverse[match.group(0)], text)
+    if language not in targets:
         return canonical
-    translations = _UI_TRANSLATIONS.get(language, {})
-    for source in sorted(translations, key=len, reverse=True):
-        canonical = re.sub(r"(?<!\w)" + re.escape(source) + r"(?!\w)", translations[source], canonical)
-    return canonical
+    return targets[language].sub(lambda match: _UI_TRANSLATIONS[language][match.group(0)], canonical)
+
+
+def _translate_ui_text(text: str, language: str) -> str:
+    return _translated_text(text, language) if isinstance(text, str) else text
+
 
 
 
@@ -295,6 +322,7 @@ def _translate_ui_block(text: str, language: str) -> str:
     return "\n".join(_translate_known_ui_line(line, language) for line in text.splitlines())
 
 
+@lru_cache(maxsize=4096)
 def _translate_known_ui_line(line: str, language: str) -> str:
     bullet = ""
     body = line
@@ -370,7 +398,10 @@ class VehicleDialog(QDialog):
         self.resize(520, 440)
         self._catalog: list[dict[str, Any]] = []
         api = getattr(parent, "api", None)
-        if api is not None:
+        cached = getattr(parent, "_vehicle_catalog", None)
+        if cached is not None:
+            self._catalog = list(cached)
+        elif api is not None:
             try:
                 self._catalog = list(api.vehicle_catalog_entries())
             except Exception:
@@ -452,6 +483,8 @@ class VehicleDialog(QDialog):
         form.addRow(buttons)
 
     def _update_artwork_preview(self, *_args: Any) -> None:
+        if getattr(self, "_prefilling", False):
+            return
         self.artwork_preview.setPixmap(vehicle_pixmap(
             self.make.currentText(), self.model.currentText(), self.chassis.currentText(), 270, 144
         ))
@@ -511,7 +544,7 @@ class VehicleDialog(QDialog):
             make=self.make.currentText(),
             model=self.model.currentText(),
             chassis=self.chassis.currentText(),
-            year=int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+            year=int(self.year.currentText()) if self.year.currentText().isdigit() and int(self.year.currentText()) > 0 else None,
         )
         engines = sorted({row["engine"] for row in rows})
         self._set_combo(self.engine, engines, "M272 E35 3.5" if "M272 E35 3.5" in engines else (engines[0] if engines else None))
@@ -522,18 +555,37 @@ class VehicleDialog(QDialog):
             make=self.make.currentText(),
             model=self.model.currentText(),
             chassis=self.chassis.currentText(),
-            year=int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+            year=int(self.year.currentText()) if self.year.currentText().isdigit() and int(self.year.currentText()) > 0 else None,
             engine=self.engine.currentText(),
         )
         ecus = sorted({row["ecu"] for row in rows if row.get("ecu")})
         self._set_combo(self.ecu, ecus, "ME9.7" if "ME9.7" in ecus else (ecus[0] if ecus else None))
+
+    def set_vehicle(self, vehicle: Vehicle) -> None:
+        self.setWindowTitle(_translate_ui_text("Edit vehicle", getattr(self.parent(), "language", "en")))
+        # Include custom saved profiles as well as current catalog entries.
+        row = vehicle.to_json()
+        self._catalog.append({key: row.get(key) or (0 if key == "year" else "") for key in ("make", "model", "chassis", "year", "engine", "ecu")})
+        self._prefilling = True
+        try:
+            self._refresh_makes()
+            for field in ("make", "model", "chassis", "year", "engine", "ecu"):
+                combo = getattr(self, field)
+                value = str(getattr(vehicle, field) or (0 if field == "year" else ""))
+                if combo.findText(value) < 0:
+                    combo.addItem(value)
+                combo.setCurrentText(value)
+            self.fuel.setText(",".join(vehicle.fuel))
+        finally:
+            self._prefilling = False
+        self._update_artwork_preview()
 
     def vehicle(self) -> Vehicle:
         return Vehicle(
             self.make.currentText().strip(),
             self.model.currentText().strip(),
             self.chassis.currentText().strip(),
-            int(self.year.currentText()) if self.year.currentText().isdigit() else None,
+            int(self.year.currentText()) if self.year.currentText().isdigit() and int(self.year.currentText()) > 0 else None,
             self.engine.currentText().strip(),
             [x.strip() for x in self.fuel.text().split(",") if x.strip()],
             self.ecu.currentText().strip(),
@@ -545,7 +597,7 @@ class DashboardPage(DemoDashboard):
 class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); bar.addStretch(); lay.addLayout(bar)
+        lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); self.edit_btn=QPushButton("Edit vehicle"); self.edit_btn.clicked.connect(lambda: app.edit_selected_vehicle()); self.edit_btn.setEnabled(False); bar.addWidget(self.edit_btn); bar.addStretch(); lay.addLayout(bar)
         self.model_artwork = QLabel()
         self.model_artwork.setAlignment(Qt.AlignCenter)
         self.model_artwork.setMaximumHeight(185)
@@ -557,20 +609,27 @@ class VehiclesPage(QWidget):
         self.search.textChanged.connect(lambda text: [self.list.item(i).setHidden(text.casefold() not in self.list.item(i).text().casefold()) for i in range(self.list.count())])
         self.list.itemSelectionChanged.connect(self.show_selected)
     def refresh(self):
+        signature = tuple(tuple(str(value) for value in v.to_json().values()) for v in self.app.vehicles)
+        if signature == getattr(self, "_vehicle_signature", None):
+            return
+        self._vehicle_signature = signature
+        selected = self.list.currentRow()
         self.list.clear()
         for idx,v in enumerate(self.app.vehicles):
             item=QListWidgetItem(f"{v.make} {v.model} ({v.year or '—'})"); item.setData(Qt.UserRole, idx); item.setIcon(QIcon(vehicle_pixmap(v.make,v.model,v.chassis,112,56))); self.list.addItem(item)
+        self.search.textChanged.emit(self.search.text())
         self.delete_btn.setEnabled(bool(self.app.vehicles))
-        if self.app.active_vehicle:
+        if self.app.vehicles:
+            self.list.setCurrentRow(max(0, min(selected, len(self.app.vehicles)-1)))
+        elif self.app.active_vehicle:
             self.show_vehicle(self.app.active_vehicle)
-        elif self.app.vehicles:
-            self.list.setCurrentRow(0)
         else:
             self.details.clear()
             self.model_artwork.clear()
     def show_selected(self):
         items=self.list.selectedItems()
         self.delete_btn.setEnabled(bool(items))
+        self.edit_btn.setEnabled(bool(items))
         if not items: return
         v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
     def show_vehicle(self,v:Vehicle):
@@ -753,10 +812,14 @@ class TestsPage(QWidget):
         outcomes=QHBoxLayout()
         for code, color in [("PASS", "#17B884"),("FAIL", "#E24C65"),("INCOMPLETE", "#CE9E31")]:
             button=QPushButton(code); button.setStyleSheet(f"border: 1px solid {color}; color: {color}; padding: 18px;")
-            button.clicked.connect(lambda _=False, value=code:self.result.setCurrentIndex(self.result.findData(value))); outcomes.addWidget(button)
+            button.clicked.connect(lambda _=False, value=code:self._record_outcome(value)); outcomes.addWidget(button)
         lay.addLayout(outcomes)
         bar=QHBoxLayout(); language = getattr(app, "language", "en")
         self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.result.setCurrentIndex(2); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+    def _record_outcome(self, value):
+        self.result.setCurrentIndex(self.result.findData(value))
+        self.app.record_selected_test()
+
     def _show_instructions(self):
         selected=self.list.currentItem()
         if selected is None:
@@ -768,17 +831,27 @@ class TestsPage(QWidget):
         self.instructions.setPlainText("\n".join(lines))
 
     def refresh(self):
-        total=len(self.app.decision.get("candidates",[]))
-        completed={x.get("test_id") for x in self.app.session_json.get("test_results",[]) if x.get("result") in {"PASS","FAIL"}}
-        current={str(x.get("test_id") or x.get("id")) for x in self.app.decision.get("candidates",[])}
-        done=len(completed & current)
+        latest = {str(x.get("test_id")): x.get("result") for x in self.app.session_json.get("test_results", [])}
+        completed = {tid for tid, result in latest.items() if result in {"PASS", "FAIL"}}
+        current = {str(x.get("test_id") or x.get("id")) for x in self.app.decision.get("candidates", [])}
+        total = len(current | latest.keys())
+        done = len(completed)
         self.progress.setRange(0,max(1,total)); self.progress.setValue(done); self.progress.setFormat(f"{done}/{total}")
+        candidates = self.app.decision.get("candidates", [])
+        signature = json.dumps(candidates, sort_keys=True, ensure_ascii=False)
+        if signature == getattr(self, "_candidate_signature", None):
+            return
+        self._candidate_signature = signature
+        previous = self.list.currentItem()
+        selected = previous.data(Qt.UserRole) if previous else None
         self.list.clear(); self.app.test_candidates=[]
-        for item in self.app.decision.get("candidates",[]):
+        for item in candidates:
             c=TestCandidate.from_json(item); self.app.test_candidates.append(c)
             label=f"{c.priority_score:.2f} • {c.name} • risk={c.risk_level}\n{c.purpose}"
             q=QListWidgetItem(label); q.setData(Qt.UserRole,c.test_id); self.list.addItem(q)
-        if self.list.count(): self.list.setCurrentRow(0)
+        if self.list.count():
+            row = next((i for i in range(self.list.count()) if self.list.item(i).data(Qt.UserRole) == selected), 0)
+            self.list.setCurrentRow(row)
 
 class DevicesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
@@ -879,6 +952,9 @@ class MainWindow(QMainWindow):
         self.api = DiagnosticApiClient()
         self.store = VehicleStore()
         self.vehicles = self.store.load()
+        self._vehicle_catalog = []
+        self._catalog_pending = False
+        self._catalog_loaded_at = 0.0
         self.active_vehicle = None
         self.session = None
         self.session_json = {}
@@ -903,7 +979,14 @@ class MainWindow(QMainWindow):
         self.refresh_all()
 
     def _apply_theme(self) -> None:
-        self.setStyleSheet(APP_QSS if self.dark_theme else APP_QSS_LIGHT)
+        if getattr(self, "_rendered_theme", None) == self.dark_theme:
+            return
+        self.setUpdatesEnabled(False)
+        try:
+            self.setStyleSheet(APP_QSS if self.dark_theme else APP_QSS_LIGHT)
+            self._rendered_theme = self.dark_theme
+        finally:
+            self.setUpdatesEnabled(True)
 
     def _open_settings(self) -> None:
         dialog = QDialog(self)
@@ -928,14 +1011,20 @@ class MainWindow(QMainWindow):
         buttons.rejected.connect(dialog.reject)
         form.addRow(buttons)
         if dialog.exec() != QDialog.Accepted:
+            dialog.deleteLater()
             return
+        old_language, old_theme = self.language, self.dark_theme
         self.language = str(language.currentData())
         self.dark_theme = bool(theme.currentData())
         self.settings_store.setValue("language", self.language)
         self.settings_store.setValue("dark_theme", self.dark_theme)
-        self._apply_theme()
-        self._apply_language()
-        self.refresh_pages()
+        if old_theme != self.dark_theme:
+            self._apply_theme()
+        if old_language != self.language:
+            self._apply_language()
+            self.refresh_pages()
+            self._refresh_response_language()
+        dialog.deleteLater()
         self.statusBar().showMessage(self.tr_text("Settings saved") + " • " + self.tr_text("Language") + "=" + self.language + " • " + self.tr_text("Theme") + "=" + self.tr_text("Dark" if self.dark_theme else "Light"))
 
     def tr_text(self, text: str) -> str:
@@ -946,9 +1035,11 @@ class MainWindow(QMainWindow):
         for widget in self.findChildren(QWidget):
             if isinstance(widget, QLabel):
                 if widget.objectName() != "vehicleMetricValue" and widget.text():
-                    widget.setText(self.tr_text(widget.text()))
+                    translated = self.tr_text(widget.text())
+                    if translated != widget.text(): widget.setText(translated)
             elif isinstance(widget, QPushButton):
-                widget.setText(self.tr_text(widget.text()))
+                translated = self.tr_text(widget.text())
+                if translated != widget.text(): widget.setText(translated)
             elif isinstance(widget, QGroupBox):
                 widget.setTitle(self.tr_text(widget.title()))
             elif isinstance(widget, QLineEdit):
@@ -964,7 +1055,11 @@ class MainWindow(QMainWindow):
                         item.setText(self.tr_text(item.text()))
             elif isinstance(widget, QComboBox):
                 for index in range(widget.count()):
-                    widget.setItemText(index, self.tr_text(widget.itemText(index)))
+                    text = self.tr_text(widget.itemText(index))
+                    if text != widget.itemText(index):
+                        widget.blockSignals(True)
+                        widget.setItemText(index, text)
+                        widget.blockSignals(False)
             elif isinstance(widget, QTableWidget):
                 for column in range(widget.columnCount()):
                     item = widget.horizontalHeaderItem(column)
@@ -1080,16 +1175,85 @@ class MainWindow(QMainWindow):
     def refresh_health(self):
         def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage("Backend online" if self.online else "Backend offline"); self.refresh_pages()
         self.run_worker(self.api.health,done)
-    def refresh_all(self): self.refresh_health(); self.refresh_devices(); self.refresh_pages()
+    def refresh_catalog(self):
+        if self._catalog_pending or time.monotonic() - self._catalog_loaded_at < 60:
+            return
+        self._catalog_pending = True
+        def load():
+            try: return self.api.vehicle_catalog_entries()
+            except Exception: return None
+        def loaded(rows):
+            self._catalog_pending = False
+            if isinstance(rows, list):
+                self._vehicle_catalog = rows
+                self._catalog_loaded_at = time.monotonic()
+        self.run_worker(load, loaded)
+
+    def refresh_all(self): self.refresh_health(); self.refresh_devices(); self.refresh_catalog(); self.refresh_pages()
     def refresh_pages(self):
         for p in self.pages:
             try: p.refresh()
             except Exception: pass
         self._apply_language()
     def add_vehicle(self):
-        d=VehicleDialog(self)
-        if d.exec()!=QDialog.Accepted: return
-        v=d.vehicle(); self.vehicles=[x for x in self.vehicles if not (x.make==v.make and x.model==v.model and x.year==v.year and x.engine==v.engine)]; self.vehicles.append(v); self.store.save(self.vehicles); self.active_vehicle=v; self.pages[1].refresh(); self.new_session()
+        dialog = VehicleDialog(self)
+        try:
+            if dialog.exec() != QDialog.Accepted:
+                return
+            vehicle = dialog.vehicle()
+        finally:
+            getattr(dialog, "deleteLater", lambda: None)()
+        self.vehicles = [v for v in self.vehicles if not (v.make == vehicle.make and v.model == vehicle.model and v.year == vehicle.year and v.engine == vehicle.engine)]
+        self.vehicles.append(vehicle)
+        self.store.save(self.vehicles)
+        self.active_vehicle = vehicle
+        self.pages[1].refresh()
+        self.new_session()
+
+    def edit_selected_vehicle(self):
+        item = self.pages[1].list.currentItem()
+        if item is None:
+            self.show_error("Select a vehicle first.")
+            return
+        index = int(item.data(Qt.UserRole))
+        original = self.vehicles[index]
+        active = self.active_vehicle is original or self.active_vehicle == original
+        if active and self.session and not self.online:
+            self.show_error("Reconnect the backend before editing the active session vehicle.")
+            return
+        dialog = VehicleDialog(self)
+        dialog.set_vehicle(original)
+        try:
+            if dialog.exec() != QDialog.Accepted:
+                return
+            vehicle = dialog.vehicle()
+        finally:
+            dialog.deleteLater()
+        def save():
+            position = next((i for i, item in enumerate(self.vehicles) if item is original), None)
+            if position is not None:
+                self.vehicles[position] = vehicle
+                self.store.save(self.vehicles)
+            if self.active_vehicle is original or self.active_vehicle == original:
+                self.active_vehicle = vehicle
+            self.refresh_pages()
+        if active and self.session:
+            sid, language = self.session.session_id, self.language
+            def work():
+                self.api.update_vehicle(sid, vehicle.to_json())
+                return {"session": self.api.analyze(sid, language=language), "decision": self.api.decision_plan(sid, language=language)}
+            def done(data):
+                # Save the edited local profile even if another session was opened.
+                save()
+                if self.session and self.session.session_id == sid:
+                    self.session = Session(sid, str(data["session"].get("state", "")), vehicle)
+                    self.session_json = data["session"]
+                    self.decision = data["decision"]
+                    self.refresh_pages()
+            self.run_worker(work, done)
+        else:
+            save()
+
     def delete_selected_vehicle(self):
         page=self.pages[1]
         items=page.list.selectedItems()
@@ -1196,7 +1360,7 @@ class MainWindow(QMainWindow):
             if dtc: self.api.add_dtc(self.session.session_id,dtc)
             return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)
-    def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id),self._decision_done)
+    def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id, language=self.language),self._decision_done)
     def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage("Diagnostic reasoning updated")
     def start_simulator(self):
         if not self.session: self.new_session(); return
@@ -1243,7 +1407,11 @@ class MainWindow(QMainWindow):
         if not self.session:
             self.show_error("Create a diagnostic session first."); return
         self.statusBar().showMessage("AI is analyzing live vehicle data...")
-        self.run_worker(lambda:self.api.ai_analyze_live_data(self.session.session_id), self._live_ai_done)
+        sid, language = self.session.session_id, self.language
+        def done(data):
+            if self.session and self.session.session_id == sid and self.language == language:
+                self._live_ai_done(data)
+        self.run_worker(lambda:self.api.ai_analyze_live_data(sid, language=language), done)
 
     def _live_ai_done(self,data):
         ai=data.get("ai", {})
@@ -1266,14 +1434,46 @@ class MainWindow(QMainWindow):
         ids=[str(x.get("id") or x.get("ecu_id")) for x in self.network.get("ecus",[]) if x.get("id") or x.get("ecu_id")]
         self.run_worker(lambda:self.api.active_probe(self.session.session_id,ids or None),lambda data:self._active_done(data))
     def _active_done(self,data): self.active_network=data; self.refresh_pages(); self.statusBar().showMessage("Active read-only ECU probe completed")
+    def _refresh_response_language(self):
+        if not self.session or not self.online:
+            return
+        sid, language = self.session.session_id, self.language
+        self.pages[4].ai_box.clear()
+        def work():
+            return {"session": self.api.get_session(sid, language=language), "decision": self.api.decision_plan(sid, language=language)}
+        def done(data):
+            if self.session and self.session.session_id == sid and self.language == language:
+                self.session_json = data["session"]
+                self.decision = data["decision"]
+                self.refresh_pages()
+        self.run_worker(work, done)
+
     def record_selected_test(self):
         if not self.session: self.show_error("No active session."); return
-        item=self.pages[6].list.currentItem()
+        page = self.pages[6]
+        item = page.list.currentItem()
         if not item: self.show_error("Select a diagnostic test first."); return
-        tid=str(item.data(Qt.UserRole)); result=str(self.pages[6].result.currentData() or self.pages[6].result.currentText()); notes=self.pages[6].notes.text().strip()
+        sid, language = self.session.session_id, self.language
+        tid = str(item.data(Qt.UserRole))
+        result = str(page.result.currentData() or page.result.currentText())
+        notes = page.notes.text().strip()
         def work():
-            data=self.api.record_test_result(self.session.session_id, tid, result, notes=notes, language=self.language); self.api.analyze(self.session.session_id, language=self.language); return self.api.decision_plan(self.session.session_id)
-        self.run_worker(work,self._decision_done)
+            # The result endpoint already recalculates probabilities and recommendations.
+            session = self.api.record_test_result(sid, tid, result, notes=notes, language=language)
+            return {"session": session, "decision": self.api.decision_plan(sid, language=language)}
+        def done(data):
+            if not self.session or self.session.session_id != sid:
+                return
+            self.session_json = data["session"]
+            self.session = Session(sid, str(self.session_json.get("state", "")), self.active_vehicle)
+            self.decision = data["decision"]
+            page.notes.clear()
+            page.result.setCurrentIndex(page.result.findData("INCOMPLETE"))
+            self.refresh_pages()
+            self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
+            if self.language != language:
+                self._refresh_response_language()
+        self.run_worker(work, done)
 
 
 def _resource_path(relative: str) -> Path:

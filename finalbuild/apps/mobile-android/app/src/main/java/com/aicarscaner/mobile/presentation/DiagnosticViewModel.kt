@@ -25,7 +25,7 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     private val _uiState = MutableStateFlow(DiagnosticUiState())
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
 
-    fun openSession(id: String) = execute { repository.getSession(id) }
+    fun openSession(id: String, language: String = "en") = execute { repository.getSession(id, language) }
 
     fun loadHistory() {
         viewModelScope.launch {

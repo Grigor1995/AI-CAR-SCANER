@@ -124,7 +124,8 @@ def test_localize_session_analysis_translates_nested_fields_without_mutating_sou
     assert localized.recommendations[0].safety_notes[1] == "unknown note"
     assert localized.recommendations[0].prerequisites[1] == "custom prerequisite"
     assert localized.recommendations[0].target_hypotheses[1] == "custom hypothesis"
-    assert localized.test_results[0].result == "ԱՆՑԱՎ"
+    assert localized.test_results[0].result == "PASS"
+    assert localized.test_results[0].result_label == "ԱՆՑԱՎ"
     assert "stable" in localized.evidence[0].fact
     assert "ԱՆԱՎԱՐՏ" in localized.evidence[1].fact
     assert localized.audit_log[0]["event"] != "SYMPTOM_ADDED"

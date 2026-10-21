@@ -4,7 +4,7 @@ import com.aicarscaner.mobile.data.api.*
 
 class DiagnosticRepository(private val api: DiagnosticApi) {
     suspend fun listSessions() = api.listSessions()
-    suspend fun getSession(id: String) = api.getSession(id)
+    suspend fun getSession(id: String, language: String = "en") = api.getSession(id, language)
 
     suspend fun vehicleCatalog() = api.vehicleCatalog()
 

@@ -74,8 +74,8 @@ final class DiagnosticAPI {
         try await request("/api/v1/sessions")
     }
 
-    func getSession(_ id: String) async throws -> DiagnosticSession {
-        try await request("/api/v1/sessions/\(id)")
+    func getSession(_ id: String, language: AppLanguage = .en) async throws -> DiagnosticSession {
+        try await request("/api/v1/sessions/\(id)", query: [URLQueryItem(name: "language", value: language.rawValue)])
     }
 
     func liveRecords(_ id: String) async throws -> LiveRecordResponse {

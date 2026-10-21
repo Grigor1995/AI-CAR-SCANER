@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import os
 import shutil
 import socket
@@ -371,24 +372,37 @@ def stop_backend() -> None:
         _close_backend_log()
 
 
-def run() -> None:
+def run(argv: list[str] | None = None) -> None:
+    global BACKEND_URL, HEALTH_URL, LOCAL_BACKEND
+    parser = argparse.ArgumentParser(description="AI Car Scanner Desktop")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--with-backend", action="store_true", help="Start a local backend with persistent SQLite storage before opening Desktop")
+    mode.add_argument("--no-backend", action="store_true", help="Connect to an existing backend without starting local services")
+    args = parser.parse_args(argv or [])
+    if args.with_backend:
+        BACKEND_URL = f"http://127.0.0.1:{PORT}"
+        HEALTH_URL = f"{BACKEND_URL}/health"
+        LOCAL_BACKEND = True
+        os.environ["AI_CAR_BACKEND_URL"] = BACKEND_URL
+        os.environ["AI_CAR_USE_LOCAL_DATABASE"] = "1"
     try:
         from .ui import run as run_ui
     except ImportError:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
-    if LOCAL_BACKEND:
+    if LOCAL_BACKEND and not args.no_backend:
         try:
             start_llama_server(wait_for_ready=False)
         except Exception as exc:
             print(f"[AI-Car-Scanner] Local LLM startup failed: {exc}", file=sys.stderr)
 
-    try:
-        start_backend()
-    except Exception as exc:
-        backend_error = str(exc)
-        print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
+    if not args.no_backend:
+        try:
+            start_backend()
+        except Exception as exc:
+            backend_error = str(exc)
+            print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
 
     def trace_shutdown(stage: str) -> None:
         path = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
@@ -414,4 +428,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    run(sys.argv[1:])

@@ -64,6 +64,7 @@ struct TestResult: Codable, Identifiable {
     var id: String { test_id }
     let test_id: String
     let result: String
+    var result_label: String? = nil
     let measurements: [String:String]
     let notes: String?
     let test_name: String?

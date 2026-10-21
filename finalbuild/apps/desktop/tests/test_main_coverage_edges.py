@@ -5,6 +5,7 @@ import importlib.util
 import io
 import os
 import runpy
+import sys
 from pathlib import Path
 from urllib.error import URLError
 from unittest.mock import Mock, call
@@ -313,5 +314,6 @@ def test_main_script_entrypoint_runs_without_starting_local_services(monkeypatch
     calls = []
     monkeypatch.setenv("AI_CAR_BACKEND_URL", "https://remote.example.test")
     monkeypatch.setattr("apps.desktop.ui.run", lambda: calls.append("ui"))
+    monkeypatch.setattr(sys, "argv", [main.__file__])
     runpy.run_path(main.__file__, run_name="__main__")
     assert calls == ["ui"]

@@ -9,6 +9,7 @@ from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from diagnostic.models import DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus
 from telemetry.models import TelemetrySample, TelemetrySummary
 from telemetry.evidence import events_to_evidence
+from diagnostic.localization import normalize_language, localize_session_analysis
 
 
 def _recent_signal_context(samples: list[TelemetrySample], max_per_signal: int = 8) -> list[dict[str, Any]]:
@@ -86,15 +87,20 @@ async def analyze_live_session(
     session: DiagnosticSession,
     summary: TelemetrySummary,
     samples: list[TelemetrySample],
+    language: str = "en",
 ) -> dict[str, Any]:
+    language = normalize_language(language)
     added = add_live_evidence(session, summary)
     deterministic = DiagnosticIntelligenceEngine().analyze(session)
     provider = build_llm_provider()
     context = build_live_context(deterministic, summary, samples)
+    context["response_language"] = language
+    response_language = {"en": "English", "ru": "Russian", "hy": "Armenian"}[language]
     prompt = (
         "Analyze the current live vehicle telemetry together with the diagnostic evidence. "
         "Identify meaningful signal relationships or anomalies, state what is measured versus inferred, "
-        "and recommend the next diagnostic test. Never invent values or confirm a component failure without CONFIRMED evidence."
+        "and recommend the next diagnostic test. Never invent values or confirm a component failure without CONFIRMED evidence. "
+        f"Write the entire explanation in {response_language} (language code {language}). Preserve DTC codes and units."
     )
 
     ai_payload: dict[str, Any]
@@ -111,12 +117,16 @@ async def analyze_live_session(
             "available": False,
             "provider": provider.__class__.__name__,
             "model": getattr(getattr(provider, "config", None), "model", "unknown"),
-            "text": "Live-data AI inference is unavailable. Deterministic telemetry analysis remains active.",
+            "text": {
+                "en": "Live-data AI inference is unavailable. Deterministic telemetry analysis remains active.",
+                "ru": "ИИ-анализ текущих данных недоступен. Детерминированный анализ телеметрии продолжает работать.",
+                "hy": "Ընթացիկ տվյալների AI վերլուծությունն անհասանելի է։ Հեռաչափության կանոնային վերլուծությունը շարունակում է աշխատել։",
+            }[language],
             "error": str(exc),
         }
 
     return {
-        "session": deterministic.model_dump(mode="json"),
+        "session": localize_session_analysis(deterministic, language).model_dump(mode="json"),
         "telemetry": summary.model_dump(mode="json"),
         "live_context": context,
         "evidence_added": added,

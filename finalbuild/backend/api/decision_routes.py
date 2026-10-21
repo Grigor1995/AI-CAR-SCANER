@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from diagnostic.decision import DiagnosticDecisionEngine, DiagnosticDecisionPlan
 from diagnostic.models import DiagnosticTest
 from api.state import sessions
+from diagnostic.localization import localize_decision_plan
 
 router = APIRouter(prefix="/api/v1/decision", tags=["diagnostic-decision"])
 engine = DiagnosticDecisionEngine()
@@ -12,10 +13,10 @@ class ConfirmTestRequest(BaseModel):
     safety_confirmed: bool = False
 
 @router.get("/sessions/{session_id}/plan", response_model=DiagnosticDecisionPlan)
-def decision_plan(session_id: str):
+def decision_plan(session_id: str, language: str = "en"):
     if session_id not in sessions:
         raise HTTPException(404, "Session not found")
-    return engine.build_plan(sessions[session_id])
+    return localize_decision_plan(engine.build_plan(sessions[session_id]), language)
 
 @router.post("/sessions/{session_id}/refresh", response_model=DiagnosticDecisionPlan)
 def refresh_decision_plan(session_id: str):

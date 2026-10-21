@@ -97,6 +97,7 @@ data class TestResultRequest(
 data class TestResultDto(
     val test_id: String,
     val result: String,
+    val result_label: String? = null,
     val measurements: Map<String, Any?> = emptyMap(),
     val notes: String? = null,
     @SerializedName("test_name") val testName: String? = null
@@ -128,7 +129,7 @@ interface DiagnosticApi {
     suspend fun listSessions(): List<DiagnosticSessionDto>
 
     @GET("api/v1/sessions/{sessionId}")
-    suspend fun getSession(@Path("sessionId") sessionId: String): DiagnosticSessionDto
+    suspend fun getSession(@Path("sessionId") sessionId: String, @Query("language") language: String = "en"): DiagnosticSessionDto
 
     @GET("api/v1/vehicle-catalog/entries")
     suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto>

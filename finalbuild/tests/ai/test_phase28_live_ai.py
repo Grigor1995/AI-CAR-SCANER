@@ -41,7 +41,7 @@ def test_phase28_telemetry_ai_route_accepts_live_analysis(monkeypatch):
     session = DiagnosticSession(session_id=sid, vehicle=Vehicle(make="Demo", model="Live", year=2026))
     sessions[sid] = session
 
-    async def fake_analysis(session, summary, samples):
+    async def fake_analysis(session, summary, samples, language="en"):
         return {"session": session.model_dump(mode="json"), "telemetry": summary.model_dump(mode="json"), "ai": {"available": True, "provider": "fake", "model": "test", "text": "RPM trend is stable."}, "live_context": {}, "evidence_added": 0}
 
     monkeypatch.setattr("api.telemetry_routes.analyze_live_session", fake_analysis)

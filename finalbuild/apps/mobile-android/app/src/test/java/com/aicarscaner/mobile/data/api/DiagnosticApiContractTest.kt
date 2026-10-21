@@ -40,8 +40,8 @@ class DiagnosticApiContractTest {
         assertEquals("/api/v1/sessions", server.takeRequest().path)
         assertEquals("stored-1", history.single().session_id)
         server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(json))
-        val reopened = api.getSession(history.single().session_id)
-        assertEquals("/api/v1/sessions/stored-1", server.takeRequest().path)
+        val reopened = api.getSession(history.single().session_id, "hy")
+        assertEquals("/api/v1/sessions/stored-1?language=hy", server.takeRequest().path)
         assertEquals(history.single().session_id, reopened.session_id)
         assertTrue(reopened.dtcs.isEmpty())
     }

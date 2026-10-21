@@ -143,7 +143,7 @@ final class DiagnosticViewModel: ObservableObject {
 
     func openSession(_ id: String) async {
         liveRecords = []
-        await execute { try await self.api.getSession(id) }
+        await execute { try await self.api.getSession(id, language: self.settings.language) }
     }
 
     func refreshLiveData() async {

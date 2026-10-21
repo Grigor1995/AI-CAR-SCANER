@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtGui import QPainter, QPixmap, QImage
 
 
 def slug_piece(value: str) -> str:
@@ -25,19 +26,25 @@ def artwork_path(make: str, model: str, chassis: str) -> Path | None:
     return path if path.is_file() else None
 
 
-def vehicle_pixmap(make: str, model: str, chassis: str, width: int = 420, height: int = 200) -> QPixmap:
-    """Contain the whole car without stretching; unmatched models use app branding."""
-    canvas = QPixmap(width, height)
+@lru_cache(maxsize=96)
+def _portrait_image(path: str, modified: int, width: int, height: int) -> QImage:
+    # Cache CPU-side images, not QPixmaps whose lifetime depends on QApplication.
+    canvas = QImage(width, height, QImage.Format_ARGB32_Premultiplied)
     canvas.fill(Qt.GlobalColor.transparent)
-    match = artwork_path(make, model, chassis)
-    portrait = QPixmap(str(match or (_root() / "assets" / "AI-Car-Scanner-mobile.png")))
+    portrait = QImage(path)
     if not portrait.isNull():
         portrait = portrait.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio,
                                    Qt.TransformationMode.SmoothTransformation)
         painter = QPainter(canvas)
         try:
-            painter.drawPixmap((width - portrait.width()) // 2,
-                               (height - portrait.height()) // 2, portrait)
+            painter.drawImage((width - portrait.width()) // 2,
+                              (height - portrait.height()) // 2, portrait)
         finally:
             painter.end()
     return canvas
+
+
+def vehicle_pixmap(make: str, model: str, chassis: str, width: int = 420, height: int = 200) -> QPixmap:
+    path = artwork_path(make, model, chassis) or (_root() / "assets" / "AI-Car-Scanner-mobile.png")
+    modified = path.stat().st_mtime_ns if path.is_file() else 0
+    return QPixmap.fromImage(_portrait_image(str(path), modified, width, height))

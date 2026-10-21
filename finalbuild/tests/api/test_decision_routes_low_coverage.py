@@ -109,15 +109,15 @@ def test_select_test_defaults_to_low_risk_when_test_record_is_missing(monkeypatc
 
 
 def test_decision_plan_returns_engine_plan_for_existing_session(monkeypatch, sample_session):
-    expected_plan = object()
+    expected_plan = routes.DiagnosticDecisionPlan(session_id=uuid4(), state="CREATED")
     monkeypatch.setattr(routes, "sessions", {"session-1": sample_session})
     monkeypatch.setattr(routes.engine, "build_plan", lambda _session: expected_plan)
 
-    assert routes.decision_plan("session-1") is expected_plan
+    assert routes.decision_plan("session-1") == expected_plan
 
 
 def test_refresh_plan_returns_updated_engine_plan(monkeypatch, sample_session):
-    expected_plan = object()
+    expected_plan = routes.DiagnosticDecisionPlan(session_id=uuid4(), state="CREATED")
     monkeypatch.setattr(routes, "sessions", {"session-1": sample_session})
     monkeypatch.setattr(routes.engine, "refresh_recommendations", lambda _session: expected_plan)
 

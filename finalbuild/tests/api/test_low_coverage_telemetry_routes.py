@@ -97,7 +97,7 @@ async def test_ai_live_analysis_logs_provider_outcome_and_checks_session(monkeyp
 
     response = await routes.ai_analyze_live("s1")
     assert response == fake_result
-    analyze.assert_awaited_once_with(session, summary, [])
+    analyze.assert_awaited_once_with(session, summary, [], language="en")
     event = session.audit_log[-1]
     assert event["event"] == "LIVE_DATA_AI_ANALYSIS_COMPLETED"
     assert event["ai_available"] is False

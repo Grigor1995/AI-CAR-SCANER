@@ -692,7 +692,7 @@ def test_refresh_telemetry_reports_api_error_and_releases_in_flight_flag(
     assert window.statusBar().currentMessage() == "Live-data refresh failed: telemetry unavailable"
 
 
-def test_record_selected_test_posts_result_notes_then_reanalyzes(
+def test_record_selected_test_applies_recalculated_session_without_second_analysis(
     window_factory, monkeypatch, fake_api
 ):
     window = window_factory()
@@ -719,10 +719,13 @@ def test_record_selected_test_posts_result_notes_then_reanalyzes(
         "session-test", "candidate-42", "FAIL",
         notes="Pressure below spec", language="en"
     )
-    fake_api.analyze.assert_called_once_with("session-test", language="en")
-    fake_api.decision_plan.assert_called_once_with("session-test")
-    assert result == {"candidates": []}
-    assert callable(done)
+    fake_api.analyze.assert_not_called()
+    fake_api.decision_plan.assert_called_once_with("session-test", language="en")
+    assert result == {"session": {"ok": True}, "decision": {"candidates": []}}
+    done(result)
+    assert window.session_json == {"ok": True}
+    assert window.decision == {"candidates": []}
+    assert window.pages[6].notes.text() == ""
 
 
 def test_record_selected_test_requires_session_and_selection(window_factory, monkeypatch):
@@ -1564,3 +1567,79 @@ def test_live_details_from_previous_session_cannot_overwrite_current_session(win
     callbacks[0]({'records': {'records': [{'channel': 'RPM', 'numeric_value': 2000}]}})
     assert live._records_data == []
     assert live._details_in_flight is False
+
+
+def test_refresh_preserves_vehicle_selection_and_cached_artwork(window_factory, vehicle, monkeypatch):
+    other = Vehicle("BMW", "3 Series", "E90", 2010, "N52", ["Petrol"], "MSV70")
+    window = window_factory([vehicle, other])
+    page = window.pages[1]
+    page.refresh()
+    page.list.setCurrentRow(1)
+    render = Mock(wraps=ui.vehicle_pixmap)
+    monkeypatch.setattr(ui, "vehicle_pixmap", render)
+    page.refresh()
+    assert page.list.currentRow() == 1
+    assert page.edit_btn.isEnabled()
+    assert "BMW" in page.details.toPlainText()
+    render.assert_not_called()
+
+
+def test_edit_dialog_keeps_custom_vehicle_and_uses_cached_catalog(window_factory, fake_api):
+    window = window_factory()
+    custom = Vehicle("Custom", "Model X", "CX", 2020, "Engine", ["Diesel"], "ECU-X")
+    dialog = ui.VehicleDialog(window)
+    dialog.set_vehicle(custom)
+    assert dialog.vehicle() == custom
+    fake_api.vehicle_catalog_entries.assert_not_called()
+    dialog.deleteLater()
+
+
+def test_edit_saved_vehicle_persists_replacement(window_factory, monkeypatch, vehicle):
+    window = window_factory()
+    page = window.pages[1]
+    page.refresh()
+    replacement = Vehicle("BMW", "3 Series", "E90", 2010, "N52", ["Petrol"], "MSV70")
+    class Dialog:
+        def __init__(self, parent): pass
+        def set_vehicle(self, selected): assert selected == vehicle
+        def exec(self): return ui.QDialog.Accepted
+        def vehicle(self): return replacement
+        def deleteLater(self): pass
+    monkeypatch.setattr(ui, "VehicleDialog", Dialog)
+    window.edit_selected_vehicle()
+    assert window.vehicles == [replacement]
+    assert window._test_store.load() == [replacement]
+
+
+def test_language_refresh_requests_localized_data_and_discards_stale_response(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    window.online = True
+    window.session = Session("s-1", "READY", window.active_vehicle)
+    window.language = "hy"
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda fn, done: jobs.append((fn, done)))
+    window._refresh_response_language()
+    worker, done = jobs[0]
+    fake_api.get_session.return_value = {"state": "READY"}
+    fake_api.decision_plan.return_value = {"candidates": []}
+    result = worker()
+    fake_api.get_session.assert_called_once_with("s-1", language="hy")
+    fake_api.decision_plan.assert_called_once_with("s-1", language="hy")
+    window.language = "ru"
+    done(result)
+    assert window.session_json == {}
+
+
+def test_progress_keeps_completed_tests_when_recommendations_change(window_factory):
+    window = window_factory()
+    window.session_json = {"test_results": [
+        {"test_id": "finished", "result": "PASS"},
+        {"test_id": "reopened", "result": "PASS"},
+        {"test_id": "reopened", "result": "INCOMPLETE"},
+    ]}
+    window.decision = {"candidates": []}
+    window.pages[6].refresh()
+    assert window.pages[6].progress.value() == 1
+    assert window.pages[6].progress.maximum() == 2
+    window.pages[0].refresh()
+    assert window.pages[0].progress.value() == 50

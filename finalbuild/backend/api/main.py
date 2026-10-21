@@ -77,6 +77,10 @@ def list_sessions(limit: int = 50):
     )[:limit]
 
 @app.get('/api/v1/sessions/{session_id}',response_model=DiagnosticSession)
+def read_session(session_id: str, language: str = 'en'):
+    return localize_session_analysis(get_session(session_id), language)
+
+
 def get_session(session_id:str):
     if session_id not in sessions: raise HTTPException(404,'Session not found')
     return sessions[session_id]

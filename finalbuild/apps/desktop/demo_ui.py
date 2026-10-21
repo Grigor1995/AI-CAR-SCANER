@@ -137,6 +137,10 @@ class SignalGrid(QWidget):
                 groups[str(record.get("pid") or record.get("channel") or "Unknown channel")].append(record)
         self.groups = groups
         names = list(groups)
+        if names == getattr(self, "_channel_names", None):
+            self._update_cards()
+            return
+        self._channel_names = names
         for i, selector in enumerate(self.selectors):
             previous = selector.currentData()
             saved = self.settings.value(f"{self.prefix}_channel_{i}", "") if self.settings else ""
@@ -157,7 +161,7 @@ class SignalGrid(QWidget):
             if channel:
                 selected.append(channel)
                 card.setTitle(channel)
-                if self.settings:
+                if self.settings and self.settings.value(f"{self.prefix}_channel_{i}", "") != channel:
                     self.settings.setValue(f"{self.prefix}_channel_{i}", channel)
             card.set_samples(self.groups.get(channel, []))
         self.add_button.setEnabled(any(name not in selected for name in self.groups))
@@ -252,9 +256,10 @@ class DemoDashboard(QWidget):
         self.results.set_value(len(data.get("test_results", [])))
         self.ai.set_value(len(data.get("hypotheses", [])))
         candidates = app.decision.get("candidates") or data.get("recommendations", [])
-        completed = {r.get("test_id") for r in data.get("test_results", []) if r.get("result") in {"PASS", "FAIL"}}
-        ids = {r.get("id") or r.get("test_id") for r in candidates}
-        done = len(ids & completed)
+        latest = {r.get("test_id"): r.get("result") for r in data.get("test_results", [])}
+        completed = {tid for tid, result in latest.items() if result in {"PASS", "FAIL"}}
+        ids = {r.get("id") or r.get("test_id") for r in candidates} | latest.keys()
+        done = len(completed)
         self.progress.setValue(round(100 * done / len(ids)) if ids else 0)
         self.progress_text.setText(f"{done}/{len(ids)} tests completed • INCOMPLETE results remain open" if ids else "No recommended tests yet")
         self.backend.set_value("ONLINE" if app.online else "OFFLINE")
@@ -347,7 +352,7 @@ class ReportsPage(QWidget):
     def open_selected(self):
         item = self.history.currentItem()
         if item:
-            self.app.run_worker(lambda: self.app.api.get_session(item.data(Qt.UserRole)), self.opened)
+            self.app.run_worker(lambda: self.app.api.get_session(item.data(Qt.UserRole), language=self.app.language), self.opened)
 
     def opened(self, data):
         v = Vehicle.from_json(data["vehicle"]) if data.get("vehicle") else None

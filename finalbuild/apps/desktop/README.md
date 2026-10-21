@@ -41,3 +41,18 @@ Close any previous backend process before changing storage settings.
 Run `python scripts/check_local_backend.py` from `finalbuild` for a real
 startup/catalog/diagnostic/persistence check. See
 [backend startup diagnosis](../../docs/testing/BACKEND_LOCAL_STARTUP.md).
+
+### Explicit backend startup
+
+From `finalbuild`, use the active virtual environment:
+
+```bash
+python -m apps.desktop.main --with-backend
+```
+
+This starts the local API, waits for its health check and opens Desktop. It uses
+persistent SQLite storage in the application data directory, so PostgreSQL is
+not required. An already healthy local backend is reused; its storage settings
+are unchanged. Desktop stops only service processes it started when it closes.
+Use `--no-backend` to connect to an independently managed backend. Running without
+a flag retains the existing automatic startup behavior.

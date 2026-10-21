@@ -559,7 +559,7 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         translated = RECOMMENDATION_TRANSLATIONS.get(language, {}).get(test_result.test_name or "")
         if translated:
             test_result.test_name = translated[0]
-        test_result.result = RECOMMENDATION_STATUS_TRANSLATIONS.get(language, {}).get(
+        test_result.result_label = RECOMMENDATION_STATUS_TRANSLATIONS.get(language, {}).get(
             test_result.result.upper(), test_result.result
         )
 
@@ -575,4 +575,30 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         if questions:
             event["questions"] = [_localized_question(q, language) for q in questions]
 
+    return result
+
+
+def localize_decision_plan(plan, language):
+    """Translate presentation text without mutating canonical plan IDs/scores."""
+    language = normalize_language(language)
+    result = plan.model_copy(deep=True)
+    if language == 'en':
+        return result
+    for candidate in result.candidates:
+        translated = RECOMMENDATION_TRANSLATIONS.get(language, {}).get(candidate.name)
+        if translated:
+            candidate.name, candidate.purpose = translated
+        candidate.safety_notes = [_localized_safety_note(note, language) for note in candidate.safety_notes]
+        candidate.prerequisite_gaps = [_localized_prerequisite(note, language) for note in candidate.prerequisite_gaps]
+    messages = {
+        'ru': {
+            'No diagnostic hypotheses are available yet; run initial analysis first.': 'Диагностических гипотез пока нет; сначала выполните анализ.',
+            'No unused diagnostic test has sufficient expected value for the current hypotheses.': 'Для текущих гипотез нет дополнительных тестов с достаточной ожидаемой ценностью.',
+        },
+        'hy': {
+            'No diagnostic hypotheses are available yet; run initial analysis first.': 'Ախտորոշիչ վարկածներ դեռ չկան․ նախ գործարկեք վերլուծությունը։',
+            'No unused diagnostic test has sufficient expected value for the current hypotheses.': 'Ընթացիկ վարկածների համար բավարար օգտակարությամբ լրացուցիչ թեստեր չկան։',
+        },
+    }
+    result.stop_reasons = [messages.get(language, {}).get(reason, reason) for reason in result.stop_reasons]
     return result

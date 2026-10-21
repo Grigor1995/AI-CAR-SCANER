@@ -135,3 +135,21 @@ async def test_analyze_live_session_returns_provider_result_and_deterministic_fa
     assert failure["ai"]["model"] == "offline-model"
     assert failure["ai"]["error"] == "LLM offline"
     assert failure["evidence_added"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("language,name", [("hy", "Armenian"), ("ru", "Russian"), ("en", "English")])
+async def test_live_ai_receives_selected_response_language(monkeypatch, language, name):
+    session = DiagnosticSession()
+    summary = _summary(session.session_id)
+    seen = {}
+    class Provider:
+        async def generate(self, prompt, context):
+            seen.update(prompt=prompt, language=context["response_language"])
+            return FakeProvider.Response()
+    monkeypatch.setattr(live_analysis, "DiagnosticIntelligenceEngine", FakeEngine)
+    monkeypatch.setattr(live_analysis, "build_llm_provider", lambda: Provider())
+    result = await live_analysis.analyze_live_session(session, summary, [], language=language)
+    assert seen["language"] == language
+    assert name in seen["prompt"]
+    assert result["ai"]["available"] is True

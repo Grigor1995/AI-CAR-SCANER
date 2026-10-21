@@ -61,8 +61,12 @@ class DiagnosticApiClient:
     def vehicle_catalog_entries(self) -> list[dict[str, Any]]:
         return self._request("GET", "/api/v1/vehicle-catalog/entries")
 
-    def get_session(self, session_id: str) -> dict[str, Any]:
-        return self._request("GET", f"/api/v1/sessions/{session_id}")
+    def get_session(self, session_id: str, language: str | None = None) -> dict[str, Any]:
+        kwargs = {"params": {"language": language}} if language else {}
+        return self._request("GET", f"/api/v1/sessions/{session_id}", **kwargs)
+
+    def update_vehicle(self, session_id: str, vehicle: dict[str, Any]) -> dict[str, Any]:
+        return self._request("PUT", f"/api/v1/sessions/{session_id}/vehicle", json=vehicle)
 
     def add_dtc(self, session_id: str, code: str, description: str = "") -> dict[str, Any]:
         return self._request("POST", f"/api/v1/sessions/{session_id}/dtcs", json={"code": code, "description": description, "source": "USER_REPORTED"})
@@ -77,8 +81,9 @@ class DiagnosticApiClient:
             params={"language": normalized_language},
         )
 
-    def decision_plan(self, session_id: str) -> dict[str, Any]:
-        return self._request("GET", f"/api/v1/decision/sessions/{session_id}/plan")
+    def decision_plan(self, session_id: str, language: str | None = None) -> dict[str, Any]:
+        kwargs = {"params": {"language": language}} if language else {}
+        return self._request("GET", f"/api/v1/decision/sessions/{session_id}/plan", **kwargs)
 
     def record_test_result(
         self,
@@ -115,8 +120,8 @@ class DiagnosticApiClient:
     def analyze_telemetry(self, session_id: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/telemetry/sessions/{session_id}/analyze")
 
-    def ai_analyze_live_data(self, session_id: str) -> dict[str, Any]:
-        return self._request("POST", f"/api/v1/telemetry/sessions/{session_id}/ai-analyze-live", timeout=float(os.environ.get("AI_CAR_LIVE_AI_TIMEOUT_S", "300")))
+    def ai_analyze_live_data(self, session_id: str, language: str = "en") -> dict[str, Any]:
+        return self._request("POST", f"/api/v1/telemetry/sessions/{session_id}/ai-analyze-live", params={"language": language}, timeout=float(os.environ.get("AI_CAR_LIVE_AI_TIMEOUT_S", "300")))
 
     def ai_provider_info(self) -> dict[str, Any]:
         return self._request("GET", "/api/v1/ai/provider")

@@ -210,6 +210,8 @@ class LlamaServerLLMProvider(LLMProvider):
             "Treat live telemetry as measured data. Explain relationships and uncertainty. "
             "Prefer the safest high-information next diagnostic test."
         )
+        response_language = {"en": "English", "ru": "Russian", "hy": "Armenian"}.get(context.get("response_language"), "English")
+        system += f" Write every explanatory sentence in {response_language}; preserve diagnostic codes, units and identifiers."
         server_ctx = self._server_context_size()
         # Keep enough room for the response and system/task framing. The context text is already
         # bounded, but this also prevents an oversized max_tokens on small external servers.

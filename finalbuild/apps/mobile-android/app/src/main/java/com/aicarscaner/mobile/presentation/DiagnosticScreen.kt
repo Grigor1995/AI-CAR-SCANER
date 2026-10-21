@@ -561,7 +561,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     if (selectedTab == 9) state.history.forEach { previous ->
                         DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
                             Text("${previous.session_id.take(8)} • ${previous.state}")
-                            Button(onClick = { viewModel.openSession(previous.session_id); selectedTab = 6 }) {
+                            Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) {
                                 Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան"))
                             }
                         }
@@ -1628,7 +1628,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             state.history.forEach { previous ->
                                 DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
                                     Text("${previous.session_id.take(8)} • DTC: ${previous.dtcs.size} • ${previous.state}")
-                                    Button(onClick = { viewModel.openSession(previous.session_id); selectedTab = 6 }) { Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան")) }
+                                    Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) { Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան")) }
                                 }
                             }
                             DemoReports(session, tabs[9], demo("Share session report", "Поделиться отчётом", "Կիսվել հաշվետվությամբ"))

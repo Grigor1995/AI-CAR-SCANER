@@ -1703,3 +1703,49 @@ def test_history_language_switch_rebuilds_labels_without_network_or_losing_selec
     assert "results" not in page.history.item(0).text()
     assert "BMW" in page.history.item(0).text()
     assert page.history.currentItem().data(Qt.UserRole)=="history-1"
+
+
+def test_fastapi_health_timer_reconnects_without_modal_failures(
+    window_factory, monkeypatch, fake_api,
+):
+    window = window_factory()
+    assert window._health_timer.isActive()
+    assert window._health_timer.interval() == 12000
+    pending = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: pending.append((work, done)))
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+
+    fake_api.health.side_effect = ConnectionError("temporary service restart")
+    window.refresh_health()
+    window.refresh_health()  # never submit overlapping health checks
+    assert len(pending) == 1
+    work, done = pending.pop()
+    assert work() == {"status": "offline"}
+    done(work())
+    assert window.online is False
+    assert window._health_pending is False
+    assert window.statusBar().currentMessage() == "Backend offline"
+
+    fake_api.health.side_effect = None
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend online"
+
+    fake_api.health.return_value = {"status": "starting"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is False
+
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend recovered"
+
+    window.close()
+    assert not window._health_timer.isActive()

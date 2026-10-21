@@ -186,11 +186,11 @@ private val ruExtra = AppExtraStrings(
     notesPlaceholder = "Введите измерения, наблюдения или результат теста",
     recordResult = "Записать результат",
     openLiveData = "Открыть текущие данные",
-    pass = "ПРОЙДЕН",
-    fail = "НЕ ПРОЙДЕН",
-    incomplete = "НЕ ЗАВЕРШЁН",
+    pass = "Норма",
+    fail = "Есть проблема",
+    incomplete = "Не завершён",
     nextDiagnosticResult = "Результат",
-    resultPlaceholder = "ПРОЙДЕН / НЕ ПРОЙДЕН / НЕ ЗАВЕРШЁН"
+    resultPlaceholder = "Норма / Есть проблема / Не завершён"
 )
 
 private val hyExtra = AppExtraStrings(
@@ -233,11 +233,11 @@ private val hyExtra = AppExtraStrings(
     notesPlaceholder = "Մուտքագրեք չափումները, դիտարկումները կամ թեստի արդյունքը",
     recordResult = "Գրանցել արդյունքը",
     openLiveData = "Բացել ուղիղ տվյալները",
-    pass = "ԱՆՑԱՎ",
-    fail = "ՉԱՆՑԱՎ",
-    incomplete = "ԱՆԱՎԱՐՏ",
+    pass = "Նորմալ",
+    fail = "Խնդիր կա",
+    incomplete = "Անավարտ",
     nextDiagnosticResult = "Արդյունք",
-    resultPlaceholder = "ԱՆՑԱՎ / ՉԱՆՑԱՎ / ԱՆԱՎԱՐՏ"
+    resultPlaceholder = "Նորմալ / Խնդիր կա / Անավարտ"
 )
 
 fun localizedState(language: AppLanguage, state: String): String {

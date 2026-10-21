@@ -416,7 +416,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 onDismissRequest = { if (pendingTestRevision == null) testResultDialogOpen = false },
                 title = { Text(selectedTestTitle) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (pendingTestRevision != null) {
                             CircularProgressIndicator()
                             Text(dashboardLabel("Updating diagnosis…"))
@@ -424,9 +424,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         Text(extra.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
                         Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.labelLarge)
-                        Row(
+                        Column(
                             Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             listOf(
                                 "PASS" to extra.pass,
@@ -436,7 +436,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 if (testOutcome == value) {
                                     Button(
                                         onClick = { testOutcome = value },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = when (value) {
                                                 "PASS" -> Color(0xFF0B956E)
@@ -444,12 +444,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 else -> Color(0xFF54729C)
                                             }
                                         )
-                                    ) { Text(label, maxLines = 1) }
+                                    ) { Text(label) }
                                 } else {
                                     OutlinedButton(
                                         onClick = { testOutcome = value },
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text(label, maxLines = 1) }
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text(label) }
                                 }
                             }
                         }

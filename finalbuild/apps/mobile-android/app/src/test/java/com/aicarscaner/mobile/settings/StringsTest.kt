@@ -10,8 +10,8 @@ class StringsTest {
         assertEquals("Диагностика", strings(AppLanguage.RU).diagnose)
         assertEquals("Ախտորոշում", strings(AppLanguage.HY).diagnose)
         assertEquals("PASS", strings(AppLanguage.EN).extra.pass)
-        assertEquals("ПРОЙДЕН", strings(AppLanguage.RU).extra.pass)
-        assertEquals("ԱՆՑԱՎ", strings(AppLanguage.HY).extra.pass)
+        assertEquals("Норма", strings(AppLanguage.RU).extra.pass)
+        assertEquals("Նորմալ", strings(AppLanguage.HY).extra.pass)
     }
 
     @Test

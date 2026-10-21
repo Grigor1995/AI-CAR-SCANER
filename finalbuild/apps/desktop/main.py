@@ -6,11 +6,13 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
+from urllib.parse import urlsplit
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
 if getattr(sys, "frozen", False):
@@ -23,9 +25,19 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
-PORT = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
-BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", f"http://127.0.0.1:{PORT}").rstrip("/")
-LOCAL_BACKEND = BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost"))
+_default_port = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
+_requested_url = os.environ.get("AI_CAR_BACKEND_URL", "").rstrip("/")
+_parsed_url = urlsplit(_requested_url) if _requested_url else None
+# Exact host matching avoids treating localhost.attacker.example as local.
+LOCAL_BACKEND = _parsed_url is None or (
+    _parsed_url.scheme == "http"
+    and _parsed_url.hostname in {"127.0.0.1", "localhost"}
+)
+PORT = (
+    _parsed_url.port if LOCAL_BACKEND and _parsed_url is not None and _parsed_url.port
+    else _default_port
+)
+BACKEND_URL = _requested_url or f"http://127.0.0.1:{PORT}"
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))
 LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/")
@@ -239,14 +251,22 @@ def _backend_log_path() -> Path:
     return _log_path()
 
 
-def start_backend() -> subprocess.Popen[bytes] | None:
+def start_backend(*, cancel_event: threading.Event | None = None) -> subprocess.Popen[bytes] | None:
     global _backend_process, _backend_log
+    if cancel_event is not None and cancel_event.is_set():
+        return None
     if not LOCAL_BACKEND:
         # The default is the shared cloud API. Do not spawn an unused local API
         # process when Desktop is configured for Render or another remote host.
         return None
     if _backend_healthy():
         return None
+    if _backend_process is not None:
+        if _backend_process.poll() is None:
+            # Do not start two instances while our previous child is starting.
+            raise RuntimeError("Desktop-owned FastAPI child is running but not healthy yet.")
+        _backend_process = None
+        _close_backend_log()
     if _is_port_open(HOST, PORT):
         raise RuntimeError(
             f"Port {PORT} is already in use, but {HEALTH_URL} is not healthy. "
@@ -279,6 +299,8 @@ def start_backend() -> subprocess.Popen[bytes] | None:
     if backend_path.exists():
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = str(backend_path) if not existing else str(backend_path) + os.pathsep + existing
+    env["AI_CAR_BACKEND_HOST"] = HOST
+    env["AI_CAR_BACKEND_PORT"] = str(PORT)
     env.setdefault("DIAGNOSTIC_LLM_PROVIDER", "llama-server")
     env.setdefault("LOCAL_LLM_SERVER_URL", LLM_BASE_URL)
     env.setdefault("LOCAL_LLM_SERVER_MODEL", LLM_MODEL)
@@ -293,8 +315,6 @@ def start_backend() -> subprocess.Popen[bytes] | None:
         command = [str(backend_exe)]
     else:
         command = [sys.executable, "-m", "apps.desktop.backend_worker"]
-        env["AI_CAR_BACKEND_HOST"] = HOST
-        env["AI_CAR_BACKEND_PORT"] = str(PORT)
 
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
     try:
@@ -317,6 +337,8 @@ def start_backend() -> subprocess.Popen[bytes] | None:
 
     deadline = time.monotonic() + _STARTUP_TIMEOUT
     while time.monotonic() < deadline:
+        if cancel_event is not None and cancel_event.is_set():
+            break
         if _backend_process.poll() is not None:
             returncode = _backend_process.returncode
             _backend_process = None
@@ -342,6 +364,8 @@ def start_backend() -> subprocess.Popen[bytes] | None:
             pass
     _backend_process = None
     _close_backend_log()
+    if cancel_event is not None and cancel_event.is_set():
+        raise RuntimeError("FastAPI startup canceled during Desktop shutdown.")
     raise RuntimeError(f"Backend did not become healthy within {_STARTUP_TIMEOUT:g}s. Log: {backend_log_path}{storage_hint}")
 
 
@@ -391,6 +415,8 @@ def run(argv: list[str] | None = None) -> None:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
+    backend_recovery = None
+    initial_failure_recovered = False
     if LOCAL_BACKEND and not args.no_backend:
         try:
             start_llama_server(wait_for_ready=False)
@@ -403,6 +429,20 @@ def run(argv: list[str] | None = None) -> None:
         except Exception as exc:
             backend_error = str(exc)
             print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
+
+    if (
+        LOCAL_BACKEND
+        and not args.no_backend
+        and os.environ.get("AI_CAR_BACKEND_AUTO_RECOVER", "1").lower() in {"1", "true", "yes"}
+    ):
+        from apps.desktop.backend_recovery import BackendRecoverySupervisor
+        backend_recovery = BackendRecoverySupervisor(
+            process=lambda: _backend_process,
+            restart=lambda: start_backend(cancel_event=backend_recovery.stop_event),
+            healthy=_backend_healthy,
+            allow_initial_retry=backend_error is not None,
+        )
+        backend_recovery.start()
 
     def trace_shutdown(stage: str) -> None:
         path = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
@@ -417,13 +457,17 @@ def run(argv: list[str] | None = None) -> None:
         trace_shutdown("entering ui.run")
         run_ui()
         trace_shutdown("ui.run returned")
+        if backend_error and backend_recovery is not None:
+            initial_failure_recovered = _backend_healthy()
     finally:
         trace_shutdown("starting backend/LLM cleanup")
+        if backend_recovery is not None:
+            backend_recovery.stop(join_timeout=max(8.0, _STARTUP_TIMEOUT + 3.0))
         stop_backend()
         stop_llama_server()
         trace_shutdown("backend/LLM cleanup complete")
 
-    if backend_error:
+    if backend_error and not initial_failure_recovered:
         raise SystemExit(1)
 
 

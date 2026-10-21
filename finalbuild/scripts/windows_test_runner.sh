@@ -36,6 +36,13 @@ if [[ -n "${AI_CAR_DESKTOP_VENV:-}" ]]; then
 else
   PY="$(cygpath -u "$VIRTUAL_ENV")/Scripts/python.exe"
 fi
+# The UI/EXE smoke test uses a fake loopback HTTP service. This independent
+# gate must start the REAL SQLite-backed api.main application.
+if [[ "$MODE" == source ]]; then
+  "$PY" scripts/test_fastapi_startup.py --mode source
+else
+  "$PY" scripts/test_fastapi_startup.py --mode both
+fi
 "$PY" scripts/desktop_v1_readiness.py --mode "$MODE" --since "$STARTED_AT"
 echo '[DESKTOP-V1] Automated checks completed; manual acceptance remains PENDING.'
 echo '[DESKTOP-V1] Review desktop-test-reports/release-v1-readiness.json and real-ui-acceptance/report.html'

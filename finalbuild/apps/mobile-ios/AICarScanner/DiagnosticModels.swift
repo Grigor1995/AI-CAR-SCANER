@@ -47,6 +47,14 @@ struct Hypothesis: Codable, Identifiable {
     let contradicting_evidence_ids: [String]
     let status: String
 }
+extension Hypothesis {
+    var evidenceScore: Double? {
+        let parts = status.split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 2, let score = Double(parts[1]), score.isFinite,
+              (0...1).contains(score) else { return nil }
+        return score
+    }
+}
 struct Recommendation: Codable, Identifiable {
     let id: String
     let name: String

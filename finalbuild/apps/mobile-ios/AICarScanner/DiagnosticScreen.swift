@@ -348,6 +348,7 @@ struct DiagnosticScreen: View {
         VStack(alignment:.leading,spacing:10) {
             if let s=viewModel.session {
                 StatusCard(title:t.state,value:t.protocolLabel(s.state))
+                AnalysisDiagram(session: s, language: viewModel.settings.language)
                 SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(t.protocolLabel(x.status)) • \(t.protocolLabel(x.source))").font(.subheadline)}}
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in
@@ -411,6 +412,70 @@ private struct SectionCard<C:View>:View{
     var body:some View{VStack(alignment:.leading,spacing:8){Text(title).font(.headline);content}.frame(maxWidth:.infinity,alignment:.leading).padding(14).modifier(AutomotiveCardStyle())}
 }
 private struct StatusCard:View{let title:String;let value:String;var body:some View{HStack{Text(title);Spacer();Text(value).bold()}.padding(14).modifier(AutomotiveCardStyle())}}
+private struct AnalysisDiagram: View {
+    let session: DiagnosticSession
+    let language: AppLanguage
+    @State private var showResults = false
+    private var t: T { T(language: language) }
+    private var scoredHypotheses: [Hypothesis] {
+        session.hypotheses.filter { $0.evidenceScore != nil }
+    }
+    private var latestResults: [String: TestResult] {
+        session.test_results.reduce(into: [:]) { $0[$1.test_id] = $1 }
+    }
+
+    var body: some View {
+        SectionCard(t.tr("Diagram", "Диаграмма", "Դիագրամ")) {
+            Picker(t.tr("Diagram type", "Тип диаграммы", "Դիագրամի տեսակը"), selection: $showResults) {
+                Text(t.hypotheses).tag(false)
+                Text(t.tr("Results", "Результаты", "Արդյունքներ")).tag(true)
+            }.pickerStyle(.segmented)
+            if showResults {
+                if latestResults.isEmpty {
+                    Text(t.tr("No test results yet", "Результатов тестов пока нет", "Թեստերի արդյունքներ դեռ չկան"))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Chart(["PASS", "FAIL", "INCOMPLETE"], id: \.self) { code in
+                        let count = latestResults.values.filter { $0.result.uppercased() == code }.count
+                        BarMark(x: .value(t.tr("Count", "Количество", "Քանակ"), count),
+                                y: .value(t.tr("Result", "Результат", "Արդյունք"), t.testResultLabel(code)))
+                            .foregroundStyle(AutomotivePalette.resultColor(code))
+                            .cornerRadius(5)
+                            .annotation(position: .trailing) { Text(String(count)).font(.caption.bold()) }
+                            .accessibilityLabel(t.testResultLabel(code))
+                            .accessibilityValue(String(count))
+                    }.chartXScale(domain: 0...max(1, latestResults.count))
+                        .chartXAxis { AxisMarks(values: .stride(by: 1)) }
+                        .frame(height: 170)
+                }
+            } else {
+                if scoredHypotheses.isEmpty {
+                    Text(t.tr("Analyze the session to get scored hypotheses.", "Выполните анализ для получения оценок гипотез.", "Վարկածների գնահատականները ստանալու համար վերլուծեք սեսիան։"))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Chart(Array(scoredHypotheses.enumerated()), id: \.element.id) { item in
+                        if let score = item.element.evidenceScore {
+                            BarMark(x: .value(t.tr("Evidence score", "Оценка обоснованности", "Հիմնավորվածության գնահատական"), score * 100),
+                                    y: .value(t.hypotheses, String(item.offset + 1)))
+                                .foregroundStyle(AutomotivePalette.cyan)
+                                .cornerRadius(5)
+                                .annotation(position: .trailing) { Text("\(Int((score * 100).rounded()))%").font(.caption.bold()) }
+                                .accessibilityLabel(item.element.statement)
+                                .accessibilityValue("\(Int((score * 100).rounded()))%")
+                        }
+                    }.chartXScale(domain: 0...100)
+                        .frame(height: CGFloat(max(160, scoredHypotheses.count * 44)))
+                    ForEach(Array(scoredHypotheses.enumerated()), id: \.element.id) { item in
+                        Text("\(item.offset + 1). \(item.element.statement)").font(.caption)
+                    }
+                    Text(t.tr("Scores show supporting evidence, not confirmed failures.", "Оценки отражают обоснованность гипотез, а не подтверждённые неисправности.", "Գնահատականները ցույց են տալիս վարկածների հիմնավորվածությունը, ոչ թե հաստատված անսարքությունները։"))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
 private struct TestSheet: View {
     let test: Recommendation
     let language: AppLanguage

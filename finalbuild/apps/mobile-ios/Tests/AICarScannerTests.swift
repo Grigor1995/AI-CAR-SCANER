@@ -9,6 +9,19 @@ final class AICarScannerTests: XCTestCase {
         super.tearDown()
     }
 
+    func testHypothesisDiagramUsesOnlyValidServerScores() {
+        func score(_ status: String) -> Double? {
+            Hypothesis(id: "h1", category: "ignition", statement: "Check ignition",
+                       supporting_evidence_ids: [], contradicting_evidence_ids: [], status: status).evidenceScore
+        }
+        XCTAssertEqual(score("possible:0.65"), 0.65)
+        XCTAssertEqual(score("supported_by_test:1"), 1)
+        XCTAssertEqual(score("rejected:0"), 0)
+        for status in ["possible", "possible:", "possible:NaN", "possible:inf", "possible:-0.1", "possible:1.1", "possible:0.5:0.7"] {
+            XCTAssertNil(score(status), status)
+        }
+    }
+
     func testVehicleRoundTrip() throws {
         let value = Vehicle(make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006, engine: "M272 E35 3.5", fuel: ["petrol", "lpg"], ecu: "ME9.7")
         let data = try JSONEncoder().encode(value)

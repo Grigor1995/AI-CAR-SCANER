@@ -63,7 +63,7 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
     val sections=listOf(1 to "Vehicle selection",2 to "Device connection",0 to "Symptoms",7 to "DTC list & details",4 to "AI analysis",8 to "Guided tests",13 to "Testing progress",3 to "Live data",12 to "Custom dashboard",9 to "Reports",10 to "Teach AI",5 to "Activity")
     sections.forEachIndexed { index,(id,title) ->
         Card(onClick={navigate(id)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
-            colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+            colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {
             Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
                 DashboardIcon(id)
                 Text(dashboardLabel(title),Modifier.weight(1f),fontWeight=FontWeight.Medium)
@@ -73,4 +73,49 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
         }
     }
     Button(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
+}
+
+/** Persistent actions stay reachable when the page below scrolls. */
+@Composable
+internal fun DashboardToolbar(
+    title:String,
+    hasSession:Boolean,
+    showBack:Boolean,
+    loading:Boolean,
+    onHome:()->Unit,
+    onSettings:()->Unit,
+    onNewSession:()->Unit,
+    onSymptoms:()->Unit,
+    onAnalyze:()->Unit
+) {
+    val text=com.aicarscaner.mobile.settings.strings(LocalDashboardLanguage.current)
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        if(showBack) TextButton(onClick=onHome,contentPadding=PaddingValues(4.dp)) {Text("‹",style=MaterialTheme.typography.headlineMedium)}
+        else DashboardIcon(6,Modifier.size(28.dp))
+        Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
+        TextButton(onClick=onSettings,contentPadding=PaddingValues(4.dp)) {Text("⚙",modifier=Modifier.semantics{contentDescription=text.settings})}
+        if(hasSession) TextButton(onClick=onNewSession,contentPadding=PaddingValues(4.dp)) {Text("+",modifier=Modifier.semantics{contentDescription=text.newSession},style=MaterialTheme.typography.titleLarge)}
+    }
+    if(hasSession) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick=onSymptoms,modifier=Modifier.weight(1f),enabled=!loading) {Text(text.symptoms)}
+        Button(onClick=onAnalyze,modifier=Modifier.weight(1f),enabled=!loading) {Text(dashboardLabel("Analyze session"))}
+    }
+}
+
+@Composable
+internal fun VehicleModelCard(make:String,model:String,chassis:String,selected:Boolean,onClick:()->Unit) {
+    Card(onClick=onClick,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
+        border=androidx.compose.foundation.BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=if(selected) 1f else .25f)),
+        colors=CardDefaults.cardColors(
+            containerColor=if(selected) MaterialTheme.colorScheme.primary.copy(alpha=.18f) else MaterialTheme.colorScheme.surface,
+            contentColor=MaterialTheme.colorScheme.onSurface)) {
+        Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(width=95.dp,height=56.dp)) {VehicleModelArtwork(make,model,chassis,height=56.dp)}
+            Column(Modifier.weight(1f)) {
+                Text(model,fontWeight=FontWeight.SemiBold)
+                Text(chassis,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(if(selected) "✓" else "›",color=MaterialTheme.colorScheme.primary)
+        }
+    }
 }

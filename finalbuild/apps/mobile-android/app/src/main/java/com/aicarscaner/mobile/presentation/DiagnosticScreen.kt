@@ -23,12 +23,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,7 +35,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -48,13 +45,8 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -68,13 +60,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.content.ContextCompat
-import com.aicarscaner.mobile.R
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.obd.BluetoothObdClient
@@ -87,7 +77,6 @@ import com.aicarscaner.mobile.settings.AppSettings
 import com.aicarscaner.mobile.settings.AppSettingsStore
 import com.aicarscaner.mobile.settings.strings
 import com.aicarscaner.mobile.settings.localizedConnectionStatus
-import com.aicarscaner.mobile.settings.localizedEvidenceSource
 import com.aicarscaner.mobile.settings.localizedState
 import com.aicarscaner.mobile.settings.localizedEvidenceStatus
 import android.app.PendingIntent
@@ -112,6 +101,11 @@ internal val AutomotiveDarkColors = darkColorScheme(
     background = Color(0xFF061121),
     surface = Color(0xFF082536),
     surfaceVariant = Color(0xFF10354B),
+    onBackground = Color(0xFFEAF4FF),
+    primaryContainer = Color(0xFF103E63),
+    onPrimaryContainer = Color(0xFFEAF4FF),
+    secondaryContainer = Color(0xFF30254C),
+    onSecondaryContainer = Color(0xFFEAF4FF),
     onSurface = Color(0xFFEAF4FF),
     onSurfaceVariant = Color(0xFFAAC8E5),
     error = Color(0xFFFF617A)
@@ -126,6 +120,11 @@ internal val AutomotiveLightColors = lightColorScheme(
     background = Color(0xFFF0F6FC),
     surface = Color.White,
     surfaceVariant = Color(0xFFE2EFFC),
+    onBackground = Color(0xFF10243F),
+    primaryContainer = Color(0xFFD8EBFF),
+    onPrimaryContainer = Color(0xFF10243F),
+    secondaryContainer = Color(0xFFE8DEFF),
+    onSecondaryContainer = Color(0xFF10243F),
     onSurface = Color(0xFF10243F),
     onSurfaceVariant = Color(0xFF4F6D8F),
     error = Color(0xFFB71E43)
@@ -476,9 +475,24 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     ) else listOf(Color(0xFFF0F6FC), Color(0xFFEAF4FF))
                 )
             ),
-            color = Color.Transparent
+            color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground
         ) {
-            Scaffold(containerColor = Color.Transparent, bottomBar = {
+            Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
+                Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    DashboardToolbar(
+                        title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicle selection";2->"Device connection";0->"Symptoms";7->"DTC list & details";4->"AI analysis";8->"Guided tests";3->"Live data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),
+                        hasSession=state.session!=null,
+                        showBack=state.session!=null && selectedTab!=6,
+                        loading=state.loading,
+                        onHome={selectedTab=6},
+                        onSettings={settingsOpen=true},
+                        onNewSession={newSessionConfirmOpen=true},
+                        onSymptoms={selectedTab=0},
+                        onAnalyze={selectedTab=4;viewModel.analyze(appSettings.language.code)}
+                    )
+                }
+            }, bottomBar = {
                 if (state.session != null) DashboardBottomBar(selectedTab) { destination ->
                     selectedTab = destination
                     if (destination == 2) refreshUsbDevices()
@@ -492,18 +506,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(Modifier.fillMaxWidth().padding(vertical=4.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    if (state.session != null && selectedTab != 6) {
-                        TextButton(onClick={selectedTab=6}) { Text("‹",style=MaterialTheme.typography.headlineMedium) }
-                    } else DashboardIcon(6,Modifier.size(30.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicle selection";2->"Device connection";0->"Symptoms";7->"DTC list & details";4->"AI analysis";8->"Guided tests";3->"Live data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                        if(state.session==null || selectedTab==6) Text(dashboardLabel("SMART DIAGNOSTICS • AI ANALYSIS"),style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)
-                    }
-                    IconButton(onClick={settingsOpen=true}) { Icon(Icons.Outlined.Settings,contentDescription=text.settings,tint=MaterialTheme.colorScheme.primary) }
-                    if(state.session!=null) IconButton(onClick={newSessionConfirmOpen=true}) { Icon(Icons.Outlined.Add,contentDescription=text.newSession) }
-                }
-
                 if (state.session == null) {
                     OutlinedButton(onClick = { selectedTab = 9; viewModel.loadHistory() }, modifier = Modifier.fillMaxWidth()) {
                         Text(demo("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն"))
@@ -681,7 +683,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -763,7 +765,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                    colors = CardDefaults.cardColors(
+                                    colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
                                 ) {
@@ -921,7 +923,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -974,7 +976,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -1048,7 +1050,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -1134,7 +1136,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -1186,7 +1188,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                    colors = CardDefaults.cardColors(
+                                    colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
                                 ) {
@@ -1220,7 +1222,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                    colors = CardDefaults.cardColors(
+                                    colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                     )
                                 ) {
@@ -1247,7 +1249,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                    colors = CardDefaults.cardColors(
+                                    colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                                     )
                                 ) {
@@ -1277,7 +1279,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -1332,7 +1334,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f)
                                         )
                                     ) {
@@ -1368,7 +1370,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f)
                                         )
                                     ) {
@@ -1388,7 +1390,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f)
                                         )
                                     ) {
@@ -1430,7 +1432,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                            colors = CardDefaults.cardColors(
+                                            colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                             )
                                         ) {
@@ -1538,7 +1540,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-                                        colors = CardDefaults.cardColors(
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                                         )
                                     ) {
@@ -1598,7 +1600,7 @@ private fun LiveDataTile(
                                         border = BorderStroke(
                                             1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                                         ),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
             containerColor = if (highlight) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
             } else {
@@ -1671,13 +1673,7 @@ private fun VehicleFields(
     val visibleModels = if(showAll || search.isNotBlank()) matching else matching.sortedBy { if(it==model) 0 else 1 }.take(5)
     visibleModels.forEach { option ->
         val modelChassis = chassisOptionsFor(catalog,make,option).firstOrNull() ?: chassisOptionsFor(make,option).firstOrNull()?.chassis.orEmpty()
-        Card(onClick={onModel(option)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),border=BorderStroke(1.dp,if(option==model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha=.25f)),colors=CardDefaults.cardColors(containerColor=if(option==model) MaterialTheme.colorScheme.primary.copy(alpha=.18f) else MaterialTheme.colorScheme.surface)) {
-            Row(Modifier.padding(10.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                androidx.compose.foundation.layout.Box(Modifier.size(width=95.dp,height=56.dp)) { VehicleModelArtwork(make,option,modelChassis,height=56.dp) }
-                Column(Modifier.weight(1f)) { Text(option,fontWeight=FontWeight.SemiBold);Text(modelChassis,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant) }
-                Text(if(option==model) "✓" else "›",color=MaterialTheme.colorScheme.primary)
-            }
-        }
+        VehicleModelCard(make,option,modelChassis,option==model) {onModel(option)}
     }
     if(!showAll && matching.size>visibleModels.size) TextButton(onClick={showAll=true}) {Text(dashboardLabel("View details"))}
     VehicleSelectionField(text.model, model, models, onModel)
@@ -1799,8 +1795,10 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
     val context = LocalContext.current
     val sample = if (height <= 72.dp) 4 else 1
     val key = "$file/$sample"
-    val portrait by produceState(initialValue=vehiclePortraitCache.get(key),key1=key) {
-        if (value == null) value = withContext(Dispatchers.IO) {
+    // Reset the displayed bitmap when the asset changes, including cached portraits.
+    var portrait by remember(key) { mutableStateOf(vehiclePortraitCache.get(key)) }
+    LaunchedEffect(key) {
+        if (portrait == null) portrait = withContext(Dispatchers.IO) {
             runCatching {
                 context.assets.open(file).use { stream ->
                     BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()?.also { vehiclePortraitCache.put(key,it) }

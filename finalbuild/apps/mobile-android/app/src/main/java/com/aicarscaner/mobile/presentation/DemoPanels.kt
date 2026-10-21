@@ -34,7 +34,7 @@ internal fun DemoPanel(title: String, content: @Composable ColumnScope.() -> Uni
         modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .45f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (title.isNotEmpty()) Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -61,7 +61,7 @@ internal fun DemoHome(session: DiagnosticSessionDto, titles: List<String>, navig
     listOf(listOf(7 to "DTC list & details",3 to "Live data"),listOf(8 to "Guided tests",4 to "AI analysis")).forEach { row ->
         Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
             row.forEach { (id,title) ->
-                Card(onClick={navigate(id)},modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.45f)),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+                Card(onClick={navigate(id)},modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.45f)),colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {
                     Row(Modifier.padding(14.dp).heightIn(min=36.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                         DashboardIcon(id,color=if(id==4) Color(0xFFB67CFF) else MaterialTheme.colorScheme.primary)
                         Text(dashboardLabel(title),style=MaterialTheme.typography.labelLarge)
@@ -124,7 +124,7 @@ private fun outcomeColor(result:String)=when(result){"PASS"->Color(0xFF21D6A0);"
 
 @Composable
 private fun DemoMetric(title: String, count: Int, color: Color, modifier: Modifier) {
-    Card(modifier = modifier, colors=CardDefaults.cardColors(containerColor=color.copy(alpha=.10f)), border = BorderStroke(1.dp, color.copy(alpha = .55f))) {
+    Card(modifier = modifier, colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=color.copy(alpha=.10f)), border = BorderStroke(1.dp, color.copy(alpha = .55f))) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(count.toString(), color = color, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(title, style = MaterialTheme.typography.labelSmall)
@@ -141,7 +141,7 @@ internal fun DemoDtcList(session: DiagnosticSessionDto, title: String) {
     session.dtcs.forEach { code ->
         var expanded by remember(code.code) { mutableStateOf(false) }
         val color=MaterialTheme.colorScheme.error
-        Card(onClick={expanded=!expanded},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,color.copy(alpha=.35f)),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+        Card(onClick={expanded=!expanded},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,color.copy(alpha=.35f)),colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     Text("!",color=color,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Black)
@@ -261,7 +261,7 @@ internal fun DemoHypotheses(session:DiagnosticSessionDto) {
         var expanded by remember(hypothesis.id){mutableStateOf(false)}
         val colors=listOf(Color(0xFF20B9FF),Color(0xFF21D6A0),Color(0xFFFFC663),Color(0xFFB67CFF))
         val color=colors[index%colors.size]
-        Card(onClick={expanded=!expanded},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),border=BorderStroke(1.dp,color.copy(alpha=.3f))){
+        Card(onClick={expanded=!expanded},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface),border=BorderStroke(1.dp,color.copy(alpha=.3f))){
             Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                     Surface(shape=RoundedCornerShape(30.dp),color=color.copy(alpha=.2f)){Text("${index+1}",Modifier.padding(horizontal=11.dp,vertical=6.dp),color=color,fontWeight=FontWeight.Bold)}

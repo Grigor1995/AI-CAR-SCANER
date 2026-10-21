@@ -230,7 +230,7 @@ struct DiagnosticScreen: View {
                 }.padding(16).modifier(AutomotiveCardStyle())
             }
             ForEach(viewModel.session?.test_results ?? []) { result in
-                HStack { Text(result.test_name ?? result.test_id); Spacer(); Text(result.result_label ?? result.result).bold().foregroundStyle(AutomotivePalette.resultColor(result.result)) }
+                HStack { Text(result.test_name ?? result.test_id); Spacer(); Text(t.testResultLabel(result.result, fallback: result.result_label)).bold().foregroundStyle(AutomotivePalette.resultColor(result.result)) }
                     .padding(14).modifier(AutomotiveCardStyle())
             }
             if (viewModel.session?.recommendations ?? []).isEmpty { Text(t.noSession) }
@@ -426,13 +426,13 @@ private struct TestSheet: View {
                     Text(test.name).font(.title2.bold())
                     Text(test.purpose)
                     ForEach(test.safety_notes, id: \.self) { Text($0).foregroundStyle(.orange) }
-                    HStack(spacing: 10) {
+                    VStack(spacing: 10) {
                         ForEach(["PASS", "FAIL", "INCOMPLETE"], id: \.self) { code in
                             Button { result = code } label: {
-                                VStack(spacing: 12) {
+                                HStack(spacing: 12) {
                                     Image(systemName: code == "PASS" ? "checkmark.shield.fill" : code == "FAIL" ? "exclamationmark.triangle.fill" : "shield.lefthalf.filled").font(.title)
-                                    Text(code == "PASS" ? t.tr("PASS", "ПРОЙДЕН", "ԱՆՑԱՎ") : code == "FAIL" ? t.tr("FAIL", "НЕ ПРОЙДЕН", "ՉԱՆՑԱՎ") : t.tr("INCOMPLETE", "НЕ ЗАВЕРШЁН", "ԱՆԱՎԱՐՏ")).font(.caption.bold())
-                                }.frame(maxWidth: .infinity, minHeight: 115)
+                                    Text(t.testResultLabel(code)).font(.body.bold()).fixedSize(horizontal: false, vertical: true)
+                                }.padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 64)
                                     .foregroundStyle(AutomotivePalette.resultColor(code))
                                     .background(AutomotivePalette.resultColor(code).opacity(result == code ? 0.18 : 0.04))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -452,6 +452,14 @@ private struct TestSheet: View {
 struct T{
     let language:AppLanguage
     func tr(_ e:String,_ r:String,_ h:String)->String{language == .en ? e : language == .ru ? r:h}
+    func testResultLabel(_ code: String, fallback: String? = nil) -> String {
+        switch code.uppercased() {
+        case "PASS": return tr("PASS", "Норма", "Նորմալ")
+        case "FAIL": return tr("FAIL", "Есть проблема", "Խնդիր կա")
+        case "INCOMPLETE": return tr("INCOMPLETE", "Не завершён", "Անավարտ")
+        default: return fallback ?? code
+        }
+    }
     func protocolLabel(_ value: String) -> String {
         switch value {
         case "CREATED": return tr("Created", "Создан", "Ստեղծված է")

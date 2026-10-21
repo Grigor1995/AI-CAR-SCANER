@@ -534,7 +534,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    VehicleModelArtwork(make, model, chassis)
                     VehicleFields(
                         text = text,
                         catalog = state.vehicleCatalog,
@@ -1631,7 +1630,7 @@ private fun LiveDataTile(
 }
 
 @Composable
-private fun VehicleFields(
+internal fun VehicleFields(
     text: com.aicarscaner.mobile.settings.AppStrings,
     catalog: List<VehicleCatalogEntryDto>,
     make: String,
@@ -1660,23 +1659,16 @@ private fun VehicleFields(
     val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).ifEmpty { engineOptionsFor(make, model, chassis).map { it.name } }
     val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).ifEmpty { ecuOptionsFor(make, model, chassis, engine) }
 
-    var search by remember(make) { mutableStateOf("") }
-    var showAll by remember(make) { mutableStateOf(false) }
-    OutlinedTextField(value=search,onValueChange={search=it},modifier=Modifier.fillMaxWidth(),singleLine=true,label={Text(dashboardLabel("Search models"))},placeholder={Text(dashboardLabel("Vehicle selection"))})
-    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-        makes.filter { it in listOf("Mercedes-Benz","BMW","Audi") }.forEach { brand ->
-            androidx.compose.material3.FilterChip(selected=brand==make,onClick={onMake(brand)},label={Text(brand)})
-        }
+    var previewModel by remember(make) { mutableStateOf<String?>(null) }
+    // A default catalog value is not an explicit selection by the user.
+    if (previewModel == model) {
+        VehicleModelArtwork(make, model, chassis)
     }
     VehicleSelectionField(text.make, make, makes, onMake)
-    val matching = models.filter { it.contains(search,ignoreCase=true) }
-    val visibleModels = if(showAll || search.isNotBlank()) matching else matching.sortedBy { if(it==model) 0 else 1 }.take(5)
-    visibleModels.forEach { option ->
-        val modelChassis = chassisOptionsFor(catalog,make,option).firstOrNull() ?: chassisOptionsFor(make,option).firstOrNull()?.chassis.orEmpty()
-        VehicleModelCard(make,option,modelChassis,option==model) {onModel(option)}
+    VehicleSelectionField(text.model, model, models) { selected ->
+        onModel(selected)
+        previewModel = selected
     }
-    if(!showAll && matching.size>visibleModels.size) TextButton(onClick={showAll=true}) {Text(dashboardLabel("View details"))}
-    VehicleSelectionField(text.model, model, models, onModel)
     VehicleSelectionField(text.chassis, chassis, chassisOptions, onChassis)
     VehicleSelectionField(text.year, year, years, onYear)
     VehicleSelectionField(text.engine, engine, engines, onEngine)

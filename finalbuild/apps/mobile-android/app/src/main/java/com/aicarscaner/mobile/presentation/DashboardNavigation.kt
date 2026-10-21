@@ -101,21 +101,3 @@ internal fun DashboardToolbar(
         Button(onClick=onAnalyze,modifier=Modifier.weight(1f),enabled=!loading) {Text(dashboardLabel("Analyze session"))}
     }
 }
-
-@Composable
-internal fun VehicleModelCard(make:String,model:String,chassis:String,selected:Boolean,onClick:()->Unit) {
-    Card(onClick=onClick,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
-        border=androidx.compose.foundation.BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=if(selected) 1f else .25f)),
-        colors=CardDefaults.cardColors(
-            containerColor=if(selected) MaterialTheme.colorScheme.primary.copy(alpha=.18f) else MaterialTheme.colorScheme.surface,
-            contentColor=MaterialTheme.colorScheme.onSurface)) {
-        Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(width=95.dp,height=56.dp)) {VehicleModelArtwork(make,model,chassis,height=56.dp)}
-            Column(Modifier.weight(1f)) {
-                Text(model,fontWeight=FontWeight.SemiBold)
-                Text(chassis,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(if(selected) "✓" else "›",color=MaterialTheme.colorScheme.primary)
-        }
-    }
-}

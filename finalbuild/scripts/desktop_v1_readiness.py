@@ -52,6 +52,15 @@ def main() -> int:
     if visible.get('status') != 'PASS' or visible.get('failed') != 0 or not visible.get('tests_total'):
         issues.append('Visible UI automated acceptance must PASS')
     packaged = a.mode != 'source'
+    # A mock backend PASS cannot prove real FastAPI starts. Require freshly
+    # produced real-service probes for both source and packaged modes.
+    for mode in (('source', 'frozen') if packaged else ('source',)):
+        try:
+            backend = read_fresh(REPORT / 'fastapi-startup' / f'{mode}.json', a.since)
+            if backend.get('status') != 'PASS' or not backend.get('health'):
+                issues.append(f'Real FastAPI {mode} startup failed')
+        except (OSError, ValueError, RuntimeError) as exc:
+            issues.append(str(exc))
     hash_value = None
     if packaged:
         frozen = perf.get('packaged_exe') or {}
@@ -101,8 +110,10 @@ def main() -> int:
         'evidence_paths': ['desktop-test-reports/summary.json',
                            'desktop-test-reports/performance.json',
                            'desktop-test-reports/real-ui-acceptance/results.json',
-                           'desktop-test-reports/real-ui-acceptance/report.html'],
-        'limitations': 'Fake GUI/backend tests do not validate production FastAPI/LLM/OBD; manual review is mandatory.',
+                           'desktop-test-reports/real-ui-acceptance/report.html',
+                           'desktop-test-reports/fastapi-startup/source.json',
+                           *(['desktop-test-reports/fastapi-startup/frozen.json'] if packaged else [])],
+        'limitations': 'Real FastAPI startup is checked; GUI mock tests do not validate live LLM/OBD or cloud-host recovery. Manual acceptance is mandatory.',
     }
     REPORT.mkdir(parents=True, exist_ok=True)
     path = REPORT / 'release-v1-readiness.json'

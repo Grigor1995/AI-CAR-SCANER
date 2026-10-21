@@ -47,12 +47,12 @@ struct DiagnosticScreen: View {
                             Text("AI CAR SCANNER")
                                 .font(.title2.weight(.heavy))
                                 .foregroundStyle(viewModel.settings.darkTheme ? .white : AutomotivePalette.navy)
-                            Text("SMART DIAGNOSTICS • AI ANALYSIS")
+                            Text(t.tr("SMART DIAGNOSTICS • AI ANALYSIS", "УМНАЯ ДИАГНОСТИКА • ИИ-АНАЛИЗ", "ԽԵԼԱՑԻ ԱԽՏՈՐՈՇՈՒՄ • AI ՎԵՐԼՈՒԾՈՒԹՅՈՒՆ"))
                                 .font(.system(size:9,weight:.bold))
                                 .tracking(1.1)
                                 .foregroundStyle(AutomotivePalette.electricBlue)
                             if let id=viewModel.session?.session_id {
-                                Text("Session \(id.prefix(8))…").font(.caption).foregroundStyle(.secondary)
+                                Text("\(t.tr("Session", "Сеанс", "Սեսիա")) \(id.prefix(8))…").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                         Spacer()
@@ -114,7 +114,7 @@ struct DiagnosticScreen: View {
                         Button { tab = item.0 } label: {
                             Image(systemName: item.1).frame(maxWidth: .infinity).padding(.vertical, 14)
                         }.foregroundStyle(tab == item.0 ? AutomotivePalette.cyan : Color.secondary)
-                        .accessibilityLabel([5:"Home", 0:t.vehicle, 8:"Live Data", 7:t.nextTests, 9:"Reports"][item.0] ?? "")
+                        .accessibilityLabel([5:t.tr("Home", "Обзор", "Գլխավոր"), 0:t.vehicle, 8:t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ"), 7:t.nextTests, 9:t.tr("Reports", "Отчёты", "Հաշվետվություններ")][item.0] ?? "")
                     }
                 }.background(viewModel.settings.darkTheme ? AutomotivePalette.panel : .white)
             }
@@ -126,13 +126,16 @@ struct DiagnosticScreen: View {
                 Button(t.start){viewModel.clearSession();reset()}
             }message:{Text(t.confirm)}
             .sheet(isPresented:$settingsOpen){settingsView}
-            .sheet(item:$test){x in TestSheet(test:x,result:$testResult,notes:$testNotes){Task{await viewModel.recordTest(x,testResult,testNotes.isEmpty ? nil:testNotes);test=nil}}}
+            .sheet(item:$test){x in TestSheet(test:x,language:viewModel.settings.language,result:$testResult,notes:$testNotes){Task{await viewModel.recordTest(x,testResult,testNotes.isEmpty ? nil:testNotes);test=nil}}}
             .alert(t.editSymptom,isPresented:Binding(get:{editSymptom != nil},set:{if !$0{editSymptom=nil}})){
                 TextField(t.symptom, text:$editText)
                 Button(t.cancel,role:.cancel){editSymptom=nil}
                 Button(t.save){ if let s=editSymptom { Task{ await updateSymptomLocally(s); editSymptom=nil } } }
             }
-            .alert("Error",isPresented:Binding(get:{viewModel.error != nil},set:{if !$0{viewModel.error=nil}})){Button("OK"){}}
+            .alert(t.tr("Error", "Ошибка", "Սխալ"),isPresented:Binding(get:{viewModel.error != nil},set:{if !$0{viewModel.error=nil}})){Button("OK"){}}
+            .onChange(of: viewModel.settings.language) { _, _ in
+                if let id = viewModel.session?.session_id { Task { await viewModel.openSession(id) } }
+            }
             .onChange(of: viewModel.session?.session_id) { _, _ in
                 guard let vehicle = viewModel.session?.vehicle else { return }
                 make = vehicle.make; model = vehicle.model; chassis = vehicle.chassis ?? ""
@@ -272,7 +275,7 @@ struct DiagnosticScreen: View {
             Button(t.tr("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) { Task { await viewModel.loadHistory() } }
             ForEach(viewModel.history, id: \.session_id) { previous in
                 SectionCard("\(previous.vehicle?.make ?? "") \(previous.vehicle?.model ?? "")") {
-                    Text("\(previous.session_id.prefix(8)) • DTC: \(previous.dtcs.count) • \(previous.state)").font(.caption)
+                    Text("\(previous.session_id.prefix(8)) • DTC: \(previous.dtcs.count) • \(t.protocolLabel(previous.state))").font(.caption)
                     Button(t.tr("Open session", "Открыть сеанс", "Բացել սեսիան")) { Task { await viewModel.openSession(previous.session_id); tab = 5 } }
                 }
             }
@@ -344,11 +347,11 @@ struct DiagnosticScreen: View {
     private var analysisView:some View {
         VStack(alignment:.leading,spacing:10) {
             if let s=viewModel.session {
-                StatusCard(title:t.state,value:s.state)
-                SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(x.status) • \(x.source)").font(.subheadline)}}
+                StatusCard(title:t.state,value:t.protocolLabel(s.state))
+                SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(t.protocolLabel(x.status)) • \(t.protocolLabel(x.source))").font(.subheadline)}}
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in
-                    VStack(alignment:.leading,spacing:5){Text(x.name).bold();Text(x.purpose);Text("Information gain: \(x.expected_information_gain,specifier:"%.2f") • Cost: \(x.estimated_cost,specifier:"%.2f")").font(.caption).foregroundStyle(.secondary)
+                    VStack(alignment:.leading,spacing:5){Text(x.name).bold();Text(x.purpose);Text("\(t.tr("Information gain", "Информационная ценность", "Տեղեկատվական արժեք")): \(x.expected_information_gain,specifier:"%.2f") • \(t.tr("Cost", "Стоимость", "Արժեք")): \(x.estimated_cost,specifier:"%.2f")").font(.caption).foregroundStyle(.secondary)
                     Button(t.record){testResult="INCOMPLETE";testNotes="";test=x}.buttonStyle(.bordered)}
                 }}
             } else {Text(t.noSession)}
@@ -359,15 +362,15 @@ struct DiagnosticScreen: View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.obd).font(.title3.bold())
             SectionCard("BLE"){Text(obd.status).font(.subheadline);Button(t.scan){obd.scan()}.buttonStyle(.borderedProminent)
-                ForEach(obd.devices,id:\.identifier){x in Text(x.name ?? "Unknown adapter")}}
-            SectionCard("Wi-Fi OBD"){Text("TCP adapter transport is reserved for the native OBD service.").foregroundStyle(.secondary)}
-            Text("USB on iOS requires an Apple-approved accessory path (MFi/ExternalAccessory).").font(.caption).foregroundStyle(.secondary)
+                ForEach(obd.devices,id:\.identifier){x in Text(x.name ?? t.tr("Unknown adapter", "Неизвестный адаптер", "Անհայտ ադապտեր"))}}
+            SectionCard("Wi-Fi OBD"){Text(t.tr("TCP adapter transport is reserved for the native OBD service.", "TCP-подключение адаптера доступно через нативную службу OBD.", "Ադապտերի TCP կապը նախատեսված է բնիկ OBD ծառայության համար։")).foregroundStyle(.secondary)}
+            Text(t.tr("USB on iOS requires an Apple-approved accessory path (MFi/ExternalAccessory).", "USB в iOS требует одобренного Apple аксессуара (MFi/ExternalAccessory).", "iOS-ում USB կապը պահանջում է Apple-ի հաստատած պարագա (MFi/ExternalAccessory)։")).font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var activityView:some View {
         VStack(alignment:.leading,spacing:8){Text(t.activity).font(.title3.bold())
-            ForEach(viewModel.session?.audit_log ?? []){x in SectionCard(x.event){if let h=x.hypotheses{Text("Hypotheses: \(h)")};if let e=x.evidence_count{Text("Evidence: \(e)")};if let q=x.questions{Text(q.joined(separator:"\n"))}}}
+            ForEach(viewModel.session?.audit_log ?? []){x in SectionCard(x.event){if let h=x.hypotheses{Text("\(t.hypotheses): \(h)")};if let e=x.evidence_count{Text("\(t.evidence): \(e)")};if let q=x.questions{Text(q.joined(separator:"\n"))}}}
             if (viewModel.session?.audit_log ?? []).isEmpty{Text(t.activityEmpty)}
         }
     }
@@ -376,7 +379,7 @@ struct DiagnosticScreen: View {
         NavigationStack{Form{
             Section(t.languageLabel){Picker(t.languageLabel,selection:Binding(get:{viewModel.settings.language},set:{viewModel.settings.language=$0;viewModel.saveSettings()})){ForEach(AppLanguage.allCases){Text($0.label).tag($0)}}}
             Section(t.theme){Toggle(t.dark,isOn:Binding(get:{viewModel.settings.darkTheme},set:{viewModel.settings.darkTheme=$0;viewModel.saveSettings()}))}
-            Section("Backend"){TextField("API URL",text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled()}
+            Section(t.tr("Server", "Сервер", "Սերվեր")){TextField(t.tr("API URL", "Адрес API", "API հասցե"),text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled()}
         }.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
     }
 
@@ -410,6 +413,8 @@ private struct SectionCard<C:View>:View{
 private struct StatusCard:View{let title:String;let value:String;var body:some View{HStack{Text(title);Spacer();Text(value).bold()}.padding(14).modifier(AutomotiveCardStyle())}}
 private struct TestSheet: View {
     let test: Recommendation
+    let language: AppLanguage
+    private var t: T { T(language: language) }
     @Binding var result: String
     @Binding var notes: String
     let save: () -> Void
@@ -426,7 +431,7 @@ private struct TestSheet: View {
                             Button { result = code } label: {
                                 VStack(spacing: 12) {
                                     Image(systemName: code == "PASS" ? "checkmark.shield.fill" : code == "FAIL" ? "exclamationmark.triangle.fill" : "shield.lefthalf.filled").font(.title)
-                                    Text(code).font(.caption.bold())
+                                    Text(code == "PASS" ? t.tr("PASS", "ПРОЙДЕН", "ԱՆՑԱՎ") : code == "FAIL" ? t.tr("FAIL", "НЕ ПРОЙДЕН", "ՉԱՆՑԱՎ") : t.tr("INCOMPLETE", "НЕ ЗАВЕРШЁН", "ԱՆԱՎԱՐՏ")).font(.caption.bold())
                                 }.frame(maxWidth: .infinity, minHeight: 115)
                                     .foregroundStyle(AutomotivePalette.resultColor(code))
                                     .background(AutomotivePalette.resultColor(code).opacity(result == code ? 0.18 : 0.04))
@@ -435,11 +440,11 @@ private struct TestSheet: View {
                             }.buttonStyle(.plain).accessibilityAddTraits(result == code ? .isSelected : [])
                         }
                     }
-                    TextField("Diagnostic notes / measurements", text: $notes, axis: .vertical)
+                    TextField(t.tr("Diagnostic notes / measurements", "Заметки / измерения", "Ախտորոշման նշումներ / չափումներ"), text: $notes, axis: .vertical)
                         .lineLimit(4...9).padding(14).modifier(AutomotiveCardStyle())
-                    Button("Record result", action: save).buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
+                    Button(t.record, action: save).buttonStyle(.borderedProminent).frame(maxWidth: .infinity)
                 }.padding(16)
-            }.navigationTitle("Test result")
+            }.navigationTitle(t.tr("Test result", "Результат теста", "Թեստի արդյունք"))
         }
     }
 }
@@ -447,6 +452,39 @@ private struct TestSheet: View {
 struct T{
     let language:AppLanguage
     func tr(_ e:String,_ r:String,_ h:String)->String{language == .en ? e : language == .ru ? r:h}
+    func protocolLabel(_ value: String) -> String {
+        switch value {
+        case "CREATED": return tr("Created", "Создан", "Ստեղծված է")
+        case "VEHICLE_IDENTIFIED": return tr("VEHICLE_IDENTIFIED", "АВТОМОБИЛЬ ИДЕНТИФИЦИРОВАН", "ՄԵՔԵՆԱՆ ՆՈՒՅՆԱԿԱՆԱՑՎԱԾ Է")
+        case "SYMPTOMS_COLLECTED": return tr("SYMPTOMS_COLLECTED", "СИМПТОМЫ СОБРАНЫ", "ԱԽՏԱՆՇԱՆՆԵՐԸ ՀԱՎԱՔՎԱԾ ԵՆ")
+        case "INITIAL_ANALYSIS": return tr("INITIAL_ANALYSIS", "ПЕРВИЧНЫЙ АНАЛИЗ", "ՍԿԶԲՆԱԿԱՆ ՎԵՐԼՈՒԾՈՒԹՅՈՒՆ")
+        case "QUESTIONS_PENDING": return tr("QUESTIONS_PENDING", "ОЖИДАЮТСЯ УТОЧНЕНИЯ", "ՍՊԱՍՎՈՒՄ ԵՆ ՃՇՏՈՒՄՆԵՐ")
+        case "DATA_COLLECTION": return tr("DATA_COLLECTION", "СБОР ДАННЫХ", "ՏՎՅԱԼՆԵՐԻ ՀԱՎԱՔԱԳՐՈՒՄ")
+        case "TESTING": return tr("TESTING", "ТЕСТИРОВАНИЕ", "ԹԵՍՏԱՎՈՐՈՒՄ")
+        case "HYPOTHESIS_VALIDATION": return tr("HYPOTHESIS_VALIDATION", "ПРОВЕРКА ГИПОТЕЗ", "ՎԱՐԿԱԾՆԵՐԻ ՍՏՈՒԳՈՒՄ")
+        case "ROOT_CAUSE_FOUND": return tr("ROOT_CAUSE_FOUND", "ПРИЧИНА НАЙДЕНА", "ՊԱՏՃԱՌԸ ԳՏՆՎԱԾ Է")
+        case "REPAIR": return tr("REPAIR", "РЕМОНТ", "ՎԵՐԱՆՈՐՈԳՈՒՄ")
+        case "POST_REPAIR_VERIFICATION": return tr("POST_REPAIR_VERIFICATION", "ПРОВЕРКА ПОСЛЕ РЕМОНТА", "ՎԵՐԱՆՈՐՈԳՈՒՄԻՑ ՀԵՏՈ ՍՏՈՒԳՈՒՄ")
+        case "CLOSED": return tr("CLOSED", "ЗАКРЫТО", "ՓԱԿՎԱԾ Է")
+        case "USER_REPORTED": return tr("USER_REPORTED", "Сообщено пользователем", "Օգտատիրոջ հաղորդած")
+        case "TECHNICIAN_OBSERVED": return tr("TECHNICIAN_OBSERVED", "Наблюдение механика", "Տեխնիկի դիտարկում")
+        case "VEHICLE_MEASURED": return tr("VEHICLE_MEASURED", "Измерено автомобилем", "Մեքենայի չափում")
+        case "ECU_REPORTED": return tr("ECU_REPORTED", "Сообщено ЭБУ", "ECU-ի հաղորդած")
+        case "DATABASE": return tr("DATABASE", "База данных", "Տվյալների բազա")
+        case "OEM_DOCUMENT": return tr("OEM_DOCUMENT", "Документ производителя", "Արտադրողի փաստաթուղթ")
+        case "RULE": return tr("RULE", "Анализ по правилам", "Կանոնային վերլուծություն")
+        case "ML_MODEL": return tr("ML_MODEL", "Модель машинного обучения", "Մեքենայական ուսուցման մոդել")
+        case "LLM_INFERENCE": return tr("LLM_INFERENCE", "Вывод языковой модели", "Լեզվային մոդելի եզրակացություն")
+        case "HISTORICAL_CASE": return tr("HISTORICAL_CASE", "Предыдущий случай", "Նախորդ դեպք")
+        case "reported": return tr("reported", "сообщено", "հաղորդված")
+        case "measured": return tr("measured", "измерено", "չափված")
+        case "calculated": return tr("calculated", "рассчитано", "հաշվարկված")
+        case "inferred": return tr("inferred", "предположено", "ենթադրված")
+        case "confirmed": return tr("confirmed", "подтверждено", "հաստատված")
+        case "rejected": return tr("rejected", "отклонено", "մերժված")
+        default: return value
+        }
+    }
     var vehicle:String{tr("Vehicle","Автомобиль","Մեքենա")};var inputs:String{tr("Inputs","Ввод","Մուտքեր")};var analysis:String{tr("Analysis","Анализ","Վերլուծություն")};var obd:String{"OBD"};var activity:String{tr("Activity","Журнал","Գործունեություն")}
     var make:String{tr("Make","Марка","Մակնիշ")};var model:String{tr("Model","Модель","Մոդել")};var chassis:String{tr("Chassis","Кузов","Թափք")};var year:String{tr("Year","Год","Տարի")};var engine:String{tr("Engine","Двигатель","Շարժիչ")};var petrol:String{tr("Petrol","Бензин","Բենզին")};var lpg:String{tr("LPG","Газ","Գազ")}
     var create:String{tr("Create diagnostic session","Создать диагностическую сессию","Ստեղծել դիագնոստիկ սեսիա")};var save:String{tr("Save","Сохранить","Պահպանել")};var symptoms:String{tr("Symptoms","Симптомы","Ախտանիշներ")};var symptom:String{tr("Symptom","Симптом","Ախտանիշ")};var driverSymptom:String{tr("Driver symptom","Симптом водителя","Վարորդի ախտանիշը")};var analyze:String{tr("Analyze session","Анализировать","Վերլուծել սեսիան")}

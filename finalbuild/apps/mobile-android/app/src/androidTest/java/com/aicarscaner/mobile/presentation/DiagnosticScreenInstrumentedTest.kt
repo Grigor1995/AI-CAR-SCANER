@@ -516,6 +516,13 @@ private class FakeDiagnosticApi : DiagnosticApi {
 
     fun savedDtcCodes(): List<String> = current.dtcs.map { it.code }
 
+    override suspend fun listSessions(): List<DiagnosticSessionDto> = listOf(current)
+
+    override suspend fun getSession(sessionId: String, language: String): DiagnosticSessionDto {
+        require(sessionId == current.session_id)
+        return current
+    }
+
     override suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto> = listOf(
         VehicleCatalogEntryDto(
             make = "Mercedes-Benz",

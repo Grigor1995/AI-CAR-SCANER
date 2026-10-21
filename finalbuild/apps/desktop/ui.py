@@ -20,6 +20,7 @@ from .api_client import DiagnosticApiClient, ApiError
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
 from .vehicle_artwork import vehicle_pixmap
+from .dashboard_translations import MESSAGES
 from .demo_ui import DemoDashboard, DTCPage, HypothesesPage, ReportsPage, TeachPage, SignalGrid
 
 APP_QSS = """
@@ -288,6 +289,10 @@ _UI_TRANSLATIONS["ru"].update({
 
 _UI_TRANSLATIONS["hy"].update({"Edit vehicle": "Խմբագրել մեքենան"})
 _UI_TRANSLATIONS["ru"].update({"Edit vehicle": "Изменить автомобиль"})
+
+# Load bundled presentation strings before compiling the cached translation patterns.
+for _language, _messages in MESSAGES.items():
+    _UI_TRANSLATIONS[_language].update(_messages)
 
 @lru_cache(maxsize=1)
 def _translation_patterns():
@@ -915,7 +920,7 @@ class DevicesPage(QWidget):
     def refresh(self):
         self.list.clear()
         for d in self.app.devices:
-            status=d.get("status","disconnected").upper()
+            status=_translate_ui_text(d.get("status","disconnected").upper(), getattr(self.app,"language","en"))
             text=f"{status} • {d.get('connection_type','?')} • {d.get('manufacturer','Unknown')} {d.get('model','')}\n{d.get('device_id','')}"
             item=QListWidgetItem(text); item.setData(Qt.UserRole,d); self.list.addItem(item)
         if self.app.selected_device_id:
@@ -975,7 +980,7 @@ class MainWindow(QMainWindow):
         self._build_pages()
         self._build_menu()
         self.setCentralWidget(self.stack)
-        self.statusBar().showMessage("Ready")
+        self.statusBar().showMessage(self.tr_text("Ready"))
         self.refresh_all()
 
     def _apply_theme(self) -> None:
@@ -1047,9 +1052,11 @@ class MainWindow(QMainWindow):
             elif isinstance(widget, QPlainTextEdit):
                 widget.setPlaceholderText(self.tr_text(widget.placeholderText()))
                 if widget.isReadOnly():
-                    widget.setPlainText(_translate_ui_block(widget.toPlainText(), self.language))
+                    translated = _translate_ui_block(widget.toPlainText(), self.language)
+                    if translated != widget.toPlainText(): widget.setPlainText(translated)
             elif isinstance(widget, QListWidget):
-                if widget is self.nav or (len(self.pages) > 6 and widget is self.pages[6].list):
+                # Vehicle/device lists contain user or hardware names; translate only presentation lists.
+                if widget is self.nav or widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
                     for index in range(widget.count()):
                         item = widget.item(index)
                         item.setText(self.tr_text(item.text()))
@@ -1065,6 +1072,10 @@ class MainWindow(QMainWindow):
                     item = widget.horizontalHeaderItem(column)
                     if item:
                         item.setText(self.tr_text(item.text()))
+        for trace in self.findChildren(QWidget):
+            if hasattr(trace, "empty_text"):
+                trace.empty_text = self.tr_text("No samples")
+                trace.update()
         for tab_widget in self.findChildren(QTabWidget):
             for index in range(tab_widget.count()):
                 tab_widget.setTabText(index, self.tr_text(tab_widget.tabText(index)))
@@ -1159,7 +1170,7 @@ class MainWindow(QMainWindow):
                 for worker in self._workers:
                     worker.requestInterruption()
                 self.statusBar().showMessage(
-                    "Finishing active requests before closing..."
+                    self.tr_text("Finishing active requests before closing...")
                 )
                 self.setEnabled(False)
             # Abort this close event; requests may be blocking on a bounded
@@ -1173,7 +1184,7 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, self.tr_text("Error"), translated)
         self.statusBar().showMessage(translated)
     def refresh_health(self):
-        def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage("Backend online" if self.online else "Backend offline"); self.refresh_pages()
+        def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage(self.tr_text("Backend online" if self.online else "Backend offline")); self.refresh_pages()
         self.run_worker(self.api.health,done)
     def refresh_catalog(self):
         if self._catalog_pending or time.monotonic() - self._catalog_loaded_at < 60:
@@ -1281,12 +1292,12 @@ class MainWindow(QMainWindow):
             self.active_vehicle = None
         page.refresh()
         self.refresh_pages()
-        self.statusBar().showMessage(f"Vehicle deleted: {label}")
+        self.statusBar().showMessage(self.tr_text(f"Vehicle deleted: {label}"))
     def refresh_devices(self):
         self.run_worker(self.api.list_devices, lambda data: self._devices_done(data.get("devices", [])))
 
     def _devices_done(self, devices):
-        self.devices=devices; self.refresh_pages(); self.statusBar().showMessage(f"VCI devices: {len(devices)}")
+        self.devices=devices; self.refresh_pages(); self.statusBar().showMessage(self.tr_text(f"VCI devices: {len(devices)}"))
 
     def scan_devices(self, transport: str):
         self.run_worker(lambda:self.api.scan_devices(transport), lambda data:self._devices_done(data.get("devices", [])))
@@ -1329,7 +1340,7 @@ class MainWindow(QMainWindow):
 
     def _device_action_done(self, result, message):
         self.devices=[d for d in self.devices if d.get("device_id") != result.get("device_id")] + [result]
-        self.refresh_pages(); self.statusBar().showMessage(message)
+        self.refresh_pages(); self.statusBar().showMessage(self.tr_text(message))
 
     def read_device_vin(self):
         if not self._selected_device(): return
@@ -1350,7 +1361,7 @@ class MainWindow(QMainWindow):
         if not self.online: self.show_error("Backend is offline. Start the FastAPI backend first."); return
         self.run_worker(lambda:self.api.create_session(self.active_vehicle.to_json()),self._session_created)
     def _session_created(self,data):
-        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage("Diagnostic session created")
+        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
     def analyze_input(self):
         if not self.session: self.new_session(); return
         text=self.pages[3].symptom.toPlainText().strip(); dtc=self.pages[3].dtc.text().strip()
@@ -1361,14 +1372,14 @@ class MainWindow(QMainWindow):
             return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)
     def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id, language=self.language),self._decision_done)
-    def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage("Diagnostic reasoning updated")
+    def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
     def start_simulator(self):
         if not self.session: self.new_session(); return
         self.run_worker(lambda:self.api.start_simulator(self.session.session_id),lambda _d:self._sim_changed("Simulator acquisition started"))
     def stop_simulator(self):
         if not self.session: return
         self.run_worker(lambda:self.api.stop_acquisition(self.session.session_id),lambda _d:self._sim_changed("Acquisition stopped"))
-    def _sim_changed(self,msg): self.statusBar().showMessage(msg); self.refresh_telemetry()
+    def _sim_changed(self,msg): self.statusBar().showMessage(self.tr_text(msg)); self.refresh_telemetry()
     def refresh_telemetry(self):
         if not self.session or getattr(self, "_telemetry_refresh_in_flight", False):
             return
@@ -1388,7 +1399,7 @@ class MainWindow(QMainWindow):
         def done(data):
             self._telemetry_refresh_in_flight = False
             if data.get("_error"):
-                self.statusBar().showMessage(f"Live-data refresh failed: {data['_error']}")
+                self.statusBar().showMessage(self.tr_text(f"Live-data refresh failed: {data['_error']}"))
                 return
             # A request for a previous session must not overwrite the current session's UI.
             if not self.session or self.session.session_id != session_id:
@@ -1402,11 +1413,11 @@ class MainWindow(QMainWindow):
     def analyze_telemetry(self):
         if not self.session: return
         self.run_worker(lambda:self.api.analyze_telemetry(self.session.session_id),lambda data:self._telemetry_done(data))
-    def _telemetry_done(self,data): self.telemetry=data; self.refresh_pages(); self.statusBar().showMessage("Telemetry analysis completed")
+    def _telemetry_done(self,data): self.telemetry=data; self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Telemetry analysis completed"))
     def ai_analyze_live_data(self):
         if not self.session:
             self.show_error("Create a diagnostic session first."); return
-        self.statusBar().showMessage("AI is analyzing live vehicle data...")
+        self.statusBar().showMessage(self.tr_text("AI is analyzing live vehicle data..."))
         sid, language = self.session.session_id, self.language
         def done(data):
             if self.session and self.session.session_id == sid and self.language == language:
@@ -1424,16 +1435,16 @@ class MainWindow(QMainWindow):
         self.telemetry=data.get("telemetry", self.telemetry)
         self.session_json=data.get("session", self.session_json)
         self.refresh_pages()
-        self.statusBar().showMessage("Live-data AI analysis completed")
+        self.statusBar().showMessage(self.tr_text("Live-data AI analysis completed"))
     def refresh_network(self):
         if not self.session: return
         self.run_worker(lambda:self.api.network_map(self.session.session_id),lambda data:self._network_done(data))
-    def _network_done(self,data): self.network=data; self.refresh_pages(); self.statusBar().showMessage("Network map refreshed")
+    def _network_done(self,data): self.network=data; self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Network map refreshed"))
     def active_probe(self):
         if not self.session: return
         ids=[str(x.get("id") or x.get("ecu_id")) for x in self.network.get("ecus",[]) if x.get("id") or x.get("ecu_id")]
         self.run_worker(lambda:self.api.active_probe(self.session.session_id,ids or None),lambda data:self._active_done(data))
-    def _active_done(self,data): self.active_network=data; self.refresh_pages(); self.statusBar().showMessage("Active read-only ECU probe completed")
+    def _active_done(self,data): self.active_network=data; self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Active read-only ECU probe completed"))
     def _refresh_response_language(self):
         if not self.session or not self.online:
             return

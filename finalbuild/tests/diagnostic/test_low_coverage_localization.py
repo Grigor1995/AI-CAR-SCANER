@@ -1,3 +1,5 @@
+import pytest
+
 from diagnostic.localization import (
     _localized_evidence_fact,
     _localized_evidence_status,
@@ -136,3 +138,34 @@ def test_localize_session_analysis_translates_nested_fields_without_mutating_sou
     english = localize_session_analysis(session, "en")
     assert english is not session
     assert english.hypotheses[0].category == session.hypotheses[0].category
+
+
+@pytest.mark.parametrize("language", ["hy", "ru"])
+def test_localized_dtc_and_structured_facts_keep_source_session_unchanged(language):
+    from diagnostic.models import DTC, DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus
+    from diagnostic.localization import localize_session_analysis
+    session = DiagnosticSession(dtcs=[DTC(code="P0302"), DTC(code="P0171", description="Technician original note")])
+    session.evidence.append(Evidence(fact="fuel_mode_lpg", source=EvidenceSource.USER_REPORTED, status=EvidenceStatus.REPORTED, metadata={"derived_from": "on LPG"}))
+    localized = localize_session_analysis(session, language)
+    assert localized.dtcs[0].description
+    assert localized.dtcs[1].description == "Technician original note"
+    assert localized.evidence[0].fact != "fuel_mode_lpg"
+    assert localized.evidence[0].source == EvidenceSource.USER_REPORTED
+    assert session.dtcs[0].description is None
+    assert session.evidence[0].fact == "fuel_mode_lpg"
+
+
+@pytest.mark.parametrize("language", ["hy", "ru"])
+def test_entire_decision_plan_presentation_is_localized(language):
+    from diagnostic.decision import CATALOG, DecisionCandidate, DiagnosticDecisionPlan
+    from diagnostic.localization import localize_decision_plan
+    from uuid import uuid4
+    candidates = [DecisionCandidate(test_id=uuid4(), name=spec.name, purpose=spec.purpose, priority_score=.5, information_gain=.5, evidence_fit=.5, cost_penalty=.1, risk_penalty=.1, safety_notes=list(spec.safety_notes), rationale=["Required evidence is present.", "Estimated information gain: 0.50.", "Targets ignition."]) for spec in CATALOG]
+    plan = DiagnosticDecisionPlan(session_id=uuid4(), state="TESTING", candidates=candidates)
+    localized = localize_decision_plan(plan, language)
+    for original, translated in zip(plan.candidates, localized.candidates):
+        assert original.test_id == translated.test_id
+        assert original.name != translated.name
+        assert original.purpose != translated.purpose
+        assert original.rationale != translated.rationale
+        assert original.safety_notes != translated.safety_notes

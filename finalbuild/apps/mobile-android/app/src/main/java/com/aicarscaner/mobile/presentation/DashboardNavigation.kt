@@ -1,0 +1,76 @@
+package com.aicarscaner.mobile.presentation
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.aicarscaner.mobile.settings.AppLanguage
+import com.aicarscaner.mobile.settings.dashboardText
+
+internal val LocalDashboardLanguage = staticCompositionLocalOf { AppLanguage.EN }
+@Composable internal fun dashboardLabel(english: String) = dashboardText(LocalDashboardLanguage.current, english)
+
+// Stroke icons stay crisp on small screens and do not depend on emoji fonts.
+@Composable
+internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
+    Canvas(modifier.size(24.dp)) {
+        val stroke = Stroke(width = 2.dp.toPx())
+        val w = size.width; val h = size.height
+        when (kind) {
+            1, 6 -> { // vehicle / home
+                drawRoundRect(color, Offset(w*.12f,h*.4f), Size(w*.76f,h*.35f), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()), style=stroke)
+                drawLine(color,Offset(w*.23f,h*.4f),Offset(w*.34f,h*.2f),stroke.width)
+                drawLine(color,Offset(w*.34f,h*.2f),Offset(w*.67f,h*.2f),stroke.width)
+                drawLine(color,Offset(w*.67f,h*.2f),Offset(w*.78f,h*.4f),stroke.width)
+                drawCircle(color,w*.07f,Offset(w*.28f,h*.78f)); drawCircle(color,w*.07f,Offset(w*.72f,h*.78f))
+            }
+            3, 12 -> { for (i in 0..3) drawLine(color,Offset(w*(.2f+i*.2f),h*.8f),Offset(w*(.2f+i*.2f),h*(.6f-i*.13f)),4.dp.toPx()) }
+            8, 13 -> { drawCircle(color,w*.38f,style=stroke);drawLine(color,Offset(w*.28f,h*.5f),Offset(w*.44f,h*.66f),stroke.width);drawLine(color,Offset(w*.44f,h*.66f),Offset(w*.74f,h*.32f),stroke.width) }
+            4, 10 -> { drawCircle(color,w*.34f,Offset(w*.5f,h*.43f),style=stroke);drawLine(color,Offset(w*.4f,h*.78f),Offset(w*.6f,h*.78f),stroke.width);drawLine(color,Offset(w*.5f,h*.1f),Offset(w*.5f,h*.68f),stroke.width);drawCircle(color,w*.1f,Offset(w*.5f,h*.43f),style=stroke) }
+            11 -> { for(x in listOf(.3f,.7f)) for(y in listOf(.3f,.7f)) drawRoundRect(color,Offset(w*(x-.12f),h*(y-.12f)),Size(w*.24f,h*.24f),style=stroke) }
+            else -> { drawRoundRect(color,Offset(w*.2f,h*.1f),Size(w*.6f,h*.8f),androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),style=stroke);for(i in 0..2) drawLine(color,Offset(w*.34f,h*(.32f+i*.18f)),Offset(w*.66f,h*(.32f+i*.18f)),stroke.width) }
+        }
+    }
+}
+
+internal val dashboardDestinations = listOf(6 to "Home", 2 to "Adapter", 3 to "Data", 9 to "Reports", 11 to "More")
+
+@Composable
+internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
+    NavigationBar(containerColor=MaterialTheme.colorScheme.surface, tonalElevation=0.dp, modifier=Modifier.heightIn(min=76.dp)) {
+        dashboardDestinations.forEach { (id,title) ->
+            NavigationBarItem(selected=selected==id,onClick={navigate(id)}, icon={DashboardIcon(id)},
+                label={Text(if(id==9 && LocalDashboardLanguage.current==AppLanguage.HY) "Հաշվետ." else dashboardLabel(title),maxLines=1,style=MaterialTheme.typography.labelSmall)},
+                colors=NavigationBarItemDefaults.colors(indicatorColor=MaterialTheme.colorScheme.primary.copy(alpha=.18f)))
+        }
+    }
+}
+
+@Composable
+internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
+    val sections=listOf(1 to "Vehicle selection",2 to "Device connection",0 to "Symptoms",7 to "DTC list & details",4 to "AI analysis",8 to "Guided tests",13 to "Testing progress",3 to "Live data",12 to "Custom dashboard",9 to "Reports",10 to "Teach AI",5 to "Activity")
+    sections.forEachIndexed { index,(id,title) ->
+        Card(onClick={navigate(id)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
+            colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+            Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+                DashboardIcon(id)
+                Text(dashboardLabel(title),Modifier.weight(1f),fontWeight=FontWeight.Medium)
+                Text("${index+1}",color=MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("›",color=MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+    Button(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
+}

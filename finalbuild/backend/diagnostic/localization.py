@@ -367,6 +367,12 @@ PREREQUISITE_LABELS = {
     },
 }
 
+for _lang, _items in {
+    "hy": {"fuel_mode_petrol": "Բենզինի ռեժիմ", "fuel_mode_lpg": "LPG ռեժիմ", "petrol_normal": "Բենզինով նորմալ աշխատանք", "acceleration": "Արագացում / բեռնվածություն", "below_2000_rpm": "2000 RPM-ից ցածր", "misfire": "Այրման բացթողումներ"},
+    "ru": {"fuel_mode_petrol": "Работа на бензине", "fuel_mode_lpg": "Режим LPG", "petrol_normal": "Нормальная работа на бензине", "acceleration": "Разгон / нагрузка", "below_2000_rpm": "Ниже 2000 RPM", "misfire": "Пропуски воспламенения"},
+}.items():
+    PREREQUISITE_LABELS[_lang].update(_items)
+
 def _localized_prerequisite(value: str, language: str) -> str:
     return PREREQUISITE_LABELS.get(language, {}).get(value, value)
 
@@ -460,6 +466,7 @@ def _localized_safety_note(note: str, language: str) -> str:
         return {
             "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Соблюдайте процедуры производителя LPG; исключите утечки и источники воспламенения.",
             "Follow LPG system manufacturer procedures.": "Соблюдайте процедуры производителя LPG.",
+            "Perform on a secure vehicle with appropriate workshop precautions.": "Закрепите автомобиль и соблюдайте меры безопасности мастерской.",
             "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Используйте изолированное оборудование с подходящими характеристиками и соблюдайте правила безопасности при работе с зажиганием.",
             "Use the approved leak-test procedure and protect hot/electrical components.": "Используйте утверждённую процедуру проверки утечек и защищайте горячие и электрические компоненты.",
             "Compression testing requires proper engine shutdown and manufacturer procedures.": "Для проверки компрессии требуется корректно заглушить двигатель и соблюдать процедуры производителя.",
@@ -468,6 +475,7 @@ def _localized_safety_note(note: str, language: str) -> str:
         return {
             "Follow LPG system manufacturer procedures; avoid leaks and ignition sources.": "Հետևեք LPG համակարգի արտադրողի ընթացակարգերին և բացառեք արտահոսքն ու բռնկման աղբյուրները։",
             "Follow LPG system manufacturer procedures.": "Հետևեք LPG համակարգի արտադրողի ընթացակարգերին։",
+            "Perform on a secure vehicle with appropriate workshop precautions.": "Ամրացրեք մեքենան և պահպանեք արհեստանոցի անվտանգության կանոնները։",
             "Use insulated/properly rated test equipment and follow workshop ignition-safety procedures.": "Օգտագործեք համապատասխան մեկուսացված չափիչ սարքավորում և պահպանեք բոցավառման համակարգի աշխատանքի անվտանգության կանոնները։",
             "Use the approved leak-test procedure and protect hot/electrical components.": "Օգտագործեք հաստատված արտահոսքի ստուգման ընթացակարգը և պաշտպանեք տաք ու էլեկտրական բաղադրիչները։",
             "Compression testing requires proper engine shutdown and manufacturer procedures.": "Կոմպրեսիայի ստուգման համար ճիշտ անջատեք շարժիչը և հետևեք արտադրողի ընթացակարգերին։",
@@ -526,11 +534,63 @@ def _localized_question(question: str, language: str) -> str:
     return question
 
 
+def _localized_dtc_description(code: str, description: str | None, language: str) -> str | None:
+    # Preserve custom notes. Only supply standard definitions when the caller did
+    # not provide a description; the code itself never changes.
+    if description or language == "en":
+        return description
+    cylinder = re.fullmatch(r"P030([1-8])", code.upper())
+    if cylinder:
+        return {"hy": f"{cylinder[1]}-րդ գլանում այրման բացթողում", "ru": f"Пропуски воспламенения в цилиндре {cylinder[1]}"}.get(language, description)
+    labels = {
+        "P0300": ("Պատահական կամ բազմագլան այրման բացթողումներ", "Случайные или множественные пропуски воспламенения"),
+        "P0171": ("Աղքատ վառելիքային խառնուրդ՝ բանկ 1", "Бедная топливная смесь, банк 1"),
+        "P0174": ("Աղքատ վառելիքային խառնուրդ՝ բանկ 2", "Бедная топливная смесь, банк 2"),
+        "P0172": ("Հարուստ վառելիքային խառնուրդ՝ բանկ 1", "Богатая топливная смесь, банк 1"),
+        "P0175": ("Հարուստ վառելիքային խառնուրդ՝ բանկ 2", "Богатая топливная смесь, банк 2"),
+        "P0100": ("Օդի զանգվածային հոսքի սենսորի շղթա", "Цепь датчика массового расхода воздуха"),
+        "P0101": ("Օդի զանգվածային հոսքի սենսորի աշխատանքի տիրույթ", "Диапазон / работа датчика массового расхода воздуха"),
+        "P0115": ("Հովացուցիչ հեղուկի ջերմաստիճանի սենսորի շղթա", "Цепь датчика температуры охлаждающей жидкости"),
+        "P0122": ("Դրոսելի դիրքի սենսորի ցածր մուտքային ազդանշան", "Низкий входной сигнал датчика положения дросселя"),
+        "P0130": ("Թթվածնի սենսորի շղթա՝ բանկ 1, սենսոր 1", "Цепь датчика кислорода, банк 1, датчик 1"),
+        "P0420": ("Կատալիզատորի արդյունավետությունը շեմից ցածր է՝ բանկ 1", "Эффективность катализатора ниже порога, банк 1"),
+        "P0430": ("Կատալիզատորի արդյունավետությունը շեմից ցածր է՝ բանկ 2", "Эффективность катализатора ниже порога, банк 2"),
+        "P0562": ("Համակարգի ցածր լարում", "Низкое напряжение системы"),
+        "P0700": ("Փոխանցման կառավարման համակարգի անսարքության ազդանշան", "Сигнал неисправности системы управления трансмиссией"),
+        "U0100": ("Շարժիչի կառավարման մոդուլի հետ կապի կորուստ", "Потеря связи с модулем управления двигателем"),
+    }
+    label = labels.get(code.upper())
+    return label[0 if language == "hy" else 1] if label else description
+
+
+def _localized_rationale(text: str, language: str) -> str:
+    phrases = {
+        "Required evidence is present.": ("Պահանջվող տվյալներն առկա են։", "Необходимые данные присутствуют."),
+        "A prior test supports a related hypothesis; this follow-up can help isolate the cause.": ("Նախորդ թեստն աջակցում է հարակից վարկածին․ այս ստուգումը կօգնի առանձնացնել պատճառը։", "Предыдущий тест поддерживает связанную гипотезу; последующая проверка поможет выделить причину."),
+        "A prior negative result lowers the priority of repeating checks aimed at this hypothesis.": ("Նախորդ բացասական արդյունքը նվազեցնում է այս վարկածի կրկնակի ստուգման առաջնահերթությունը։", "Предыдущий отрицательный результат снижает приоритет повторной проверки этой гипотезы."),
+    }
+    index = 0 if language == "hy" else 1
+    if text in phrases:
+        return phrases[text][index]
+    if text.startswith("Targets "):
+        targets = text[len("Targets "):].rstrip(".").split(", ")
+        return ("Թիրախ՝ " if language == "hy" else "Цели: ") + ", ".join(_localized_hypothesis_targets(targets, language)) + "."
+    if text.startswith("Estimated information gain: "):
+        return ("Ակնկալվող տեղեկատվական արժեք՝ " if language == "hy" else "Ожидаемая информационная ценность: ") + text.split(": ", 1)[1]
+    if text.startswith("Missing evidence: "):
+        values = text[len("Missing evidence: "):].rstrip(".").split(", ")
+        return ("Բացակայող տվյալներ՝ " if language == "hy" else "Недостающие данные: ") + ", ".join(_localized_prerequisite(value, language) for value in values) + "."
+    return text
+
+
 def localize_session_analysis(session: DiagnosticSession, language: str | None) -> DiagnosticSession:
     language = normalize_language(language)
     result = deepcopy(session)
     if language == "en":
         return result
+
+    for code in result.dtcs:
+        code.description = _localized_dtc_description(code.code, code.description, language)
 
     for hypothesis in result.hypotheses:
         original_category = hypothesis.category
@@ -564,6 +624,8 @@ def localize_session_analysis(session: DiagnosticSession, language: str | None) 
         )
 
     for evidence in result.evidence:
+        if evidence.metadata.get("derived_from"):
+            evidence.fact = _localized_prerequisite(evidence.fact, language)
         evidence.fact = _localized_test_result_fact(evidence.fact, language)
 
     for evidence in result.evidence:
@@ -590,6 +652,7 @@ def localize_decision_plan(plan, language):
             candidate.name, candidate.purpose = translated
         candidate.safety_notes = [_localized_safety_note(note, language) for note in candidate.safety_notes]
         candidate.prerequisite_gaps = [_localized_prerequisite(note, language) for note in candidate.prerequisite_gaps]
+        candidate.rationale = [_localized_rationale(note, language) for note in candidate.rationale]
     messages = {
         'ru': {
             'No diagnostic hypotheses are available yet; run initial analysis first.': 'Диагностических гипотез пока нет; сначала выполните анализ.',

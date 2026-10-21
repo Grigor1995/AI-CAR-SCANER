@@ -170,7 +170,7 @@ private val ruExtra = AppExtraStrings(
     dtcReadFailed = "Не удалось прочитать DTC",
     hypotheses = "Гипотезы",
     unknownError = "неизвестная ошибка",
-    liveDataReadFailed = "Не удалось прочитать Live Data",
+    liveDataReadFailed = "Не удалось прочитать текущие данные",
     low = "НИЗКИЙ",
     medium = "СРЕДНИЙ",
     high = "ВЫСОКИЙ",
@@ -185,7 +185,7 @@ private val ruExtra = AppExtraStrings(
     diagnosticNotes = "Заметки техника / результат",
     notesPlaceholder = "Введите измерения, наблюдения или результат теста",
     recordResult = "Записать результат",
-    openLiveData = "Открыть Live Data",
+    openLiveData = "Открыть текущие данные",
     pass = "ПРОЙДЕН",
     fail = "НЕ ПРОЙДЕН",
     incomplete = "НЕ ЗАВЕРШЁН",
@@ -204,11 +204,11 @@ private val hyExtra = AppExtraStrings(
     obdAdapters = "Bluetooth + Wi-Fi + USB OBD ադապտերներ",
     connectingBluetooth = "Bluetooth-ի միացում...",
     bluetoothError = "Bluetooth-ի սխալ",
-    enterWifiHost = "Մուտքագրեք Wi-Fi host-ը",
+    enterWifiHost = "Մուտքագրեք Wi-Fi հասցեն",
     connectingWifi = "Wi-Fi-ի միացում...",
     wifiError = "Wi-Fi-ի սխալ",
     usbPermissionRequested = "USB թույլտվությունը պահանջվել է",
-    usbManagerUnavailable = "USB Manager-ը հասանելի չէ",
+    usbManagerUnavailable = "USB կառավարիչը հասանելի չէ",
     connectingUsb = "USB-ի միացում...",
     usbError = "USB-ի սխալ",
     rpmValue = "Պտույտներ",
@@ -217,7 +217,7 @@ private val hyExtra = AppExtraStrings(
     dtcReadFailed = "Չհաջողվեց կարդալ DTC-ները",
     hypotheses = "Հիպոթեզներ",
     unknownError = "անհայտ սխալ",
-    liveDataReadFailed = "Live Data-ի ընթերցումը ձախողվեց",
+    liveDataReadFailed = "Ուղիղ տվյալների ընթերցումը ձախողվեց",
     low = "ՑԱԾՐ",
     medium = "ՄԻՋԻՆ",
     high = "ԲԱՐՁՐ",
@@ -232,7 +232,7 @@ private val hyExtra = AppExtraStrings(
     diagnosticNotes = "Տեխնիկի նշումներ / արդյունք",
     notesPlaceholder = "Մուտքագրեք չափումները, դիտարկումները կամ թեստի արդյունքը",
     recordResult = "Գրանցել արդյունքը",
-    openLiveData = "Բացել Live Data",
+    openLiveData = "Բացել ուղիղ տվյալները",
     pass = "ԱՆՑԱՎ",
     fail = "ՉԱՆՑԱՎ",
     incomplete = "ԱՆԱՎԱՐՏ",
@@ -312,7 +312,7 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Գործողություններ չկան","Տեսք","Լեզու","Թեմա","Մուգ","Բաց","Փակել","Bluetooth","Wi‑Fi","USB",
         "Հոսթ","Պորտ","Միացնել Wi‑Fi","USB սարքեր","USB մուտք տրամադրել","USB սարքեր չկան",
         "Միացված է","Սկզբում ավելացրեք ախտանշաններ և DTC-ներ։","Արտադրող","Մոդել","Շասսի","Տարի","Շարժիչ","Վառելիք","Բենզին","LPG","Վերլուծության արդյունքներ դեռ չկան։ Ավելացրեք ախտանշան կամ DTC և գործարկեք վերլուծությունը։",
-        "Կենդանի տվյալներ","Պտույտներ","Սկսել Live Data","Դադարեցնել Live Data","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
+        "Կենդանի տվյալներ","Պտույտներ","Սկսել տվյալների հավաքումը","Դադարեցնել տվյալների հավաքումը","OBD միացված չէ","Կենդանի տվյալներ հասանելի չեն",
         "Արագություն","Հովացուցիչ հեղուկ","Շարժիչի բեռ","Մուտքի օդ","MAF","MAP","Դրոսել","STFT","LTFT",
         "Ապացույցներ","Աջակցող ապացույցներ","Հակասող ապացույցներ","Վստահություն","Հաջորդ հարցեր","Տեղեկատվական արժեք","Ռիսկ","Մոտավոր արժեք","Նախապայմաններ","Անվտանգության նշումներ","Թիրախ հիպոթեզներ",
         "Սկսե՞լ նոր սեսիա","Ընթացիկ սեսիայի տվյալները կհեռացվեն էկրանից։","Հնարավոր","Թեստով աջակցվում է","Թեստով թուլացվել է","Մերժված", hyExtra
@@ -332,4 +332,45 @@ fun strings(language: AppLanguage): AppStrings = when (language) {
         "Evidence","Supporting evidence","Contradicting evidence","Confidence","Next diagnostic questions","Information gain","Risk","Estimated cost","Prerequisites","Safety notes","Target hypotheses",
         "Start a new session?","The current session data will be cleared from the app screen.","Possible","Supported by test","Disfavored by test","Rejected", AppExtraStrings()
     )
+}
+fun localizedEvidenceSource(language: AppLanguage, source: String): String {
+    val translations = mapOf(
+        "USER_REPORTED" to Pair("Օգտատիրոջ հաղորդած", "Сообщено пользователем"),
+        "TECHNICIAN_OBSERVED" to Pair("Տեխնիկի դիտարկում", "Наблюдение механика"),
+        "VEHICLE_MEASURED" to Pair("Մեքենայի չափում", "Измерено автомобилем"),
+        "ECU_REPORTED" to Pair("ECU-ի հաղորդած", "Сообщено ЭБУ"),
+        "DATABASE" to Pair("Տվյալների բազա", "База данных"),
+        "OEM_DOCUMENT" to Pair("Արտադրողի փաստաթուղթ", "Документ производителя"),
+        "RULE" to Pair("Կանոնային վերլուծություն", "Анализ по правилам"),
+        "ML_MODEL" to Pair("Մեքենայական ուսուցման մոդել", "Модель машинного обучения"),
+        "LLM_INFERENCE" to Pair("Լեզվային մոդելի եզրակացություն", "Вывод языковой модели"),
+        "HISTORICAL_CASE" to Pair("Նախորդ դեպք", "Предыдущий случай"),
+    )
+    val label = translations[source] ?: return source
+    return when(language) { AppLanguage.HY -> label.first; AppLanguage.RU -> label.second; AppLanguage.EN -> source }
+}
+
+/** Re-render stored adapter status after a language change, keeping device names intact. */
+fun localizedConnectionStatus(language: AppLanguage, status: String): String {
+    val target=strings(language)
+    if(status.startsWith("Connected to ")) return "${target.connected}: ${status.removePrefix("Connected to ")}"
+    for(sourceLanguage in AppLanguage.values()) {
+        val source=strings(sourceLanguage)
+        val labels=listOf(
+            source.notConnected to target.notConnected,
+            source.extra.connectingBluetooth to target.extra.connectingBluetooth,
+            source.extra.connectingWifi to target.extra.connectingWifi,
+            source.extra.connectingUsb to target.extra.connectingUsb,
+            source.extra.enterWifiHost to target.extra.enterWifiHost,
+            source.extra.usbPermissionRequested to target.extra.usbPermissionRequested,
+            source.extra.usbManagerUnavailable to target.extra.usbManagerUnavailable,
+            source.extra.bluetoothError to target.extra.bluetoothError,
+            source.extra.wifiError to target.extra.wifiError,
+            source.extra.usbError to target.extra.usbError)
+        for((old,new) in labels) {
+            if(status==old) return new
+            if(status.startsWith("$old:")) return new+status.removePrefix(old)
+        }
+    }
+    return status
 }

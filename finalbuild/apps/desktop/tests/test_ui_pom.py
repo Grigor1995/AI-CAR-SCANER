@@ -1643,3 +1643,63 @@ def test_progress_keeps_completed_tests_when_recommendations_change(window_facto
     assert window.pages[6].progress.maximum() == 2
     window.pages[0].refresh()
     assert window.pages[0].progress.value() == 50
+
+
+@pytest.mark.parametrize("language", ["hy", "ru"])
+def test_dashboard_labels_and_dynamic_lists_translate_after_refresh(window_factory, language):
+    window = window_factory()
+    window.language = language
+    window.session_json = {"dtcs": [{"code": "P0302"}], "hypotheses": []}
+    window.refresh_pages()
+    labels = [item.text() for item in window.findChildren(ui.QLabel)]
+    assert "No acquisition samples" not in labels
+    assert "No recommended tests yet" not in labels
+    assert "No acquisition running" not in labels
+    dtc = window.pages[7].list.item(0).text()
+    assert "P0302" in dtc
+    assert "No description supplied" not in dtc
+    assert "Source:" not in dtc
+    assert "Add evidence and analyze the session to generate hypotheses" not in window.pages[8].list.item(0).text()
+    window.language = "en"
+    window._apply_language()
+    assert "No description supplied" in window.pages[7].list.item(0).text()
+
+
+def test_dashboard_presentation_strings_have_hy_and_ru_translations():
+    import ast
+    import re
+    from pathlib import Path
+    tree = ast.parse(Path(ui.__file__).with_name("demo_ui.py").read_text())
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not node.args:
+            continue
+        argument = node.args[0]
+        function = node.func.id if isinstance(node.func, ast.Name) else node.func.attr if isinstance(node.func, ast.Attribute) else ""
+        if function not in {"label", "action", "Panel", "CountCard", "setPlaceholderText", "setText"}:
+            continue
+        if isinstance(argument, ast.Constant) and isinstance(argument.value, str) and re.search("[a-zA-Z]", argument.value):
+            for language in ("hy", "ru"):
+                translated = ui._translate_ui_text(argument.value, language)
+                assert translated != argument.value, (language, argument.value)
+
+
+def test_async_status_messages_use_selected_language_immediately(window_factory, monkeypatch):
+    window=window_factory()
+    window.language="hy"
+    monkeypatch.setattr(window,"refresh_pages",lambda:None)
+    window._decision_done({"candidates":[]})
+    assert window.statusBar().currentMessage()==window.tr_text("Diagnostic reasoning updated")
+    assert window.statusBar().currentMessage()!="Diagnostic reasoning updated"
+
+
+def test_history_language_switch_rebuilds_labels_without_network_or_losing_selection(window_factory):
+    window=window_factory()
+    page=window.pages[9]
+    page.loaded([{"session_id":"history-1","state":"TESTING","vehicle":{"make":"BMW","model":"3 Series"},"test_results":[]}])
+    page.history.setCurrentRow(0)
+    window.language="hy"
+    page.refresh()
+    assert "TESTING" not in page.history.item(0).text()
+    assert "results" not in page.history.item(0).text()
+    assert "BMW" in page.history.item(0).text()
+    assert page.history.currentItem().data(Qt.UserRole)=="history-1"

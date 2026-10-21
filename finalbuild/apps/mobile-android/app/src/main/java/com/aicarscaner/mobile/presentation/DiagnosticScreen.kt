@@ -37,7 +37,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
@@ -54,6 +53,8 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +86,8 @@ import com.aicarscaner.mobile.settings.AppLanguage
 import com.aicarscaner.mobile.settings.AppSettings
 import com.aicarscaner.mobile.settings.AppSettingsStore
 import com.aicarscaner.mobile.settings.strings
+import com.aicarscaner.mobile.settings.localizedConnectionStatus
+import com.aicarscaner.mobile.settings.localizedEvidenceSource
 import com.aicarscaner.mobile.settings.localizedState
 import com.aicarscaner.mobile.settings.localizedEvidenceStatus
 import android.app.PendingIntent
@@ -93,26 +96,28 @@ import android.hardware.usb.UsbManager
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 
 // Color tokens follow the shared blue / cyan / violet automotive UI reference.
 // Semantic status colors remain independently green (PASS), red (FAIL), amber (INCOMPLETE).
-private val AutomotiveDarkColors = darkColorScheme(
+internal val AutomotiveDarkColors = darkColorScheme(
     primary = Color(0xFF188AFF),
     onPrimary = Color.White,
     secondary = Color(0xFF9C74FF),
     onSecondary = Color.White,
     tertiary = Color(0xFF28D5FF),
     background = Color(0xFF061121),
-    surface = Color(0xFF0C1B35),
-    surfaceVariant = Color(0xFF102545),
+    surface = Color(0xFF082536),
+    surfaceVariant = Color(0xFF10354B),
     onSurface = Color(0xFFEAF4FF),
     onSurfaceVariant = Color(0xFFAAC8E5),
     error = Color(0xFFFF617A)
 )
 
-private val AutomotiveLightColors = lightColorScheme(
+internal val AutomotiveLightColors = lightColorScheme(
     primary = Color(0xFF096BCD),
     onPrimary = Color.White,
     secondary = Color(0xFF7050BA),
@@ -349,6 +354,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     MaterialTheme(
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
+        CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language) {
         if (settingsOpen) {
             SettingsDialog(
                 settings = appSettings,
@@ -359,8 +365,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 },
                 onLanguageChanged = { language ->
                     val active = state.session
-                    if (active != null && (active.symptoms.isNotEmpty() || active.dtcs.isNotEmpty())) {
-                        viewModel.analyze(language.code)
+                    if (active != null) {
+                        viewModel.openSession(active.session_id, language.code)
                     }
                 },
                 onClose = { settingsOpen = false }
@@ -473,13 +479,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             color = Color.Transparent
         ) {
             Scaffold(containerColor = Color.Transparent, bottomBar = {
-                if (state.session != null) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    listOf(6 to "⌂", 1 to "▣", 3 to "▥", 8 to "✓", 9 to "▤").forEach { (destination, symbol) ->
-                        NavigationBarItem(selected = selectedTab == destination,
-                            onClick = { selectedTab = destination },
-                            icon = { Text(symbol, style = MaterialTheme.typography.titleLarge) },
-                            label = { Text(when(destination) { 6 -> demo("Home", "Обзор", "Գլխավոր"); 1 -> text.vehicle; 3 -> text.liveData; 8 -> demo("Tests", "Тесты", "Թեստեր"); else -> demo("Reports", "Отчёты", "Հաշվետվություններ") }, maxLines = 1) })
-                    }
+                if (state.session != null) DashboardBottomBar(selectedTab) { destination ->
+                    selectedTab = destination
+                    if (destination == 2) refreshUsbDevices()
+                    if (destination == 9) viewModel.loadHistory()
                 }
             }) { insets ->
             Column(
@@ -489,69 +492,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.app_icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(44.dp)
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                "AI CAR SCANNER",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                "SMART DIAGNOSTICS  •  AI ANALYSIS",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            state.session?.let {
-                                Text(
-                                    "${text.extra.session} ${it.session_id.take(8)}…",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            IconButton(
-                                onClick = { settingsOpen = true },
-                                enabled = true,
-                                modifier = Modifier
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Settings,
-                                    contentDescription = text.settings,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            if (state.session != null) {
-                                IconButton(
-                                    onClick = { newSessionConfirmOpen = true },
-                                    enabled = true,
-                                    modifier = Modifier
-                                ) {
-                                    Icon(Icons.Outlined.Add, contentDescription = text.newSession)
-                                }
-                            }
-                        }
+                Row(Modifier.fillMaxWidth().padding(vertical=4.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                    if (state.session != null && selectedTab != 6) {
+                        TextButton(onClick={selectedTab=6}) { Text("‹",style=MaterialTheme.typography.headlineMedium) }
+                    } else DashboardIcon(6,Modifier.size(30.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicle selection";2->"Device connection";0->"Symptoms";7->"DTC list & details";4->"AI analysis";8->"Guided tests";3->"Live data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+                        if(state.session==null || selectedTab==6) Text(dashboardLabel("SMART DIAGNOSTICS • AI ANALYSIS"),style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)
                     }
-
-                    androidx.compose.material3.HorizontalDivider(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                    )
+                    IconButton(onClick={settingsOpen=true}) { Icon(Icons.Outlined.Settings,contentDescription=text.settings,tint=MaterialTheme.colorScheme.primary) }
+                    if(state.session!=null) IconButton(onClick={newSessionConfirmOpen=true}) { Icon(Icons.Outlined.Add,contentDescription=text.newSession) }
                 }
 
                 if (state.session == null) {
@@ -560,7 +510,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     }
                     if (selectedTab == 9) state.history.forEach { previous ->
                         DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
-                            Text("${previous.session_id.take(8)} • ${previous.state}")
+                            Text("${previous.session_id.take(8)} • ${localizedState(appSettings.language,previous.state)}")
                             Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) {
                                 Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան"))
                             }
@@ -679,54 +629,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         demo("Reports", "Отчёты", "Հաշվետվություններ"),
                         demo("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին")
                     )
-
-                    if (selectedTab != 6) {
-                    Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                                        ),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(text.session, style = MaterialTheme.typography.labelLarge)
-                            VehicleModelArtwork(
-                                make = session.vehicle?.make ?: make,
-                                model = session.vehicle?.model ?: model,
-                                chassis = session.vehicle?.chassis ?: chassis
-                            )
-                            Text(session.vehicle?.let { "${it.make} ${it.model}${if (it.chassis.isNullOrBlank()) "" else " / ${it.chassis}"}" } ?: extra.vehicleNotIdentified)
-                            Text("${extra.state}: ${localizedState(appSettings.language, session.state)}", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-
-                    }
-                    val displayOrder = listOf(6, 1, 2, 0, 7, 4, 8, 3, 9, 10, 5)
-                    ScrollableTabRow(
-                        selectedTabIndex = displayOrder.indexOf(selectedTab),
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        edgePadding = 4.dp
-                    ) {
-                        displayOrder.forEach { index ->
-                            val title = tabs[index]
-                            Tab(
-                                selected = selectedTab == index,
-                                onClick = {
-                                    selectedTab = index
-                                    if (index == 2) {
-                                        // USB discovery does not require a runtime permission.
-                                        // Bluetooth discovery waits for the user to tap Refresh.
-                                        refreshUsbDevices()
-                                    }
-                                },
-                                text = { Text(title) }
-                            )
-                        }
-                    }
 
                     when (selectedTab) {
                         0 -> {
@@ -1043,9 +945,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         2 -> {
+                            DemoAdapterHeader(obdConnected,localizedConnectionStatus(appSettings.language,obdStatus))
                             Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
                             Text(extra.obdAdapters)
-                            Text("${text.obdConnection}: ${obdStatus}", fontWeight = FontWeight.Medium)
+                            Text("${text.obdConnection}: ${localizedConnectionStatus(appSettings.language,obdStatus)}", fontWeight = FontWeight.Medium)
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 TransportButton(obdTransport == "bluetooth", { obdTransport = "bluetooth" }, text.bluetooth)
@@ -1293,28 +1196,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                            } else {
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    LiveDataTile(text.rpm, liveData?.rpm?.let { "%.0f".format(it) } ?: "—", "rpm", Modifier.weight(1f), true)
-                                    LiveDataTile(text.speed, liveData?.speedKph?.let { "%.0f".format(it) } ?: "—", "km/h", Modifier.weight(1f), true)
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    LiveDataTile(text.coolantTemp, liveData?.coolantC?.let { "%.0f".format(it) } ?: "—", "°C", Modifier.weight(1f))
-                                    LiveDataTile(text.engineLoad, liveData?.engineLoadPct?.let { "%.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    LiveDataTile(text.intakeAirTemp, liveData?.intakeAirC?.let { "%.0f".format(it) } ?: "—", "°C", Modifier.weight(1f))
-                                    LiveDataTile(text.map, liveData?.mapKpa?.let { "%.0f".format(it) } ?: "—", "kPa", Modifier.weight(1f))
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    LiveDataTile(text.maf, liveData?.mafGps?.let { "%.1f".format(it) } ?: "—", "g/s", Modifier.weight(1f))
-                                    LiveDataTile(text.throttle, liveData?.throttlePct?.let { "%.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    LiveDataTile(text.stft, liveData?.shortFuelTrimPct?.let { "%+.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
-                                    LiveDataTile(text.ltft, liveData?.longFuelTrimPct?.let { "%+.1f".format(it) } ?: "—", "%", Modifier.weight(1f))
-                                }
                             }
+                            OutlinedButton(onClick={selectedTab=12},modifier=Modifier.fillMaxWidth()) {Text(dashboardLabel("Custom dashboard")+" ›")}
 
                             DemoLiveCharts(channelHistory)
                             liveDataError?.let {
@@ -1323,6 +1206,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         4 -> {
+                            DemoHypotheses(session)
+                            Button(onClick={viewModel.analyze(appSettings.language.code)},enabled=!state.loading,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Analyze session")) }
+                            var advanced by remember { mutableStateOf(false) }
+                            TextButton(onClick={advanced=!advanced}) { Text(dashboardLabel(if(advanced) "Hide details" else "Advanced analysis")) }
+                            if(advanced) {
                             Text(text.analysis, style = MaterialTheme.typography.titleLarge)
 
                             if (session.hypotheses.isEmpty() && session.recommendations.isEmpty()) {
@@ -1611,9 +1499,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) { Text(text.analyzeSession) }
+                            }
                         }
 
                         6 -> DemoHome(session, tabs) { selectedTab = it }
+                        11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
+                        12 -> DemoLiveCharts(channelHistory,dashboard=true)
+                        13 -> DemoProgress(session) {selectedTab=8}
                         7 -> DemoDtcList(session, "DTC")
                         8 -> DemoGuidedTests(session, tabs[8]) { id, title ->
                             selectedTestId = id
@@ -1627,7 +1519,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             OutlinedButton(onClick = { viewModel.loadHistory() }) { Text(demo("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) }
                             state.history.forEach { previous ->
                                 DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
-                                    Text("${previous.session_id.take(8)} • DTC: ${previous.dtcs.size} • ${previous.state}")
+                                    Text("${previous.session_id.take(8)} • DTC: ${previous.dtcs.size} • ${localizedState(appSettings.language,previous.state)}")
                                     Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) { Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան")) }
                                 }
                             }
@@ -1666,6 +1558,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             if (state.loading) CircularProgressIndicator()
             state.error?.let { Text("${extra.error}: ${it}", color = MaterialTheme.colorScheme.error) }
         }
+    }
     }
 }
 
@@ -1765,7 +1658,28 @@ private fun VehicleFields(
     val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).ifEmpty { engineOptionsFor(make, model, chassis).map { it.name } }
     val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).ifEmpty { ecuOptionsFor(make, model, chassis, engine) }
 
+    var search by remember(make) { mutableStateOf("") }
+    var showAll by remember(make) { mutableStateOf(false) }
+    OutlinedTextField(value=search,onValueChange={search=it},modifier=Modifier.fillMaxWidth(),singleLine=true,label={Text(dashboardLabel("Search models"))},placeholder={Text(dashboardLabel("Vehicle selection"))})
+    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+        makes.filter { it in listOf("Mercedes-Benz","BMW","Audi") }.forEach { brand ->
+            androidx.compose.material3.FilterChip(selected=brand==make,onClick={onMake(brand)},label={Text(brand)})
+        }
+    }
     VehicleSelectionField(text.make, make, makes, onMake)
+    val matching = models.filter { it.contains(search,ignoreCase=true) }
+    val visibleModels = if(showAll || search.isNotBlank()) matching else matching.sortedBy { if(it==model) 0 else 1 }.take(5)
+    visibleModels.forEach { option ->
+        val modelChassis = chassisOptionsFor(catalog,make,option).firstOrNull() ?: chassisOptionsFor(make,option).firstOrNull()?.chassis.orEmpty()
+        Card(onClick={onModel(option)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),border=BorderStroke(1.dp,if(option==model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha=.25f)),colors=CardDefaults.cardColors(containerColor=if(option==model) MaterialTheme.colorScheme.primary.copy(alpha=.18f) else MaterialTheme.colorScheme.surface)) {
+            Row(Modifier.padding(10.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                androidx.compose.foundation.layout.Box(Modifier.size(width=95.dp,height=56.dp)) { VehicleModelArtwork(make,option,modelChassis,height=56.dp) }
+                Column(Modifier.weight(1f)) { Text(option,fontWeight=FontWeight.SemiBold);Text(modelChassis,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant) }
+                Text(if(option==model) "✓" else "›",color=MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+    if(!showAll && matching.size>visibleModels.size) TextButton(onClick={showAll=true}) {Text(dashboardLabel("View details"))}
     VehicleSelectionField(text.model, model, models, onModel)
     VehicleSelectionField(text.chassis, chassis, chassisOptions, onChassis)
     VehicleSelectionField(text.year, year, years, onYear)
@@ -1838,81 +1752,76 @@ private fun SettingsDialog(
     onLanguageChanged: (AppLanguage) -> Unit,
     onClose: () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = if (settings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
-    ) {
-        AlertDialog(
-            onDismissRequest = onClose,
-            title = { Text(text.settings) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(text.language, style = MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (settings.language == AppLanguage.EN) {
-                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)); onLanguageChanged(AppLanguage.EN) }) { Text("EN") }
-                        } else {
-                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.EN)); onLanguageChanged(AppLanguage.EN) }) { Text("EN") }
-                        }
-                        if (settings.language == AppLanguage.RU) {
-                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)); onLanguageChanged(AppLanguage.RU) }) { Text("RU") }
-                        } else {
-                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.RU)); onLanguageChanged(AppLanguage.RU) }) { Text("RU") }
-                        }
-                        if (settings.language == AppLanguage.HY) {
-                            Button(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)); onLanguageChanged(AppLanguage.HY) }) { Text("ARM") }
-                        } else {
-                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(language = AppLanguage.HY)); onLanguageChanged(AppLanguage.HY) }) { Text("ARM") }
+    MaterialTheme(colorScheme=if(settings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors) {
+        androidx.compose.ui.window.Dialog(onDismissRequest=onClose,properties=androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth=false)) {
+            Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
+                    Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        TextButton(onClick=onClose) {Text("‹",style=MaterialTheme.typography.headlineMedium)}
+                        Text(text.settings,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+                    }
+                    DemoPanel(text.theme) {
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                            DashboardIcon(12)
+                            Column(Modifier.weight(1f).padding(start=14.dp)) {
+                                Text(text.appearance,fontWeight=FontWeight.SemiBold)
+                                Text(if(settings.darkTheme) text.dark else text.light,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            androidx.compose.material3.Switch(checked=settings.darkTheme,onCheckedChange={onSettingsChanged(settings.copy(darkTheme=it))})
                         }
                     }
-                    Text(text.theme, style = MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (settings.darkTheme) {
-                            Button(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
-                        } else {
-                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = true)) }) { Text(text.dark) }
-                        }
-                        if (!settings.darkTheme) {
-                            Button(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
-                        } else {
-                            OutlinedButton(onClick = { onSettingsChanged(settings.copy(darkTheme = false)) }) { Text(text.light) }
+                    DemoPanel(text.language) {
+                        listOf(AppLanguage.HY to "Հայերեն",AppLanguage.RU to "Русский",AppLanguage.EN to "English").forEach { (language,label) ->
+                            androidx.compose.material3.OutlinedCard(onClick={onSettingsChanged(settings.copy(language=language));onLanguageChanged(language)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),border=BorderStroke(1.dp,if(settings.language==language) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha=.3f))) {
+                                Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                                    Text(label,fontWeight=FontWeight.Medium)
+                                    androidx.compose.material3.RadioButton(selected=settings.language==language,onClick=null)
+                                }
+                            }
                         }
                     }
+                    Text(dashboardLabel("Preferences saved on this device"),color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodySmall)
+                    Button(onClick=onClose,modifier=Modifier.fillMaxWidth()) {Text(text.close)}
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = onClose) { Text(text.close) }
             }
-        )
+        }
     }
 }
 
 
 /** Generated portraits use an exact catalog key and native image rendering. */
 @Composable
-internal fun VehicleModelArtwork(make: String, model: String, chassis: String) {
+internal fun VehicleModelArtwork(make: String, model: String, chassis: String, height: androidx.compose.ui.unit.Dp = 170.dp) {
     fun keyPart(value: String): String = value.lowercase(java.util.Locale.ROOT)
         .replace(Regex("[^a-z0-9]+"), "-").trim('-')
     val file = "vehicle_models/" +
         listOf(make, model, chassis).joinToString("_", transform = ::keyPart) + ".png"
     val context = LocalContext.current
-    val portrait = remember(file) {
-        runCatching {
-            context.assets.open(file).use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
-        }.getOrNull()
+    val sample = if (height <= 72.dp) 4 else 1
+    val key = "$file/$sample"
+    val portrait by produceState(initialValue=vehiclePortraitCache.get(key),key1=key) {
+        if (value == null) value = withContext(Dispatchers.IO) {
+            runCatching {
+                context.assets.open(file).use { stream ->
+                    BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()?.also { vehiclePortraitCache.put(key,it) }
+                }
+            }.getOrNull()
+        }
     }
     if (portrait != null) {
         Image(
             bitmap = portrait,
-            contentDescription = "$make $model $chassis illustration",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().height(170.dp)
-        )
-    } else {
-        Image(
-            painter = painterResource(id = R.drawable.app_icon),
             contentDescription = "$make $model $chassis",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().height(170.dp)
+            modifier = Modifier.fillMaxWidth().height(height)
         )
+    } else {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(height),contentAlignment=androidx.compose.ui.Alignment.Center) {
+            DashboardIcon(6,Modifier.size(if(height<=72.dp) 32.dp else 64.dp),MaterialTheme.colorScheme.primary.copy(alpha=.45f))
+        }
     }
+}
+
+private val vehiclePortraitCache = object : android.util.LruCache<String, androidx.compose.ui.graphics.ImageBitmap>(24 * 1024 * 1024) {
+    override fun sizeOf(key: String, value: androidx.compose.ui.graphics.ImageBitmap): Int = value.width * value.height * 4
 }

@@ -17,3 +17,16 @@ For local emulator development only, use `http://10.0.2.2:8001/` when the FastAP
 ## Diagnostic result contract
 
 Test results sent to the API must be exactly `PASS`, `FAIL`, or `INCOMPLETE`. Legacy `UNKNOWN` is accepted by the backend only for compatibility and normalized to `INCOMPLETE`.
+
+## Reference dashboard
+
+The native dashboard uses the supplied blue automotive design: transparent model
+portraits, status cards, two-column quick actions and five bottom destinations.
+**More** opens vehicle selection, symptoms, DTC details, AI analysis, guided tests,
+testing progress, custom telemetry widgets, history, repair notes and settings.
+Language and theme changes update the current screen immediately. Chart samples,
+hypothesis scores and test progress come from the current session and adapter.
+Repair notes are saved on the device and can be shared.
+
+Run `./gradlew :app:testDebugUnitTest :app:assembleDebug` to validate and build.
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.

@@ -62,6 +62,7 @@ class Trace(QWidget):
     def __init__(self, color="#20B9FF"):
         super().__init__()
         self.values = []
+        self.empty_text = "No samples"
         self.color = color
         self.setMinimumHeight(70)
 
@@ -75,7 +76,7 @@ class Trace(QWidget):
             p.drawLine(r.left(), int(y), r.right(), int(y))
         if len(self.values) < 2:
             p.setPen(QColor("#839EB3"))
-            p.drawText(r, Qt.AlignCenter, "No samples")
+            p.drawText(r, Qt.AlignCenter, self.empty_text)
             return
         low, high = min(self.values), max(self.values)
         span = max(high - low, 1e-6)
@@ -336,18 +337,29 @@ class ReportsPage(QWidget):
         self.history.itemDoubleClicked.connect(lambda _: self.open_selected())
 
     def refresh(self):
-        pass
+        if hasattr(self, "_sessions"):
+            self.loaded(self._sessions)
 
     def load(self):
         self.app.run_worker(self.app.api.list_sessions, self.loaded)
 
     def loaded(self, sessions):
+        self._sessions = sessions
+        signature = (getattr(self.app, "language", "en"), json.dumps(sessions, sort_keys=True, default=str))
+        if signature == getattr(self, "_history_signature", None):
+            return
+        self._history_signature = signature
+        current = self.history.currentItem()
+        selected = current.data(Qt.UserRole) if current else None
         self.history.clear()
         for session in sessions:
             v = session.get("vehicle") or {}
-            item = QListWidgetItem(f"{v.get('make', '')} {v.get('model', '')} • {session.get('state', '')}\n{session['session_id']} • {len(session.get('dtcs', []))} DTC / {len(session.get('test_results', []))} results")
+            result_label = self.app.tr_text("results")
+            item = QListWidgetItem(f"{v.get('make', '')} {v.get('model', '')} • {self.app.tr_text(session.get('state', ''))}\n{session['session_id']} • {len(session.get('dtcs', []))} DTC / {len(session.get('test_results', []))} {result_label}")
             item.setData(Qt.UserRole, session["session_id"])
             self.history.addItem(item)
+            if session["session_id"] == selected:
+                self.history.setCurrentItem(item)
 
     def open_selected(self):
         item = self.history.currentItem()
@@ -375,12 +387,12 @@ class ReportsPage(QWidget):
         if not data:
             self.app.show_error("Open a diagnostic session before exporting a report.")
             return
-        filename, _ = QFileDialog.getSaveFileName(self, "Export diagnostic report", "diagnostic-report.pdf", "PDF (*.pdf);;Printable HTML (*.html);;Session JSON (*.json)")
+        filename, _ = QFileDialog.getSaveFileName(self, self.app.tr_text("Export diagnostic report"), "diagnostic-report.pdf", "PDF (*.pdf);;Printable HTML (*.html);;Session JSON (*.json)")
         if filename:
             from pathlib import Path
             content = json.dumps(data, ensure_ascii=False, indent=2)
             if not filename.lower().endswith(".json"):
-                content = '<!doctype html><meta charset="utf-8"><title>Diagnostic report</title><h1>AI Car Scanner</h1><p>Hypotheses require test confirmation.</p><pre>' + html.escape(content) + '</pre>'
+                content = '<!doctype html><meta charset="utf-8"><title>' + html.escape(self.app.tr_text('Diagnostic report')) + '</title><h1>AI Car Scanner</h1><p>' + html.escape(self.app.tr_text('Hypotheses require test confirmation.')) + '</p><pre>' + html.escape(content) + '</pre>'
             if filename.lower().endswith(".pdf"):
                 printer = QPrinter(QPrinter.HighResolution)
                 printer.setOutputFormat(QPrinter.PdfFormat)
@@ -390,7 +402,7 @@ class ReportsPage(QWidget):
                 document.print_(printer)
             else:
                 Path(filename).write_text(content, encoding="utf-8")
-            self.app.statusBar().showMessage("Diagnostic report exported")
+            self.app.statusBar().showMessage(self.app.tr_text("Diagnostic report exported"))
 
 
 class TeachPage(QWidget):
@@ -419,7 +431,7 @@ class TeachPage(QWidget):
     def save(self):
         self.app.settings_store.setValue("case_note_title", self.title.text())
         self.app.settings_store.setValue("case_note", self.note.toPlainText())
-        self.result.setText("Draft saved on this device")
+        self.result.setText(self.app.tr_text("Draft saved on this device"))
 
     def ingest(self):
         if not self.title.text().strip() or not self.note.toPlainText().strip():
@@ -427,4 +439,4 @@ class TeachPage(QWidget):
             return
         self.save()
         title, text = self.title.text().strip(), self.note.toPlainText().strip()
-        self.app.run_worker(lambda: self.app.api.ingest_reference(title, text), lambda result: self.result.setText(f"Reference processed: {len(result.get('chunks', []))} chunks. No model training performed."))
+        self.app.run_worker(lambda: self.app.api.ingest_reference(title, text), lambda result: self.result.setText(self.app.tr_text(f"Reference processed: {len(result.get('chunks', []))} chunks. No model training performed.")))

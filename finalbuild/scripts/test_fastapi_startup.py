@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 from pathlib import Path
 import socket
 import subprocess
@@ -41,19 +42,30 @@ def is_healthy(port: int) -> bool:
 
 
 def stop_child(process: subprocess.Popen, frozen: bool) -> None:
+    """Stop only the child started by this probe, including Windows descendants.
+
+    On Windows, backend_worker may have child processes holding SQLite open;
+    terminating only the parent leaves diagnostic.sqlite locked.
+    """
     if process.poll() is not None:
         return
-    if frozen and sys.platform == "win32":
-        # Only terminate the exact PyInstaller process and its child tree.
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            capture_output=True, check=False, timeout=20,
+    if sys.platform == "win32":
+        # /PID is the exact Popen PID; /T only targets descendants of this PID.
+        command = ["taskkill", "/PID", str(process.pid), "/T", "/F"]
+        result = subprocess.run(
+            command, capture_output=True, check=False, timeout=20,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         try:
-            process.wait(timeout=10)
+            process.wait(timeout=12)
         except subprocess.TimeoutExpired:
             process.kill()
-            process.wait(timeout=10)
+            process.wait(timeout=8)
+        if result.returncode != 0 and process.poll() is None:
+            raise RuntimeError(
+                f"Could not stop probe process tree PID={process.pid}: "
+                + result.stderr.decode(errors="replace")[-400:]
+            )
         return
     process.terminate()
     try:
@@ -61,6 +73,25 @@ def stop_child(process: subprocess.Popen, frozen: bool) -> None:
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=10)
+
+
+def cleanup_temporary_database(folder: Path, *, attempts: int = 10) -> None:
+    """Bounded Windows cleanup retry for delayed SQLite/AV handle release.
+
+    Raises if deletion truly remains blocked. Caller writes a FAIL report with
+    the preserved temporary folder path rather than losing startup evidence.
+    """
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(folder)
+            return
+        except FileNotFoundError:
+            return
+        except (PermissionError, OSError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(0.3 + 0.2 * attempt, 1.0))
+
 
 
 def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
@@ -73,9 +104,11 @@ def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
     exit_code = None
     error = None
 
-    with tempfile.TemporaryDirectory(prefix="aicar-fastapi-") as temp:
+    temp = Path(tempfile.mkdtemp(prefix="aicar-fastapi-"))
+    cleanup_error = None
+    try:
         env = os.environ.copy()
-        env["APPDATA"] = temp
+        env["APPDATA"] = str(temp)
         env["DATABASE_URL"] = "sqlite:///" + (Path(temp) / "diagnostic.sqlite").as_posix()
         env["AI_CAR_DESKTOP_LOCAL_DB"] = "1"
         env["AI_CAR_BACKEND_HOST"] = "127.0.0.1"
@@ -118,15 +151,31 @@ def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
                 except Exception as exc:
                     error = str(exc)
                 finally:
-                    stop_child(proc, frozen=(mode == "frozen"))
+                    try:
+                        stop_child(proc, frozen=(mode == "frozen"))
+                    except (OSError, subprocess.SubprocessError, RuntimeError) as exc:
+                        error = f"Cannot stop owned FastAPI process: {exc}"
+                        status = "FAIL"
         else:
             log_path.write_text(str(error), encoding="utf-8")
+    finally:
+        try:
+            cleanup_temporary_database(temp)
+        except OSError as exc:
+            cleanup_error = (
+                f"Temporary SQLite cleanup blocked after retries: {exc}. "
+                f"Inspect only this probe's folder: {temp}"
+            )
+            status = "FAIL"
+            error = f"{error}; {cleanup_error}" if error else cleanup_error
 
     result = {
         "status": status, "mode": mode, "health": status == "PASS",
         "port": port, "elapsed_seconds": round(time.monotonic() - started, 2),
         "exit_code_before_cleanup": exit_code,
         "error": error, "log": str(log_path.relative_to(ROOT)),
+        "cleanup": "PASS" if cleanup_error is None else "FAIL",
+        "temporary_directory_if_locked": str(temp) if cleanup_error else None,
     }
     json_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"[FASTAPI] {mode}: {status} | {json_path}", flush=True)

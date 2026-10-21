@@ -19,7 +19,9 @@ For local emulator development only, use `http://10.0.2.2:8001/` when the FastAP
 The Analysis screen includes AI analysis, guided tests and recorded results. Recording
 a test waits for the server response, then returns to the updated diagnosis with
 recalculated hypotheses and recommended next tests. Failed submissions keep the
-result dialog and notes available for retry.
+result dialog and notes available for retry. Analysis also includes diagrams for
+server-provided hypothesis scores and the latest outcome of each test. Charts
+update with the active session and follow the selected language and theme.
 
 Test results sent to the API must be exactly `PASS`, `FAIL`, or `INCOMPLETE`. Legacy `UNKNOWN` is accepted by the backend only for compatibility and normalized to `INCOMPLETE`.
 

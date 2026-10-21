@@ -48,6 +48,7 @@ internal fun AnalysisWorkspace(
                     Text("${dashboardLabel("Guided tests")} (${session.recommendations.size}) ›")
                 }
             }
+            AnalysisDiagram(session)
             DemoHypotheses(session)
         }
         1 -> DemoGuidedTests(session,dashboardLabel("Guided tests")) {id,title -> if(!loading) onRecord(id,title)}

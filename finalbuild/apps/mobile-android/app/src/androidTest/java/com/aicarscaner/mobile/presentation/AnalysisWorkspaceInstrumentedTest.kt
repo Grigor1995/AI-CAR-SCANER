@@ -46,7 +46,7 @@ class AnalysisWorkspaceInstrumentedTest {
         }
         compose.onNodeWithText("Tests (1)").performClick()
         compose.onNodeWithText("Record result").performScrollTo().performClick()
-        compose.onNodeWithText("Recalculated diagnosis").assertExists()
+        compose.onAllNodesWithText("Recalculated diagnosis").onFirst().assertExists()
         compose.onNodeWithText("Diagnosis updated from the latest test result").assertExists()
         compose.onNodeWithText("Results (1)").assertExists()
         assertEquals("test-1",recordedId)

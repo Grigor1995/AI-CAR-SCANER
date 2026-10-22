@@ -61,6 +61,33 @@ class DiagnosticApiClient:
     def vehicle_catalog_entries(self) -> list[dict[str, Any]]:
         return self._request("GET", "/api/v1/vehicle-catalog/entries")
 
+    # Pure backend data contracts. Desktop does not infer ECU protocols from
+    # make/model/year or select license-unknown car photos.
+    def global_vehicle_models(self, make: str | None = None, year: int | None = None) -> dict[str, Any]:
+        params = {key: val for key, val in {"make": make, "year": year}.items() if val is not None}
+        return self._request("GET", "/api/v1/vehicle-catalog/global-models", params=params)
+
+    def curated_vehicle_variants(
+        self, make: str, model: str, chassis: str | None = None, year: int | None = None
+    ) -> dict[str, Any]:
+        params = {key: val for key, val in {
+            "make": make, "model": model, "chassis": chassis, "year": year
+        }.items() if val is not None}
+        return self._request("GET", "/api/v1/vehicle-catalog/curated-variants", params=params)
+
+    def obd_protocol_catalog(self) -> dict[str, Any]:
+        return self._request("GET", "/api/v1/vehicle-catalog/obd-protocols")
+
+    def vehicle_protocol_hints(self, make: str, model: str, year: int) -> dict[str, Any]:
+        return self._request("GET", "/api/v1/vehicle-catalog/protocol-hints", params={
+            "make": make, "model": model, "year": year,
+        })
+
+    def model_image_metadata(self, make: str, model: str, chassis: str) -> dict[str, Any]:
+        return self._request("GET", "/api/v1/vehicle-catalog/image-metadata", params={
+            "make": make, "model": model, "chassis": chassis,
+        })
+
     def get_session(self, session_id: str, language: str | None = None) -> dict[str, Any]:
         kwargs = {"params": {"language": language}} if language else {}
         return self._request("GET", f"/api/v1/sessions/{session_id}", **kwargs)

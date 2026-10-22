@@ -2,6 +2,8 @@
 
 Evidence-driven automotive diagnostic platform with a shared FastAPI backend, deterministic diagnostic rules, evidence-based hypotheses, optional AI/RAG assistance, vehicle simulation, and native client applications.
 
+[Release notes](RELEASE_NOTES.md)
+
 ## Supported clients
 
 - **Desktop:** Python + PySide6 workstation (finalbuild/apps/desktop).

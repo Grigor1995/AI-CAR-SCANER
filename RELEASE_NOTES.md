@@ -1,0 +1,106 @@
+# Release notes
+
+## 0.6.0 — Native UI, build and reliability update
+
+**Date:** 2026-10-22  
+**Source revision:** [`82cc013`](https://github.com/Grigor1995/AI-CAR-SCANER/commit/82cc013)  
+**Platforms:** Desktop, Android and iOS
+
+These notes cover the integrated native-client changes, unified builder and
+repository cleanup through this source revision. The existing version remains
+0.6.0; these notes do not create a release tag or publish application binaries.
+
+### Added
+
+- Updated native dashboards and transparent, model-specific vehicle portraits.
+- Diagnostic analysis workspaces with test results and analysis diagrams on
+  Android and iOS. Recording a test outcome updates the diagnosis through the
+  backend's recalculation flow.
+- Vehicle editing, language/theme controls, and localization improvements for
+  English, Armenian and Russian, including diagnostic test outcomes.
+- A shared `python build.py` entrypoint with prerequisite checks, optional
+  tests, per-run logs, artifact checksums and a build summary.
+- A three-platform GitHub Actions build workflow using Windows, Android and
+  macOS runners.
+- A [demo presentation and supporting evidence](finalbuild/docs/demo/README.md).
+
+### Fixed
+
+- Local backend startup/storage configuration and bounded FastAPI crash
+  recovery, with separate backend, acquisition and AI availability states.
+- OpenAI-compatible runtime readiness and configuration for tools such as
+  LM Studio; externally managed providers do not spawn a competing llama-server.
+- Vehicle selection artwork refresh and unnecessary model/brand controls.
+- Session IDs are hidden from user-facing session displays and exported
+  diagnostic reports while remaining available for internal routing/storage.
+- Desktop tests that incorrectly inherited the user's LLM URL/provider.
+- PDF export now specifies a printable font size and black text. Its behavior
+  still requires confirmation on native Windows.
+- Long builds now display live output. Ctrl+C stops the owned command tree,
+  records `CANCELLED`/`NOT_RUN` statuses and exits with code 130.
+- Desktop test reports are retained inside each build's artifact directory.
+- CI coverage targets now include `global_data` and `ai.live_analysis` correctly;
+  Qt widget tests are required rather than tolerated failures.
+
+### Cleanup
+
+- Removed the web/PWA and legacy Flutter client scaffolding; supported clients
+  are native Desktop, Android and iOS.
+- Removed unused mobile SVG illustrations, duplicate Android icons,
+  disconnected placeholder code, unused imports and dependencies.
+- Removed one byte-identical test file while retaining its unique assertions.
+- Preserved PNG portraits, active offline catalogs, database schema models,
+  hardware integration interfaces and the requested demo/report evidence.
+- Added a [full audit and file/declaration inventory](finalbuild/docs/maintenance/full-repository-audit-2026-10-22.md).
+
+### Verification
+
+Results below apply to source revision `82cc013` on the Linux validation host.
+Root Python and Desktop suites overlap; their counts are not additive.
+
+| Check | Result |
+|---|---|
+| Python suite in a clean dependency environment | 589 passed, 2 skipped |
+| Backend/core coverage | 95.89% (minimum 90%) |
+| Desktop regression matrix | 384 passed, 1 skipped |
+| Desktop production core coverage | 91.17% |
+| Actual source FastAPI subprocess startup | PASS |
+| Android JVM tests | 89 passed |
+| Android debug APK, app/instrumentation compilation and lint | PASS |
+| Android lint findings | 12 warnings, 0 errors, 0 unused-resource findings |
+| Swift syntax parsing | 10 files PASS |
+| Python static checks, internal import graph and structured-file syntax | PASS |
+
+Native Windows EXE packaging, PowerShell execution, native Xcode typechecking/
+XCTest, emulator instrumentation execution and physical OBD hardware were not
+validated on this host. Swift parsing is not an iOS build or test result.
+
+### Update and build
+
+From the repository root:
+
+```bash
+git pull origin main
+python build.py --check
+```
+
+On Windows with the Desktop and Android prerequisites installed:
+
+```bash
+python build.py --targets desktop android --with-tests
+```
+
+For all three platforms, use **Actions → Build all native apps → Run workflow**,
+or an authenticated GitHub CLI:
+
+```bash
+python build.py --ci --with-tests
+```
+
+Outputs are a Windows application ZIP, Android debug APK and unsigned iOS
+Simulator app ZIP. Device/App Store distribution requires Apple signing; the
+Simulator ZIP is not an installable iPhone IPA. AI model/server binaries remain
+separate setup requirements.
+
+See [build instructions](finalbuild/docs/building/BUILD_ALL.md) for toolchains,
+artifact locations, result codes and platform constraints.

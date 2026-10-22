@@ -51,9 +51,11 @@ def all_protocols() -> list[dict[str, Any]]:
     for p in OBD_PROTOCOLS:
         row = dict(p)
         row["capability"] = (
-            "generic_obd_ii_read" if p["supported_by_generic_elm"]
+            "ELM_chip_can_read_generic_obd_if_adapter_connected"
+            if p["supported_by_generic_elm"]
             else "requires_separate_hardware_and_implementation"
         )
+        row["server_hardware_integration"] = "VCI_manager_simulator_only_pending_physical_driver"
         row["source"] = SOURCES["elm327"] if p["elm_id"] else SOURCES["uds"]
         result.append(row)
     return result
@@ -105,7 +107,7 @@ def parse_elm_protocol(raw: str | bytes) -> dict[str, Any]:
     # as ELM code 4; only ATDPN numeric responses are acceptable.
     match = re.fullmatch(r"A?[0-9A-C]", compact)
     code = match.group(0) if match else ""
-    automatic = code.startswith("A")
+    automatic = code.startswith("A") and len(code) == 2
     value_id = code[1:] if automatic else code
     protocol = _BY_ELM.get(value_id)
     return {

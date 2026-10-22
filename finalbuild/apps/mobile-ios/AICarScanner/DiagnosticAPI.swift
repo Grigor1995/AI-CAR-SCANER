@@ -86,6 +86,33 @@ final class DiagnosticAPI {
         try await request("/api/v1/vehicle-catalog/entries")
     }
 
+    // Canonical global vehicle registry: no locally invented engine or OBD rules.
+    func vehicleRegistryMakes() async throws -> [String] {
+        try await request("/api/v1/vehicle-registry/makes")
+    }
+
+    func vehicleRegistryModels(make: String, year: Int? = nil) async throws -> [GlobalVehicleModel] {
+        var query = [URLQueryItem(name: "make", value: make)]
+        if let year { query.append(URLQueryItem(name: "year", value: String(year))) }
+        return try await request("/api/v1/vehicle-registry/models", query: query)
+    }
+
+    func vehicleProtocolHints(year: Int, market: String, make: String) async throws -> ProtocolCompatibility {
+        try await request("/api/v1/vehicle-registry/compatibility", query: [
+            URLQueryItem(name: "year", value: String(year)),
+            URLQueryItem(name: "market", value: market),
+            URLQueryItem(name: "make", value: make)
+        ])
+    }
+
+    func vehiclePhotoMetadata(make: String, model: String, chassis: String) async throws -> VehiclePhotoMetadata {
+        try await request("/api/v1/vehicle-registry/photo", query: [
+            URLQueryItem(name: "make", value: make),
+            URLQueryItem(name: "model", value: model),
+            URLQueryItem(name: "chassis", value: chassis)
+        ])
+    }
+
     func createSession(_ vehicle: Vehicle) async throws -> DiagnosticSession {
         try await request("/api/v1/sessions", method: "POST", body: vehicle)
     }

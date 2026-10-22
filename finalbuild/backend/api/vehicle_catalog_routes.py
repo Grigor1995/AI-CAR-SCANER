@@ -266,6 +266,7 @@ from vehicle_knowledge.catalog import (
     resolve_vehicle_protocols as _resolve_protocols,
 )
 from vehicle_knowledge.protocols import all_protocols as _protocols
+from vehicle_knowledge.vpic import nhtsa_models_for_make_year as _vpic_models
 from vehicle_knowledge.images import (
     bundled_image_metadata as _image_info,
     bundled_model_artwork as _artwork,
@@ -373,3 +374,17 @@ def commons_photo_candidates(
             "verification before using as the photo of an exact vehicle/engine."
         ),
     }
+
+
+@router.get("/vpic-models")
+def vpic_models(
+    make: str = Query(..., min_length=1, max_length=80),
+    year: int = Query(..., ge=1886, le=2100),
+):
+    """Explicit opt-in network lookup; never fills unknown engine values."""
+    try:
+        return _vpic_models(make, year)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except (HTTPError, URLError, OSError, TimeoutError) as exc:
+        raise HTTPException(503, "NHTSA vPIC is temporarily unavailable") from exc

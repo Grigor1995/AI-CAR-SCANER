@@ -17,6 +17,7 @@ data class DiagnosticUiState(
     val session: DiagnosticSessionDto? = null,
     val history: List<DiagnosticSessionDto> = emptyList(),
     val vehicleCatalog: List<VehicleCatalogEntryDto> = emptyList(),
+    val catalogOnline: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
     val testResultRevision: Int = 0,
@@ -42,7 +43,7 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         viewModelScope.launch {
             runCatching { repository.vehicleCatalog() }
                 .onSuccess { catalog ->
-                    _uiState.value = _uiState.value.copy(vehicleCatalog = mergeVehicleCatalog(catalog, offlineCatalog), error = null)
+                    _uiState.value = _uiState.value.copy(vehicleCatalog = mergeVehicleCatalog(catalog, offlineCatalog), catalogOnline = true, error = null)
                 }
                 .onFailure {
                     // The screen keeps its local safety catalog as a fallback.
@@ -69,7 +70,7 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
 
     fun clearSession() {
         val catalog = _uiState.value.vehicleCatalog
-        _uiState.value = DiagnosticUiState(vehicleCatalog = catalog)
+        _uiState.value = DiagnosticUiState(vehicleCatalog = catalog, catalogOnline = _uiState.value.catalogOnline)
     }
 
     fun updateVehicle(vehicle: VehicleDto) = execute {

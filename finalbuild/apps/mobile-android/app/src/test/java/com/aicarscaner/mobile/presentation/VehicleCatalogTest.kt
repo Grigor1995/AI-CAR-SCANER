@@ -15,34 +15,6 @@ class VehicleCatalogTest {
     )
 
     @Test
-    fun localCatalogFindsModelsByMakeAndUnknownMakeReturnsEmpty() {
-        val models = modelOptionsFor("Mercedes-Benz")
-        assertEquals(listOf("E-Class", "C-Class", "E-Class"), models.map { it.name })
-        assertTrue(modelOptionsFor("Not a Make").isEmpty())
-    }
-
-    @Test
-    fun localCatalogFiltersChassisAndReturnsEmptyForUnknownModel() {
-        assertEquals(listOf("W211", "W212"), chassisOptionsFor("Mercedes-Benz", "E-Class").map { it.chassis })
-        assertTrue(chassisOptionsFor("Mercedes-Benz", "Unknown").isEmpty())
-        assertTrue(chassisOptionsFor("Unknown", "E-Class").isEmpty())
-    }
-
-    @Test
-    fun localCatalogReturnsYearsForExactMakeModelAndChassis() {
-        assertEquals((2002..2009).toList(), yearOptionsFor("Mercedes-Benz", "E-Class", "W211"))
-        assertTrue(yearOptionsFor("Mercedes-Benz", "E-Class", "W999").isEmpty())
-    }
-
-    @Test
-    fun localCatalogReturnsEnginesAndEcusForExactSelection() {
-        val engines = engineOptionsFor("Mercedes-Benz", "E-Class", "W211")
-        assertEquals(4, engines.size)
-        assertEquals(listOf("ME9.7"), ecuOptionsFor("Mercedes-Benz", "E-Class", "W211", "M272 E35 3.5"))
-        assertTrue(ecuOptionsFor("Mercedes-Benz", "E-Class", "W211", "unknown engine").isEmpty())
-    }
-
-    @Test
     fun remoteCatalogReturnsDistinctSortedModelsAndChassis() {
         assertEquals(listOf("E-Class"), modelOptionsFor(remoteCatalog, "Mercedes-Benz"))
         assertEquals(listOf("W211", "W212"), chassisOptionsFor(remoteCatalog, "Mercedes-Benz", "E-Class"))

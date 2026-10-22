@@ -545,7 +545,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold
                     )
-                    if (state.vehicleCatalog.isEmpty()) {
+                    if (!state.catalogOnline) {
                         Text(
                             when (appSettings.language) {
                                 AppLanguage.RU -> "Офлайн-каталог: список может отличаться от серверного каталога."
@@ -856,7 +856,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
 
                             if (editingVehicle) {
-                                if (state.vehicleCatalog.isEmpty()) {
+                                if (!state.catalogOnline) {
                                     Text(
                                         when (appSettings.language) {
                                             AppLanguage.RU -> "Офлайн-каталог: список может отличаться от серверного каталога."

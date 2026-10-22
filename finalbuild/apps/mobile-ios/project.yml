@@ -12,6 +12,7 @@ targets:
       - path: AICarScanner
         excludes:
           - VehicleModels/**
+          - VehicleCatalog/**
       - path: AICarScanner/VehicleModels
         type: folder
         buildPhase: resources

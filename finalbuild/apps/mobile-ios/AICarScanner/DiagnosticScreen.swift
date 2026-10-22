@@ -426,8 +426,8 @@ struct DiagnosticScreen: View {
     private var models:[String]{viewModel.catalog.filter{$0.make==make}.map(\.model).unique().sorted()}
     private var chassisOptions:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model}.compactMap(\.chassis).unique().sorted()}
     private var years:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis}.map{String($0.year)}.unique().sorted()}
-    private var engines:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && String($0.year)==year}.map(\.engine).unique().sorted().ifEmpty(["M272 E35 3.5"])}
-    private var ecus:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && $0.engine==engine}.compactMap(\.ecu).unique().sorted().ifEmpty(["ME9.7"])}
+    private var engines:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && String($0.year)==year}.map(\.engine).unique().sorted()}
+    private var ecus:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && $0.engine==engine}.compactMap(\.ecu).unique().sorted()}
 
     private func saveVehicle()async{let v=Vehicle(make:make,model:model,chassis:chassis,year:Int(year),engine:engine,fuel:usesCatalogFuel ? catalogFuel : [petrol ? "petrol":"",lpg ? "lpg":""].filter{!$0.isEmpty},ecu:ecu);if viewModel.session == nil{await viewModel.newSession(v)}else{await viewModel.updateVehicle(v)}}
     private func updateSymptomLocally(_ s:Symptom)async{await viewModel.updateSymptom(s,editText)}

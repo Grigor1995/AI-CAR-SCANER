@@ -1,21 +1,5 @@
 # Release notes
 
-## Unreleased — Dashboard layout controls without extra buttons
-
-- Removed the extra drag-handle and arrow button row from every widget.
-- Drag widgets by their existing title; retain width/height sliders and saved
-  layout settings. Embedded diagnostic controls keep their mouse behavior.
-- Local validation only; CI/CD is skipped.
-
-## Unreleased — Adjustable Desktop dashboard layout
-
-- Added width/height sliders to home dashboard panels and telemetry widgets.
-  Small tiles retain scrollable content, so resizing does not hide controls.
-- Move tiles with the drag handle or left/right buttons; dimensions and order
-  persist locally, separately for Home and Live Data. Channel bindings and
-  recorded diagnostic evidence remain unchanged.
-- Validation is local only; no CI/CD jobs are used for this change.
-
 ## Unreleased — Responsive Desktop shutdown
 
 - Cancel outstanding API response waits when closing, including long-running AI

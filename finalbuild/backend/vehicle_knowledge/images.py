@@ -10,12 +10,16 @@ from functools import lru_cache
 from html import unescape
 import json
 from pathlib import Path
+import sys
 import re
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = (
+    Path(sys._MEIPASS) if getattr(sys, "frozen", False)
+    else Path(__file__).resolve().parents[2]
+)
 ARTWORK = ROOT / "assets" / "vehicle_models"
 WIKIMEDIA_API = "https://commons.wikimedia.org/w/api.php"
 LICENSE_TOKENS = ("CC BY", "CC-BY", "CC0", "PUBLIC DOMAIN", "PD-")

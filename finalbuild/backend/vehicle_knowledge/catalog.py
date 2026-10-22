@@ -143,10 +143,12 @@ def resolve_vehicle_protocols(
         "curated_variants_found": curated["total"],
         "protocol_hints": hints,
         "adapter_observation": observation,
-        "confirmed_protocol_id": (
+        "reported_protocol_id": (
             observation["protocol"]["id"] if observation and observation["detected"] else None
         ),
-        "confirmed_by": "ELM_ATDPN_adapter_report" if observation and observation["detected"] else None,
+        "observation_provenance": (
+            "caller_supplied_ATDPN_not_device_attested" if observation else None
+        ),
         "warning": (
             "Adapter protocol only identifies the connected diagnostic link. "
             "It does not prove VIN-specific fitment or support for OEM-specific ECU services."

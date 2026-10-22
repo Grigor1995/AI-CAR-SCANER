@@ -21,6 +21,44 @@ data class VehicleCatalogEntryDto(
     val scope: String = ""
 )
 
+/** Backend-defined catalogue/engine family hint. Not a verified VIN fitment. */
+data class GlobalVehicleModelDto(
+    val make: String,
+    val model: String,
+    @SerializedName("year_ranges") val yearRanges: List<List<Int>> = emptyList(),
+    @SerializedName("engine_families") val engineFamilies: List<String> = emptyList(),
+    @SerializedName("common_fuels") val commonFuels: List<String> = emptyList(),
+    @SerializedName("engine_scope") val engineScope: String = "family-level",
+    val source: String = "",
+    val disclaimer: String = ""
+)
+
+data class GlobalVehiclePhotoDto(
+    val status: String,
+    @SerializedName("image_url") val imageUrl: String? = null,
+    @SerializedName("fallback_generated_portrait") val fallbackPortrait: String? = null,
+    @SerializedName("file_page") val filePage: String? = null,
+    val title: String? = null,
+    val author: String? = null,
+    val license: String? = null,
+    val notice: String? = null
+)
+
+data class ObdProtocolHintDto(
+    val id: String,
+    val standard: String,
+    val support: String
+)
+
+data class ObdCompatibilityDto(
+    val year: Int,
+    val market: String,
+    val candidates: List<ObdProtocolHintDto>,
+    val confidence: String,
+    val warnings: List<String>,
+    val notice: String
+)
+
 data class VehicleDto(
     val make: String,
     val model: String,
@@ -132,6 +170,30 @@ interface DiagnosticApi {
 
     @GET("api/v1/vehicle-catalog/entries")
     suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto>
+
+    // Global models, engine families and protocol candidates come from Backend.
+    @GET("api/v1/vehicle-registry/makes")
+    suspend fun vehicleRegistryMakes(): List<String>
+
+    @GET("api/v1/vehicle-registry/models")
+    suspend fun vehicleRegistryModels(
+        @Query("make") make: String,
+        @Query("year") year: Int? = null
+    ): List<GlobalVehicleModelDto>
+
+    @GET("api/v1/vehicle-registry/compatibility")
+    suspend fun vehicleProtocolHints(
+        @Query("year") year: Int,
+        @Query("market") market: String = "unknown",
+        @Query("make") make: String = ""
+    ): ObdCompatibilityDto
+
+    @GET("api/v1/vehicle-registry/photo")
+    suspend fun vehicleImageMetadata(
+        @Query("make") make: String,
+        @Query("model") model: String,
+        @Query("chassis") chassis: String = ""
+    ): GlobalVehiclePhotoDto
 
     @POST("api/v1/sessions")
     suspend fun createSession(@Body vehicle: VehicleDto): DiagnosticSessionDto

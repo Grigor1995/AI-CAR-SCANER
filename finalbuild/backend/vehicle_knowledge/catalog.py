@@ -8,11 +8,15 @@ from __future__ import annotations
 from functools import lru_cache
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 from .protocols import protocol_candidates
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = (
+    Path(sys._MEIPASS) if getattr(sys, "frozen", False)
+    else Path(__file__).resolve().parents[2]
+)
 GLOBAL = ROOT / "data" / "vehicle_catalog.json"
 FITMENTS = ROOT / "data" / "vehicle_fitment_catalog.json"
 

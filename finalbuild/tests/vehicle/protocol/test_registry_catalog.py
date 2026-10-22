@@ -80,3 +80,47 @@ def test_hardware_detected_protocol_is_adapter_report_only():
 def test_year_safety(year):
     with pytest.raises(ValueError):
         assess_protocols(year=year)
+
+
+def test_exhaustive_standard_and_oem_ids_have_disjoint_layer_semantics():
+    records = all_protocols()
+    assert len(records) >= 35
+    assert len({item["id"] for item in records}) == len(records)
+    assert next(x for x in records if x["id"] == "vw_tp20")["layer"] == "manufacturer_specific"
+    assert next(x for x in records if x["id"] == "j1979_classic")["layer"] == "diagnostic_application"
+
+
+def test_early_eu_and_us_obd_can_not_asserted_before_adoption():
+    x = assess_protocols(year=2000, market="EU", make="Mercedes-Benz")
+    ids = {row["id"] for row in x["candidates"]}
+    assert "iso9141_2" in ids
+    assert "iso15765_4_can11_500" not in ids
+
+
+def test_2006_european_w211_has_multiple_candidate_transports():
+    x = assess_protocols(year=2006, market="EU", make="Mercedes-Benz")
+    ids = {row["id"] for row in x["candidates"]}
+    assert "iso14230_4_fast" in ids
+    assert "iso15765_4_can11_500" in ids
+    assert x["verified_obd_support"] is False
+    assert any(p["id"] == "mercedes_oem" for p in x["oem_diagnostics"])
+
+
+def test_obdonuds_not_assigned_to_every_modern_passenger():
+    a = assess_protocols(year=2026, market="US", make="Toyota")
+    b = assess_protocols(year=2025, market="EU", vehicle_class="heavy")
+    assert all(c["id"] != "obdonuds" for c in a["candidates"])
+    assert all(c["id"] != "obdonuds" for c in b["candidates"])
+
+
+def test_pre_1996_vehicle_not_reported_as_generic_obd2():
+    hint = assess_protocols(year=1992, market="EU")
+    assert hint["candidates"] == []
+    assert "Pre-1996" in hint["warnings"][0]
+
+
+def test_oem_diagnostic_hints_separate_from_emissions_protocols():
+    x = assess_protocols(year=2014, market="EU", make="Volkswagen")
+    ids = {entry["id"] for entry in x["oem_diagnostics"]}
+    assert {"vw_tp20", "kwp1281", "uds_on_can"} <= ids
+    assert not any(entry["evidence"] == "hardware_verified" for entry in x["oem_diagnostics"])

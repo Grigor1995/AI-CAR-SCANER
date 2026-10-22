@@ -1,3 +1,9 @@
 /.idea/
 /finalbuild/build-debug/
 /finalbuild/dist-debug/
+
+# Unified native build cache and generated distributions
+/.build-tools/
+/artifacts/
+/finalbuild/apps/mobile-ios/AICarScanner.xcodeproj/
+/finalbuild/apps/mobile-ios/AICarScanner.xcworkspace/

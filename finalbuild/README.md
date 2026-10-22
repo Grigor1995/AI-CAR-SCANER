@@ -29,6 +29,13 @@ uvicorn api.main:app --host 127.0.0.1 --port 8001
 
 API: http://127.0.0.1:8001/docs
 
+## Build all native applications
+
+Use the repository-root runner: `python ../build.py --check` from this folder.
+For a complete Desktop/Android/iOS build, run **Build all native apps** in GitHub
+Actions or `python ../build.py --ci --with-tests` with authenticated GitHub CLI.
+[Local builds, toolchain setup and artifacts](docs/building/BUILD_ALL.md).
+
 ## Run tests
 
 [Branch integration review — 22 October 2026](docs/testing/branch-merge-review-2026-10-22.md) records all remote branch tips, conflict decisions and the validated combined result.

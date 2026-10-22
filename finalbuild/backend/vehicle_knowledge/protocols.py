@@ -101,10 +101,10 @@ def parse_elm_protocol(raw: str | bytes) -> dict[str, Any]:
         compact = compact[5:]
     if compact.startswith("ATDP"):
         compact = compact[4:]
-    match = re.search(r"\b(A?[0-9A-C])\b", compact)
-    if match is None and re.fullmatch(r"A?[0-9A-C]", compact):
-        match = re.fullmatch(r"A?[0-9A-C]", compact)
-    code = match.group(1) if match else ""
+    # ATDP description text (e.g. ISO 15765-4) must never be parsed
+    # as ELM code 4; only ATDPN numeric responses are acceptable.
+    match = re.fullmatch(r"A?[0-9A-C]", compact)
+    code = match.group(0) if match else ""
     automatic = code.startswith("A")
     value_id = code[1:] if automatic else code
     protocol = _BY_ELM.get(value_id)

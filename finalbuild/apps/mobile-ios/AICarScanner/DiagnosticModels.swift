@@ -1,5 +1,43 @@
 import Foundation
 
+// Presentation-only DTOs. Vehicle/engine/protocol/image knowledge lives in FastAPI.
+struct GlobalVehicleModel: Decodable {
+    let make: String
+    let model: String
+    let year_ranges: [[Int]]
+    let engine_families: [String]
+    let common_fuels: [String]
+    let engine_scope: String
+    let source: String
+    let disclaimer: String
+}
+
+struct VehiclePhotoMetadata: Decodable {
+    let status: String
+    let image_url: String?
+    let fallback_generated_portrait: String?
+    let file_page: String?
+    let title: String?
+    let author: String?
+    let license: String?
+    let notice: String?
+}
+
+struct ProtocolCandidate: Decodable {
+    let id: String
+    let standard: String
+    let support: String
+}
+
+struct ProtocolCompatibility: Decodable {
+    let year: Int
+    let market: String
+    let candidates: [ProtocolCandidate]
+    let confidence: String
+    let warnings: [String]
+    let notice: String
+}
+
 struct VehicleCatalogEntry: Codable, Identifiable, Hashable {
     var id: String { "\(make)|\(model)|\(chassis ?? "")|\(year)|\(engine)" }
     let make: String

@@ -39,10 +39,39 @@ def bundled_model_artwork(make: str, model: str, chassis: str) -> Path | None:
     return None
 
 
+@lru_cache(maxsize=1)
+def _curated_photo_index() -> dict[tuple[str, str, str], dict[str, Any]]:
+    manifest = ROOT / "data" / "commons_vehicle_photos.json"
+    if not manifest.is_file():
+        return {}
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    return {
+        (row["make"].casefold(), row["model"].casefold(), row["chassis"].casefold()): row
+        for row in data.get("items", [])
+    }
+
+
 def bundled_image_metadata(make: str, model: str, chassis: str) -> dict[str, Any]:
     file = bundled_model_artwork(make, model, chassis)
+    photo = _curated_photo_index().get(
+        (make.casefold(), model.casefold(), chassis.casefold())
+    )
     return {
         "image_kind": "generated_project_artwork" if file else "unavailable",
+        "preferred_real_photo": (
+            {
+                "image_kind": "real_vehicle_photograph",
+                "is_real_car_photo": True,
+                "image_url": photo["image_url"],
+                "file_page": photo["file_page"],
+                "author": photo["author"],
+                "license": photo["license"],
+                "license_url": photo["license_url"],
+                "model_match_scope": photo["model_match_scope"],
+                "modifications": photo["modifications"],
+                "source": photo["source"],
+            } if photo else None
+        ),
         "uri": (
             "/api/v1/vehicle-catalog/artwork?"
             + urlencode({"make": make, "model": model, "chassis": chassis})

@@ -122,3 +122,24 @@ async def read_live_data(device_id: str):
         return {"device_id": device_id, "values": await manager.read_live_data(device_id)}
     except DeviceConnectionError as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+@router.get("/{device_id:path}/obd/protocol")
+async def read_device_obd_protocol(device_id: str):
+    """Actual read-only ELM protocol handshake, not a vehicle-model heuristic.
+
+    Works only when a connected local ELM transport has been explicitly enabled
+    through AI_CAR_ENABLE_PHYSICAL_VCI=1. Cloud/simulator must not claim this.
+    """
+    from vehicle.protocol.elm327_probe import discover_elm_obd_protocol
+
+    if not hasattr(manager, "connected_obd"):
+        raise HTTPException(
+            501, "Real protocol observation needs an explicitly enabled local physical VCI"
+        )
+    try:
+        client = manager.connected_obd(device_id)
+        result = await discover_elm_obd_protocol(client.command)
+    except DeviceConnectionError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"device_id": device_id, **result}

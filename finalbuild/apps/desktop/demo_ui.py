@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QFileDialog, QComboBox,
 )
 
+from .widget_layout import WidgetBoard
 from .channel_labels import CHANNEL_LABELS
 from .models import Session, Vehicle, user_report_data
 from .vehicle_artwork import load_backend_portrait
@@ -175,13 +176,20 @@ class SignalGrid(QWidget):
         self.settings = settings
         self.prefix = prefix
         self.groups = {}
-        self.grid = QGridLayout(self)
-        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.layout = QVBoxLayout(self)
+        self.board = WidgetBoard(settings, f"{prefix}_widgets")
+        self.layout.addWidget(self.board)
+        self.grid = self.board.grid
         self.cards, self.selectors = [], []
         self.add_button = action("+ Add widget", self.add_widget)
-        for name in ["RPM", "Coolant temperature", "MAP pressure", "O2 sensor"]:
-            self._new_card(name)
-        self.grid.addWidget(self.add_button, 2, 0, 1, 2)
+        defaults = ["RPM", "Coolant temperature", "MAP pressure", "O2 sensor"]
+        try:
+            count = max(4, min(128, int(settings.value(f"{prefix}_widget_count", 4)))) if settings else 4
+        except (TypeError, ValueError):
+            count = 4
+        for index in range(count):
+            self._new_card(defaults[index] if index < len(defaults) else "No samples")
+        self.layout.addWidget(self.add_button)
         self.add_button.setEnabled(False)
 
     def _new_card(self, name):
@@ -197,7 +205,7 @@ class SignalGrid(QWidget):
         selector.currentIndexChanged.connect(self._update_cards)
         self.cards.append(card)
         self.selectors.append(selector)
-        self.grid.addWidget(card, index // 2, index % 2)
+        self.board.add(str(index), card, height=430)
 
     def set_records(self, records):
         groups = defaultdict(list)
@@ -247,11 +255,11 @@ class SignalGrid(QWidget):
         if available is None:
             return
         records = [row for group in self.groups.values() for row in group]
-        self.grid.removeWidget(self.add_button)
         self._new_card(available)
+        if self.settings:
+            self.settings.setValue(f"{self.prefix}_widget_count", len(self.cards))
         self.set_records(records)
         self.selectors[-1].setCurrentIndex(self.selectors[-1].findData(available))
-        self.grid.addWidget(self.add_button, (len(self.cards) + 1) // 2, 0, 1, 2)
 
 
 class DemoDashboard(QWidget):
@@ -261,10 +269,8 @@ class DemoDashboard(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
         layout.addWidget(label("Home / Summary", "title"))
-        columns = QHBoxLayout()
-        left, right = QVBoxLayout(), QVBoxLayout()
-        columns.addLayout(left, 5)
-        columns.addLayout(right, 4)
+        self.board = WidgetBoard(app.settings_store, "home_widgets")
+        layout.addWidget(self.board)
         hero = Panel("Selected vehicle")
         self.model_artwork = QLabel()
         self.model_artwork.setAlignment(Qt.AlignCenter)
@@ -275,14 +281,12 @@ class DemoDashboard(QWidget):
         hero.body.addWidget(self.vehicle_name)
         hero.body.addWidget(self.vehicle_info)
         hero.body.addWidget(action("Select vehicle  →", lambda: app.nav.setCurrentRow(1)))
-        left.addWidget(hero)
-        counts = QHBoxLayout()
+        self.board.add("vehicle", hero, height=430)
         self.dtcs = CountCard("DTC", "0", "red")
         self.results = CountCard("Recorded tests", "0", "green")
         self.ai = CountCard("Hypotheses", "0", "violet")
         for card in (self.dtcs, self.results, self.ai):
-            counts.addWidget(card)
-        left.addLayout(counts)
+            self.board.add({self.dtcs: "dtcs", self.results: "tests", self.ai: "hypotheses"}[card], card, height=190)
         quick = Panel("Quick actions")
         buttons = QGridLayout()
         for i, (name, page) in enumerate([
@@ -291,31 +295,28 @@ class DemoDashboard(QWidget):
         ]):
             buttons.addWidget(action(name, lambda _=False, p=page: app.nav.setCurrentRow(p)), i // 2, i % 2)
         quick.body.addLayout(buttons)
-        left.addWidget(quick)
+        self.board.add("quick", quick, height=250)
         live = Panel("Live Data / Custom dashboard")
         self.signals = SignalGrid(app.settings_store)
         live.body.addWidget(self.signals)
         self.source = label("No acquisition running", "muted", True)
         live.body.addWidget(self.source)
         live.body.addWidget(action("Open live channels  →", lambda: app.nav.setCurrentRow(4)))
-        right.addWidget(live)
+        self.board.add("live", live, width=880, height=650)
         progress = Panel("Testing progress")
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress_text = label("No recommended tests yet", "muted", True)
         progress.body.addWidget(self.progress)
         progress.body.addWidget(self.progress_text)
-        right.addWidget(progress)
-        layout.addLayout(columns)
-        status = QHBoxLayout()
+        self.board.add("progress", progress, height=200)
         self.backend = CountCard("Backend", "OFFLINE")
         self.vehicle = CountCard("Vehicle")
         self.vehicle.value.setObjectName("vehicleMetricValue")
         self.session = CountCard("Session")
         self.ecus = CountCard("ECUs")
         for card in (self.backend, self.vehicle, self.session, self.ecus):
-            status.addWidget(card)
-        layout.addLayout(status)
+            self.board.add({self.backend: "backend", self.vehicle: "active_vehicle", self.session: "session", self.ecus: "ecus"}[card], card, height=190)
         self.refresh_btn = action("Refresh status", app.refresh_all)
         layout.addWidget(self.refresh_btn, alignment=Qt.AlignLeft)
         self.refresh()

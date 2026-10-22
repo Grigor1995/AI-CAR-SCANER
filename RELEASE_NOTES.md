@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — Adjustable Desktop dashboard layout
+
+- Added width/height sliders to home dashboard panels and telemetry widgets.
+  Small tiles retain scrollable content, so resizing does not hide controls.
+- Move tiles with the drag handle or left/right buttons; dimensions and order
+  persist locally, separately for Home and Live Data. Channel bindings and
+  recorded diagnostic evidence remain unchanged.
+- Validation is local only; no CI/CD jobs are used for this change.
+
 ## Unreleased — Responsive Desktop shutdown
 
 - Cancel outstanding API response waits when closing, including long-running AI

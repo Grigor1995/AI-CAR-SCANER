@@ -2029,3 +2029,63 @@ def test_window_closes_promptly_during_blocked_session_request(window_factory, m
         while window._workers and time.monotonic() < deadline:
             qapp.processEvents()
             time.sleep(.005)
+
+
+def test_dashboard_widgets_resize_reorder_and_restore_without_changing_channels(window_factory):
+    from apps.desktop.widget_layout import WidgetBoard
+    window = window_factory()
+    board = window.pages[0].board
+    assert {'vehicle', 'dtcs', 'tests', 'hypotheses', 'live', 'progress', 'backend', 'active_vehicle', 'session', 'ecus', 'quick'} <= board.tiles.keys()
+    tile = board.tiles['vehicle']
+    tile.width_slider.setValue(530)
+    tile.height_slider.setValue(470)
+    assert (tile.width(), tile.height()) == (530, 470)
+    board.move('vehicle', 1)
+    assert board.order.index('vehicle') == 1
+    board.move_before('vehicle', 'dtcs')
+    assert board.order.index('vehicle') < board.order.index('dtcs')
+    restored = WidgetBoard(window.settings_store, 'home_widgets')
+    restored_tile = restored.add('vehicle', ui.QWidget())
+    assert (restored_tile.width(), restored_tile.height()) == (530, 470)
+    assert restored.order == board.order
+    grid = window.pages[4].signals
+    grid.set_records([{'channel': '0x05', 'numeric_value': 90, 'unit': 'C'}])
+    before = [selector.currentData() for selector in grid.selectors]
+    grid.board.move('0', 1)
+    grid.board.tiles['0'].width_slider.setValue(500)
+    assert [selector.currentData() for selector in grid.selectors] == before
+    restored.deleteLater()
+
+
+def test_widget_drag_drop_accepts_only_its_own_board(window_factory):
+    window = window_factory()
+    board = window.pages[0].board
+    source = board.tiles['vehicle'].handle
+    target = board.tiles['dtcs']
+    event = Mock()
+    event.source.return_value = source
+    target.dragEnterEvent(event)
+    event.acceptProposedAction.assert_called_once()
+    target.dropEvent(event)
+    assert board.order.index('vehicle') + 1 == board.order.index('dtcs')
+    event.reset_mock()
+    event.source.return_value = window.pages[4].signals.board.tiles['0'].handle
+    target.dragEnterEvent(event)
+    target.dropEvent(event)
+    event.acceptProposedAction.assert_not_called()
+
+
+def test_added_widget_count_and_size_survive_grid_recreation(window_factory):
+    from apps.desktop.demo_ui import SignalGrid
+    window = window_factory()
+    grid = window.pages[4].signals
+    records = [{'channel': f'channel-{i}', 'numeric_value': i} for i in range(5)]
+    grid.set_records(records)
+    grid.add_widget()
+    grid.board.tiles['4'].height_slider.setValue(550)
+    restored = SignalGrid(window.settings_store, 'live')
+    restored.set_records(records)
+    assert len(restored.cards) == 5
+    assert restored.board.tiles['4'].height() == 550
+    assert restored.selectors[4].currentData() == 'channel-4'
+    restored.deleteLater()

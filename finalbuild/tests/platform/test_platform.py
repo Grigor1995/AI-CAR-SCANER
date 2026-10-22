@@ -21,7 +21,7 @@ def test_admin_can_add_member_and_create_fleet():
 
 def test_technician_can_assign_vehicle():
     p = WorkshopPlatform(); owner = uuid4(); tech = uuid4(); vehicle = uuid4()
-    org = p.create_organization("Workshop", "workshop", owner)
+    p.create_organization("Workshop", "workshop", owner)
     owner_m = next(iter(p.memberships.values()))
     tech_m = p.add_member(owner_m, tech, Role.TECHNICIAN)
     fleet = p.create_fleet(owner_m, "Fleet")

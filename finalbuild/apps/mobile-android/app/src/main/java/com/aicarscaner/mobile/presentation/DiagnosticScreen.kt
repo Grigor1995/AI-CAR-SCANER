@@ -1616,49 +1616,6 @@ private fun TransportButton(
     }
 }
 
-@Composable
-private fun LiveDataTile(
-    label: String,
-    value: String,
-    unit: String,
-    modifier: Modifier = Modifier,
-    highlight: Boolean = false
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                                        ),
-        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
-            containerColor = if (highlight) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-            }
-        )
-    ) {
-        Column(
-            Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(
-                    " $unit",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(bottom = 3.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
 
 @Composable
 internal fun VehicleFields(

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from urllib.error import URLError
 from unittest.mock import MagicMock, Mock
 
-import pytest
 
 from apps.desktop import main
 

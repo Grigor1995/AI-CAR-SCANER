@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from uuid import UUID
-from diagnostic.models import EvidenceSource, TestResult
+from diagnostic.models import EvidenceSource
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from api.state import sessions
 from diagnostic.localization import localize_session_analysis

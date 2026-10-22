@@ -31,12 +31,6 @@ class Membership(BaseModel):
     role: Role
     active: bool = True
 
-class Technician(BaseModel):
-    user_id: UUID
-    display_name: str
-    organization_id: UUID
-    roles: list[Role] = Field(default_factory=lambda: [Role.TECHNICIAN])
-    active: bool = True
 
 class Fleet(BaseModel):
     fleet_id: UUID = Field(default_factory=uuid4)
@@ -78,8 +72,3 @@ class UsageSnapshot(BaseModel):
     dtcs_read: int = 0
     ai_analyses: int = 0
     offline_sync_operations: int = 0
-
-class ReportRequest(BaseModel):
-    session_id: UUID
-    format: str = "json"
-    include_audit: bool = True

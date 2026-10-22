@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from diagnostic.decision import DiagnosticDecisionEngine, DiagnosticDecisionPlan
-from diagnostic.models import DiagnosticTest
 from api.state import sessions
 from diagnostic.localization import localize_decision_plan
 

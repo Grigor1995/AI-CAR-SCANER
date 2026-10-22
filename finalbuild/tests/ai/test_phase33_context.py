@@ -1,4 +1,4 @@
-from backend.ai.live_analysis import build_live_context, _recent_signal_context
+from backend.ai.live_analysis import build_live_context
 from backend.ai.llm.llama_server import LlamaServerConfig, LlamaServerLLMProvider
 from backend.diagnostic.models import DiagnosticSession, Vehicle, Evidence, EvidenceSource, EvidenceStatus
 from backend.telemetry.models import TelemetrySample, TelemetrySummary, SignalStats

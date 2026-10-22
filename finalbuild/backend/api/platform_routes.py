@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from professional_platform.models import Role
 from professional_platform.service import WorkshopPlatform
 

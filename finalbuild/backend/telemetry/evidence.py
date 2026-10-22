@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .models import SignalEvent, TelemetrySummary
+from .models import TelemetrySummary
 from diagnostic.models import Evidence, EvidenceSource, EvidenceStatus
 
 

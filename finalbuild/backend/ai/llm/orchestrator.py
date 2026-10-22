@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 from ai.interfaces import LLMProvider, LLMResponse
 from diagnostic.models import DiagnosticSession
 

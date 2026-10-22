@@ -1,7 +1,7 @@
 """Windows J2534 DLL loader seam. No vendor DLL is bundled or required."""
 import ctypes
 from pathlib import Path
-from vehicle.j2534.interface import J2534PassThru, J2534Message
+from vehicle.j2534.interface import J2534PassThru
 
 class J2534Windows(J2534PassThru):
     def __init__(self, dll_path: str):

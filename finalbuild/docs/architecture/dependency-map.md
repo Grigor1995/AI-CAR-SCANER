@@ -16,7 +16,7 @@
 | pyserial | USB/serial transport | device/OBD |
 | PyYAML | Dataset/config parsing | ingestion/runtime |
 | pypdf | PDF knowledge ingestion | AI ingestion |
-| NumPy | Numeric/AI evaluation runtime | ML/evaluation |
+| NumPy | Transitive dependency of optional embedding providers; not required by core runtime | requirements-ai.txt |
 | pytest | Test framework | tests |
 | pytest-asyncio | Async tests | tests |
 | httpx | API/client tests | tests |

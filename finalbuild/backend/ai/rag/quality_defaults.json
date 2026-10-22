@@ -1,5 +1,0 @@
-{
-  "min_recall_at_k": 0.90,
-  "min_mrr": 0.80,
-  "min_ndcg_at_k": 0.80
-}

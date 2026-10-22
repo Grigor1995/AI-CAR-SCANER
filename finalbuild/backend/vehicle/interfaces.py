@@ -28,4 +28,3 @@ class CanInterface(ABC):
 class UdsInterface(ABC):
     @abstractmethod
     async def diagnostic_session_control(self,session_type:int)->bytes: ...
-class SimulatorAdapter(DiagnosticAdapter,ObdInterface,CanInterface,UdsInterface): pass

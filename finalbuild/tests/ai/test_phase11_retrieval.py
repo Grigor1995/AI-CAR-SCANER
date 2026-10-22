@@ -1,6 +1,5 @@
 import pytest
 from ai.rag.hybrid import QueryRewriter, HybridFusion, RetrievedChunk, lexical_score, metadata_matches
-from ai.rag.retrieval import DiagnosticRAGRetriever
 from ai.rag.evaluation import RetrievalCase, RetrievalEvaluator
 
 

@@ -1,7 +1,6 @@
 """OpenAI-compatible local runtimes (LM Studio/Jan) must report AI readiness."""
 from __future__ import annotations
 
-import io
 import json
 from urllib.error import URLError
 

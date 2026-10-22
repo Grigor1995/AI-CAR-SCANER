@@ -1,6 +1,5 @@
 package com.aicarscaner.mobile.presentation
 
-import androidx.lifecycle.ViewModel
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto

@@ -1,5 +1,3 @@
-import asyncio
-from uuid import uuid4
 import pytest
 from vehicle.adapters.can_simulator import SimulatedCanBus
 from vehicle.adapters.uds_simulator import UdsEcuSimulator

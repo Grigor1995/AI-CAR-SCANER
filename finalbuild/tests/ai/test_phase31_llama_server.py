@@ -6,6 +6,7 @@ from backend.ai.llm.llama_server import LlamaServerConfig
 def test_phase32_ports_are_split(monkeypatch):
     monkeypatch.delenv("AI_CAR_BACKEND_PORT", raising=False)
     monkeypatch.delenv("LOCAL_LLM_SERVER_URL", raising=False)
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
     cfg = LlamaServerConfig.from_env()
     assert cfg.base_url == "http://127.0.0.1:8000"
 

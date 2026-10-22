@@ -1,4 +1,3 @@
-from uuid import uuid4
 
 from ai.ml.anomaly import NumericAnomalyDetector
 from ai.rag.evaluator import RagEvalCase, RagEvaluator

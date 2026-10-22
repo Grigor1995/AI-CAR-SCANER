@@ -6,7 +6,6 @@ from diagnostic.decision import DiagnosticDecisionEngine
 from diagnostic.models import (
     DTC,
     DiagnosticSession,
-    Evidence,
     EvidenceSource,
     EvidenceStatus,
     Symptom,

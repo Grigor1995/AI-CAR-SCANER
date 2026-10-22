@@ -2,9 +2,8 @@ import asyncio
 
 import pytest
 
-from vehicle.adapters.can_simulator import SimulatedCanBus
 from vehicle.can.models import CanFrame
-from vehicle.isotp.models import FlowStatus, IsoTpProtocolError, IsoTpTimeout
+from vehicle.isotp.models import IsoTpProtocolError, IsoTpTimeout
 from vehicle.isotp.stack import IsoTpStack
 
 

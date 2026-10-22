@@ -12,7 +12,8 @@ This documentation describes the implemented architecture of the finalbuild/ pro
 | [Dependency map](architecture/dependency-map.md) | External dependencies and internal dependency direction |
 | [Visualizations](architecture/visualization.md) | Mermaid diagrams for system, data, sequence, deployment and dependency views |
 | [Phase architecture](architecture/) | Historical phase-by-phase architecture decisions |
-| [Device architecture](device/) | Device/VCI evolution and transport documentation |
+| [Device/VCI components](../device/) | Device/VCI evolution and transport documentation |
+| [Repository cleanup audit](maintenance/full-repository-audit-2026-10-22.md) | File/declaration inventory, unused code removals and validation |
 | [Local coverage audit](testing/coverage-audit.md) | Staged local Python coverage, per-file low coverage and report generation |
 | [Cross-platform test matrix](testing/full-flow-coverage.md) | End-to-end workflow test coverage and platform verification |
 

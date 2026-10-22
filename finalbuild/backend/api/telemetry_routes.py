@@ -1,8 +1,6 @@
 from __future__ import annotations
-from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from diagnostic.models import EvidenceSource
 from api.state import sessions
 from telemetry.evidence import events_to_evidence
 from telemetry.models import TelemetrySample, TelemetrySummary

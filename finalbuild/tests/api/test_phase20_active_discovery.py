@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 from api.main import app
-from backend.api.multi_bus_routes import _runtime
 
 def test_active_discovery_confirms_passive_candidate():
     c=TestClient(app)

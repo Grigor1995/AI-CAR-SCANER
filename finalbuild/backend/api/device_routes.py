@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from device.manager import DeviceConnectionError, VCIConnectionManager, DeviceDescriptor
+from device.manager import DeviceConnectionError, DeviceDescriptor
 from api.state import vci_manager
 
 router = APIRouter(prefix="/api/v1/devices", tags=["vci-devices"])

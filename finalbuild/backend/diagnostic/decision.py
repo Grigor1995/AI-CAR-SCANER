@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from math import log2
 import re
 from typing import Iterable
@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from .models import DiagnosticSession, DiagnosticTest, EvidenceStatus, SessionState
+from .models import DiagnosticSession, DiagnosticTest, SessionState
 
 
 class DecisionCandidate(BaseModel):

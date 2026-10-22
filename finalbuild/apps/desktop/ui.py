@@ -7,7 +7,7 @@ import sys
 from functools import lru_cache
 import time
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QRectF, QSize, QTimer, QSettings, QCoreApplication, QEvent
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent
 from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QScrollArea, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTabWidget, QVBoxLayout, QWidget, QSplitter
 )
-from .api_client import DiagnosticApiClient, ApiError
+from .api_client import DiagnosticApiClient
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
 from .vehicle_artwork import vehicle_pixmap

@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock,patch
 os.environ['QT_QPA_PLATFORM']='offscreen'
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
-from PySide6.QtCore import QCoreApplication,QEvent,QTimer
+from PySide6.QtCore import QCoreApplication,QEvent
 from PySide6.QtWidgets import QApplication,QWidget,QLabel,QVBoxLayout,QPlainTextEdit
 from PySide6.QtGui import QFont
 from apps.desktop import ui

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import builtins
 import importlib.util
-import io
-import os
 import runpy
 import sys
 from pathlib import Path

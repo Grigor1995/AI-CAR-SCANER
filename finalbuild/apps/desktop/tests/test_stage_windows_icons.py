@@ -1,5 +1,4 @@
 """Safe build artwork staging regression tests."""
-from pathlib import Path
 import hashlib
 
 import pytest

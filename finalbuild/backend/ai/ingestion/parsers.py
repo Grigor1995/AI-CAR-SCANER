@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from html.parser import HTMLParser
 import json
 from pathlib import Path

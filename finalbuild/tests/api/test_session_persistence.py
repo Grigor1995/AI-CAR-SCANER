@@ -1,5 +1,3 @@
-import os
-from uuid import uuid4
 
 from diagnostic.models import DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus, Vehicle
 from diagnostic.session_persistence import DiagnosticSessionPersistence

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
-from ai.rag.store import HybridKnowledgeStore, KnowledgeDocument
+from ai.rag.store import HybridKnowledgeStore
 from ai.rag.reranker import LexicalReranker
 from ai.llm.interfaces_guard import SafePromptContext
 from diagnostic.models import DiagnosticSession

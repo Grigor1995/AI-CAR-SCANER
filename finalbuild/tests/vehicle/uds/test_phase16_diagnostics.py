@@ -21,7 +21,7 @@ def test_format_and_parse_dtc():
 
 @pytest.mark.asyncio
 async def test_read_only_uds_identity_and_dtcs_multiframe():
-    bus = SimulatedCanBus(); ecu = UdsEcuSimulator(bus, vin='VINTEST1234567890')
+    bus = SimulatedCanBus(); UdsEcuSimulator(bus, vin='VINTEST1234567890')
     recorder = ProtocolTraceRecorder(session_id=uuid4()); traced = TracedCanBus(bus, recorder)
     client = UdsClient(IsoTpStack(traced, 0x7E0, 0x7E8))
     diag = UdsDiagnosticSession(client)

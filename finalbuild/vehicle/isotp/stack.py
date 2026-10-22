@@ -1,6 +1,6 @@
 from __future__ import annotations
 import asyncio
-from .models import FlowControl, FlowStatus, IsoTpProtocolError, IsoTpTimeout
+from .models import FlowStatus, IsoTpProtocolError, IsoTpTimeout
 from vehicle.can.models import CanFrame
 
 class IsoTpStack:

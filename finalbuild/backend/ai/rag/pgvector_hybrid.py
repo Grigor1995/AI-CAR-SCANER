@@ -7,7 +7,7 @@ from typing import Any, Sequence
 
 from sqlalchemy import create_engine, text
 
-from .hybrid import RetrievedChunk, metadata_matches
+from .hybrid import RetrievedChunk
 
 @dataclass(frozen=True)
 class PgVectorConfig:

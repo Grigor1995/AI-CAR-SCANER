@@ -1,6 +1,4 @@
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 class DeviceMode(str, Enum):
     NORMAL = "normal"
@@ -8,15 +6,6 @@ class DeviceMode(str, Enum):
     RECOVERY = "recovery"
     OTA = "ota"
 
-@dataclass
-class AndroidDeviceInfo:
-    device_id: str
-    model: str
-    serial: str | None = None
-    app_version: str = "0.1.0"
-    firmware_version: str = "0.1.0"
-    mode: DeviceMode = DeviceMode.NORMAL
-    metadata: dict[str, Any] = field(default_factory=dict)
 
 class DeviceStateMachine:
     allowed = {

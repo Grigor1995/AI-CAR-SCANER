@@ -3,7 +3,6 @@ package com.aicarscaner.mobile.presentation
 import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import math
 import re
 from collections import Counter
-from typing import Any, Iterable, Sequence
+from typing import Any, Sequence
 
-from .store import RetrievalHit
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_\-\.]+")
 

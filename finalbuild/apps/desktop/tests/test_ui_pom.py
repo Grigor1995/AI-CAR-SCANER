@@ -45,8 +45,6 @@ class DashboardPO:
     def ecu_count(self):
         return self.page.ecus.value.text()
 
-    def click_refresh(self):
-        self.page.refresh_btn.click()
 
 
 class VehiclesPO:

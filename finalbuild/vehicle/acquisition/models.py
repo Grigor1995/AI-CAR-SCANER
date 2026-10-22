@@ -47,6 +47,3 @@ class AcquisitionRecord:
     @property
     def timestamp_ms(self) -> int:
         return self.timestamp_ns // 1_000_000
-
-class AcquisitionError(ConnectionError):
-    pass

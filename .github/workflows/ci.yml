@@ -8,6 +8,8 @@ on:
   pull_request:
     paths:
       - "finalbuild/**"
+      - "pytest.ini"
+      - "build.py"
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
@@ -23,6 +25,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -r backend/requirements-dev.txt
+      - name: Check Python unused imports, bindings and undefined names
+        run: python -m ruff check . --select F401,F811,F821,F841
       - run: pytest -q
       - run: pytest -q -s tests/harness/test_performance.py
       - run: pytest -q --cov=backend --cov-report=term-missing --cov-report=xml
@@ -32,10 +36,10 @@ jobs:
           --cov=backend/telemetry
           --cov=backend/multi_ecu
           --cov=backend/simulator
-          --cov=backend/global_data.py
+          --cov=global_data
           --cov=backend/ai/reasoning
           --cov=backend/ai/ml
-          --cov=backend/ai/live_analysis
+          --cov=ai.live_analysis
           --cov-report=term-missing
           --cov-fail-under=90
       - run: python -m compileall backend
@@ -60,8 +64,7 @@ jobs:
       - run: python -m py_compile apps/desktop/main.py
       - name: Verify Desktop source syntax (real pytest smoke test)
         run: python -m pytest -q apps/desktop/test_smoke.py
-      - name: "Run Qt widget tests (non-blocking: known PySide6 teardown crash)"
-        continue-on-error: true
+      - name: Run Qt widget tests
         run: pytest -q apps/desktop/tests/test_ui_widgets.py
       - name: Run desktop unit tests with coverage
         run: >-

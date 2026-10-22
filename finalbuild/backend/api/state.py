@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator, MutableMapping
 from diagnostic.models import DiagnosticSession
 from diagnostic.session_persistence import persistence
-from device.manager import vci_manager
+from device.manager import vci_manager as vci_manager
 
 
 class GlobalSessionRegistry(MutableMapping[str, DiagnosticSession]):

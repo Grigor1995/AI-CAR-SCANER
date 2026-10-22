@@ -1,4 +1,3 @@
-from .models import ReportRequest
 
 def build_session_report(session: dict, audit_events: list[dict] | None = None) -> dict:
     return {

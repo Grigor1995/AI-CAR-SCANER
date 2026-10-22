@@ -6,7 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from diagnostic.models import (
-    DiagnosticSession, DiagnosticTest, DTC, Evidence, EvidenceSource,
+    DiagnosticSession, DiagnosticTest, DTC, EvidenceSource,
     EvidenceStatus, Hypothesis, Symptom, Vehicle,
 )
 from api import main as api_main

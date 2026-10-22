@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from uuid import UUID
 from vehicle.network.active_discovery import ActiveEcuDiscoveryEngine, ActiveProbePolicy, ActiveProbeResult, ActiveProbeTarget
-from vehicle.network.discovery import VehicleNetworkDiscoveryResult, DiscoveredEcuCandidate
+from vehicle.network.discovery import VehicleNetworkDiscoveryResult
 from vehicle.network.models import VehicleNetworkTopology
 
 class ActiveNetworkDiscoveryService:

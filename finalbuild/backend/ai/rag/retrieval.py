@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 from .hybrid import QueryRewriter, RetrievedChunk
 from .reranker import create_reranker

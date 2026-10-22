@@ -21,7 +21,6 @@ data class VehicleCatalogEntryDto(
     val scope: String = ""
 )
 
-data class CreateSessionRequest(val vehicle: VehicleDto? = null)
 data class VehicleDto(
     val make: String,
     val model: String,

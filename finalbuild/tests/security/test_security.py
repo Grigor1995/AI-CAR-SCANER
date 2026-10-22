@@ -5,7 +5,7 @@ from backend.security.rate_limit import SlidingWindowRateLimiter
 def test_token_roundtrip():
     p=Principal("u1","org1",("technician",))
     t=issue_token(p,"secret",ttl_seconds=60)
-    assert verify_token(t,"secret",now=1_000_000_000) if False else verify_token(t,"secret").subject == "u1"
+    assert verify_token(t,"secret").subject == "u1"
 
 def test_tampered_token_rejected():
     p=Principal("u1","org1",("viewer",)); t=issue_token(p,"secret")

@@ -1,7 +1,6 @@
 from __future__ import annotations
 import json
-from collections import defaultdict
-from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, Hypothesis, DiagnosticTest, SessionState
+from diagnostic.models import DiagnosticSession, EvidenceStatus, EvidenceSource, DiagnosticTest, SessionState
 from diagnostic.rules import DiagnosticReasoningEngine
 from ai.reasoning.evidence_extractor import StructuredEvidenceExtractor
 from ai.ml.anomaly import NumericAnomalyDetector

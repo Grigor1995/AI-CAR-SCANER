@@ -8,13 +8,13 @@ import html
 import json
 from collections import defaultdict
 
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QGroupBox, QProgressBar, QListWidget, QListWidgetItem, QPlainTextEdit,
-    QLineEdit, QFileDialog, QComboBox, QStackedWidget,
+    QLineEdit, QFileDialog, QComboBox,
 )
 
 from .models import Session, Vehicle, user_report_data

@@ -5,12 +5,12 @@ Requires python-pptx and Pillow; captures are real Qt/Compose output, with
 fixture/demo data. Preview PNGs use the same layout, not a PowerPoint renderer.
 """
 from pathlib import Path
-import json, textwrap, math
+import json, math
 from PIL import Image, ImageDraw, ImageFont
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
+from pptx.enum.shapes import MSO_SHAPE
 
 ROOT = Path(__file__).resolve().parent
 SHOTS = ROOT / 'screenshots'

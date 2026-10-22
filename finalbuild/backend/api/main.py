@@ -4,7 +4,6 @@ from fastapi import FastAPI, HTTPException, Body, Request
 from diagnostic.models import DiagnosticSession, Vehicle, Symptom, DTC, Evidence, EvidenceSource, EvidenceStatus
 from diagnostic.localization import localize_session_analysis
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
-from diagnostic.localization import localize_session_analysis
 from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router

@@ -1,6 +1,5 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from time import perf_counter
 
 @dataclass
 class Counter:
@@ -11,7 +10,3 @@ class MetricsRegistry:
     def __init__(self): self.counters = defaultdict(Counter)
     def inc(self, name: str, amount: int = 1): self.counters[name].inc(amount)
     def snapshot(self): return {k:v.value for k,v in self.counters.items()}
-
-class Timer:
-    def __enter__(self): self.start = perf_counter(); return self
-    def __exit__(self, *_): self.elapsed_ms = (perf_counter()-self.start)*1000

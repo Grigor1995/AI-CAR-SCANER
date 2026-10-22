@@ -29,8 +29,6 @@ class UdsClient:
     async def diagnostic_session_control(self, session_type: int) -> bytes:
         return (await self.request(0x10, bytes([session_type]))).payload
 
-    async def ecu_reset(self, reset_type: int) -> bytes:
-        return (await self.request(0x11, bytes([reset_type]))).payload
 
     async def read_data_by_identifier(self, did: int) -> bytes:
         if not 0 <= did <= 0xFFFF: raise ValueError("DID must fit uint16")

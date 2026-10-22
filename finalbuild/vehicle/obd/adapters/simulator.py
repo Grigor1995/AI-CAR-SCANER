@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import re
 
 from vehicle.obd.transport import DiagnosticTransport
 

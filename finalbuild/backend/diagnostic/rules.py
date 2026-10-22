@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from .models import DiagnosticSession, EvidenceSource, EvidenceStatus, Hypothesis, DiagnosticTest, SessionState
+from .models import DiagnosticSession, Hypothesis, DiagnosticTest, SessionState
 
 
 class DiagnosticReasoningEngine:
@@ -55,7 +55,6 @@ class DiagnosticReasoningEngine:
                 "mechanical cylinder condition",
             }
             categories = [item for item in categories if item[0] in focused]
-            present = {item[0] for item in categories}
             statements = {
                 "ignition / combustion": "A marginal ignition system can misfire under the higher demand associated with LPG/load; confirm with cylinder-specific evidence.",
                 "LPG fuel delivery / mixture": "The fault is strongly associated with LPG operation; verify LPG pressure, injector delivery, and mixture/calibration before condemning ignition hardware.",

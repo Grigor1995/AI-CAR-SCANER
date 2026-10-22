@@ -165,7 +165,6 @@ class MultiEcuRuntime:
         digit1 = (first >> 4) & 0x03
         digit2 = first & 0x0F
         digit3 = (raw >> 8) & 0xFF
-        digit4 = raw & 0xFF
         return f"{prefix}{digit1}{digit2:X}{digit3:02X}" if prefix else f"P{digit1}{digit2:X}{digit3:02X}"
 
 

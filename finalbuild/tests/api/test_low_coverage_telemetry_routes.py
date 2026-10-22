@@ -1,11 +1,10 @@
-from types import SimpleNamespace
 from uuid import uuid4
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
 
-from diagnostic.models import DiagnosticSession, Evidence, EvidenceSource, EvidenceStatus
+from diagnostic.models import DiagnosticSession
 from telemetry.models import SignalEvent, SignalEventType, SignalStats, TelemetrySample, TelemetrySummary
 from telemetry.service import TelemetryService
 from api import telemetry_routes as routes

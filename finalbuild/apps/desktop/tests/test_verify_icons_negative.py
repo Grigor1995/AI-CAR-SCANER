@@ -5,7 +5,6 @@ Do not modify real desktop assets, require real hardware, or start an API.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 

@@ -1,7 +1,4 @@
 import pytest
-from vehicle.can.models import CanFrame
-from vehicle.adapters.can_simulator import SimulatedCanBus
-from vehicle.isotp.stack import IsoTpStack
 from vehicle.uds.client import UdsClient, UdsError
 
 class LoopbackIsoTp:

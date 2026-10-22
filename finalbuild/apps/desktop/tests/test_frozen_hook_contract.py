@@ -9,7 +9,6 @@ import faulthandler
 from pathlib import Path
 import runpy
 
-import pytest
 
 
 HOOK = Path(__file__).resolve().parents[1] / "debug_runtime_hook.py"

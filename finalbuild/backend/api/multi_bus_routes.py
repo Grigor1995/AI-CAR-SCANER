@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from api.state import sessions
 from multi_ecu.multibus_runtime import MultiBusDiagnosticRuntime
-from multi_ecu.service import MultiEcuDiagnosticService
 from multi_ecu.models import EcuNodeRequest, GatewayNodeRequest
 from vehicle.network.models import EcuNode, GatewayNode, GatewayRoute, VehicleNetworkTopology
 from vehicle.network.multibus import CanBusConfig

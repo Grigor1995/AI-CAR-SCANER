@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import socket
 from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
@@ -12,7 +11,7 @@ from vehicle.obd.adapters.simulator import SimulatorTransport
 from vehicle.obd.adapters.tcp_wifi import ObdWifiTransport
 from vehicle.obd.adapters.usb_serial import ObdUsbSerialTransport
 from vehicle.obd.client import GenericObdClient
-from vehicle.obd.transport import DiagnosticTransport, TransportError
+from vehicle.obd.transport import DiagnosticTransport
 
 
 @dataclass

@@ -35,7 +35,6 @@ def test_live_context_contains_measurement_provenance():
 def test_phase28_telemetry_ai_route_accepts_live_analysis(monkeypatch):
     import api.main as main
     from api.state import sessions
-    from telemetry.models import TelemetrySummary
 
     sid = str(uuid4())
     session = DiagnosticSession(session_id=sid, vehicle=Vehicle(make="Demo", model="Live", year=2026))

@@ -1,13 +1,12 @@
 from __future__ import annotations
-import asyncio
 from abc import ABC, abstractmethod
-from typing import Awaitable, Callable
+from typing import Callable
 from time import time_ns
 from uuid import UUID
 from vehicle.obd.client import GenericObdClient
 from vehicle.can.models import CanFrame
 from vehicle.uds.client import UdsClient
-from .models import AcquisitionRecord, AcquisitionSourceType, AcquisitionError
+from .models import AcquisitionRecord, AcquisitionSourceType
 
 class AcquisitionSource(ABC):
     source_type: AcquisitionSourceType

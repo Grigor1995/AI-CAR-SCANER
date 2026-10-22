@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import base64, hashlib, hmac, json, os
+import base64, hashlib, hmac, json
 
 @dataclass(frozen=True)
 class Principal:

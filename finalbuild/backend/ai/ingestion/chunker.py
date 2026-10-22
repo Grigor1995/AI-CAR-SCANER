@@ -29,7 +29,6 @@ class SemanticChunker:
         chunks: list[KnowledgeChunk] = []
         current: list[str] = []
         current_len = 0
-        char_cursor = 0
         ranges: list[tuple[int, int, str]] = []
         # Locate blocks approximately while preserving deterministic offsets.
         search_from = 0

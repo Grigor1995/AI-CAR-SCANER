@@ -1,4 +1,4 @@
-import importlib.util, pathlib, sqlite3
+import importlib.util, pathlib
 
 ROOT = pathlib.Path(__file__).parents[2]
 def load(path, name):

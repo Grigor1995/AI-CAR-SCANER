@@ -43,7 +43,7 @@ class ELM327Protocol:
         response_sid = (service + 0x40) & 0xFF
 
         normalized_raw = raw.decode("ascii", errors="ignore") if isinstance(raw, bytes) else raw
-        for raw_line in re.split(r"[\\r\\n>]+", normalized_raw.upper()):
+        for raw_line in re.split(r"[\r\n>]+", normalized_raw.upper()):
             line = raw_line.strip()
             if not line or line.replace(" ", "") == cmd:
                 continue
@@ -51,8 +51,8 @@ class ELM327Protocol:
                 continue
             # Header-visible CAN adapters often prefix an 11-bit (7E8) or
             # 29-bit (18DAF110) identifier, followed by a DLC/PCI byte.
-            line = re.sub(r"^(?:[0-9A-F]{3}|[0-9A-F]{8})\\s+", "", line)
-            compact = re.sub(r"\\s+", "", line)
+            line = re.sub(r"^(?:[0-9A-F]{3}|[0-9A-F]{8})\s+", "", line)
+            compact = re.sub(r"\s+", "", line)
             if not compact or len(compact) % 2 or not re.fullmatch(r"[0-9A-F]+", compact):
                 continue
             blob = bytes.fromhex(compact)

@@ -81,6 +81,7 @@ GET /api/v1/vehicle-catalog/image-metadata?make=Mercedes-Benz&model=E-Class&chas
 GET /api/v1/vehicle-catalog/artwork?make=Mercedes-Benz&model=E-Class&chassis=W211
 GET /api/v1/vehicle-catalog/commons-photo-candidates?make=Mercedes-Benz&model=E-Class&chassis=W211
 GET /api/v1/vehicle-catalog/vpic-models?make=Mercedes-Benz&year=2006
+POST /api/v1/vehicle-catalog/decode-vin   # explicit NHTSA consent required
 ```
 
 `POST /parse-adapter-protocol` JSON example:
@@ -94,6 +95,12 @@ third-party services without the user's informed choice.
 
 `/vpic-models`: optional live NHTSA public model lookup. Primarily
 US-market information; it does not deliver a complete engine-option catalog.
+
+`POST /decode-vin` requires `{"vin":"17-character-VIN","consent_to_nhtsa_lookup":true}`.
+The VIN is sent to the US NHTSA service **only after this explicit consent**;
+the backend does not cache it. The resulting make/model/engine identifiers are
+US-manufacturer-submitted VIN data, NOT a universal OEM service database.
+No OBD protocol is inferred from VIN; it still needs a live ECU handshake.
 `/commons-photo-candidates`: optional real-car photo search through fixed
 Wikimedia Commons API. Responses carry the file page, author, license,
 license URL and thumbnail, with mandatory visual model review. No claim that

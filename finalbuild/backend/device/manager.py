@@ -104,4 +104,26 @@ class VCIConnectionManager:
         return device
 
 
-vci_manager = VCIConnectionManager()
+def _build_vci_manager():
+    """Use real USB/BLE/Wi-Fi adapters ONLY with explicit local opt-in.
+
+    Cloud backends have no access to the user's mobile BLE adapter and must
+    never probe local devices or expose LAN probing by default.
+    """
+    import os
+    enabled = os.getenv("AI_CAR_ENABLE_PHYSICAL_VCI", "").strip().lower() in {"1", "true", "yes"}
+    host = os.getenv("AI_CAR_BACKEND_HOST", "127.0.0.1").strip().lower()
+    if not enabled or host not in {"127.0.0.1", "localhost", "::1"}:
+        return VCIConnectionManager()
+    from vehicle.devices.connection import VCIConnectionManager as PhysicalManager
+
+    class LocalVciManager(PhysicalManager):
+        async def scan(self, transport: str, timeout: float = 3.0):
+            if transport.strip().lower() == "simulator":
+                return [self.add_simulator()]
+            return await super().scan(transport, timeout)
+
+    return LocalVciManager()
+
+
+vci_manager = _build_vci_manager()

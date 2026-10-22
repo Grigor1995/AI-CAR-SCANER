@@ -195,3 +195,23 @@ def test_runtime_endpoint_never_claims_simulator_can_access_real_ecus():
     assert data["automatic_vehicle_protocol_verification"] is False
     assert data["doip"] == "not_implemented"
     assert data["j1939"] == "not_implemented"
+
+
+def test_curated_real_photo_retains_license_author_and_correct_chassis_scope():
+    mercedes = images.bundled_image_metadata("Mercedes-Benz", "E-Class", "W211")
+    photo = mercedes["preferred_real_photo"]
+    assert photo["is_real_car_photo"] is True
+    assert photo["author"] == "Adrian Kot"
+    assert photo["license"] == "CC BY-SA 2.5"
+    assert photo["model_match_scope"].startswith("chassis_generation")
+    assert "commons.wikimedia.org" in photo["file_page"]
+
+    bmw = images.bundled_image_metadata("BMW", "3 Series", "E90")
+    assert bmw["preferred_real_photo"]["author"] == "Damian B Oh"
+    assert bmw["preferred_real_photo"]["license"] == "CC BY-SA 4.0"
+    assert "320d" in bmw["preferred_real_photo"]["model_match_scope"]
+
+    # Never claim a vetted photo for a vehicle that has none.
+    assert images.bundled_image_metadata("Toyota", "Camry", "XV40")[
+        "preferred_real_photo"
+    ] is None

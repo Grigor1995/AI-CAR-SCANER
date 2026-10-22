@@ -9,6 +9,21 @@ class GenericObdClient:
         await self.transport.connect()
         for cmd in self.protocol.INIT_COMMANDS: await self.command(cmd)
     async def disconnect(self): await self.transport.disconnect()
+
+    async def read_adapter_protocol(self, *, activate_generic_obd: bool = False) -> dict[str, str]:
+        """Read the actual ELM327 protocol via ATDPN/ATDP, not model-year guesses.
+
+        Optional PID 0100 is a standard emissions READ request. Do not send it
+        without explicit opt-in; ATDPN may report A0 before first ECU handshake.
+        A cloned adapter can misreport its capabilities or selected protocol.
+        """
+        if activate_generic_obd:
+            await self.command("0100")
+        return {
+            "atdpn": await self.command("ATDPN"),
+            "atdp": await self.command("ATDP"),
+        }
+
     async def command(self, cmd: str) -> str:
         await self.transport.write((cmd.strip()+"\r").encode("ascii"))
         return self.protocol.normalize(await self.transport.read_until())

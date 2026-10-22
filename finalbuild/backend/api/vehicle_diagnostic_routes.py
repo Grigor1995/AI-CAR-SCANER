@@ -49,7 +49,14 @@ async def identify_ecu(session_id: str):
         identity = await service.identify_ecu(sessions[session_id].session_id)
         s = sessions[session_id]
         if identity.vin:
-            s.evidence.append(Evidence(fact=f'ECU VIN identified as {identity.vin}', source=EvidenceSource.ECU_REPORTED, status=EvidenceStatus.MEASURED, source_ref='UDS:DID:F190'))
+            synthetic = service.status(s.session_id).adapter == 'simulator'
+            s.evidence.append(Evidence(
+                fact=f'{"Simulated" if synthetic else "ECU"} VIN identified as {identity.vin}',
+                source=EvidenceSource.SIMULATOR if synthetic else EvidenceSource.ECU_REPORTED,
+                status=EvidenceStatus.SIMULATED if synthetic else EvidenceStatus.MEASURED,
+                source_ref='SIM:UDS:DID:F190' if synthetic else 'UDS:DID:F190',
+                metadata={'simulated': synthetic},
+            ))
         return EcuIdentityResponse(session_id=s.session_id, vin=identity.vin, software_version=identity.software_version, hardware_version=identity.hardware_version)
     except RuntimeError as exc:
         raise HTTPException(409, str(exc)) from exc
@@ -64,9 +71,17 @@ async def read_dtcs(session_id: str):
     s = sessions[session_id]
     try:
         records = await service.read_dtcs(s.session_id)
+        synthetic = service.status(s.session_id).adapter == 'simulator'
+        origin = EvidenceSource.SIMULATOR if synthetic else EvidenceSource.ECU_REPORTED
+        evidence_status = EvidenceStatus.SIMULATED if synthetic else EvidenceStatus.MEASURED
         for record in records:
-            s.dtcs.append(DTC(code=record.code, source=EvidenceSource.ECU_REPORTED))
-            s.evidence.append(Evidence(fact=f'UDS DTC {record.code} status=0x{record.status_byte:02X}', source=EvidenceSource.ECU_REPORTED, status=EvidenceStatus.MEASURED, source_ref='UDS:SVC:19:02', metadata={'raw_dtc': record.raw_dtc, 'status_byte': record.status_byte}))
+            s.dtcs.append(DTC(code=record.code, source=origin))
+            s.evidence.append(Evidence(
+                fact=f'{"Simulated" if synthetic else "UDS"} DTC {record.code} status=0x{record.status_byte:02X}',
+                source=origin, status=evidence_status,
+                source_ref='SIM:UDS:SVC:19:02' if synthetic else 'UDS:SVC:19:02',
+                metadata={'raw_dtc': record.raw_dtc, 'status_byte': record.status_byte, 'simulated': synthetic},
+            ))
         return UdsDtcResponse(session_id=s.session_id, records=[{'code': r.code, 'raw_dtc': r.raw_dtc, 'status_byte': r.status_byte, 'confirmed': r.confirmed} for r in records])
     except RuntimeError as exc:
         raise HTTPException(409, str(exc)) from exc
@@ -136,30 +151,35 @@ async def sync_obd_to_session(session_id: str):
     except Exception as exc:
         raise HTTPException(502, f'OBD synchronization failed: {exc}') from exc
 
+    synthetic = device.connection_type.lower() == 'simulator'
+    origin = EvidenceSource.SIMULATOR if synthetic else EvidenceSource.ECU_REPORTED
+    measurement_origin = EvidenceSource.SIMULATOR if synthetic else EvidenceSource.VEHICLE_MEASURED
+    evidence_status = EvidenceStatus.SIMULATED if synthetic else EvidenceStatus.MEASURED
+
     evidence_added = 0
-    if vin and not any(e.source_ref == 'OBD:MODE:09:02' and vin in e.fact for e in s.evidence):
+    if vin and not any(e.source_ref in {'OBD:MODE:09:02', 'SIM:OBD:MODE:09:02'} and vin in e.fact for e in s.evidence):
         s.evidence.append(Evidence(
             fact=f'OBD VIN identified as {vin}',
-            source=EvidenceSource.ECU_REPORTED,
-            status=EvidenceStatus.MEASURED,
-            source_ref='OBD:MODE:09:02',
-            metadata={'device_id': device.device_id},
+            source=origin,
+            status=evidence_status,
+            source_ref='SIM:OBD:MODE:09:02' if synthetic else 'OBD:MODE:09:02',
+            metadata={'device_id': device.device_id, 'simulated': synthetic},
         ))
         evidence_added += 1
         if s.vehicle is not None:
             s.vehicle.metadata['vin'] = vin
 
     for code in dtcs:
-        if not any(d.code.upper() == code.upper() and d.source == EvidenceSource.ECU_REPORTED for d in s.dtcs):
-            s.dtcs.append(DTC(code=code, source=EvidenceSource.ECU_REPORTED))
+        if not any(d.code.upper() == code.upper() and d.source == origin for d in s.dtcs):
+            s.dtcs.append(DTC(code=code, source=origin))
             evidence_added += 1
-        if not any(e.source_ref == 'OBD:MODE:03' and e.metadata.get('dtc') == code for e in s.evidence):
+        if not any(e.source_ref in {'OBD:MODE:03', 'SIM:OBD:MODE:03'} and e.metadata.get('dtc') == code for e in s.evidence):
             s.evidence.append(Evidence(
-                fact=f'OBD DTC {code} read from ECU',
-                source=EvidenceSource.ECU_REPORTED,
-                status=EvidenceStatus.MEASURED,
-                source_ref='OBD:MODE:03',
-                metadata={'device_id': device.device_id, 'dtc': code},
+                fact=f'{"Simulated" if synthetic else "OBD"} DTC {code} read from {"simulator" if synthetic else "ECU"}',
+                source=origin,
+                status=evidence_status,
+                source_ref='SIM:OBD:MODE:03' if synthetic else 'OBD:MODE:03',
+                metadata={'device_id': device.device_id, 'dtc': code, 'simulated': synthetic},
             ))
             evidence_added += 1
 
@@ -170,14 +190,14 @@ async def sync_obd_to_session(session_id: str):
         for name, value in live_data.items():
             if value is None:
                 continue
-            s.measurements.append({'channel': name, 'value': value, 'source': EvidenceSource.VEHICLE_MEASURED.value, 'device_id': device.device_id})
+            s.measurements.append({'channel': name, 'value': value, 'source': measurement_origin.value, 'simulated': synthetic, 'device_id': device.device_id})
             measurement_added += 1
         s.evidence.append(Evidence(
             fact='OBD live data snapshot collected: ' + ', '.join(f'{k}={v}' for k, v in live_data.items() if v is not None),
-            source=EvidenceSource.VEHICLE_MEASURED,
-            status=EvidenceStatus.MEASURED,
-            source_ref='OBD:MODE:01',
-            metadata={'device_id': device.device_id, 'values': live_data},
+            source=measurement_origin,
+            status=evidence_status,
+            source_ref='SIM:OBD:MODE:01' if synthetic else 'OBD:MODE:01',
+            metadata={'device_id': device.device_id, 'values': live_data, 'simulated': synthetic},
         ))
         evidence_added += 1
 

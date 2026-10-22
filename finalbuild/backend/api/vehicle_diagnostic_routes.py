@@ -11,6 +11,18 @@ router = APIRouter(prefix='/api/v1/vehicle-diagnostic', tags=['vehicle-diagnosti
 service = VehicleDiagnosticService()
 
 
+def _is_simulated_diagnostic_runtime(session_id) -> bool:
+    """Never mark an active simulator as measured ECU evidence.
+
+    Some unit tests inject a fake identify/read operation without a registered
+    runtime; retain their existing mocked non-simulator contract.
+    """
+    try:
+        return service.status(session_id).adapter == "simulator"
+    except KeyError:
+        return False
+
+
 @router.post('/sessions/{session_id}/connect', response_model=DiagnosticRuntimeStatus)
 async def connect(session_id: str, request: DiagnosticConnectRequest):
     if session_id not in sessions:
@@ -49,7 +61,7 @@ async def identify_ecu(session_id: str):
         identity = await service.identify_ecu(sessions[session_id].session_id)
         s = sessions[session_id]
         if identity.vin:
-            synthetic = service.status(s.session_id).adapter == 'simulator'
+            synthetic = _is_simulated_diagnostic_runtime(s.session_id)
             s.evidence.append(Evidence(
                 fact=f'{"Simulated" if synthetic else "ECU"} VIN identified as {identity.vin}',
                 source=EvidenceSource.SIMULATOR if synthetic else EvidenceSource.ECU_REPORTED,
@@ -71,7 +83,7 @@ async def read_dtcs(session_id: str):
     s = sessions[session_id]
     try:
         records = await service.read_dtcs(s.session_id)
-        synthetic = service.status(s.session_id).adapter == 'simulator'
+        synthetic = _is_simulated_diagnostic_runtime(s.session_id)
         origin = EvidenceSource.SIMULATOR if synthetic else EvidenceSource.ECU_REPORTED
         evidence_status = EvidenceStatus.SIMULATED if synthetic else EvidenceStatus.MEASURED
         for record in records:

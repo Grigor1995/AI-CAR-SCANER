@@ -1197,7 +1197,7 @@ def test_live_data_request_refresh_handles_provider_and_status_errors(window_fac
     page.request_refresh()
     work, done = jobs.pop()
     done(work())
-    assert page.status.text() == "Backend unavailable"
+    assert page.status.text() == "Acquisition unavailable"
     assert page.ai_status.text() == "AI: unavailable"
     assert page._records_data == []
 
@@ -1754,3 +1754,68 @@ def test_backend_health_autoreconnect_is_non_modal(window_factory, monkeypatch, 
     work, done = jobs.pop()
     done(work())
     assert window.statusBar().currentMessage() == "Backend recovered"
+
+
+
+
+def test_fastapi_health_timer_reconnects_without_modal_failures(
+    window_factory, monkeypatch, fake_api,
+):
+    window = window_factory()
+    assert window._health_timer.isActive()
+    assert window._health_timer.interval() == 12000
+    pending = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: pending.append((work, done)))
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+
+    fake_api.health.side_effect = ConnectionError("temporary service restart")
+    window.refresh_health()
+    window.refresh_health()  # never submit overlapping health checks
+    assert len(pending) == 1
+    work, done = pending.pop()
+    assert work() == {"status": "offline"}
+    done(work())
+    assert window.online is False
+    assert window._health_pending is False
+    assert window.statusBar().currentMessage() == "Backend offline"
+
+    fake_api.health.side_effect = None
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend online"
+
+    fake_api.health.return_value = {"status": "starting"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is False
+
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = pending.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend recovered"
+
+    window.close()
+    assert not window._health_timer.isActive()
+
+
+def test_backend_recovery_refreshes_provider_on_actual_live_data_navigation(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    window.session = Session("private-session", "TESTING", window.active_vehicle)
+    window.nav.setCurrentRow(4)
+    assert window.stack.currentIndex() == 0
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+    request_refresh = Mock()
+    monkeypatch.setattr(window.pages[4], "request_refresh", request_refresh)
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    request_refresh.assert_called_once()

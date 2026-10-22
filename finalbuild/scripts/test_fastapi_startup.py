@@ -1,171 +1,205 @@
 #!/usr/bin/env python3
-"""Real FastAPI startup probe (not a mocked health endpoint).
+"""Launch actual source/frozen FastAPI locally, verify /health and record evidence.
 
-Use from finalbuild:
-  python scripts/test_fastapi_startup.py --mode source
-  python scripts/test_fastapi_startup.py --mode frozen \
-    --exe dist-release/icon-preview/backend_service.exe
-
-Runs an isolated temporary local HTTP server and writes backend diagnostics.
-Does not use CI/CD, PostgreSQL, external URLs, or a physical OBD adapter.
+This is NOT the mock backend used by visible UI smoke tests.
+No CI/CD, remote database, network calls or physical vehicle are required.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import shutil
 from pathlib import Path
 import socket
 import subprocess
 import sys
 import tempfile
 import time
-from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-
 ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "desktop-test-reports" / "fastapi-startup"
 
 
-def get_port() -> int:
+def ephemeral_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
 
 
-def is_our_backend(url: str) -> bool:
+def is_healthy(port: int) -> bool:
     try:
-        with urlopen(url + "/health", timeout=2) as response:
-            if response.status != 200:
-                return False
-            payload = json.load(response)
-        return (
-            isinstance(payload, dict)
-            and payload.get("status") == "ok"
-            and payload.get("service") == "diagnostic-api"
-        )
-    except (OSError, URLError, HTTPError, ValueError, TypeError):
+        with urlopen(f"http://127.0.0.1:{port}/health", timeout=1.0) as response:
+            data = json.load(response)
+            return (
+                response.status == 200 and isinstance(data, dict)
+                and data.get("status") == "ok"
+                and data.get("service") == "diagnostic-api"
+            )
+    except (OSError, ValueError, TypeError):
         return False
 
 
-def terminate_owned_process(
-    process: subprocess.Popen, timeout: int = 10, frozen: bool = False
-) -> None:
+def stop_child(process: subprocess.Popen, frozen: bool) -> None:
+    """Stop only the child started by this probe, including Windows descendants.
+
+    On Windows, backend_worker may have child processes holding SQLite open;
+    terminating only the parent leaves diagnostic.sqlite locked.
+    """
     if process.poll() is not None:
         return
-    if frozen and sys.platform == "win32":
-        # PyInstaller onefile bootloader owns a second child process. Kill the
-        # precise launched PID and its children so no backend is left behind.
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            check=False, capture_output=True, timeout=20,
+    if sys.platform == "win32":
+        # /PID is the exact Popen PID; /T only targets descendants of this PID.
+        command = ["taskkill", "/PID", str(process.pid), "/T", "/F"]
+        result = subprocess.run(
+            command, capture_output=True, check=False, timeout=20,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
-        process.wait(timeout=10)
+        try:
+            process.wait(timeout=12)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=8)
+        if result.returncode != 0 and process.poll() is None:
+            raise RuntimeError(
+                f"Could not stop probe process tree PID={process.pid}: "
+                + result.stderr.decode(errors="replace")[-400:]
+            )
         return
     process.terminate()
     try:
-        process.wait(timeout=timeout)
+        process.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        if sys.platform == "win32":
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                check=False, capture_output=True, timeout=20,
-            )
-        if process.poll() is None:
-            process.kill()
+        process.kill()
         process.wait(timeout=10)
 
 
-def probe(mode: str, exe: Path | None, timeout: float) -> dict:
-    port = get_port()
-    url = f"http://127.0.0.1:{port}"
-    report_dir = ROOT / "desktop-test-reports" / "fastapi-startup"
-    report_dir.mkdir(parents=True, exist_ok=True)
-    logfile = report_dir / f"{mode}.log"
-    env = os.environ.copy()
-    env.pop("DATABASE_URL", None)  # Never connect to a developer's real DB.
-    env["AI_CAR_DISABLE_LLM_AUTOSTART"] = "1"
-    env["AI_CAR_BACKEND_HOST"] = "127.0.0.1"
-    env["AI_CAR_BACKEND_PORT"] = str(port)
-    env["NO_PROXY"] = "127.0.0.1,localhost"
-    env["no_proxy"] = "127.0.0.1,localhost"
-    env.pop("AI_CAR_BACKEND_URL", None)
-    if mode == "source":
-        root = str(ROOT / "backend")
-        env["PYTHONPATH"] = (
-            root if not env.get("PYTHONPATH")
-            else root + os.pathsep + env["PYTHONPATH"]
-        )
-        command = [
-            sys.executable, "-m", "uvicorn", "api.main:app",
-            "--host", "127.0.0.1", "--port", str(port),
-        ]
-    else:
-        if exe is None or not exe.is_file():
-            raise FileNotFoundError(f"Built backend_service.exe is missing: {exe}")
-        env.pop("PYTHONPATH", None)
-        command = [str(exe)]
+def cleanup_temporary_database(folder: Path, *, attempts: int = 10) -> None:
+    """Bounded Windows cleanup retry for delayed SQLite/AV handle release.
 
-    started_at = time.monotonic()
-    with tempfile.TemporaryDirectory(prefix="ai-car-fastapi-probe-") as appdata:
-        env["APPDATA"] = appdata
-        with logfile.open("wb") as log:
-            process = subprocess.Popen(
-                command, cwd=str(ROOT), env=env,
-                stdout=log, stderr=subprocess.STDOUT,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
-                if sys.platform == "win32" else 0,
+    Raises if deletion truly remains blocked. Caller writes a FAIL report with
+    the preserved temporary folder path rather than losing startup evidence.
+    """
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(folder)
+            return
+        except FileNotFoundError:
+            return
+        except (PermissionError, OSError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(0.3 + 0.2 * attempt, 1.0))
+
+
+
+def run_probe(mode: str, exe: Path | None, timeout: float) -> dict:
+    OUT.mkdir(parents=True, exist_ok=True)
+    log_path = OUT / f"{mode}.log"
+    json_path = OUT / f"{mode}.json"
+    port = ephemeral_port()
+    started = time.monotonic()
+    status = "FAIL"
+    health_reached = False
+    exit_code = None
+    error = None
+
+    temp = Path(tempfile.mkdtemp(prefix="aicar-fastapi-"))
+    cleanup_error = None
+    try:
+        env = os.environ.copy()
+        env["APPDATA"] = str(temp)
+        env["DATABASE_URL"] = "sqlite:///" + (Path(temp) / "diagnostic.sqlite").as_posix()
+        env["AI_CAR_DESKTOP_LOCAL_DB"] = "1"
+        env["AI_CAR_BACKEND_HOST"] = "127.0.0.1"
+        env["AI_CAR_BACKEND_PORT"] = str(port)
+        env["AI_CAR_DISABLE_LLM_AUTOSTART"] = "1"
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+        env["no_proxy"] = env["NO_PROXY"]
+        env.pop("AI_CAR_BACKEND_URL", None)
+        if mode == "source":
+            env["PYTHONPATH"] = (
+                str(ROOT) + os.pathsep + str(ROOT / "backend")
+                + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
             )
-            healthy = False
-            exit_code = None
-            try:
-                while time.monotonic() - started_at < timeout:
-                    exit_code = process.poll()
-                    if exit_code is not None:
-                        break
-                    if is_our_backend(url):
-                        healthy = True
-                        break
-                    time.sleep(0.5)
-            finally:
-                # Stop ONLY the process launched by this test, not an existing API.
-                terminate_owned_process(process, frozen=mode == "frozen")
-    report = {
-        "mode": mode,
-        "status": "PASS" if healthy else "FAIL",
-        "healthy": healthy,
-        "port": port,
-        "elapsed_seconds": round(time.monotonic() - started_at, 2),
-        "returncode_before_teardown": exit_code,
-        "log_file": str(logfile),
+            command = [sys.executable, "-m", "apps.desktop.backend_worker"]
+        else:
+            if exe is None or not exe.is_file():
+                error = f"Frozen backend EXE missing: {exe}"
+                command = None
+            else:
+                env.pop("PYTHONPATH", None)
+                command = [str(exe)]
+
+        if command is not None:
+            with log_path.open("wb") as logfile:
+                proc = subprocess.Popen(
+                    command, cwd=str(ROOT), env=env,
+                    stdout=logfile, stderr=subprocess.STDOUT,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                    if sys.platform == "win32" else 0,
+                )
+                try:
+                    while time.monotonic() - started < timeout:
+                        exit_code = proc.poll()
+                        if exit_code is not None:
+                            break
+                        if is_healthy(port):
+                            health_reached = True
+                            status = "PASS"
+                            break
+                        time.sleep(0.4)
+                except Exception as exc:
+                    error = str(exc)
+                finally:
+                    try:
+                        stop_child(proc, frozen=(mode == "frozen"))
+                    except (OSError, subprocess.SubprocessError, RuntimeError) as exc:
+                        error = f"Cannot stop owned FastAPI process: {exc}"
+                        status = "FAIL"
+        else:
+            log_path.write_text(str(error), encoding="utf-8")
+    finally:
+        try:
+            cleanup_temporary_database(temp)
+        except OSError as exc:
+            cleanup_error = (
+                f"Temporary SQLite cleanup blocked after retries: {exc}. "
+                f"Inspect only this probe's folder: {temp}"
+            )
+            status = "FAIL"
+            error = f"{error}; {cleanup_error}" if error else cleanup_error
+
+    result = {
+        "status": status, "mode": mode, "health": health_reached,
+        "port": port, "elapsed_seconds": round(time.monotonic() - started, 2),
+        "exit_code_before_cleanup": exit_code,
+        "error": error, "log": str(log_path.relative_to(ROOT)),
+        "cleanup": "PASS" if cleanup_error is None else "FAIL",
+        "temporary_directory_if_locked": str(temp) if cleanup_error else None,
     }
-    (report_dir / f"{mode}.json").write_text(
-        json.dumps(report, indent=2) + "\n", encoding="utf-8"
-    )
-    print(f"[FASTAPI-START] {mode}: {report['status']} | port={port} | log={logfile}")
-    if not healthy:
-        tail = logfile.read_text(encoding="utf-8", errors="replace").splitlines()[-65:]
-        print("\n".join(tail))
-    return report
+    json_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(f"[FASTAPI] {mode}: {status} | {json_path}", flush=True)
+    if status != "PASS":
+        print("\n".join(log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-65:]))
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("source", "frozen", "both"), default="source")
-    parser.add_argument(
-        "--exe", default="dist-release/icon-preview/backend_service.exe",
-        help="Relative path under finalbuild to frozen FastAPI EXE",
-    )
-    parser.add_argument("--timeout", type=float, default=75.0)
+    parser.add_argument("--exe", default="dist-release/icon-preview/backend_service.exe")
+    parser.add_argument("--timeout", type=float, default=90)
     args = parser.parse_args()
-    if args.timeout < 5 or args.timeout > 300:
-        parser.error("--timeout must be between 5 and 300 seconds")
+    if not 5 <= args.timeout <= 300:
+        parser.error("--timeout must be 5..300 seconds")
     if args.mode in {"frozen", "both"} and sys.platform != "win32":
-        parser.error("Frozen backend tests require Windows")
+        parser.error("Frozen startup probe requires Windows")
     exe = (ROOT / args.exe).resolve()
-    results = [probe(mode, exe, args.timeout) for mode in
-               (("source", "frozen") if args.mode == "both" else (args.mode,))]
-    return 0 if all(x["status"] == "PASS" for x in results) else 1
+    modes = ["source", "frozen"] if args.mode == "both" else [args.mode]
+    results = [run_probe(mode, exe, args.timeout) for mode in modes]
+    return 0 if all(result["status"] == "PASS" for result in results) else 1
 
 
 if __name__ == "__main__":

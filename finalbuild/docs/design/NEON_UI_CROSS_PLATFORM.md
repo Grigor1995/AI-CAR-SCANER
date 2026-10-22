@@ -1,5 +1,7 @@
 # AI CAR SCANNER — Cross-platform Neon Automotive UI
 
+> Integration note (2026-10-22): current native clients retain the newer transparent PNG portraits and privacy-aware UI. Desktop may use a matching SVG only when its PNG is absent. The historical SVG/WebView rendering proposal below does not replace the current Android/iOS image renderer. See [branch merge review](../testing/branch-merge-review-2026-10-22.md).
+
 ## Visual reference and scope
 The design reference supplied by the product owner shows a dark navy automotive
 dashboard with electric-blue/cyan navigation and outlines, violet AI indicators,

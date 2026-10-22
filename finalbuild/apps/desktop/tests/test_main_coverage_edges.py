@@ -317,3 +317,37 @@ def test_main_script_entrypoint_runs_without_starting_local_services(monkeypatch
     monkeypatch.setattr(sys, "argv", [main.__file__])
     runpy.run_path(main.__file__, run_name="__main__")
     assert calls == ["ui"]
+
+
+def test_no_backend_never_starts_recovery_or_any_local_service(monkeypatch):
+    import apps.desktop.backend_recovery as recovery
+    monkeypatch.setattr(main, "LOCAL_BACKEND", True)
+    backend = Mock()
+    llm = Mock()
+    supervisor = Mock()
+    monkeypatch.setattr(main, "start_backend", backend)
+    monkeypatch.setattr(main, "start_llama_server", llm)
+    monkeypatch.setattr(recovery, "BackendRecoverySupervisor", supervisor)
+    monkeypatch.setattr(main, "stop_backend", Mock())
+    monkeypatch.setattr(main, "stop_llama_server", Mock())
+    monkeypatch.setattr("apps.desktop.ui.run", Mock())
+    main.run(["--no-backend"])
+    backend.assert_not_called()
+    llm.assert_not_called()
+    supervisor.assert_not_called()
+
+
+def test_external_ai_runtime_does_not_launch_competing_llama_server(monkeypatch):
+    monkeypatch.setenv("DIAGNOSTIC_LLM_PROVIDER", "openai-compatible")
+    monkeypatch.setenv("AI_CAR_BACKEND_AUTO_RECOVER", "0")
+    monkeypatch.setattr(main, "LOCAL_BACKEND", True)
+    backend = Mock()
+    llm = Mock()
+    monkeypatch.setattr(main, "start_backend", backend)
+    monkeypatch.setattr(main, "start_llama_server", llm)
+    monkeypatch.setattr(main, "stop_backend", Mock())
+    monkeypatch.setattr(main, "stop_llama_server", Mock())
+    monkeypatch.setattr("apps.desktop.ui.run", Mock())
+    main.run()
+    backend.assert_called_once_with()
+    llm.assert_not_called()

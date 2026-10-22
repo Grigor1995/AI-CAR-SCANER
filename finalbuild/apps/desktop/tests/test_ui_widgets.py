@@ -383,7 +383,7 @@ def test_live_data_poll_ignores_absent_session_and_reports_backend_error(qapp):
     page._poll()
 
     assert page._poll_in_flight is False
-    assert page.status.text() == "Backend unavailable"
+    assert page.status.text() == "Acquisition unavailable"
     assert not page.timer.isActive()
 
 
@@ -391,3 +391,52 @@ def test_diagnostic_summary_empty_hypotheses_are_explicit():
     summary = DiagnosticPage._summary_text({"state": "COLLECTING_EVIDENCE"}, [])
     assert "No diagnostic hypotheses generated yet." in summary
     assert "not confirmed component failures" in summary
+
+
+@pytest.mark.parametrize(
+    "error,expected", [
+        ("HTTP 404: Acquisition not started", "Acquisition not started"),
+        ("HTTP 404: Session not found", "Session not found"),
+        ("HTTP 503: service unavailable", "Acquisition unavailable"),
+    ],
+)
+def test_live_data_reports_endpoint_state_not_global_backend_health(qapp, error, expected):
+    app = FakeApp()
+    app.online = True  # FastAPI /health is independently healthy.
+    page = LiveDataPage(app)
+    page._details_loaded({
+        "status": {"_error": error},
+        "provider": {"available": False, "model": "not-loaded"},
+        "records": {"records": []},
+    })
+    assert page.status.text() == expected
+    assert page.status.toolTip() == error
+    assert app.online is True
+    page._poll_done({"_error": error})
+    assert page.status.text() == expected
+    assert app.online is True
+    page.timer.stop()
+
+
+def test_live_data_backend_offline_status_is_not_mislabeled_as_acquisition(qapp):
+    app = FakeApp()
+    app.online = False
+    page = LiveDataPage(app)
+    page._details_loaded({
+        "status": {"_error": "connection refused"},
+        "provider": {"available": False},
+        "records": {"records": []},
+    })
+    assert page.status.text() == "Backend offline"
+    page.timer.stop()
+
+
+@pytest.mark.parametrize("language", ["hy", "ru"])
+def test_acquisition_errors_follow_selected_ui_language(qapp, language):
+    app = FakeApp()
+    app.tr_text = lambda text: _translate_ui_text(text, language)
+    page = LiveDataPage(app)
+    page._poll_done({"_error": "HTTP 404: Acquisition not started"})
+    assert page.status.text() == _translate_ui_text("Acquisition not started", language)
+    assert page.status.text() != "Acquisition not started"
+    page.timer.stop()

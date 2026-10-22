@@ -9,19 +9,19 @@ project_root = next(
     spec_path.parent,
 )
 backend_root = project_root / "backend"
-# Uvicorn imports "api.main:app" dynamically. PyInstaller cannot discover
-# modules behind the import string by analyzing backend_worker.py alone.
-# Include the first-party backend packages in PYZ, not just as raw datas.
+# Uvicorn's string-based "api.main:app" dynamic import is invisible to
+# PyInstaller's static graph. Bundle real Python bytecode for our routers and
+# domain modules, not merely their .py source in Analysis.datas.
 sys.path.insert(0, str(backend_root))
-backend_packages = (
-    "api", "diagnostic", "ai", "device", "acquisition", "telemetry",
-    "vehicle", "vehicle_diagnostic", "multi_ecu", "network_discovery",
-    "simulator", "professional_platform",
-    "observability", "security",
+api_packages = (
+    "api", "diagnostic", "ai", "device", "acquisition",
+    "telemetry", "vehicle", "vehicle_diagnostic", "multi_ecu",
+    "network_discovery", "simulator",
+    "professional_platform", "security", "observability",
 )
-backend_hiddenimports = ["api.main", "global_data"]
-for package in backend_packages:
-    backend_hiddenimports.extend(collect_submodules(package))
+api_hiddenimports = ["api.main", "global_data", "backend.scripts.seed_vehicle_catalog"]
+for package in api_packages:
+    api_hiddenimports.extend(collect_submodules(package))
 
 a = Analysis(
     [str(project_root / "apps" / "desktop" / "backend_worker.py")],
@@ -33,9 +33,7 @@ a = Analysis(
         "uvicorn", "uvicorn.logging", "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto", "uvicorn.protocols.websockets.auto",
         "api.device_routes", "serial.tools.list_ports", "serial", "bleak",
-        "diagnostic.local_database", "backend.scripts.seed_vehicle_catalog",
-        "serial.tools.list_ports", "serial", "bleak",
-        *backend_hiddenimports,
+        "diagnostic.local_database", *api_hiddenimports,
     ],
     hookspath=[], hooksconfig={}, runtime_hooks=[],
     excludes=["tkinter"], noarchive=False,

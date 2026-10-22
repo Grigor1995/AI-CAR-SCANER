@@ -33,11 +33,10 @@ a = Analysis(
            (str(project_root / "assets" / "vehicle_models"), "assets/vehicle_models"),
           ],
     hiddenimports=[
-        "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
-        "requests", "apps.desktop.ui", "apps.desktop.api_client", "apps.desktop.vehicle_artwork", "apps.desktop.demo_ui", "PySide6.QtPrintSupport",
         "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets", "PySide6.QtSvg",
-        "requests", "apps.desktop.ui", "apps.desktop.api_client",
-        "apps.desktop.vehicle_artwork", "apps.desktop.backend_recovery",
+        "PySide6.QtPrintSupport", "requests", "apps.desktop.ui",
+        "apps.desktop.api_client", "apps.desktop.vehicle_artwork",
+        "apps.desktop.demo_ui", "apps.desktop.backend_recovery",
     ],
     hookspath=[], hooksconfig={},
     # User-verified workaround: load PySide6.QtCore before PyInstaller's

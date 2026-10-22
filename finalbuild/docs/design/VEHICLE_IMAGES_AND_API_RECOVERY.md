@@ -1,5 +1,7 @@
 # Vehicle model artwork and FastAPI auto-recovery (feature branch)
 
+> Integration note (2026-10-22): current native clients retain the newer transparent PNG portraits and privacy-aware UI. Desktop may use a matching SVG only when its PNG is absent. The historical SVG/WebView rendering proposal below does not replace the current Android/iOS image renderer. See [branch merge review](../testing/branch-merge-review-2026-10-22.md).
+
 ## Vehicle images
 - The curated offline catalog contains **369 rows and 22 distinct make/model/chassis combinations**.
 - The feature branch bundles the same 22 SVG artworks independently for:

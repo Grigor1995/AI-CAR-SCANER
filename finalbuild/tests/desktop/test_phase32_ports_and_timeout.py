@@ -55,3 +55,23 @@ def test_fake_localhost_prefix_is_not_treated_as_local(monkeypatch):
         reloaded = importlib.reload(desktop_main)
         assert reloaded.LOCAL_BACKEND is False
     importlib.reload(desktop_main)
+
+
+def test_exact_local_url_port_matches_launcher(monkeypatch):
+    with monkeypatch.context() as env:
+        env.setenv("AI_CAR_BACKEND_URL", "http://127.0.0.1:8123")
+        env.delenv("AI_CAR_BACKEND_PORT", raising=False)
+        importlib.reload(desktop_main)
+        assert desktop_main.LOCAL_BACKEND is True
+        assert desktop_main.PORT == 8123
+        assert desktop_main.HEALTH_URL == "http://127.0.0.1:8123/health"
+        assert DiagnosticApiClient().base_url == desktop_main.BACKEND_URL
+    importlib.reload(desktop_main)
+
+
+def test_localhost_prefix_does_not_match_remote_hostname(monkeypatch):
+    with monkeypatch.context() as env:
+        env.setenv("AI_CAR_BACKEND_URL", "http://localhost.example.com:8123")
+        importlib.reload(desktop_main)
+        assert desktop_main.LOCAL_BACKEND is False
+    importlib.reload(desktop_main)

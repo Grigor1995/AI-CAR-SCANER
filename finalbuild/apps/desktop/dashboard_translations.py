@@ -240,3 +240,17 @@ MESSAGES["ru"].update({"VCI devices:": "Устройства VCI:", "Simulator a
 
 MESSAGES["hy"].update({"DISCONNECTED": "ԱՆՋԱՏՎԱԾ", "CONNECTED": "ՄԻԱՑՎԱԾ", "CONNECTING": "ՄԻԱՑՈՒՄ", "SCANNING": "ՈՐՈՆՈՒՄ"})
 MESSAGES["ru"].update({"DISCONNECTED": "ОТКЛЮЧЕНО", "CONNECTED": "ПОДКЛЮЧЕНО", "CONNECTING": "ПОДКЛЮЧЕНИЕ", "SCANNING": "ПОИСК"})
+
+
+MESSAGES["hy"].update({
+    "Backend recovered": "Սերվերի կապը վերականգնվել է",
+    "Acquisition not started": "Տվյալների հավաքումը չի սկսվել",
+    "Acquisition unavailable": "Տվյալների հավաքումը հասանելի չէ",
+    "Session not found": "Սեսիան չի գտնվել",
+})
+MESSAGES["ru"].update({
+    "Backend recovered": "Соединение с сервером восстановлено",
+    "Acquisition not started": "Сбор данных не запущен",
+    "Acquisition unavailable": "Сбор данных недоступен",
+    "Session not found": "Сессия не найдена",
+})

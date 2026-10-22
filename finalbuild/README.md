@@ -31,6 +31,8 @@ API: http://127.0.0.1:8001/docs
 
 ## Run tests
 
+[Branch integration review — 22 October 2026](docs/testing/branch-merge-review-2026-10-22.md) records all remote branch tips, conflict decisions and the validated combined result.
+
 [Native UI demo and QA presentation — 22 October 2026](docs/demo/README.md) includes the editable PowerPoint deck, real UI captures and the Session ID privacy follow-up.
 
 See the [October 21 full QA audit](docs/testing/full-qa-audit-2026-10-21.md) for measured coverage, fixes, remaining gaps and reproduction commands.

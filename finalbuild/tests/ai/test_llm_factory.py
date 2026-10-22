@@ -50,7 +50,7 @@ def test_factory_uses_openai_compatible_defaults(monkeypatch):
     monkeypatch.setattr(factory, "HttpOpenAICompatibleProvider", lambda config: config)
 
     config = factory.build_llm_provider()
-    assert config.base_url == "http://localhost:8001"
+    assert config.base_url == "http://127.0.0.1:1234"
     assert config.model == "local-model"
     assert config.api_key is None
 

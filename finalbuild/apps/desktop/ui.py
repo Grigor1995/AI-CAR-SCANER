@@ -737,6 +737,18 @@ class LiveDataPage(QWidget):
         self.refresh()
 
     @staticmethod
+    def _acquisition_error_label(error, backend_online=True):
+        """Acquisition 404 is NOT the same as FastAPI /health going offline."""
+        message = str(error or "").lower()
+        if "404" in message and "acquisition not started" in message:
+            return "Acquisition not started"
+        if "404" in message and "session not found" in message:
+            return "Session not found"
+        if not backend_online:
+            return "Backend offline"
+        return "Acquisition unavailable"
+
+    @staticmethod
     def _records_data_from(payload):
         if isinstance(payload, dict):
             return payload.get("records", [])
@@ -758,10 +770,15 @@ class LiveDataPage(QWidget):
 
     def _poll_done(self, status):
         self._poll_in_flight = False
+        self._status_data = status
         if status.get("_error"):
-            self.status.setText("Backend unavailable")
+            self.status.setText(self.app.tr_text(self._acquisition_error_label(
+                status["_error"], self.app.online
+            )))
+            self.status.setToolTip(str(status["_error"]))
             self.timer.stop()
             return
+        self.status.setToolTip("")
         state = status.get("state", "STOPPED")
         self.status.setText("RUNNING" if state == "RUNNING" else state)
         if state == "RUNNING":
@@ -777,8 +794,12 @@ class LiveDataPage(QWidget):
             self.chart.set_values([])
             return
         if self._status_data.get("_error"):
-            self.status.setText("Backend unavailable")
+            self.status.setText(self.app.tr_text(self._acquisition_error_label(
+                self._status_data["_error"], self.app.online
+            )))
+            self.status.setToolTip(str(self._status_data["_error"]))
         else:
+            self.status.setToolTip("")
             state = self._status_data.get("state", "STOPPED")
             self.status.setText("RUNNING" if state == "RUNNING" else state)
         provider = self._provider_data
@@ -789,6 +810,7 @@ class LiveDataPage(QWidget):
         else:
             self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
         self.ai_status.setObjectName("ok" if available and not provider.get("_error") else "warn")
+        self.ai_status.setToolTip(str(provider.get("reason") or provider.get("_error") or ""))
         self.ai_status.style().unpolish(self.ai_status)
         self.ai_status.style().polish(self.ai_status)
         summary = self.app.telemetry
@@ -981,14 +1003,12 @@ class MainWindow(QMainWindow):
         self._build_menu()
         self.setCentralWidget(self.stack)
         self.statusBar().showMessage(self.tr_text("Ready"))
-        self.refresh_all()
-        # Periodically re-check FastAPI connectivity. This is safe for both
-        # local auto-restarted FastAPI and a temporarily unavailable remote API.
         self._health_pending = False
-        self._ever_connected = False
+        self._ever_backend_online = False
         self._health_timer = QTimer(self)
         self._health_timer.setInterval(12000)
         self._health_timer.timeout.connect(self.refresh_health)
+        self.refresh_all()
         self._health_timer.start()
 
     def _apply_theme(self) -> None:
@@ -1194,8 +1214,37 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, self.tr_text("Error"), translated)
         self.statusBar().showMessage(translated)
     def refresh_health(self):
-        def done(data): self.online=data.get("status")=="ok"; self.statusBar().showMessage(self.tr_text("Backend online" if self.online else "Backend offline")); self.refresh_pages()
-        self.run_worker(self.api.health,done)
+        if self._closing or getattr(self, "_health_pending", False):
+            return
+        self._health_pending = True
+
+        def work():
+            try:
+                return self.api.health()
+            except Exception:
+                # Offline should not open recurring modal errors during retries.
+                return {"status": "offline"}
+
+        def done(data):
+            self._health_pending = False
+            was_online = self.online
+            previously_connected = self._ever_backend_online
+            self.online = isinstance(data, dict) and data.get("status") == "ok"
+            if self.online:
+                self._ever_backend_online = True
+            text = (
+                "Backend recovered" if self.online and not was_online and previously_connected
+                else "Backend online" if self.online
+                else "Backend offline"
+            )
+            self.statusBar().showMessage(self.tr_text(text))
+            self.refresh_pages()
+            # Re-query the AI model and acquisition endpoints after FastAPI
+            # recovery; a cached provider result may still say AI: OFFLINE.
+            if self.online and self.session and self.nav.currentRow() == 4:
+                self.pages[4].request_refresh()
+
+        self.run_worker(work, done)
     def refresh_catalog(self):
         if self._catalog_pending or time.monotonic() - self._catalog_loaded_at < 60:
             return

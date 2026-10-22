@@ -93,3 +93,99 @@ def registry_stats() -> dict[str, Any]:
         "data_authority": "backend",
         "engines": "family-level globally; selected curated chassis hints, not VIN-level certainty",
     }
+
+
+def vehicle_protocol_profile(
+    *, make: str, model: str, year: int, market: str = "unknown",
+    engine: str = "", chassis: str = "", fuel: str = "",
+    vehicle_class: str = "passenger", detected_elm: str | None = None,
+) -> dict[str, Any]:
+    """One canonical response for ALL seeded make/model/year combinations.
+
+    The year/market regulation hints are the same for any client. An engine
+    label does not confirm a real engine, a physical ECU or a transport.
+    """
+    from urllib.parse import urlencode
+    from vehicle.protocol.registry import assess_protocols
+
+    if not make.strip() or not model.strip():
+        raise ValueError("make and model are required")
+    if not (1886 <= year <= 2100):
+        raise ValueError("Year outside supported range")
+    matching_models = [
+        row for row in models(make, year=year, limit=500)
+        if row["model"].casefold() == model.casefold()
+    ]
+    if not matching_models:
+        return {
+            "status": "not_in_seed_catalog",
+            "make": make, "model": model, "year": year,
+            "protocols": None,
+            "engines": [],
+            "notice": "Not in local seed. Query /vpic/models or VIN/OEM documentation; do not infer a protocol.",
+        }
+
+    representative = matching_models[0]
+    entries = [
+        row for row in fitments(make, model, year=year)
+        if not chassis or row["chassis"].casefold() == chassis.casefold()
+    ]
+    selected_engine = engine.strip()
+    listed_engines = [
+        {"name": eng.get("name"), "ecus": eng.get("ecus", []),
+         "scope": "curated_not_vin_verified"}
+        for entry in entries for eng in entry["engines"]
+    ]
+    exact_engines = [
+        e for e in listed_engines if e["name"].casefold() == selected_engine.casefold()
+    ] if selected_engine else []
+    matched_chassis = next(
+        (entry["chassis"] for entry in entries if not chassis or entry["chassis"].casefold() == chassis.casefold()),
+        chassis or None,
+    )
+    compatibility = assess_protocols(
+        year=year, market=market, make=representative["make"],
+        fuel=fuel, vehicle_class=vehicle_class, detected_elm=detected_elm,
+    )
+    portrait = (
+        "/api/v1/vehicle-registry/portrait?"
+        + urlencode({
+            "make": representative["make"], "model": representative["model"],
+            "chassis": matched_chassis or "",
+        })
+    )
+    return {
+        "status": "seeded_not_vin_verified",
+        "make": representative["make"],
+        "model": representative["model"],
+        "year": year,
+        "market": market,
+        "chassis": matched_chassis,
+        "requested_engine": selected_engine or None,
+        "engine_found_in_curated_hints": bool(exact_engines),
+        "engines": listed_engines,
+        "engine_families": representative["engine_families"],
+        "common_fuels": representative["common_fuels"],
+        "vehicle_type": representative["vehicle_type"],
+        "engine_scope": "curated_selector_hints" if entries else representative["engine_scope"],
+        "protocols": compatibility,
+        "image": {
+            "source": "project-generated",
+            "portrait_api_url": portrait,
+            "real_photo_lookup_api_url": (
+                "/api/v1/vehicle-registry/photo?"
+                + urlencode({
+                    "make": representative["make"], "model": representative["model"],
+                    "chassis": matched_chassis or "",
+                })
+            ),
+            "real_photo_match_status": "unverified_until_attributed_commons_response",
+        },
+        "sources": ["NHTSA-derived local model seed"]
+        + (["project curated engine hints"] if entries else []),
+        "verified_ecu_protocol": False,
+        "notice": (
+            "Catalog vehicle/engine/protocol information is advisory only; "
+            "VIN/market/engine ECU/adapter handshake required for exact support."
+        ),
+    }

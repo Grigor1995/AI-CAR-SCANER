@@ -22,6 +22,10 @@ hardware access are transport concerns that cannot run on a distant server.
   yet wired into the FastAPI device manager.
 - `vehicle/obd/client.py`: ELM327-style generic emissions requests for VIN,
   DTC and selected live PIDs (read-only). Now has `ATDPN`/`ATDP` reporting.
+- **Confirmed code defect found:** ELM init sends `ATS0` (no spaces), but
+  the old hex decoder recognized only spaced byte pairs. The new decoder
+  accepts both `410C0BB8` and `41 0C 0B B8`, plus common CAN header prefixes.
+  Hardware-dependent ISO-TP multi-frame VIN reassembly still needs live tests.
 - `vehicle/uds/client.py`: read-only UDS over an ISO-TP stack. Manufacturer
   definitions, addressing and gateway authentication are not universal.
 - Android native OBD transports and iOS BLE discovery are separate from the
@@ -138,7 +142,7 @@ Commons or vPIC are unreachable.
 From `finalbuild/` on Windows Git Bash:
 
 ```bash
-python -m pytest -q tests/api/test_backend_vehicle_knowledge.py tests/vehicle/test_obd_client.py
+python -m pytest -q tests/api/test_backend_vehicle_knowledge.py tests/vehicle/test_obd_client.py tests/vehicle/test_elm327.py
 python scripts/run_desktop_tests.py --group vehicle-protocol
 python -m pytest -q tests/api/test_low_coverage_vehicle_catalog_routes.py
 python scripts/test_fastapi_startup.py --mode source

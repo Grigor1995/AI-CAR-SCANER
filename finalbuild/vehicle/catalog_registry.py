@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 GLOBAL_PATH = ROOT / "data" / "vehicle_catalog.json"
 FITMENT_PATH = ROOT / "data" / "vehicle_fitments.json"
 

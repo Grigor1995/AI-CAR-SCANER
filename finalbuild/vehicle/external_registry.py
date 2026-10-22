@@ -147,9 +147,9 @@ def nhtsa_decode_vin(vin: str, model_year: int | None = None) -> dict[str, Any]:
 
 
 def _permissive_license(name: str) -> bool:
-    normalized = re.sub(r"[-_\\s]+", " ", name.casefold()).strip()
+    normalized = re.sub(r"[-_\s]+", " ", name.casefold()).strip()
     # Never accept NonCommercial / NoDerivatives licences.
-    if re.search(r"\\b(nc|nd|noncommercial|no derivatives)\\b", normalized):
+    if re.search(r"\b(nc|nd|noncommercial|no derivatives)\b", normalized):
         return False
     return (
         normalized.startswith(("cc0", "public domain", "pd "))

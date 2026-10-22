@@ -49,6 +49,21 @@ PROTOCOLS: tuple[Protocol, ...] = (
     Protocol("lin", "ISO 17987 LIN", "subsystem_bus", "LIN", None, "metadata_only", "Not a generic OBD-II vehicle connection."),
     Protocol("flexray", "ISO 17458 FlexRay / UDSonFR", "subsystem_bus", "FlexRay", None, "metadata_only", "Not a generic OBD-II vehicle connection."),
     Protocol("j1708_j1587", "SAE J1708 / J1587", "commercial_legacy", "J1708", None, "metadata_only", "Legacy heavy-duty network, not supported by classic ELM327."),
+    Protocol("j1979_classic", "SAE J1979 classic emissions diagnostic services", "diagnostic_application", "OBD-II", None, "adapter_dependent", "Modes 01/03/09 etc over negotiated emissions OBD transport; distinct from the wire protocol."),
+    Protocol("iso15765_2", "ISO 15765-2 ISO-TP", "transport", "CAN", None, "simulator_only", "Multi-frame diagnostics; requires CAN adapter supporting ISO-TP or host stack."),
+    Protocol("kwp2000_oem", "ISO 14230-3 KWP2000 manufacturer diagnostics", "manufacturer_specific", "K-Line", None, "metadata_only", "Not the same as mandatory KWP emissions services."),
+    Protocol("vw_tp16", "Volkswagen Group CAN TP1.6", "manufacturer_specific", "VAG", None, "metadata_only", "Legacy VW Group OEM CAN transport; not ISO-TP and not standard ELM ATSP."),
+    Protocol("vw_tp20", "Volkswagen Group CAN TP2.0", "manufacturer_specific", "VAG", None, "metadata_only", "VW/Audi proprietary transport, later superseded by UDS/ISO-TP."),
+    Protocol("bmw_kbus", "BMW K-Bus", "manufacturer_specific", "BMW", None, "metadata_only", "Body network, not emissions K-Line protocol."),
+    Protocol("bmw_dcan", "BMW D-CAN diagnostics", "manufacturer_specific", "BMW", None, "metadata_only", "BMW-specific ECU access over CAN, requires proper adapter and addressing."),
+    Protocol("bmw_enet", "BMW ENET / Ethernet diagnostics", "manufacturer_specific", "BMW", None, "metadata_only", "Manufacturer Ethernet diagnostic transport; adapter/tool specific."),
+    Protocol("ford_ms_can", "Ford medium-speed CAN", "manufacturer_specific", "Ford", None, "metadata_only", "OEM body modules; often not exposed by basic single-CAN ELM adapters."),
+    Protocol("ford_hs_can", "Ford high-speed CAN", "manufacturer_specific", "Ford", None, "metadata_only", "OEM network; SAE J1979 generic CAN is a separate profile."),
+    Protocol("gm_gmlan", "General Motors GMLAN", "manufacturer_specific", "GM", None, "metadata_only", "OEM CAN protocol families; gateway/module-specific."),
+    Protocol("nissan_consult", "Nissan CONSULT proprietary diagnostics", "manufacturer_specific", "Nissan", None, "metadata_only", "Tool/vendor-specific service protocol, not generic EOBD."),
+    Protocol("honda_hds", "Honda HDS manufacturer diagnostics", "manufacturer_specific", "Honda", None, "metadata_only", "Manufacturer diagnostic software/services; model/year dependent."),
+    Protocol("toyota_techstream", "Toyota Techstream manufacturer diagnostics", "manufacturer_specific", "Toyota", None, "metadata_only", "Manufacturer services over available transport, not a single wire protocol."),
+    Protocol("mercedes_oem", "Mercedes-Benz OEM diagnostics (K-Line/CAN/DoIP families)", "manufacturer_specific", "Mercedes-Benz", None, "metadata_only", "Mercedes ECU diagnosis varies by control unit/year/market; no asserted W211 protocol mapping."),
 )
 BY_ID = {p.id: p for p in PROTOCOLS}
 BY_ELM_CODE = {p.elm_code: p for p in PROTOCOLS if p.elm_code is not None}
@@ -90,6 +105,41 @@ def _add(target: list[str], *items: str) -> None:
             target.append(item)
 
 
+# This describes possible *OEM* diagnostic families, not proven emissions OBD
+# transports. It is deliberately separate from ISO 15765/J1850 candidates.
+OEM_HINTS = {
+    "volkswagen": ("kwp1281", "kwp2000_oem", "vw_tp16", "vw_tp20", "uds_on_can"),
+    "audi": ("kwp1281", "kwp2000_oem", "vw_tp16", "vw_tp20", "uds_on_can"),
+    "skoda": ("kwp1281", "kwp2000_oem", "vw_tp16", "vw_tp20", "uds_on_can"),
+    "seat": ("kwp1281", "kwp2000_oem", "vw_tp16", "vw_tp20", "uds_on_can"),
+    "bmw": ("bmw_kbus", "bmw_dcan", "bmw_enet", "uds_on_can", "uds_on_doip"),
+    "mini": ("bmw_dcan", "uds_on_can"),
+    "mercedes-benz": ("mercedes_oem", "uds_on_can", "uds_on_doip"),
+    "ford": ("ford_hs_can", "ford_ms_can", "uds_on_can"),
+    "chevrolet": ("gm_gmlan", "single_wire_can", "uds_on_can"),
+    "gmc": ("gm_gmlan", "single_wire_can", "uds_on_can"),
+    "buick": ("gm_gmlan", "single_wire_can", "uds_on_can"),
+    "nissan": ("nissan_consult", "uds_on_can"),
+    "honda": ("honda_hds", "uds_on_can"),
+    "acura": ("honda_hds", "uds_on_can"),
+    "toyota": ("toyota_techstream", "uds_on_can"),
+    "lexus": ("toyota_techstream", "uds_on_can"),
+}
+
+
+def oem_diagnostic_hints(make: str) -> list[dict[str, Any]]:
+    """Manufacturer family research leads, never automatically detected ECUs."""
+    return [
+        {
+            "id": id,
+            "standard": BY_ID[id].standard,
+            "support": BY_ID[id].support,
+            "evidence": "manufacturer_family_hint_not_vehicle_fitment",
+        }
+        for id in OEM_HINTS.get(make.strip().lower(), ())
+    ]
+
+
 def assess_protocols(
     *, year: int, market: str = "unknown", make: str = "",
     fuel: str = "", vehicle_class: str = "passenger",
@@ -107,17 +157,23 @@ def assess_protocols(
     heavy = vehicle_class in {"heavy", "heavy-duty", "truck-heavy", "bus", "commercial-heavy"}
     if heavy:
         _add(candidates, "j1939_250", "j1939_500", "wwh_obd")
-        if year >= 2023:
+        if year < 2006:
+            _add(candidates, "j1708_j1587")
+        # CARB's J1979-2 transition is model-year AND certification-specific.
+        # Never assign it to every global truck in 2023 or later.
+        if market in {"US", "USA", "CA", "CALIFORNIA"} and year >= 2027:
             _add(candidates, "obdonuds")
+            warnings.append("2027+ CARB-certified heavy-duty engines transition to OBDonUDS; verify certification/VIN.")
+        elif year >= 2024 and make in {"volvo", "mack"}:
+            warnings.append("Some 2024+ Volvo/Mack engine families adopted OBDonUDS early; VIN/engine certification required.")
         warnings.append("Commercial J1939/WWH-OBD depends on engine certification, region and vehicle OEM.")
     elif fuel in {"electric", "battery-electric", "bev", "ev"}:
         _add(candidates, "uds_on_can", "uds_on_doip")
         warnings.append("A BEV may not expose combustion-emissions OBD PIDs; OEM diagnostics are separate.")
     elif market in {"US", "USA", "CA", "CANADA"} and year >= 2008:
         _add(candidates, "iso15765_4_can11_500", "iso15765_4_can29_500")
-        if year >= 2023:
-            _add(candidates, "obdonuds")
-        warnings.append("CAN-based emissions OBD is expected for covered US/Canada passenger model years; CAN ID format must be detected.")
+        warnings.append("CAN-based emissions OBD is expected for covered 2008+ US vehicles; CAN ID format must be detected.")
+        warnings.append("OBDonUDS availability cannot be determined from a passenger-vehicle year alone.")
     elif market in {"EU", "EEA", "UK"} and year >= 2008:
         _add(candidates, "iso15765_4_can11_500", "iso15765_4_can29_500",
              "iso15765_4_can11_250", "iso15765_4_can29_250")
@@ -137,11 +193,12 @@ def assess_protocols(
         }:
             _add(candidates, "j1850_vpw")
         _add(candidates, "iso9141_2", "iso14230_4_slow", "iso14230_4_fast",
-             "j1850_pwm", "j1850_vpw", "iso15765_4_can11_500", "iso15765_4_can29_500")
-        warnings.append("1996–2007 OBD interfaces may use J1850, K-Line or CAN; manufacturer is only a weak heuristic.")
+             "j1850_pwm", "j1850_vpw")
+        if year >= 2003:
+            _add(candidates, "iso15765_4_can11_500", "iso15765_4_can29_500")
+        warnings.append("1996–2007 OBD interfaces may use J1850, K-Line, or later CAN; manufacturer is only a weak heuristic.")
     else:
-        _add(candidates, "iso9141_2", "iso14230_4_slow", "j1850_pwm", "j1850_vpw")
-        warnings.append("Pre-1996 standardized 16-pin OBD-II is not assured; inspect OEM diagnostic equipment.")
+        warnings.append("Pre-1996 standardized OBD-II is not assured. No universal connector or protocol can be inferred; inspect OEM documentation.")
     detected = read_elm_detected_protocol(detected_elm) if detected_elm is not None else None
     return {
         "year": year, "market": market.lower(), "vehicle_class": vehicle_class,
@@ -153,6 +210,8 @@ def assess_protocols(
             for id in candidates
         ],
         "detected": detected,
+        "oem_diagnostics": oem_diagnostic_hints(make),
+        "verified_obd_support": False,
         "confidence": "adapter_reported" if detected and detected["protocol_id"] else "unverified_hint",
         "evidence_source": "market/year/class heuristic; adapter readback if supplied",
         "warnings": warnings,

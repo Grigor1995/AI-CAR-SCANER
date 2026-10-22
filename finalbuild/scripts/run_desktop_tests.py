@@ -45,6 +45,10 @@ GROUPS = {
     "diagnostic-e2e": (
         "apps/desktop/tests/test_real_backend_diagnostic_e2e.py",
     ),
+    "vehicle-protocol": (
+        "tests/api/test_backend_vehicle_knowledge.py",
+        "tests/vehicle/test_obd_client.py",
+    ),
     "negative": (
         "apps/desktop/tests/test_negative_api_contract.py",
         "apps/desktop/tests/test_negative_storage.py",
@@ -69,7 +73,7 @@ def run_group(name: str, arguments: tuple[str, ...], reports: Path, env: dict[st
     # Phase 3 exercises the real API in offline/in-memory mode. Prevent a
     # shell DATABASE_URL from triggering SQLAlchemy create_all() on a remote
     # Postgres instance even if pytest plugins import api.main during collect.
-    if name == "diagnostic-e2e":
+    if name in {"diagnostic-e2e", "vehicle-protocol"}:
         env = env.copy()
         env.pop("DATABASE_URL", None)
         print("[DESKTOP] diagnostic-e2e: external database disabled", flush=True)
@@ -122,7 +126,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--group", choices=("all", *GROUPS), default="all",
-        help="Run a single independent test group or all five",
+        help="Run a single independent test group or the complete matrix",
     )
     parser.add_argument(
         "--min-coverage", type=float, default=0.0,

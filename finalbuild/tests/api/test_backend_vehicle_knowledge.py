@@ -184,3 +184,14 @@ def test_backend_normalizes_adapter_protocol_for_all_native_clients():
 def test_elm_text_description_must_not_be_mistaken_for_numeric_protocol_code():
     assert not protocols.parse_elm_protocol("ISO 15765-4 CAN (11/500)")["detected"]
     assert protocols.parse_elm_protocol("A")["protocol"]["id"] == "sae_j1939_250"
+
+
+def test_runtime_endpoint_never_claims_simulator_can_access_real_ecus():
+    result = client.get("/api/v1/vehicle-catalog/runtime-capabilities")
+    assert result.status_code == 200
+    data = result.json()
+    assert data["server_vci_manager"] == "simulator_only"
+    assert data["physical_usb_ble_wifi_on_backend"] is False
+    assert data["automatic_vehicle_protocol_verification"] is False
+    assert data["doip"] == "not_implemented"
+    assert data["j1939"] == "not_implemented"

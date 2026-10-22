@@ -64,3 +64,25 @@ def test_remote_upstream_failure_returns_service_unavailable(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         routes.vpic_makes()
     assert exc.value.status_code == 503
+
+
+def test_profile_is_backend_owned_and_not_hardware_verified():
+    response = routes.vehicle_profile(
+        make="Mercedes-Benz", model="E-Class", year=2006, market="EU",
+        engine="M272 E35 3.5", chassis="W211", fuel="petrol",
+        vehicle_class="passenger", detected_elm=None,
+    )
+    assert response["status"] == "seeded_not_vin_verified"
+    assert response["engine_found_in_curated_hints"]
+    assert response["verified_ecu_protocol"] is False
+    assert len(response["protocols"]["candidates"]) > 1
+
+
+def test_unseeded_profile_returns_404_without_fabricated_engine_fitment():
+    with pytest.raises(HTTPException) as exc:
+        routes.vehicle_profile(
+            make="Unknown", model="Imaginary", year=2021,
+            market="unknown", chassis="", engine="", fuel="",
+            vehicle_class="passenger", detected_elm=None,
+        )
+    assert exc.value.status_code == 404

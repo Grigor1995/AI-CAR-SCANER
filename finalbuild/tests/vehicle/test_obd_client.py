@@ -10,3 +10,22 @@ async def test_generic_obd_client():
     assert await c.read_dtcs() == ['P0302']
     data=await c.read_standard_live_data()
     assert data['rpm'] == 750.0 and data['coolant_c'] == 50.0 and data['speed_kmh'] == 40.0
+
+
+@pytest.mark.asyncio
+async def test_elm_protocol_observation_is_read_only_by_default():
+    transport = SimulatorTransport({
+        "ATZ": "ELM327 v2.3",
+        "ATE0": "OK",
+        "ATL0": "OK",
+        "ATS0": "OK",
+        "ATSP0": "OK",
+        "ATDPN": "A6",
+        "ATDP": "AUTO ISO 15765-4 CAN (11/500)",
+    })
+    client = GenericObdClient(transport)
+    await client.connect()
+    info = await client.read_adapter_protocol()
+    assert info["atdpn"] == "A6"
+    assert "ISO 15765-4" in info["atdp"]
+    await client.disconnect()

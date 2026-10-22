@@ -130,3 +130,40 @@ def test_public_api_methods_route_correctly(client, monkeypatch, invoke, method,
         assert kwargs["params"] == {"limit": 1000}
     if path.endswith("/ai-analyze-live"):
         assert kwargs["timeout"] == 300.0
+
+
+def test_shutdown_releases_blocked_http_wait_and_prevents_new_requests(monkeypatch):
+    import threading
+    import time
+    from apps.desktop.api_client import DiagnosticApiClient, ApiError
+    client = DiagnosticApiClient(timeout=300)
+    entered = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    errors = []
+    def blocked(*args, **kwargs):
+        entered.set()
+        release.wait(5)
+        raise RuntimeError("late response")
+    monkeypatch.setattr(client.session, "request", blocked)
+    def caller():
+        try:
+            client.health()
+        except ApiError as exc:
+            errors.append(str(exc))
+        finally:
+            finished.set()
+    thread = threading.Thread(target=caller)
+    thread.start()
+    try:
+        assert entered.wait(1)
+        started = time.monotonic()
+        client.cancel_pending()
+        assert finished.wait(1)
+        assert time.monotonic() - started < 1
+        assert errors == ["Application is closing"]
+        with pytest.raises(ApiError, match="closing"):
+            client.health()
+    finally:
+        release.set()
+        thread.join(2)

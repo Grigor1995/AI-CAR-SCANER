@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any
 import os
+import threading
 import requests
 
 class ApiError(RuntimeError):
@@ -12,14 +13,47 @@ class DiagnosticApiClient:
         # Desktop and API client must not silently connect to different servers.
         default_url = f"http://127.0.0.1:{os.environ.get('AI_CAR_BACKEND_PORT', '8001')}"
         self.base_url = (base_url or os.environ.get("AI_CAR_BACKEND_URL") or default_url).rstrip("/")
+        self._closing = threading.Event()
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
 
+    def cancel_pending(self) -> None:
+        """Release GUI workers without waiting for requests' read timeout.
+
+        Socket I/O finishes on daemon transport threads, with no Qt objects or
+        UI callbacks. Already-sent server operations are not rolled back.
+        """
+        self._closing.set()
+
+    def _send(self, method: str, path: str, timeout, kwargs):
+        if self._closing.is_set():
+            raise ApiError("Application is closing")
+        complete = threading.Event()
+        outcome = {}
+        def send():
+            try:
+                outcome["response"] = self.session.request(method, self.base_url + path, timeout=timeout, **kwargs)
+            except Exception as exc:
+                outcome["error"] = exc
+            finally:
+                complete.set()
+        # QThreads may safely finish while a server is unresponsive. Python
+        # daemon transport threads never retain or access window objects.
+        threading.Thread(target=send, daemon=True, name="desktop-http").start()
+        while not complete.wait(.05):
+            if self._closing.is_set():
+                raise ApiError("Application is closing")
+        if self._closing.is_set():
+            raise ApiError("Application is closing")
+        if "error" in outcome:
+            raise outcome["error"]
+        return outcome["response"]
+
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         try:
             request_timeout = kwargs.pop("timeout", self.timeout)
-            response = self.session.request(method, self.base_url + path, timeout=request_timeout, **kwargs)
+            response = self._send(method, path, request_timeout, kwargs)
         except requests.ConnectTimeout as exc:
             raise ApiError(
                 f"Cannot connect to FastAPI at {self.base_url}. Check that the backend is running "

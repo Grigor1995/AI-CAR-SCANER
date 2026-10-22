@@ -1994,3 +1994,38 @@ def test_offline_channel_labels_match_backend_registry():
     from apps.desktop.channel_labels import CHANNEL_LABELS
     from telemetry.channels import _NAMES
     assert CHANNEL_LABELS == _NAMES
+
+
+def test_window_closes_promptly_during_blocked_session_request(window_factory, monkeypatch, qapp):
+    import threading
+    import time
+    from apps.desktop.api_client import DiagnosticApiClient
+    window = window_factory()
+    # api_client is independent of ui.DiagnosticApiClient's fixture factory.
+    client = DiagnosticApiClient(timeout=300)
+    window.api = client
+    entered = threading.Event()
+    release = threading.Event()
+    callbacks = []
+    def blocked(*args, **kwargs):
+        entered.set()
+        release.wait(5)
+        raise RuntimeError('late HTTP failure')
+    monkeypatch.setattr(client.session, 'request', blocked)
+    window.run_worker(lambda: client.create_session({}), callbacks.append)
+    try:
+        assert entered.wait(1)
+        started = time.monotonic()
+        window.close()
+        while window.isVisible() and time.monotonic() - started < 1:
+            qapp.processEvents()
+            time.sleep(.005)
+        assert not window.isVisible()
+        assert not window._workers
+        assert callbacks == []
+    finally:
+        release.set()
+        deadline = time.monotonic() + 2
+        while window._workers and time.monotonic() < deadline:
+            qapp.processEvents()
+            time.sleep(.005)

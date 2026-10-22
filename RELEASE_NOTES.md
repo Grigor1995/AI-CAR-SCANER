@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — Responsive Desktop shutdown
+
+- Cancel outstanding API response waits when closing, including long-running AI
+  requests. Qt workers finish safely without waiting for HTTP read timeouts.
+- Late responses and errors cannot update a closing window. Already-sent server
+  operations are not rolled back; socket I/O ends on daemon transport threads.
+- Regression tests cover a blocked session-creation request and prompt window
+  closure without destroying a running QThread.
+
 ## Unreleased — Named widgets and analog dashboard gauges
 
 - Fixed newly added telemetry widgets retaining raw PID titles or empty channel

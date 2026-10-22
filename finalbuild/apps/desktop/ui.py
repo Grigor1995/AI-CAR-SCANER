@@ -1285,6 +1285,7 @@ class MainWindow(QMainWindow):
         if self._workers:
             if not self._closing:
                 self._closing = True
+                self.api.cancel_pending()
                 for page in self.pages:
                     timer = getattr(page, "timer", None)
                     if isinstance(timer, QTimer):
@@ -1295,8 +1296,8 @@ class MainWindow(QMainWindow):
                     self.tr_text("Finishing active requests before closing...")
                 )
                 self.setEnabled(False)
-            # Abort this close event; requests may be blocking on a bounded
-            # network timeout. Do not call terminate() or wait() on the UI thread.
+            # Cancelled API waits unwind promptly; keep QThreads alive until
+            # their finished signals arrive. Never terminate a native thread.
             event.ignore()
             return
         super().closeEvent(event)

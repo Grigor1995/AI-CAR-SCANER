@@ -11,7 +11,8 @@ import re
 from vehicle.catalog_registry import makes, models, fitments, registry_stats
 from vehicle.protocol.registry import all_protocols, assess_protocols, read_elm_detected_protocol
 from vehicle.external_registry import (
-    RemoteRegistryUnavailable, commons_photo_candidate, nhtsa_decode_vin
+    RemoteRegistryUnavailable, commons_photo_candidate, nhtsa_decode_vin,
+    nhtsa_available_makes, nhtsa_models_for_make,
 )
 
 router = APIRouter(prefix="/api/v1/vehicle-registry", tags=["vehicle-registry"])
@@ -55,6 +56,27 @@ def global_fitments(
     year: int | None = Query(None, ge=1886, le=2100),
 ):
     return fitments(make, model, year)
+
+
+@router.get("/vpic/makes")
+def vpic_makes():
+    try:
+        return nhtsa_available_makes()
+    except RemoteRegistryUnavailable as exc:
+        raise HTTPException(503, str(exc)) from exc
+
+
+@router.get("/vpic/models")
+def vpic_models(
+    make: str = Query(..., min_length=1, max_length=80),
+    year: int | None = Query(None, ge=1996, le=2100),
+):
+    try:
+        return nhtsa_models_for_make(make, year)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except RemoteRegistryUnavailable as exc:
+        raise HTTPException(503, str(exc)) from exc
 
 
 @router.get("/protocols")

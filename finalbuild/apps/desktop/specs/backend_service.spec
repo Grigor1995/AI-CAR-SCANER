@@ -13,6 +13,8 @@ backend_root = project_root / "backend"
 # PyInstaller's static graph. Bundle real Python bytecode for our routers and
 # domain modules, not merely their .py source in Analysis.datas.
 sys.path.insert(0, str(backend_root))
+# Root shared vehicle core must win over backend/vehicle compatibility stubs.
+sys.path.insert(0, str(project_root))
 api_packages = (
     "api", "diagnostic", "ai", "device", "acquisition",
     "telemetry", "vehicle", "vehicle_diagnostic", "multi_ecu",
@@ -28,7 +30,11 @@ a = Analysis(
     pathex=[str(project_root), str(backend_root)],
     binaries=[],
     datas=[(str(backend_root), "backend"),
-           (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data")],
+           (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data"),
+           (str(project_root / "data" / "vehicle_catalog.json"), "data"),
+           (str(project_root / "data" / "vehicle_fitments.json"), "data"),
+           (str(project_root / "assets" / "vehicle_models"), "assets/vehicle_models"),
+           (str(project_root / "assets" / "AI-Car-Scanner-mobile.png"), "assets")],
     hiddenimports=[
         "uvicorn", "uvicorn.logging", "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto", "uvicorn.protocols.websockets.auto",

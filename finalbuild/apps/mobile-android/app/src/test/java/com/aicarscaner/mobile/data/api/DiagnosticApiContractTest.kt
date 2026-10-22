@@ -226,4 +226,20 @@ class DiagnosticApiContractTest {
         assertEquals(0.6, recommendation.informationGain, 0.0001)
         assertEquals(25.0, recommendation.estimatedCost, 0.0001)
     }
+    @Test
+    fun acquisitionRecordsDecodeNumericMetadataAndUseSessionEndpoint() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"records":[{"channel":"rpm","display_name":"Engine RPM","numeric_value":760.0,"unit":"rpm","source_type":"synthetic","metadata":{"adapter":"simulator","sequence":5,"valid":true}}]}""")
+        )
+        val response = api.acquisitionRecords("session-1", 50)
+        assertEquals("/api/v1/acquisition/sessions/session-1/records?limit=50", server.takeRequest().path)
+        val sample = response.records.single()
+        assertEquals("Engine RPM", sample.display_name)
+        assertEquals(760.0, sample.numeric_value ?: 0.0, 0.0001)
+        assertEquals("simulator", sample.metadata?.get("adapter"))
+        assertEquals(5.0, (sample.metadata?.get("sequence") as Number).toDouble(), 0.0001)
+    }
+
 }

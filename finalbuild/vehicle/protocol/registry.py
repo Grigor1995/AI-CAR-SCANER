@@ -164,8 +164,9 @@ def assess_protocols(
         if market in {"US", "USA", "CA", "CALIFORNIA"} and year >= 2027:
             _add(candidates, "obdonuds")
             warnings.append("2027+ CARB-certified heavy-duty engines transition to OBDonUDS; verify certification/VIN.")
-        elif year >= 2024 and make in {"volvo", "mack"}:
-            warnings.append("Some 2024+ Volvo/Mack engine families adopted OBDonUDS early; VIN/engine certification required.")
+        elif year >= 2024 and make in {"volvo", "mack"} and market in {"US", "USA", "CA", "CALIFORNIA"}:
+            _add(candidates, "obdonuds")
+            warnings.append("Only selected 2024+ Volvo/Mack CARB engine families adopted OBDonUDS early; VIN/engine certification required.")
         warnings.append("Commercial J1939/WWH-OBD depends on engine certification, region and vehicle OEM.")
     elif fuel in {"electric", "battery-electric", "bev", "ev"}:
         _add(candidates, "uds_on_can", "uds_on_doip")
@@ -176,8 +177,10 @@ def assess_protocols(
         warnings.append("OBDonUDS availability cannot be determined from a passenger-vehicle year alone.")
     elif market in {"EU", "EEA", "UK"} and year >= 2008:
         _add(candidates, "iso15765_4_can11_500", "iso15765_4_can29_500",
-             "iso15765_4_can11_250", "iso15765_4_can29_250")
-        warnings.append("European EOBD and network changes vary by registration, fuel and model year.")
+             "iso15765_4_can11_250", "iso15765_4_can29_250",
+             "iso9141_2", "iso14230_4_slow", "iso14230_4_fast")
+        warnings.append("CAN is likely in 2008+ European passenger cars, but legacy EOBD K-Line remains a candidate until measured.")
+        warnings.append("European EOBD regulation, fuel and registration categories vary; certification market is not owner's location.")
     elif year >= 2008:
         _add(candidates, "iso15765_4_can11_500", "iso15765_4_can29_500",
              "iso15765_4_can11_250", "iso15765_4_can29_250",

@@ -31,6 +31,7 @@ a = Analysis(
     datas=[(str(backend_root), "backend"),
            (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data"),
            (str(project_root / "data" / "vehicle_catalog.json"), "data"),
+           (str(project_root / "data" / "commons_vehicle_photos.json"), "data"),
            (str(project_root / "assets" / "vehicle_models"), "assets/vehicle_models")],
     hiddenimports=[
         "uvicorn", "uvicorn.logging", "uvicorn.loops.auto",

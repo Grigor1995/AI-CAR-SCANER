@@ -737,6 +737,18 @@ class LiveDataPage(QWidget):
         self.refresh()
 
     @staticmethod
+    def _acquisition_error_label(error, backend_online=True):
+        """Acquisition 404 is NOT the same as FastAPI /health going offline."""
+        message = str(error or "").lower()
+        if "404" in message and "acquisition not started" in message:
+            return "Acquisition not started"
+        if "404" in message and "session not found" in message:
+            return "Session not found"
+        if not backend_online:
+            return "Backend offline"
+        return "Acquisition unavailable"
+
+    @staticmethod
     def _records_data_from(payload):
         if isinstance(payload, dict):
             return payload.get("records", [])
@@ -758,10 +770,15 @@ class LiveDataPage(QWidget):
 
     def _poll_done(self, status):
         self._poll_in_flight = False
+        self._status_data = status
         if status.get("_error"):
-            self.status.setText("Backend unavailable")
+            self.status.setText(self._acquisition_error_label(
+                status["_error"], self.app.online
+            ))
+            self.status.setToolTip(str(status["_error"]))
             self.timer.stop()
             return
+        self.status.setToolTip("")
         state = status.get("state", "STOPPED")
         self.status.setText("RUNNING" if state == "RUNNING" else state)
         if state == "RUNNING":
@@ -777,8 +794,12 @@ class LiveDataPage(QWidget):
             self.chart.set_values([])
             return
         if self._status_data.get("_error"):
-            self.status.setText("Backend unavailable")
+            self.status.setText(self._acquisition_error_label(
+                self._status_data["_error"], self.app.online
+            ))
+            self.status.setToolTip(str(self._status_data["_error"]))
         else:
+            self.status.setToolTip("")
             state = self._status_data.get("state", "STOPPED")
             self.status.setText("RUNNING" if state == "RUNNING" else state)
         provider = self._provider_data

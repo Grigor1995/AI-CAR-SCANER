@@ -6,6 +6,8 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var session: DiagnosticSession?
     @Published var history: [DiagnosticSession] = []
     @Published var liveRecords: [LiveRecord] = []
+    @Published var liveDataError: String?
+    @Published var liveDataLoading = false
     @Published var catalog: [VehicleCatalogEntry] = SharedVehicleCatalog.offline()
     @Published var catalogOnline = false
     @Published var obdValues: [String: Double?] = [:]
@@ -161,18 +163,33 @@ final class DiagnosticViewModel: ObservableObject {
 
     func openSession(_ id: String) async {
         liveRecords = []
+        liveDataError = nil
         await execute { try await self.api.getSession(id, language: self.settings.language) }
     }
 
     func refreshLiveData() async {
-        guard let id = session?.session_id else { liveRecords = []; return }
+        guard let id = session?.session_id else {
+            liveRecords = []
+            liveDataError = nil
+            return
+        }
+        guard !liveDataLoading else { return }
+        liveDataLoading = true
+        defer { liveDataLoading = false }
         do {
             let response = try await api.liveRecords(id)
-            if session?.session_id == id { liveRecords = response.records }
-        } catch { self.error = error.localizedDescription }
+            if session?.session_id == id {
+                liveRecords = response.records
+                liveDataError = nil
+            }
+        } catch {
+            guard session?.session_id == id else { return }
+            liveDataError = error.localizedDescription
+        }
     }
 
     func clearSession() {
+        liveDataError = nil
         liveRecords = []
         session = nil
         error = nil

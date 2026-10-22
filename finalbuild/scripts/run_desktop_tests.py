@@ -48,6 +48,7 @@ GROUPS = {
     "vehicle-protocol": (
         "tests/api/test_backend_vehicle_knowledge.py",
         "tests/vehicle/test_obd_client.py",
+        "tests/vehicle/test_elm327.py",
     ),
     "negative": (
         "apps/desktop/tests/test_negative_api_contract.py",

@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Android test APK build
+
+- Updated the instrumented UI test API fixture for backend vehicle registry,
+  protocol compatibility and photo metadata endpoints, restoring test APK
+  compilation. Fixtures do not claim real hardware compatibility.
+- Android debug APK and local JVM/lint validation use the emulator backend URL
+  http://10.0.2.2:8001/. CI/CD is skipped.
+
 ## Unreleased — Restore the dashboard before layout sliders
 
 - Restored the dashboard layout from before resizable/movable widget controls.

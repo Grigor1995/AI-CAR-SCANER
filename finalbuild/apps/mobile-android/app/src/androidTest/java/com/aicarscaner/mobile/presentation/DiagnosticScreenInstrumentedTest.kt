@@ -13,6 +13,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aicarscaner.mobile.data.api.AuditEventDto
 import com.aicarscaner.mobile.data.api.DiagnosticApi
+import com.aicarscaner.mobile.data.api.GlobalVehicleModelDto
+import com.aicarscaner.mobile.data.api.GlobalVehiclePhotoDto
+import com.aicarscaner.mobile.data.api.ObdCompatibilityDto
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.EvidenceDto
 import com.aicarscaner.mobile.data.api.HypothesisDto
@@ -504,6 +507,26 @@ class DiagnosticScreenInstrumentedTest {
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {
+    override suspend fun vehicleRegistryMakes(): List<String> = listOf("Mercedes-Benz")
+
+    override suspend fun vehicleRegistryModels(make: String, year: Int?): List<GlobalVehicleModelDto> =
+        if (make == "Mercedes-Benz" && (year == null || year in 2002..2009)) listOf(
+            GlobalVehicleModelDto(
+                make = make, model = "E-Class", yearRanges = listOf(listOf(2002, 2009)),
+                engineFamilies = listOf("M272"), commonFuels = listOf("petrol", "lpg"),
+                source = "instrumentation-test"
+            )
+        ) else emptyList()
+
+    override suspend fun vehicleProtocolHints(year: Int, market: String, make: String) =
+        ObdCompatibilityDto(
+            year = year, market = market, candidates = emptyList(),
+            confidence = "unknown", warnings = emptyList(), notice = "Instrumentation fixture; no hardware detection"
+        )
+
+    override suspend fun vehicleImageMetadata(make: String, model: String, chassis: String) =
+        GlobalVehiclePhotoDto(status = "unavailable", notice = "Instrumentation fixture; no network image")
+
     override suspend fun obdPlan() = com.aicarscaner.mobile.data.api.ObdPlanDto(emptyList(), listOf("010C"))
     override suspend fun decodeObd(frames: com.aicarscaner.mobile.data.api.ObdRawSnapshotDto) = com.aicarscaner.mobile.data.api.ObdDecodedSnapshotDto(com.aicarscaner.mobile.data.obd.LiveDataSnapshot())
 

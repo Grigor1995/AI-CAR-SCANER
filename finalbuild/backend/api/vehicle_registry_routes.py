@@ -2,6 +2,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+from pathlib import Path
+from urllib.parse import urlencode
+import re
 
 from vehicle.catalog_registry import makes, models, fitments, registry_stats
 from vehicle.protocol.registry import all_protocols, assess_protocols, read_elm_detected_protocol
@@ -10,6 +15,17 @@ from vehicle.external_registry import (
 )
 
 router = APIRouter(prefix="/api/v1/vehicle-registry", tags=["vehicle-registry"])
+_ASSETS = Path(__file__).resolve().parents[2] / "assets"
+
+
+class VinLookupRequest(BaseModel):
+    # POST body avoids raw VINs in routine HTTP GET access-log query strings.
+    vin: str = Field(..., min_length=17, max_length=17)
+    model_year: int | None = Field(None, ge=1980, le=2100)
+
+
+def _slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
 
 @router.get("/stats")
@@ -67,17 +83,35 @@ def detected_elm(raw: str = Query(..., min_length=1, max_length=32)):
     return read_elm_detected_protocol(raw)
 
 
-@router.get("/vin")
-def vin_lookup(
-    vin: str = Query(..., min_length=17, max_length=17),
-    model_year: int | None = Query(None, ge=1980, le=2100),
-):
+@router.post("/vin")
+def vin_lookup(request: VinLookupRequest):
+    # vPIC receives the VIN over HTTPS; disclose this before enabling lookup.
     try:
-        return nhtsa_decode_vin(vin, model_year)
+        return nhtsa_decode_vin(request.vin, request.model_year)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except RemoteRegistryUnavailable as exc:
         raise HTTPException(503, str(exc)) from exc
+
+
+@router.get("/portrait")
+def local_portrait(
+    make: str = Query(..., min_length=1, max_length=80),
+    model: str = Query(..., min_length=1, max_length=80),
+    chassis: str = Query("", max_length=40),
+):
+    # No arbitrary paths can be supplied; generated assets are served read-only
+    # from backend assets, rather than 3 different client bundles.
+    name = "_".join((_slug(make), _slug(model), _slug(chassis))) + ".png"
+    path = _ASSETS / "vehicle_models" / name
+    if not path.is_file():
+        path = _ASSETS / "AI-Car-Scanner-mobile.png"
+    if not path.is_file():
+        raise HTTPException(404, "Portrait asset unavailable")
+    return FileResponse(
+        path, media_type="image/png",
+        headers={"X-Image-Provenance": "project-generated", "Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.get("/photo")
@@ -87,7 +121,13 @@ def photo(
     chassis: str = Query("", max_length=40),
 ):
     try:
-        return commons_photo_candidate(make, model, chassis)
+        candidate = commons_photo_candidate(make, model, chassis)
+        candidate["fallback_generated_portrait"] = (
+            "/api/v1/vehicle-registry/portrait?"
+            + urlencode({"make": make, "model": model, "chassis": chassis})
+        )
+        candidate["image_authority"] = "backend"
+        return candidate
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except RemoteRegistryUnavailable as exc:

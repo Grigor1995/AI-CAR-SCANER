@@ -290,12 +290,11 @@ internal fun DemoReports(session: DiagnosticSessionDto, title: String, shareLabe
     val context = LocalContext.current
     DemoPanel(title) {
         Text(session.vehicle?.let { "${it.make} ${it.model}" } ?: "—", style = MaterialTheme.typography.titleLarge)
-        Text(session.session_id)
         Text("DTC: ${session.dtcs.size} • ${localizedState(LocalDashboardLanguage.current,session.state)}")
         Button(onClick = {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, com.google.gson.Gson().toJson(session))
+                putExtra(Intent.EXTRA_TEXT, com.aicarscaner.mobile.data.api.diagnosticReportJson(session))
             }
             context.startActivity(Intent.createChooser(intent, shareLabel))
         }, modifier = Modifier.fillMaxWidth()) { Text(shareLabel) }

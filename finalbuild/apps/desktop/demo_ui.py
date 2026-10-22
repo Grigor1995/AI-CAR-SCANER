@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QFileDialog, QComboBox, QStackedWidget,
 )
 
-from .models import Session, Vehicle
+from .models import Session, Vehicle, user_report_data
 from .vehicle_artwork import vehicle_pixmap
 
 
@@ -265,7 +265,7 @@ class DemoDashboard(QWidget):
         self.progress_text.setText(f"{done}/{len(ids)} tests completed • INCOMPLETE results remain open" if ids else "No recommended tests yet")
         self.backend.set_value("ONLINE" if app.online else "OFFLINE")
         self.vehicle.set_value(f"{v.make} {v.model}" if v else "—")
-        self.session.set_value(app.session.session_id[:8] if app.session else "—")
+        self.session.set_value(app.tr_text(app.session.state) if app.session else "—")
         self.ecus.set_value(str(len(app.network.get("ecus", []))) if app.network else "—")
         live = app.pages[4] if len(app.pages) > 4 else None
         self.signals.set_records(live._records_data if live else [])
@@ -355,7 +355,7 @@ class ReportsPage(QWidget):
         for session in sessions:
             v = session.get("vehicle") or {}
             result_label = self.app.tr_text("results")
-            item = QListWidgetItem(f"{v.get('make', '')} {v.get('model', '')} • {self.app.tr_text(session.get('state', ''))}\n{session['session_id']} • {len(session.get('dtcs', []))} DTC / {len(session.get('test_results', []))} {result_label}")
+            item = QListWidgetItem(f"{v.get('make', '')} {v.get('model', '')} • {self.app.tr_text(session.get('state', ''))}\n{len(session.get('dtcs', []))} DTC / {len(session.get('test_results', []))} {result_label}")
             item.setData(Qt.UserRole, session["session_id"])
             self.history.addItem(item)
             if session["session_id"] == selected:
@@ -390,7 +390,7 @@ class ReportsPage(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, self.app.tr_text("Export diagnostic report"), "diagnostic-report.pdf", "PDF (*.pdf);;Printable HTML (*.html);;Session JSON (*.json)")
         if filename:
             from pathlib import Path
-            content = json.dumps(data, ensure_ascii=False, indent=2)
+            content = json.dumps(user_report_data(data), ensure_ascii=False, indent=2)
             if not filename.lower().endswith(".json"):
                 content = '<!doctype html><meta charset="utf-8"><title>' + html.escape(self.app.tr_text('Diagnostic report')) + '</title><h1>AI Car Scanner</h1><p>' + html.escape(self.app.tr_text('Hypotheses require test confirmation.')) + '</p><pre>' + html.escape(content) + '</pre>'
             if filename.lower().endswith(".pdf"):

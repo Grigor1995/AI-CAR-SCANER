@@ -35,6 +35,16 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(hy.testResultLabel("future", fallback: "server label"), "server label")
     }
 
+    func testUserReportHidesSessionIDWithoutChangingTheInternalSession() throws {
+        let session = try JSONDecoder().decode(DiagnosticSession.self, from: Self.sessionJSON)
+        let report = session.userReportJSON
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(report.utf8)) as? [String: Any])
+        XCTAssertNil(object["session_id"])
+        XCTAssertFalse(report.contains(session.session_id))
+        XCTAssertNotNil(object["dtcs"])
+        XCTAssertEqual(session.session_id, try JSONDecoder().decode(DiagnosticSession.self, from: Self.sessionJSON).session_id)
+    }
+
     func testVehicleRoundTrip() throws {
         let value = Vehicle(make: "Mercedes-Benz", model: "E-Class", chassis: "W211", year: 2006, engine: "M272 E35 3.5", fuel: ["petrol", "lpg"], ecu: "ME9.7")
         let data = try JSONEncoder().encode(value)

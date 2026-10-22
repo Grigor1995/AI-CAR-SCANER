@@ -335,7 +335,7 @@ def test_dashboard_page_object_displays_online_vehicle_session_and_ecus(window_f
     page.refresh()
     assert page.backend == "ONLINE"
     assert page.vehicle == "Mercedes-Benz E-Class"
-    assert page.session == "session-"
+    assert page.session == "READY"
     assert page.ecu_count == "2"
 
     window.online = False
@@ -1528,7 +1528,7 @@ def test_report_export_escapes_session_content(window_factory, monkeypatch, tmp_
     assert '<script>' not in contents
 
 
-def test_native_pdf_export_contains_actual_session_id(window_factory, monkeypatch, tmp_path):
+def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(window_factory, monkeypatch, tmp_path):
     from apps.desktop import demo_ui
     from pypdf import PdfReader
     window = window_factory()
@@ -1538,7 +1538,8 @@ def test_native_pdf_export_contains_actual_session_id(window_factory, monkeypatc
     window.pages[9].export()
     assert destination.read_bytes().startswith(b'%PDF')
     text = ''.join(page.extract_text() for page in PdfReader(destination).pages)
-    assert 'pdf-session-123' in text
+    assert 'pdf-session-123' not in text
+    assert 'session_id' not in text
     assert 'P0302' in text
 
 
@@ -1703,3 +1704,18 @@ def test_history_language_switch_rebuilds_labels_without_network_or_losing_selec
     assert "results" not in page.history.item(0).text()
     assert "BMW" in page.history.item(0).text()
     assert page.history.currentItem().data(Qt.UserRole)=="history-1"
+
+
+def test_session_id_stays_internal_in_dashboard_diagnostics_and_history(window_factory):
+    window = window_factory()
+    secret = "private-session-abcdef"
+    window.session = Session(secret, "TESTING", window.active_vehicle)
+    window.pages[0].refresh()
+    window.pages[3].refresh()
+    window.pages[9].loaded([{"session_id": secret, "state": "TESTING", "dtcs": [], "test_results": []}])
+    assert secret not in window.pages[0].session.value.text()
+    assert secret not in window.pages[3].lbl.text()
+    item = window.pages[9].history.item(0)
+    assert secret not in item.text()
+    assert item.data(Qt.UserRole) == secret
+    assert window.session.session_id == secret

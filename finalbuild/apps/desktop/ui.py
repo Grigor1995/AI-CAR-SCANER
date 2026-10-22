@@ -651,7 +651,7 @@ class DiagnosticPage(QWidget):
         out=QTabWidget(); self.summary=QPlainTextEdit(); self.summary.setReadOnly(True); out.addTab(self.summary,"Analysis"); self.evidence=QPlainTextEdit(); self.evidence.setReadOnly(True); self.hypotheses=QPlainTextEdit(); self.hypotheses.setReadOnly(True); self.questions=QPlainTextEdit(); self.questions.setReadOnly(True); out.addTab(self.evidence,"Evidence"); out.addTab(self.hypotheses,"Hypotheses"); out.addTab(self.questions,"Missing info"); lay.addWidget(out)
     def refresh(self):
         if not self.app.session: self.lbl.setText("No active session"); return
-        self.lbl.setText(f"Session {self.app.session.session_id} • {self.app.session.state}")
+        self.lbl.setText(f"Session state: {self.app.session.state}")
         data=self.app.session_json
         ev=data.get("evidence",[]); hp=data.get("hypotheses",[])
         self.summary.setPlainText(self._summary_text(data, hp))

@@ -64,3 +64,12 @@ def test_test_candidate_defaults_when_optional_values_missing():
     assert candidate.priority_score == 0.0
     assert candidate.risk_level == "LOW"
     assert candidate.safety_notes == []
+
+
+def test_user_report_removes_nested_session_ids_without_mutating_internal_data():
+    from apps.desktop.models import user_report_data
+    original = {"session_id": "private", "dtcs": [{"code": "P0302"}],
+                "details": [{"session_id": "nested", "result": "FAIL"}]}
+    assert user_report_data(original) == {"dtcs": [{"code": "P0302"}], "details": [{"result": "FAIL"}]}
+    assert original["session_id"] == "private"
+    assert original["details"][0]["session_id"] == "nested"

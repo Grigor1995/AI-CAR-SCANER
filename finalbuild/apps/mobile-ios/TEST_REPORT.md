@@ -1,5 +1,13 @@
 # Native iOS Test Report
 
+## Privacy follow-up — 2026-10-22
+
+The current source declares **29 XCTest cases**. The additional report-export
+case verifies that Session IDs are omitted from the user-facing snapshot without
+changing the internal session. Header/history/report labels also omit the ID.
+All 10 Swift files still pass syntax parsing; Xcode compilation, XCTest execution
+and simulator screenshots remain unverified in this Linux environment.
+
 ## Cloud audit — 2026-10-21
 
 The current source declares **28 XCTest cases**. All 10 Swift files pass a

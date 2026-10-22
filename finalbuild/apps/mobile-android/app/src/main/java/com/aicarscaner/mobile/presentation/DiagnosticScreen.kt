@@ -533,8 +533,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         Text(demo("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն"))
                     }
                     if (selectedTab == 9) state.history.forEach { previous ->
-                        DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
-                            Text("${previous.session_id.take(8)} • ${localizedState(appSettings.language,previous.state)}")
+                        DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: dashboardLabel("Diagnostic report")) {
+                            Text("${localizedState(appSettings.language,previous.state)}")
                             Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) {
                                 Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան"))
                             }
@@ -1550,8 +1550,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             LaunchedEffect(Unit) { viewModel.loadHistory() }
                             OutlinedButton(onClick = { viewModel.loadHistory() }) { Text(demo("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) }
                             state.history.forEach { previous ->
-                                DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: previous.session_id) {
-                                    Text("${previous.session_id.take(8)} • DTC: ${previous.dtcs.size} • ${localizedState(appSettings.language,previous.state)}")
+                                DemoPanel(previous.vehicle?.let { "${it.make} ${it.model}" } ?: dashboardLabel("Diagnostic report")) {
+                                    Text("DTC: ${previous.dtcs.size} • ${localizedState(appSettings.language,previous.state)}")
                                     Button(onClick = { viewModel.openSession(previous.session_id, appSettings.language.code); selectedTab = 6 }) { Text(demo("Open session", "Открыть сеанс", "Բացել սեսիան")) }
                                 }
                             }

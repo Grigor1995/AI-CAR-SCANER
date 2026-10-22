@@ -82,6 +82,7 @@ class FakeApp:
         self.api.ai_provider_info.return_value = {"available": False, "model": "local", "reason": "model offline"}
         self.api.acquisition_records.return_value = {"records": [{"numeric_value": 1.2}, {"numeric_value": None}]}
 
+    def tr_text(self, text): return _translate_ui_text(text, "en")
     def refresh_all(self): pass
     def add_vehicle(self): pass
     def delete_selected_vehicle(self): pass
@@ -215,7 +216,7 @@ def test_dashboard_refresh_updates_metrics(qapp):
     page.refresh()
     assert page.backend.value.text() == "ONLINE"
     assert page.vehicle.value.text() == "Mercedes-Benz E-Class"
-    assert page.session.value.text() == "session-"
+    assert page.session.value.text() == "ANALYSIS_READY"
     assert page.ecus.value.text() == "1"
     app.online = False
     app.active_vehicle = None

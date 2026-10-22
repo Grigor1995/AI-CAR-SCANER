@@ -51,9 +51,7 @@ struct DiagnosticScreen: View {
                                 .font(.system(size:9,weight:.bold))
                                 .tracking(1.1)
                                 .foregroundStyle(AutomotivePalette.electricBlue)
-                            if let id=viewModel.session?.session_id {
-                                Text("\(t.tr("Session", "Сеанс", "Սեսիա")) \(id.prefix(8))…").font(.caption).foregroundStyle(.secondary)
-                            }
+
                         }
                         Spacer()
                         Button("⚙"){settingsOpen=true}
@@ -287,14 +285,14 @@ struct DiagnosticScreen: View {
             Button(t.tr("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) { Task { await viewModel.loadHistory() } }
             ForEach(viewModel.history, id: \.session_id) { previous in
                 SectionCard("\(previous.vehicle?.make ?? "") \(previous.vehicle?.model ?? "")") {
-                    Text("\(previous.session_id.prefix(8)) • DTC: \(previous.dtcs.count) • \(t.protocolLabel(previous.state))").font(.caption)
+                    Text("DTC: \(previous.dtcs.count) • \(t.protocolLabel(previous.state))").font(.caption)
                     Button(t.tr("Open session", "Открыть сеанс", "Բացել սեսիան")) { Task { await viewModel.openSession(previous.session_id); tab = 5 } }
                 }
             }
             if let session = viewModel.session {
-                SectionCard(session.session_id) {
+                SectionCard(t.tr("Diagnostic report", "Диагностический отчёт", "Ախտորոշման հաշվետվություն")) {
                     Text("DTC: \(session.dtcs.count) • \(t.nextTests): \(session.test_results.count)")
-                    ShareLink(item: String(data: (try? JSONEncoder().encode(session)) ?? Data(), encoding: .utf8) ?? "") {
+                    ShareLink(item: session.userReportJSON) {
                         Label(t.tr("Share session report", "Поделиться отчётом", "Կիսվել հաշվետվությամբ"), systemImage: "square.and.arrow.up")
                     }.buttonStyle(.borderedProminent)
                 }

@@ -31,6 +31,8 @@ API: http://127.0.0.1:8001/docs
 
 ## Run tests
 
+[Native UI demo and QA presentation — 22 October 2026](docs/demo/README.md) includes the editable PowerPoint deck, real UI captures and the Session ID privacy follow-up.
+
 See the [October 21 full QA audit](docs/testing/full-qa-audit-2026-10-21.md) for measured coverage, fixes, remaining gaps and reproduction commands.
 ```bash
 pip install -r backend/requirements-dev.txt

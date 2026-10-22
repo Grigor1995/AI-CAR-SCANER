@@ -140,3 +140,22 @@ struct LiveRecord: Decodable {
 }
 struct LiveRecordMetadata: Decodable { let adapter: String? }
 struct LiveRecordResponse: Decodable { let records: [LiveRecord] }
+
+
+extension DiagnosticSession {
+    var userReportJSON: String {
+        guard let data = try? JSONEncoder().encode(self),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let report = try? JSONSerialization.data(withJSONObject: reportSnapshot(object), options: [.prettyPrinted, .sortedKeys]),
+              let text = String(data: report, encoding: .utf8) else { return "" }
+        return text
+    }
+}
+
+private func reportSnapshot(_ value: Any) -> Any {
+    if let dictionary = value as? [String: Any] {
+        return dictionary.filter { $0.key != "session_id" }.mapValues { reportSnapshot($0) }
+    }
+    if let array = value as? [Any] { return array.map { reportSnapshot($0) } }
+    return value
+}

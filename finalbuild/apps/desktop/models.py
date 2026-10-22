@@ -56,3 +56,12 @@ class TestCandidate:
             expected_information_gain=float(data.get("expected_information_gain", 0.0)),
             safety_notes=[str(x) for x in data.get("safety_notes", [])],
         )
+
+
+def user_report_data(value):
+    """Create an export snapshot without internal session identifiers."""
+    if isinstance(value, dict):
+        return {key: user_report_data(item) for key, item in value.items() if key != "session_id"}
+    if isinstance(value, list):
+        return [user_report_data(item) for item in value]
+    return value

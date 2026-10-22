@@ -79,7 +79,10 @@ class Trace(QWidget):
             p.drawText(r, Qt.AlignCenter, self.empty_text)
             return
         low, high = min(self.values), max(self.values)
-        span = max(high - low, 1e-6)
+        padding = max((high - low) * 0.1, abs(high) * 0.01, 1.0)
+        low -= padding
+        high += padding
+        span = high - low
         p.setPen(QPen(QColor(self.color), 2))
         for i in range(1, len(self.values)):
             x1 = r.left() + r.width() * (i - 1) / (len(self.values) - 1)
@@ -138,15 +141,18 @@ class SignalGrid(QWidget):
                 groups[str(record.get("pid") or record.get("channel") or "Unknown channel")].append(record)
         self.groups = groups
         self.channel_labels = {key: (rows[-1].get("display_name") or rows[-1].get("metadata", {}).get("display_name") or key) for key, rows in groups.items()}
-        names = list(groups)
+        names = [name for name in getattr(self, "_channel_names", []) if name in groups]
+        names += [name for name in groups if name not in names]
         if names == getattr(self, "_channel_names", None):
             self._update_cards()
             return
         self._channel_names = names
+        used = set()
         for i, selector in enumerate(self.selectors):
             previous = selector.currentData()
             saved = self.settings.value(f"{self.prefix}_channel_{i}", "") if self.settings else ""
-            selected = previous if previous in groups else saved if saved in groups else names[i] if i < len(names) else ""
+            selected = next((x for x in [previous, saved, *names] if x in groups and x not in used), "")
+            used.add(selected)
             selector.blockSignals(True)
             selector.clear()
             selector.addItem("No samples", "")
@@ -257,11 +263,11 @@ class DemoDashboard(QWidget):
         self.dtcs.set_value(len(data.get("dtcs", [])))
         self.results.set_value(len(data.get("test_results", [])))
         self.ai.set_value(len(data.get("hypotheses", [])))
-        candidates = app.decision.get("candidates") or data.get("recommendations", [])
+        candidates = app.decision.get("candidates", data.get("recommendations", []))
         latest = {r.get("test_id"): r.get("result") for r in data.get("test_results", [])}
         completed = {tid for tid, result in latest.items() if result in {"PASS", "FAIL"}}
-        ids = {r.get("id") or r.get("test_id") for r in candidates} | latest.keys()
-        done = len(completed)
+        ids = {r.get("id") or r.get("test_id") for r in candidates}
+        done = len(completed & ids)
         self.progress.setValue(round(100 * done / len(ids)) if ids else 0)
         self.progress_text.setText(f"{done}/{len(ids)} tests completed • INCOMPLETE results remain open" if ids else "No recommended tests yet")
         self.backend.set_value("ONLINE" if app.online else "OFFLINE")
@@ -269,7 +275,8 @@ class DemoDashboard(QWidget):
         self.session.set_value(app.tr_text(app.session.state) if app.session else "—")
         self.ecus.set_value(str(len(app.network.get("ecus", []))) if app.network else "—")
         live = app.pages[4] if len(app.pages) > 4 else None
-        self.signals.set_records(live._records_data if live else [])
+        from .measurement_units import display_records
+        self.signals.set_records(display_records(live._records_data if live else [], app.settings_store.value("unit_system", "metric") == "us"))
         records = live._records_data if live else []
         simulated = any("simulat" in str(r.get("source_type", "")).lower() or r.get("metadata", {}).get("adapter") == "simulator" for r in records)
         self.source.setText("Simulator / synthetic data" if simulated else ("Acquisition samples • see Live Data for connection status" if records else "No acquisition samples"))

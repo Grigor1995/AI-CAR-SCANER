@@ -1639,7 +1639,7 @@ def test_language_refresh_requests_localized_data_and_discards_stale_response(wi
     assert window.session_json == {}
 
 
-def test_progress_keeps_completed_tests_when_recommendations_change(window_factory):
+def test_empty_current_plan_does_not_count_historical_results(window_factory):
     window = window_factory()
     window.session_json = {"test_results": [
         {"test_id": "finished", "result": "PASS"},
@@ -1648,10 +1648,10 @@ def test_progress_keeps_completed_tests_when_recommendations_change(window_facto
     ]}
     window.decision = {"candidates": []}
     window.pages[6].refresh()
-    assert window.pages[6].progress.value() == 1
-    assert window.pages[6].progress.maximum() == 2
+    assert window.pages[6].progress.value() == 0
+    assert window.pages[6].progress.format() == "0/0"
     window.pages[0].refresh()
-    assert window.pages[0].progress.value() == 50
+    assert window.pages[0].progress.value() == 0
 
 
 @pytest.mark.parametrize("language", ["hy", "ru"])
@@ -1894,3 +1894,35 @@ def test_generate_tests_action_uses_backend_analysis_and_plan(window_factory,mon
     done(work())
     assert window.pages[6].list.count() == 1
     fake_api.analyze.assert_called_once_with('test-session',language=window.language)
+
+
+def test_units_convert_display_without_mutating_evidence():
+    from apps.desktop.measurement_units import display_records
+    raw = [{"numeric_value": 100, "unit": "km/h"}, {"numeric_value": 90, "unit": "C"}]
+    shown = display_records(raw, True)
+    assert shown[0]["numeric_value"] == pytest.approx(62.137119)
+    assert shown[0]["unit"] == "mph"
+    assert shown[1]["numeric_value"] == 194
+    assert raw[1]["numeric_value"] == 90
+
+
+def test_live_simulator_inputs_switch_units_and_keep_physical_values(window_factory):
+    window = window_factory()
+    live = window.pages[4]
+    window.settings_store.setValue("unit_system", "us")
+    live.refresh()
+    assert live.sim_inputs["coolant_c"].value() == 194
+    assert live.sim_inputs["speed_kmh"].value() == pytest.approx(24.85, abs=.01)
+    window.settings_store.setValue("unit_system", "metric")
+    live.refresh()
+    assert live.sim_inputs["coolant_c"].value() == 90
+
+
+def test_channel_order_does_not_shift_when_record_window_rotates(window_factory):
+    grid = window_factory().pages[4].signals
+    records = [{"channel": key, "numeric_value": 1} for key in ["0x0C", "0x05", "0x0D", "0x11"]]
+    grid.set_records(records)
+    before = [s.currentData() for s in grid.selectors]
+    grid.set_records(records[1:] + records[:1])
+    assert [s.currentData() for s in grid.selectors] == before
+    assert len(set(before)) == 4

@@ -135,6 +135,9 @@ class DiagnosticApiClient:
     def start_simulator(self, session_id: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/acquisition/sessions/{session_id}/start", json={"adapter": "simulator"})
 
+    def set_simulator_parameters(self, session_id: str, parameters: dict) -> dict[str, Any]:
+        return self._request("PUT", f"/api/v1/acquisition/sessions/{session_id}/simulator/parameters", json=parameters)
+
     def stop_acquisition(self, session_id: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/acquisition/sessions/{session_id}/stop")
 

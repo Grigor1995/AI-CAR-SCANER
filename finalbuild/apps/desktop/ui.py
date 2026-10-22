@@ -13,9 +13,10 @@ from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
-    QScrollArea, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
+    QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTabWidget, QVBoxLayout, QWidget, QSplitter
 )
+from .measurement_units import convert, display_records
 from .api_client import DiagnosticApiClient
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
@@ -380,7 +381,9 @@ class Sparkline(QWidget):
         p.fillRect(r, QBrush(QColor("#0f141c")))
         if len(self.values) < 2: return
         lo, hi = min(self.values), max(self.values)
-        if hi - lo < 1e-9: hi = lo + 1
+        padding = max((hi - lo) * .1, abs(hi) * .01, 1.0)
+        lo -= padding
+        hi += padding
         pen = QPen(QColor("#5da9ff"), 2); p.setPen(pen)
         points = []
         for i, value in enumerate(self.values):
@@ -675,18 +678,50 @@ class DiagnosticPage(QWidget):
 class LiveDataPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
+        outer = QVBoxLayout(self)
+        scroll = QScrollArea(); scroll.setWidgetResizable(True)
+        content = QWidget(); scroll.setWidget(content); outer.addWidget(scroll)
+        lay=QVBoxLayout(content); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
         self.real_start.clicked.connect(app.start_bound_acquisition)
         self.start.clicked.connect(app.start_simulator); self.stop.clicked.connect(app.stop_simulator); self.analyze.clicked.connect(app.analyze_telemetry); self.ai_analyze.clicked.connect(app.ai_analyze_live_data)
         bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.real_start); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
         self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setMaximumHeight(110); lay.addWidget(self.chart); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
+        controls = QHBoxLayout()
+        self.sim_inputs = {}
+        for key, title, low, high, value, suffix in (
+            ("rpm", "Engine speed", 0, 16383, 750, " rpm"),
+            ("coolant_c", "Coolant temperature", -40, 215, 90, " °C"),
+            ("speed_kmh", "Vehicle speed", 0, 255, 40, " km/h"),
+            ("throttle_percent", "Throttle position", 0, 100, 32, " %"),
+        ):
+            column = QVBoxLayout()
+            column.addWidget(QLabel(title))
+            spin = QDoubleSpinBox(); spin.setRange(low, high); spin.setValue(value); spin.setSuffix(suffix)
+            self.sim_inputs[key] = spin
+            column.addWidget(spin); controls.addLayout(column)
+        self.apply_sim = QPushButton("Apply simulator values")
+        self.apply_sim.clicked.connect(self._apply_simulator_values)
+        controls.addWidget(self.apply_sim)
+        lay.insertLayout(1, controls)
+        self.table.setMinimumHeight(140)
+        self.signals.setMinimumHeight(440)
         self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
         self._poll_in_flight = False
         self._details_in_flight = False
         self._status_data = {}
         self._provider_data = {"available": False, "model": "local"}
         self._records_data = []
+
+    def _apply_simulator_values(self):
+        if not self.app.session:
+            return
+        sid = self.app.session.session_id
+        parameters = {key: spin.value() for key, spin in self.sim_inputs.items()}
+        if self.app.settings_store.value("unit_system", "metric") == "us":
+            parameters["speed_kmh"] *= 1.609344
+            parameters["coolant_c"] = (parameters["coolant_c"] - 32) / 1.8
+        self.app.run_worker(lambda: self.app.api.set_simulator_parameters(sid, parameters), lambda _: self.app.refresh_telemetry())
 
     def request_refresh(self):
         if not self.app.session or not self.app.online or self._details_in_flight:
@@ -790,11 +825,26 @@ class LiveDataPage(QWidget):
             self.timer.stop()
 
     def refresh(self):
+        us = self.app.settings_store.value("unit_system", "metric") == "us"
+        if us != getattr(self, "_us_inputs", False):
+            for key, metric_range, suffix in (("speed_kmh", (0, 255), " km/h"), ("coolant_c", (-40, 215), " °C")):
+                spin = self.sim_inputs[key]
+                value = spin.value()
+                if getattr(self, "_us_inputs", False):
+                    value = value * 1.609344 if key == "speed_kmh" else (value - 32) / 1.8
+                unit = "km/h" if key == "speed_kmh" else "C"
+                low, new_unit = convert(metric_range[0], unit, us)
+                high, _ = convert(metric_range[1], unit, us)
+                spin.setRange(low, high); spin.setSuffix(" " + new_unit if us else suffix)
+                spin.setValue(convert(value, unit, us)[0])
+            self._us_inputs = us
+        self.apply_sim.setEnabled(self._status_data.get("adapter") == "simulator")
         if not self.app.session:
             self.timer.stop()
             self.status.setText("STOPPED")
             self.table.setRowCount(0)
             self.chart.set_values([])
+            self.signals.set_records([])
             return
         if self._status_data.get("_error"):
             self.status.setText(self.app.tr_text(self._acquisition_error_label(
@@ -822,6 +872,10 @@ class LiveDataPage(QWidget):
         for st in stats:
             row = self.table.rowCount()
             self.table.insertRow(row)
+            st = dict(st)
+            unit = {"0x05": "C", "coolant_temp": "C", "0x0D": "km/h", "vehicle_speed": "km/h"}.get(st.get("pid"))
+            for key in ("min_value", "max_value", "mean"):
+                st[key] = convert(st.get(key), unit, us)[0]
             vals = [st.get("display_name") or st.get("pid", ""), st.get("count", 0), st.get("min_value", "—"), st.get("max_value", "—"), st.get("mean", "—"), st.get("event_count", 0)]
             for column, value in enumerate(vals):
                 self.table.setItem(row, column, QTableWidgetItem(str(value)))
@@ -829,7 +883,7 @@ class LiveDataPage(QWidget):
         first_pid = next(((r.get("pid") or r.get("channel")) for r in self._records_data if r.get("numeric_value") is not None), None)
         values = [float(r["numeric_value"]) for r in self._records_data if r.get("numeric_value") is not None and (r.get("pid") or r.get("channel")) == first_pid]
         self.chart.set_values(values)
-        self.signals.set_records(self._records_data)
+        self.signals.set_records(display_records(self._records_data, self.app.settings_store.value("unit_system", "metric") == "us"))
 
 class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
@@ -865,8 +919,8 @@ class TestsPage(QWidget):
         latest = {str(x.get("test_id")): x.get("result") for x in self.app.session_json.get("test_results", [])}
         completed = {tid for tid, result in latest.items() if result in {"PASS", "FAIL"}}
         current = {str(x.get("test_id") or x.get("id")) for x in self.app.decision.get("candidates", [])}
-        total = len(current | latest.keys())
-        done = len(completed)
+        total = len(current)
+        done = len(completed & current)
         self.progress.setRange(0,max(1,total)); self.progress.setValue(done); self.progress.setFormat(f"{done}/{total}")
         candidates = self.app.decision.get("candidates", [])
         signature = json.dumps(candidates, sort_keys=True, ensure_ascii=False)
@@ -1043,6 +1097,11 @@ class MainWindow(QMainWindow):
         theme.setCurrentIndex(max(0, theme.findData(self.dark_theme)))
         form.addRow(self.tr_text("Language"), language)
         form.addRow(self.tr_text("Theme"), theme)
+        units = QComboBox(dialog)
+        units.addItem("EU • km/h • °C", "metric")
+        units.addItem("USA • mph • °F", "us")
+        units.setCurrentIndex(max(0, units.findData(self.settings_store.value("unit_system", "metric"))))
+        form.addRow(self.tr_text("Units"), units)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=dialog)
         buttons.button(QDialogButtonBox.Save).setText(self.tr_text("Save"))
         buttons.button(QDialogButtonBox.Cancel).setText(self.tr_text("Cancel"))
@@ -1052,6 +1111,8 @@ class MainWindow(QMainWindow):
         if dialog.exec() != QDialog.Accepted:
             dialog.deleteLater()
             return
+        self.settings_store.setValue("unit_system", units.currentData())
+        self.refresh_pages()
         old_language, old_theme = self.language, self.dark_theme
         self.language = str(language.currentData())
         self.dark_theme = bool(theme.currentData())

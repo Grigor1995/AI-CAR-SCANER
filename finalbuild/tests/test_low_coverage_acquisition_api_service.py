@@ -62,3 +62,32 @@ async def test_simulator_acquisition_marks_error_when_telemetry_append_fails(mon
     stopped = await service.stop(sid)
     assert stopped.state == "STOPPED"
     assert service.snapshot(sid)
+
+
+@pytest.mark.asyncio
+async def test_live_parameter_update_preserves_history_and_rejects_real_adapter(monkeypatch):
+    from acquisition.models import SimulatorParameters
+    monkeypatch.setattr(telemetry_service, "append", lambda samples: None)
+    service = AcquisitionApiService()
+    sid = uuid4()
+    await service.start_simulator(sid, AcquisitionStartRequest(poll_interval_ms=20))
+    try:
+        await asyncio.sleep(.025)
+        service.set_simulator_parameters(sid, SimulatorParameters(speed_kmh=120, coolant_c=105, rpm=2400))
+        await asyncio.sleep(.025)
+        rows = service.snapshot(sid, 100)
+        speeds = [r.numeric_value for r in rows if r.channel == "0x0D"]
+        assert 40 in speeds and speeds[-1] == 120
+        service._states[sid].adapter = "usb"
+        with pytest.raises(ValueError, match="simulator"):
+            service.set_simulator_parameters(sid, SimulatorParameters())
+    finally:
+        await service.stop(sid)
+
+
+def test_simulator_parameters_reject_nonfinite_and_out_of_range():
+    from acquisition.models import SimulatorParameters
+    from pydantic import ValidationError
+    for values in ({"speed_kmh": -1}, {"coolant_c": float("nan")}, {"throttle_percent": 101}):
+        with pytest.raises(ValidationError):
+            SimulatorParameters(**values)

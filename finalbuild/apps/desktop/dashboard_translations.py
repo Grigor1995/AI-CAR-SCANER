@@ -277,3 +277,13 @@ MESSAGES['ru'].update({
     'Generate recommended tests':'Получить рекомендуемые тесты',
     'Add symptoms or DTCs, then analyze the session to generate recommended tests.':'Добавьте симптомы или коды DTC и выполните анализ сеанса, чтобы получить рекомендуемые тесты.',
 })
+
+
+MESSAGES['hy'].update({
+    'Units': 'Չափման միավորներ',
+    'Apply simulator values': 'Կիրառել սիմուլյատորի արժեքները',
+})
+MESSAGES['ru'].update({
+    'Units': 'Единицы измерения',
+    'Apply simulator values': 'Применить значения симулятора',
+})

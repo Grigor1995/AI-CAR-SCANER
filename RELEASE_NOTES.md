@@ -1,5 +1,17 @@
 # Release notes
 
+## Unreleased — Live simulator controls and measurement units
+
+- Added live RPM, coolant temperature, speed and throttle controls, validated by
+  the backend; physical adapter measurements cannot be edited. Apply changes
+  after starting the simulator without clearing previous samples.
+- Added persistent EU (km/h, °C) and USA (mph, °F) display settings. Diagnostic
+  evidence remains in canonical SI units.
+- Made Live Data scrollable, centered constant traces, and stabilized channel
+  selections when the acquisition record window rotates.
+- Current test progress counts only the displayed recommendation plan; an empty
+  plan shows 0/0 even when historical results exist.
+
 ## Unreleased — Guided tests and Live Data parameter names
 
 - Retained rule-specific recommendations in executable decision plans and

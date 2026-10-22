@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from api.telemetry_routes import service as telemetry_service
 from telemetry.models import TelemetrySample
-from .models import AcquisitionStartRequest, AcquisitionStatus
+from .models import AcquisitionStartRequest, AcquisitionStatus, SimulatorParameters
 
 
 class AcquisitionSourceType(str, Enum):
@@ -39,6 +39,7 @@ class _AcquisitionState:
     records: list[AcquisitionRecord] = field(default_factory=list)
     task: asyncio.Task | None = None
     sequence: int = 0
+    parameters: SimulatorParameters = field(default_factory=SimulatorParameters)
     stats: dict[str, int] = field(default_factory=lambda: {
         "polls": 0,
         "records": 0,
@@ -73,6 +74,13 @@ class AcquisitionApiService:
         )
         state.state = "RUNNING"
         return self.status(session_id)
+
+    def set_simulator_parameters(self, session_id, parameters: SimulatorParameters):
+        state = self._require(session_id)
+        if state.adapter != "simulator":
+            raise ValueError("Parameters can only be changed for the simulator")
+        state.parameters = parameters
+        return parameters
 
     async def start_device(self, session_id, request, manager, device_id):
         state = self._states.setdefault(session_id, _AcquisitionState())
@@ -150,14 +158,11 @@ class AcquisitionApiService:
         state: _AcquisitionState,
         request: AcquisitionStartRequest,
     ) -> None:
-        base_values = {
-            0x0C: (750.0, "rpm"),
-            0x05: (90.0, "C"),
-            0x0D: (40.0, "km/h"),
-            0x11: (32.0, "%"),
-        }
         try:
             while True:
+                parameters = state.parameters
+                base_values = {0x0C: (parameters.rpm, "rpm"), 0x05: (parameters.coolant_c, "C"),
+                               0x0D: (parameters.speed_kmh, "km/h"), 0x11: (parameters.throttle_percent, "%")}
                 now_ms = int(time.time() * 1000)
                 samples: list[TelemetrySample] = []
                 for pid in request.pids:
@@ -184,6 +189,7 @@ class AcquisitionApiService:
                         sequence=state.sequence,
                     ))
 
+                del state.records[:-5000]
                 if samples:
                     telemetry_service.append(samples)
                 state.stats["polls"] += 1

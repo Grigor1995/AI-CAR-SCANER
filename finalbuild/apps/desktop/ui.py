@@ -810,6 +810,7 @@ class LiveDataPage(QWidget):
         else:
             self.ai_status.setText(f"AI: {'READY' if available else 'OFFLINE'} • {model}")
         self.ai_status.setObjectName("ok" if available and not provider.get("_error") else "warn")
+        self.ai_status.setToolTip(str(provider.get("reason") or provider.get("_error") or ""))
         self.ai_status.style().unpolish(self.ai_status)
         self.ai_status.style().polish(self.ai_status)
         summary = self.app.telemetry
@@ -1238,6 +1239,10 @@ class MainWindow(QMainWindow):
             )
             self.statusBar().showMessage(self.tr_text(text))
             self.refresh_pages()
+            # Re-query the AI model and acquisition endpoints after FastAPI
+            # recovery; a cached provider result may still say AI: OFFLINE.
+            if self.online and self.session and self.stack.currentIndex() == 4:
+                self.pages[4].request_refresh()
 
         self.run_worker(work, done)
     def refresh_catalog(self):

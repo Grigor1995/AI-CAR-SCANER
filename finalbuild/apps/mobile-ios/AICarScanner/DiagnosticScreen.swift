@@ -277,7 +277,11 @@ struct DiagnosticScreen: View {
             Text(t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ")).font(.title2.bold())
             Text(t.tr("Backend acquisition samples • no generated measurements", "Данные сбора сервера", "Սերվերից ստացված չափումներ")).font(.caption).foregroundStyle(.secondary)
             Button(t.tr("Refresh channels", "Обновить каналы", "Թարմացնել ալիքները")) { Task { await viewModel.refreshLiveData() } }
-                .buttonStyle(.borderedProminent).disabled(viewModel.session == nil)
+                .buttonStyle(.borderedProminent).disabled(viewModel.session == nil || viewModel.liveDataLoading)
+            if viewModel.liveDataLoading { ProgressView() }
+            if let error = viewModel.liveDataError {
+                Text(error).font(.caption).foregroundStyle(AutomotivePalette.negative)
+            }
             ForEach(Array(Dictionary(grouping: viewModel.liveRecords, by: \.pid).keys.sorted()), id: \.self) { pid in
                 let records = viewModel.liveRecords.filter { $0.pid == pid }
                 SectionCard(pid) {
@@ -297,7 +301,7 @@ struct DiagnosticScreen: View {
         }.task {
             while !Task.isCancelled && viewModel.session != nil {
                 await viewModel.refreshLiveData()
-                if viewModel.error != nil { return }
+                if viewModel.liveDataError != nil { return }
                 do { try await Task.sleep(nanoseconds: 2_000_000_000) }
                 catch { return }
             }

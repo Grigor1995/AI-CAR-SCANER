@@ -9,12 +9,16 @@ ROOT = Path(__file__).resolve().parents[1]
 INTERNAL_ROOTS = {
     "acquisition", "ai", "api", "device", "diagnostic", "multi_ecu",
     "network_discovery", "observability", "platform", "professional_platform",
-    "security", "simulator", "telemetry", "vehicle", "vehicle_diagnostic",
+    "obd", "catalog_sources", "security", "simulator", "telemetry", "vehicle", "vehicle_diagnostic",
 }
 
 def module_exists(module: str) -> bool:
     parts = module.split(".")
     base = ROOT.joinpath(*parts)
+    if parts[0] == "vehicle" and len(parts) > 1:
+        canonical = ROOT.parent.joinpath(*parts)
+        if canonical.with_suffix(".py").is_file() or (canonical / "__init__.py").is_file():
+            return True
     return base.with_suffix(".py").is_file() or (base / "__init__.py").is_file()
 
 def check() -> list[str]:

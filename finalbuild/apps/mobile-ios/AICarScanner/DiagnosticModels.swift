@@ -11,6 +11,7 @@ struct VehicleCatalogEntry: Codable, Identifiable, Hashable {
     let fuel: [String]
     let source: String
     let scope: String
+    var image_attribution: [String: String]? = nil
 }
 struct Vehicle: Codable {
     let make: String

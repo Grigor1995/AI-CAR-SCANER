@@ -16,7 +16,9 @@ def main() -> None:
 
     backend = root / "backend"
     if str(backend) not in sys.path:
-        sys.path.insert(0, str(backend))
+        sys.path.append(str(backend))
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
 
     print(f"[backend] Python {sys.version.split()[0]}; loading from {root}", flush=True)
     if os.getenv("AI_CAR_DESKTOP_LOCAL_DB") == "1":

@@ -66,7 +66,8 @@ async def test_acquisition_start_validates_session_adapter_and_service_errors(mo
 
     with pytest.raises(HTTPException) as exc:
         await acquisition_routes.start_acquisition("s1", AcquisitionStartRequest(adapter="ble"))
-    assert exc.value.status_code == 501
+    assert exc.value.status_code == 409
+    assert "Bind a connected" in exc.value.detail
 
     request = AcquisitionStartRequest(adapter="simulator", pids=[12])
     assert await acquisition_routes.start_acquisition("s1", request) == _status(fake.start_simulator.await_args.args[0])

@@ -10,8 +10,8 @@ class ObdWifiTransport(DiagnosticTransport):
     @property
     def connected(self): return self._writer is not None and not self._writer.is_closing()
     async def connect(self):
-        try: self._reader, self._writer = await asyncio.open_connection(self.host, self.port)
-        except OSError as e: raise TransportError(str(e)) from e
+        try: self._reader, self._writer = await asyncio.wait_for(asyncio.open_connection(self.host, self.port), timeout=5)
+        except (OSError, asyncio.TimeoutError) as e: raise TransportError(str(e)) from e
     async def disconnect(self):
         if self._writer:
             self._writer.close(); await self._writer.wait_closed()

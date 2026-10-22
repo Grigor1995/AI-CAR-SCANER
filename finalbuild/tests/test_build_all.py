@@ -210,3 +210,29 @@ def test_runner_timeout_stops_command_and_keeps_output(tmp_path, capsys):
         runner.run([sys.executable, "-u", "-c", "import time; print('working'); time.sleep(30)"], cwd=tmp_path, timeout=0.3)
     assert "working" in runner.log.read_text()
     assert "working" in capsys.readouterr().out
+
+
+def test_android_builder_passes_selected_backend_url(monkeypatch, tmp_path):
+    project = tmp_path / 'apps/mobile-android'
+    apk = project / 'app/build/outputs/apk/debug/app-debug.apk'
+    apk.parent.mkdir(parents=True); apk.write_bytes(b'apk')
+    output = tmp_path/'output'; output.mkdir()
+    monkeypatch.setattr(build,'PROJECT',tmp_path)
+    monkeypatch.setattr(build,'android_sdk',lambda:None)
+    runner = Mock()
+    args = arguments(tmp_path,android_api_url='http://10.0.2.2:8001/')
+    build.build_android(args,runner,tmp_path,output,tmp_path)
+    assert '-PapiBaseUrl=http://10.0.2.2:8001/' in runner.run.call_args.args[0]
+
+
+def test_android_backend_url_rejects_credentials():
+    with pytest.raises(SystemExit) as error:
+        build.main(['--targets','android','--android-api-url','http://user:password@host/'])
+    assert error.value.code == 2
+
+
+@pytest.mark.parametrize('url',['http://[','http://host:invalid/'])
+def test_android_backend_url_rejects_invalid_host_or_port(url):
+    with pytest.raises(SystemExit) as error:
+        build.main(['--targets','android','--android-api-url',url])
+    assert error.value.code == 2

@@ -88,6 +88,7 @@ class FakeApp:
     def delete_selected_vehicle(self): pass
     def new_session(self): pass
     def analyze_input(self): pass
+    def start_bound_acquisition(self): pass
     def start_simulator(self): pass
     def stop_simulator(self): pass
     def analyze_telemetry(self): pass

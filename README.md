@@ -23,6 +23,11 @@ workflow, or `python build.py --ci --with-tests` with authenticated GitHub CLI.
 iOS output is an unsigned Simulator app; iPhone/App Store distribution requires
 Apple signing configuration. Local Windows/Linux runs cannot compile iOS.
 
+## Real OBD and shared vehicle data
+
+[Protocol audit and support matrix](finalbuild/docs/obd/REAL_OBD_AUDIT.md) ·
+[Backend/native bridge setup and APIs](finalbuild/docs/obd/SETUP_AND_API.md).
+
 ## Quick start
 
 See [Windows setup](finalbuild/START_HERE_WINDOWS.md) for the local desktop/AI runtime and [project overview](finalbuild/README.md) for backend setup, tests, and architecture.

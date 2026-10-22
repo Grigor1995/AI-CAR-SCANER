@@ -71,3 +71,45 @@ def test_svg_is_used_only_when_matching_png_is_missing(monkeypatch, tmp_path):
     assert not image.isNull()
     assert image.pixelColor(150, 80).alpha() > 0
     app.processEvents()
+
+
+def test_backend_photo_is_async_cached_and_keeps_credit(monkeypatch):
+    from io import BytesIO
+    from types import SimpleNamespace
+    from PySide6.QtWidgets import QLabel
+    from PySide6 import QtNetwork
+    from apps.desktop.vehicle_artwork import load_backend_portrait
+    app = QApplication.instance() or QApplication([])
+    content = BytesIO()
+    Image.new('RGB', (24, 12), 'blue').save(content, format='PNG')
+    replies = []
+    class Reply:
+        def __init__(self):
+            self.callback = None
+            self.finished = SimpleNamespace(connect=lambda callback: setattr(self, 'callback', callback))
+            self.deleted = False
+        def error(self): return QtNetwork.QNetworkReply.NoError
+        def readAll(self): return content.getvalue()
+        def rawHeader(self, name): return {b'X-Image-Credit':b'Photo%20Author',b'X-Image-License':b'CC BY 4.0',b'X-Image-Source':b'https://commons.wikimedia.org/wiki/File:Car.jpg'}[name]
+        def deleteLater(self): self.deleted = True
+    class Manager:
+        def __init__(self, parent): pass
+        def get(self, request):
+            assert request.transferTimeout() == 5000
+            assert 'make=Toyota' in request.url().toString()
+            reply = Reply(); replies.append(reply); return reply
+    monkeypatch.setattr(QtNetwork, 'QNetworkAccessManager', Manager)
+    label = QLabel()
+    load_backend_portrait(label, 'http://127.0.0.1:8001', 'Toyota', 'Corolla', 'E140/E150', 48, 24)
+    assert label._backend_portrait is None  # The fetch has not completed.
+    replies[0].callback()
+    assert label._backend_portrait is not None and replies[0].deleted
+    assert 'Photo Author' in label.toolTip() and 'CC BY 4.0' in label.toolTip()
+    load_backend_portrait(label, 'http://127.0.0.1:8001', 'Toyota', 'Corolla', 'E140/E150', 48, 24)
+    assert len(replies) == 1
+    # A delayed previous selection must not replace the newly selected vehicle.
+    load_backend_portrait(label, 'http://127.0.0.1:8001', 'Toyota', 'Camry', 'XV40', 48, 24)
+    label.setProperty('backend_portrait_url', 'another selection')
+    replies[1].callback()
+    assert label._backend_portrait is None
+    label.close(); label.deleteLater(); app.processEvents()

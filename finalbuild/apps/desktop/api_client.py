@@ -102,6 +102,9 @@ class DiagnosticApiClient:
             json={"test_id": test_id, "result": result, "measurements": measurements or {}, "notes": notes},
         )
 
+    def start_bound_acquisition(self, session_id: str) -> dict[str, Any]:
+        return self._request("POST", f"/api/v1/acquisition/sessions/{session_id}/start", json={"adapter": "bound"})
+
     def start_simulator(self, session_id: str) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/acquisition/sessions/{session_id}/start", json={"adapter": "simulator"})
 

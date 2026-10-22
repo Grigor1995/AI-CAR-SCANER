@@ -9,6 +9,8 @@ from diagnostic.decision import DiagnosticDecisionEngine
 from api.platform_routes import router as platform_router
 from api.intelligence_routes import router as intelligence_router
 from api.state import sessions, load_persisted_sessions, persist_sessions
+from api.obd_routes import router as obd_router
+from api.vehicle_reference_routes import router as reference_router
 from api.ai_routes import router as ai_router
 from api.knowledge_routes import router as knowledge_router
 from api.rag_routes import router as rag_router
@@ -27,7 +29,13 @@ from api.global_data_routes import router as global_data_router
 async def lifespan(_app: FastAPI):
     """Restore persisted sessions before serving requests."""
     load_persisted_sessions()
-    yield
+    try:
+        yield
+    finally:
+        from api.state import vci_manager
+        from api.acquisition_routes import service as acquisition
+        await acquisition.shutdown()
+        await vci_manager.shutdown()
 
 
 app = FastAPI(title="AI Auto Diagnostic Platform", version="0.1.0", lifespan=lifespan)
@@ -41,6 +49,8 @@ async def persist_diagnostic_sessions(request: Request, call_next):
 engine=DiagnosticReasoningEngine()
 intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()
+app.include_router(obd_router)
+app.include_router(reference_router)
 app.include_router(platform_router)
 app.include_router(intelligence_router)
 app.include_router(ai_router)

@@ -254,3 +254,6 @@ MESSAGES["ru"].update({
     "Acquisition unavailable": "Сбор данных недоступен",
     "Session not found": "Сессия не найдена",
 })
+
+MESSAGES["ru"].update({"Start connected adapter": "Запустить подключённый адаптер", "Connected adapter acquisition started": "Сбор данных подключённого адаптера запущен"})
+MESSAGES["hy"].update({"Start connected adapter": "Սկսել միացված ադապտերով", "Connected adapter acquisition started": "Միացված ադապտերի տվյալների հավաքումը սկսված է"})

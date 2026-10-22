@@ -23,7 +23,7 @@ class UsbObdClientConnectTest {
         every { manager.hasPermission(device) } returns false
         every { device.deviceName } returns "usb-test-device"
 
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(manager, device)
 
         assertTrue(result.isFailure)
@@ -48,7 +48,7 @@ class UsbObdClientConnectTest {
         every { intf.getEndpoint(0) } returns endpoint
         every { endpoint.type } returns UsbConstants.USB_ENDPOINT_XFER_INT
 
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(manager, device)
 
         assertTrue(result.isFailure)
@@ -67,7 +67,7 @@ class UsbObdClientConnectTest {
         every { manager.openDevice(device) } returns null
         every { device.deviceName } returns "usb-test-device"
 
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(manager, device)
 
         assertTrue(result.isFailure)
@@ -89,7 +89,7 @@ class UsbObdClientConnectTest {
         every { handle.releaseInterface(intf) } returns false
         every { handle.close() } returns Unit
 
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(manager, device)
 
         assertTrue(result.isFailure)
@@ -128,7 +128,7 @@ class UsbObdClientConnectTest {
             bytes.size
         }
 
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
         val connected = client.connect(manager, device)
 
         assertTrue(connected.isSuccess)

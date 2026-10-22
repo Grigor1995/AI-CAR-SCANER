@@ -6,7 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    private const val BASE_URL = "https://ai-car-scaner.onrender.com/"
+    val BASE_URL = com.aicarscaner.mobile.BuildConfig.API_BASE_URL.trimEnd('/') + "/"
 
     val diagnosticApi: DiagnosticApi by lazy {
         val httpClient = OkHttpClient.Builder()

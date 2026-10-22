@@ -34,55 +34,91 @@ class DeviceDescriptor:
 
 
 class VCIConnectionManager:
-    """Deterministic simulator VCI manager until physical adapters are injected."""
+    """Backend device facade: explicit simulator plus real server-local transports."""
 
     def __init__(self):
         self.devices: dict[str, DeviceDescriptor] = {}
         self.connections: dict[str, dict] = {}
+        self._physical_manager = None
+
+    def _physical(self):
+        if self._physical_manager is None:
+            from vehicle.devices.connection import VCIConnectionManager as PhysicalManager
+            self._physical_manager = PhysicalManager()
+        return self._physical_manager
+
+    def _publish(self, descriptor):
+        self.devices[descriptor.device_id] = descriptor
+        return descriptor
+
+    async def _physical_call(self, method, *args):
+        try:
+            result = await getattr(self._physical(), method)(*args)
+            return result
+        except Exception as error:
+            raise DeviceConnectionError(str(error)) from error
 
     def add_simulator(self) -> DeviceDescriptor:
         device = DeviceDescriptor(
             device_id="simulator-vci",
             status=DeviceStatus.DISCONNECTED,
+            metadata={"simulated": True},
         )
         self.devices[device.device_id] = device
         self.connections.pop(device.device_id, None)
         return device
 
     async def scan(self, transport: str, timeout: float = 3.0):
-        if transport.lower() != "simulator":
-            raise DeviceConnectionError("Only simulator transport is available in this phase")
-        return [self.add_simulator()]
+        if transport.lower() == "simulator":
+            return [self.add_simulator()]
+        return [self._publish(d) for d in await self._physical_call("scan", transport, timeout)]
 
     async def probe_wifi(self, host: str, port: int, timeout: float):
-        raise DeviceConnectionError("Wi-Fi physical probing is not available in this phase")
+        return self._publish(await self._physical_call("probe_wifi", host, port, timeout))
 
     async def connect(self, device_id: str, config: dict | None = None):
+        if device_id != "simulator-vci":
+            return self._publish(await self._physical_call("connect", device_id, config))
         device = self._get(device_id)
         device.status = DeviceStatus.CONNECTED
         self.connections[device_id] = dict(config or {})
         return device
 
     async def reconnect(self, device_id: str):
+        if device_id != "simulator-vci":
+            return self._publish(await self._physical_call("reconnect", device_id))
         return await self.connect(device_id, self.connections.get(device_id, {}))
 
     async def disconnect(self, device_id: str):
+        if device_id != "simulator-vci":
+            return self._publish(await self._physical_call("disconnect", device_id))
         device = self._get(device_id)
         device.status = DeviceStatus.DISCONNECTED
         return device
 
     def status(self, device_id: str) -> DeviceDescriptor:
+        if device_id != "simulator-vci":
+            try:
+                return self._physical().status(device_id)
+            except Exception as error:
+                raise DeviceConnectionError(str(error)) from error
         return self._get(device_id)
 
     async def read_vin(self, device_id: str):
+        if device_id != "simulator-vci":
+            return await self._physical_call("read_vin", device_id)
         self._require_connected(device_id)
         return "WDD2110801A123456"
 
     async def read_dtcs(self, device_id: str):
+        if device_id != "simulator-vci":
+            return await self._physical_call("read_dtcs", device_id)
         self._require_connected(device_id)
         return ["P0102"]
 
     async def read_live_data(self, device_id: str):
+        if device_id != "simulator-vci":
+            return await self._physical_call("read_live_data", device_id)
         self._require_connected(device_id)
         return {
             "rpm": 1696.0,
@@ -102,6 +138,10 @@ class VCIConnectionManager:
         if device.status != DeviceStatus.CONNECTED:
             raise DeviceConnectionError(f"Device is not connected: {device_id}")
         return device
+
+    async def shutdown(self):
+        if self._physical_manager is not None:
+            await self._physical_manager.shutdown()
 
 
 vci_manager = VCIConnectionManager()

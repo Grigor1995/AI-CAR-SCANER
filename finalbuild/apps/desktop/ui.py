@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 from .api_client import DiagnosticApiClient
 from .models import Vehicle, Session, TestCandidate
 from .storage import VehicleStore
-from .vehicle_artwork import vehicle_pixmap
+from .vehicle_artwork import vehicle_pixmap, load_backend_portrait
 from .dashboard_translations import MESSAGES
 from .demo_ui import DemoDashboard, DTCPage, HypothesesPage, ReportsPage, TeachPage, SignalGrid
 
@@ -490,9 +490,8 @@ class VehicleDialog(QDialog):
     def _update_artwork_preview(self, *_args: Any) -> None:
         if getattr(self, "_prefilling", False):
             return
-        self.artwork_preview.setPixmap(vehicle_pixmap(
-            self.make.currentText(), self.model.currentText(), self.chassis.currentText(), 270, 144
-        ))
+        load_backend_portrait(self.artwork_preview, getattr(getattr(self.parent(), "api", None), "base_url", None),
+            self.make.currentText(), self.model.currentText(), self.chassis.currentText(), 270, 144)
 
     def _items(self, **filters: Any) -> list[dict[str, Any]]:
         rows = self._catalog
@@ -563,6 +562,9 @@ class VehicleDialog(QDialog):
             year=int(self.year.currentText()) if self.year.currentText().isdigit() and int(self.year.currentText()) > 0 else None,
             engine=self.engine.currentText(),
         )
+        if rows and hasattr(self, "fuel") and not getattr(self, "_prefilling", False):
+            if rows[0].get("fuel"):
+                self.fuel.setText(",".join(rows[0]["fuel"]))
         ecus = sorted({row["ecu"] for row in rows if row.get("ecu")})
         self._set_combo(self.ecu, ecus, "ME9.7" if "ME9.7" in ecus else (ecus[0] if ecus else None))
 
@@ -638,7 +640,7 @@ class VehiclesPage(QWidget):
         if not items: return
         v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
     def show_vehicle(self,v:Vehicle):
-        self.model_artwork.setPixmap(vehicle_pixmap(v.make, v.model, v.chassis, 340, 175))
+        load_backend_portrait(self.model_artwork, self.app.api.base_url, v.make, v.model, v.chassis, 340, 175)
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
 class DiagnosticPage(QWidget):
@@ -673,9 +675,10 @@ class DiagnosticPage(QWidget):
 class LiveDataPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
+        lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
+        self.real_start.clicked.connect(app.start_bound_acquisition)
         self.start.clicked.connect(app.start_simulator); self.stop.clicked.connect(app.stop_simulator); self.analyze.clicked.connect(app.analyze_telemetry); self.ai_analyze.clicked.connect(app.ai_analyze_live_data)
-        bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
+        bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.real_start); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
         self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setMaximumHeight(110); lay.addWidget(self.chart); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
@@ -1432,6 +1435,10 @@ class MainWindow(QMainWindow):
         self.run_worker(work,self._analysis_done)
     def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id, language=self.language),self._decision_done)
     def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
+    def start_bound_acquisition(self):
+        if not self.session: return
+        self.run_worker(lambda:self.api.start_bound_acquisition(self.session.session_id), lambda _d:self._sim_changed("Connected adapter acquisition started"))
+
     def start_simulator(self):
         if not self.session: self.new_session(); return
         self.run_worker(lambda:self.api.start_simulator(self.session.session_id),lambda _d:self._sim_changed("Simulator acquisition started"))

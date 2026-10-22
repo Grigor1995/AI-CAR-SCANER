@@ -157,7 +157,7 @@ class VCIConnectionManager:
         return self._register(descriptor)
 
     def _transport_for(self, descriptor: DeviceDescriptor, config: dict[str, Any]) -> DiagnosticTransport:
-        kind = descriptor.connection_type.upper() if descriptor.connection_type else ""
+        kind = descriptor.connection_type.upper().replace("-", "") if descriptor.connection_type else ""
         if kind == "USB":
             port = str(config.get("port") or descriptor.metadata.get("port") or "")
             if not port:
@@ -183,19 +183,26 @@ class VCIConnectionManager:
         if descriptor is None:
             raise DeviceConnectionError(f"Unknown device: {device_id}")
         config = dict(config or {})
+        if device_id in self.connections:
+            await self.disconnect(device_id)
         descriptor.status = DeviceStatus.CONNECTING
+        transport = None
         try:
             transport = self._transport_for(descriptor, config)
-            obd = GenericObdClient(transport)
+            obd = GenericObdClient(transport, protocol_id=str(config.get("protocol_id", "auto")))
             await obd.connect()
             self.connections[device_id] = ManagedConnection(descriptor, transport, obd)
             descriptor.status = DeviceStatus.CONNECTED
             descriptor.metadata["last_error"] = None
             descriptor.metadata["connection_config"] = config
             return descriptor
-        except Exception as exc:
+        except BaseException as exc:
+            if transport is not None:
+                await transport.disconnect()
             descriptor.status = DeviceStatus.ERROR
             descriptor.metadata["last_error"] = str(exc)
+            if isinstance(exc, asyncio.CancelledError):
+                raise
             raise DeviceConnectionError(str(exc)) from exc
 
     async def disconnect(self, device_id: str) -> DeviceDescriptor:

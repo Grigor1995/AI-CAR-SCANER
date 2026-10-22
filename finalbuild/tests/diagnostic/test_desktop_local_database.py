@@ -28,7 +28,9 @@ def test_local_seed_is_repeatable_and_keeps_user_edits(tmp_path, monkeypatch):
             assert db.get(VehicleCatalogEntryRow, key).source == "user-edited"
         monkeypatch.setattr(catalog, "_engine", engine)
         entries = catalog.list_entries()
-        assert len(entries) == count
+        stored = [entry for entry in entries if entry["scope"] != "generation-reference-not-vin-fitment"]
+        assert len(stored) == count
+        assert any(entry["scope"] == "generation-reference-not-vin-fitment" for entry in entries)
         assert all(isinstance(row["fuel"], list) for row in entries)
         assert any(row["chassis"] == "W211" for row in entries)
     finally:

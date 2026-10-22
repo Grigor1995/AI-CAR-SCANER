@@ -11,8 +11,24 @@ service=AcquisitionApiService()
 async def start_acquisition(session_id: str, request: AcquisitionStartRequest):
     if session_id not in sessions: raise HTTPException(404,'Session not found')
     if request.adapter != 'simulator':
-        raise HTTPException(501,'Physical adapter selection is a device-side integration; use desktop/mobile/device adapter directly')
+        from api.state import vci_manager
+        device_id = request.device_id or sessions[session_id].connected_device_id
+        if not device_id:
+            raise HTTPException(409, 'Bind a connected server-local device or supply device_id')
+        try:
+            device = vci_manager.status(device_id)
+            kind = device.connection_type.lower().replace('-', '')
+            if request.adapter == 'bound':
+                if kind not in {'wifi', 'usb', 'ble'}:
+                    raise ValueError('Bound acquisition requires a physical server-local adapter')
+                request = request.model_copy(update={'adapter': kind})
+            if device.status.value != 'connected' or kind != request.adapter:
+                raise ValueError('Connected device transport does not match requested adapter')
+            return await service.start_device(sessions[session_id].session_id, request, vci_manager, device_id)
+        except Exception as error:
+            raise HTTPException(409, str(error)) from error
     try: return await service.start_simulator(sessions[session_id].session_id,request)
+    except ValueError as exc: raise HTTPException(409, str(exc)) from exc
     except Exception as exc: raise HTTPException(502,f'Acquisition start failed: {exc}') from exc
 
 @router.post('/sessions/{session_id}/stop',response_model=AcquisitionStatus)

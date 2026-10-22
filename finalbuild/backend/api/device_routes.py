@@ -122,3 +122,14 @@ async def read_live_data(device_id: str):
         return {"device_id": device_id, "values": await manager.read_live_data(device_id)}
     except DeviceConnectionError as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+@router.get("/{device_id:path}/obd/protocol")
+async def protocol_status(device_id: str):
+    try:
+        if device_id == "simulator-vci":
+            return {"simulated": True, "observed": False, "protocol_id": None}
+        result = await manager._physical().connected_obd(device_id).protocol_status()
+        return result | {"simulated": False}
+    except Exception as error:
+        raise HTTPException(409, str(error)) from error

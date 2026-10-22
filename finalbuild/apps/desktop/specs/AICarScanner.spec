@@ -34,7 +34,7 @@ a = Analysis(
           ],
     hiddenimports=[
         "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets", "PySide6.QtSvg",
-        "PySide6.QtPrintSupport", "requests", "apps.desktop.ui",
+        "PySide6.QtPrintSupport", "PySide6.QtNetwork", "requests", "apps.desktop.ui",
         "apps.desktop.api_client", "apps.desktop.vehicle_artwork",
         "apps.desktop.demo_ui", "apps.desktop.backend_recovery",
     ],

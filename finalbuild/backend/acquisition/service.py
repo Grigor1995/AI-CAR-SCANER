@@ -35,6 +35,7 @@ class AcquisitionRecord:
 @dataclass
 class _AcquisitionState:
     state: str = "STOPPED"
+    adapter: str = "simulator"
     records: list[AcquisitionRecord] = field(default_factory=list)
     task: asyncio.Task | None = None
     sequence: int = 0
@@ -59,6 +60,9 @@ class AcquisitionApiService:
         if state.task and not state.task.done():
             return self.status(session_id)
 
+        if any(s.source in {"NATIVE_OBD_BRIDGE", "SERVER_LOCAL_OBD"} for s in telemetry_service.samples(session_id)):
+            raise ValueError("Create a new session before switching real measurements to simulator data")
+        state.adapter = "simulator"
         state.state = "STARTING"
         state.stats = {"polls": 0, "records": 0, "errors": 0, "reconnects": 0}
         state.records.clear()
@@ -69,6 +73,76 @@ class AcquisitionApiService:
         )
         state.state = "RUNNING"
         return self.status(session_id)
+
+    async def start_device(self, session_id, request, manager, device_id):
+        state = self._states.setdefault(session_id, _AcquisitionState())
+        if state.task and not state.task.done():
+            raise ValueError("Stop the current acquisition before switching adapters")
+        if any(s.source in {"SIMULATOR", "OBD_ACQUISITION"} for s in telemetry_service.samples(session_id)):
+            raise ValueError("Create a new session before adding real measurements to simulator data")
+        state.adapter = request.adapter
+        state.stats = {"polls": 0, "records": 0, "errors": 0, "reconnects": 0}
+        state.state = "RUNNING"
+        state.records.clear()
+        state.sequence = 0
+        state.task = asyncio.create_task(self._poll_device(session_id, state, request, manager, device_id))
+        return self.status(session_id)
+
+    def append_bridge(self, session_id, result, *, adapter="native_bridge"):
+        state = self._states.setdefault(session_id, _AcquisitionState())
+        if state.task and not state.task.done():
+            raise ValueError("A server-local acquisition is running for this session")
+        if state.adapter != adapter:
+            state.records.clear()
+            state.sequence = 0
+            state.stats = {"polls": 0, "records": 0, "errors": 0, "reconnects": 0}
+        state.adapter = adapter
+        state.state = "RUNNING"
+        state.stats["polls"] += 1
+        for key, value in result["values"].items():
+            if value is None:
+                continue
+            state.sequence += 1
+            state.records.append(AcquisitionRecord(session_id=session_id, timestamp_ms=int(time.time()*1000),
+                                 channel=key, numeric_value=value, unit=result["units"].get(key), sequence=state.sequence,
+                                 metadata={"adapter": adapter, "protocol": result.get("protocol")}))
+            state.stats["records"] += 1
+        del state.records[:-5000]
+
+    async def _poll_device(self, session_id, state, request, manager, device_id):
+        from obd.decoding import PIDS
+        selected = [p for p in PIDS if int(p.command[2:], 16) in request.pids]
+        names = {"coolant_c":"coolant_temp", "speed_kmh":"vehicle_speed", "throttle_percent":"throttle",
+                 "maf_gps":"maf", "map_kpa":"map", "short_fuel_trim_percent":"stft", "long_fuel_trim_percent":"ltft"}
+        try:
+            while True:
+                values = await manager.read_live_data(device_id)
+                state.stats["polls"] += 1
+                if not any(value is not None for value in values.values()):
+                    raise ConnectionError("No valid OBD PID values received")
+                for pid in selected:
+                    value = values.get(pid.key)
+                    if value is None:
+                        continue
+                    state.sequence += 1
+                    now = int(time.time()*1000)
+                    state.records.append(AcquisitionRecord(session_id=session_id, timestamp_ms=now,
+                        channel=pid.key, numeric_value=value, unit=pid.unit, sequence=state.sequence,
+                        metadata={"adapter": request.adapter, "device_id": device_id}))
+                    telemetry_service.append([TelemetrySample(session_id=session_id, timestamp_ms=now,
+                        pid=names.get(pid.key,pid.key), value=value, unit=pid.unit, source="SERVER_LOCAL_OBD")])
+                    state.stats["records"] += 1
+                del state.records[:-5000]
+                await asyncio.sleep(request.poll_interval_ms/1000)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            state.stats["errors"] += 1
+            state.state = "ERROR"
+
+    async def shutdown(self):
+        for session_id in list(self._states):
+            await self.stop(session_id)
 
     async def _poll_simulator(
         self,
@@ -105,7 +179,8 @@ class AcquisitionApiService:
                         pid=f"0x{pid:02X}",
                         value=value,
                         unit=unit,
-                        source="OBD_ACQUISITION",
+                        source="SIMULATOR",
+                        metadata={"simulated": True},
                         sequence=state.sequence,
                     ))
 
@@ -138,7 +213,7 @@ class AcquisitionApiService:
         return AcquisitionStatus(
             session_id=session_id,
             state=state.state,
-            adapter="simulator",
+            adapter=state.adapter,
             stats=state.stats.copy(),
             buffered_records=len(state.records),
             offline_queue_items=0,

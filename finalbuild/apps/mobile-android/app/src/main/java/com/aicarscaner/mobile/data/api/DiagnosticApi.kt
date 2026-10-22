@@ -124,6 +124,12 @@ data class DiagnosticSessionDto(
 )
 
 interface DiagnosticApi {
+    @GET("api/v1/obd/plan")
+    suspend fun obdPlan(): ObdPlanDto
+
+    @POST("api/v1/obd/decode")
+    suspend fun decodeObd(@Body frames: ObdRawSnapshotDto): ObdDecodedSnapshotDto
+
     @GET("api/v1/sessions")
     suspend fun listSessions(): List<DiagnosticSessionDto>
 
@@ -187,3 +193,8 @@ interface DiagnosticApi {
         @Query("language") language: String = "en"
     ): DiagnosticSessionDto
 }
+
+
+data class ObdPlanDto(val initialization: List<String>, val commands: List<String>)
+data class ObdRawSnapshotDto(val responses: Map<String, String>, val session_id: String? = null)
+data class ObdDecodedSnapshotDto(val values: com.aicarscaner.mobile.data.obd.LiveDataSnapshot)

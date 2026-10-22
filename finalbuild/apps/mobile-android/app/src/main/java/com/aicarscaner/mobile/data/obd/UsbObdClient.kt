@@ -6,10 +6,16 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class UsbObdClient {
+class UsbObdClient(private val initializationPlan: suspend () -> List<String> = {
+    com.aicarscaner.mobile.data.api.ApiClient.diagnosticApi.obdPlan().initialization
+}) {
+    private val commandMutex = Mutex()
     private var connection: UsbDeviceConnection? = null
     private var usbInterface: UsbInterface? = null
     private var inEndpoint: UsbEndpoint? = null
@@ -51,6 +57,7 @@ class UsbObdClient {
 
     suspend fun command(command: String, timeoutMs: Long = 3000): Result<String> =
         withContext(Dispatchers.IO) {
+            commandMutex.withLock {
             runCatching {
                 val handle = connection ?: error("USB OBD adapter is not connected")
                 val input = inEndpoint ?: error("USB input endpoint is not available")
@@ -65,17 +72,19 @@ class UsbObdClient {
                 val response = StringBuilder()
                 val deadline = System.currentTimeMillis() + timeoutMs
                 while (System.currentTimeMillis() < deadline) {
+                    kotlin.coroutines.coroutineContext.ensureActive()
                     val count = handle.bulkTransfer(input, buffer, buffer.size, 250)
                     if (count > 0) {
                         val chunk = String(buffer, 0, count, Charsets.US_ASCII)
                         for (ch in chunk) {
                             if (ch == '>') return@runCatching clean(response.toString())
-                            if (ch != '\r' && ch != '\n') response.append(ch)
+                            response.append(ch)
                         }
                     }
                 }
-                clean(response.toString())
-            }
+                throw java.net.SocketTimeoutException("OBD response prompt timed out")
+            }.onFailure { close(); if (it is kotlinx.coroutines.CancellationException) throw it }
+        }
         }
 
     suspend fun readRpm(): Result<String> = command("010C")
@@ -93,11 +102,7 @@ class UsbObdClient {
     }
 
     private suspend fun initialize() {
-        command("ATZ", 4000)
-        command("ATE0")
-        command("ATL0")
-        command("ATS0")
-        command("ATSP0")
+        for (step in initializationPlan()) command(step, 35000).getOrThrow()
     }
 
     private fun clean(value: String): String =

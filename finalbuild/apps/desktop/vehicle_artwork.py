@@ -51,3 +51,44 @@ def vehicle_pixmap(make: str, model: str, chassis: str, width: int = 420, height
     path = artwork_path(make, model, chassis) or (_root() / "assets" / "AI-Car-Scanner-mobile.png")
     modified = path.stat().st_mtime_ns if path.is_file() else 0
     return QPixmap.fromImage(_portrait_image(str(path), modified, width, height))
+
+
+def load_backend_portrait(label, base_url, make, model, chassis, width=420, height=200):
+    """Display a local cache immediately; fetch backend artwork without blocking Qt."""
+    from urllib.parse import urlencode, unquote
+    from PySide6.QtCore import QUrl
+    from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+    label.setPixmap(vehicle_pixmap(make, model, chassis, width, height))
+    if not isinstance(base_url, str) or not base_url.startswith(("https://", "http://")) or not make or not model:
+        return
+    url = base_url.rstrip("/") + "/api/v1/vehicle-reference/image?" + urlencode({"make": make, "model": model, "chassis": chassis or ""})
+    if label.property("backend_portrait_url") == url:
+        cached = getattr(label, "_backend_portrait", None)
+        if cached is not None:
+            label.setPixmap(cached)
+        return
+    label.setProperty("backend_portrait_url", url)
+    label._backend_portrait = None
+    manager = getattr(label, "_portrait_manager", None)
+    if manager is None:
+        manager = QNetworkAccessManager(label)
+        label._portrait_manager = manager
+    request = QNetworkRequest(QUrl(url))
+    request.setTransferTimeout(5000)
+    reply = manager.get(request)
+    def finished():
+        try:
+            if label.property("backend_portrait_url") == url and reply.error() == QNetworkReply.NoError:
+                image = QImage.fromData(bytes(reply.readAll()))
+                if not image.isNull():
+                    pixmap = QPixmap.fromImage(image.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                    label._backend_portrait = pixmap
+                    label.setPixmap(pixmap)
+                    credit = unquote(bytes(reply.rawHeader(b"X-Image-Credit")).decode())
+                    license_name = bytes(reply.rawHeader(b"X-Image-License")).decode()
+                    source = bytes(reply.rawHeader(b"X-Image-Source")).decode()
+                    if credit or license_name:
+                        label.setToolTip("\n".join([credit, license_name, source]))
+        finally:
+            reply.deleteLater()
+    reply.finished.connect(finished)

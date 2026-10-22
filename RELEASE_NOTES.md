@@ -1,5 +1,24 @@
 # Release notes
 
+## Unreleased — Shared OBD backend and vehicle references
+
+- Centralized ELM initialization, ten live-data PID formulas, protocol selection,
+  telemetry ingestion and vehicle references in the backend. Android and iOS
+  native bridges forward adapter bytes; Desktop can start a connected adapter.
+- Connected the public backend device API to server-local USB serial, BLE GATT
+  and Wi-Fi transports. Added strict ELM/ISO-TP reply parsing, bounded timeouts,
+  stored/pending/permanent DTC reads and supported-PID discovery.
+- Added 50 generation references / 147 engine options with fuel types, source
+  links and explicit unverified-fitment labels. Protocol candidates require
+  adapter detection; this is not a claim of universal vehicle compatibility.
+- Added backend image delivery and an attributed Commons photo importer. Actual
+  photo downloads were blocked by HTTP 403 here; existing illustrations remain.
+- Added Android build-time backend URL selection with `--android-api-url`.
+- See the [OBD audit and validation boundaries](finalbuild/docs/obd/REAL_OBD_AUDIT.md)
+  and [deployment/API guide](finalbuild/docs/obd/SETUP_AND_API.md). DoIP, CAN FD,
+  enhanced OEM diagnostics and physical UDS API support remain unimplemented.
+  iOS requires Xcode/device verification; no physical vehicle was tested.
+
 ## 0.6.0 — Native UI, build and reliability update
 
 **Date:** 2026-10-22  

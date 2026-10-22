@@ -7,6 +7,16 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var history: [DiagnosticSession] = []
     @Published var liveRecords: [LiveRecord] = []
     @Published var catalog: [VehicleCatalogEntry] = []
+    @Published var obdValues: [String: Double?] = [:]
+    private let obdWifi = NativeObdWifiBridge()
+
+    func readObdWifi(host: String, port: Int) async {
+        do { obdValues = try await obdWifi.poll(host: host, port: port, api: api, sessionID: session?.session_id).values }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func disconnectObdWifi() async { await obdWifi.disconnect(); obdValues = [:] }
+
     @Published var loading = false
     @Published var error: String?
     @Published var settings = AppSettings()

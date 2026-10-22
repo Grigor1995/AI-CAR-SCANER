@@ -1827,3 +1827,21 @@ def test_backend_recovery_refreshes_provider_on_actual_live_data_navigation(wind
     work, done = jobs.pop()
     done(work())
     request_refresh.assert_called_once()
+
+
+def test_connected_adapter_button_dispatches_backend_acquisition(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    window.start_bound_acquisition()
+    assert jobs == []
+    window.session = Session("s-bound", "READY", window.active_vehicle)
+    fake_api.start_bound_acquisition.return_value = {"state": "RUNNING"}
+    window.pages[4].real_start.click()
+    work, done = jobs.pop()
+    result = work()
+    fake_api.start_bound_acquisition.assert_called_once_with("s-bound")
+    callback = Mock()
+    monkeypatch.setattr(window, "_sim_changed", callback)
+    done(result)
+    callback.assert_called_once_with("Connected adapter acquisition started")

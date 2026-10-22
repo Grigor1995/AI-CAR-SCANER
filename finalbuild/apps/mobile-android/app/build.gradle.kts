@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.aicarscaner.mobile"
     compileSdk = 36
+    buildFeatures { buildConfig = true }
 
     buildTypes {
         debug {
@@ -22,6 +23,9 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("https://ai-car-scaner.onrender.com/")
+        require(apiBaseUrl.startsWith("https://") || apiBaseUrl.startsWith("http://"))
+        buildConfigField("String", "API_BASE_URL", "\"" + apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
     }
 
     compileOptions {

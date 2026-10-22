@@ -228,7 +228,9 @@ def build_android(args, runner: Runner, work: Path, output: Path, tools: Path) -
         env["ANDROID_HOME"] = str(sdk)
         env["ANDROID_SDK_ROOT"] = str(sdk)
     env.setdefault("GRADLE_USER_HOME", str(tools / "gradle"))
-    runner.run(command + tasks + ["--no-daemon", "--console=plain"], cwd=project, env=env)
+    api_url = getattr(args, "android_api_url", None)
+    properties = [f"-PapiBaseUrl={api_url}"] if api_url else []
+    runner.run(command + tasks + properties + ["--no-daemon", "--console=plain"], cwd=project, env=env)
     source = require_file(project / "app/build/outputs/apk/debug/app-debug.apk")
     target = output / "AI-Car-Scanner-Android-debug.apk"
     shutil.copy2(source, target)
@@ -345,12 +347,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-unavailable", action="store_true", help="Allow a partial local build; unavailable targets remain explicitly reported")
     parser.add_argument("--with-tests", action="store_true", help="Run Desktop regression, Android JVM/lint, and iOS XCTest before reporting success")
     parser.add_argument("--no-install", action="store_true", help="Use current Python's existing Desktop dependencies instead of creating/updating an isolated environment")
+    parser.add_argument("--android-api-url", help="Backend URL embedded in the Android app, e.g. http://10.0.2.2:8001/")
     parser.add_argument("--ci", action="store_true", help="Submit the three-OS GitHub Actions workflow using an authenticated gh CLI")
     parser.add_argument("--ref", default="main", help="Git ref for --ci (default: main)")
     args = parser.parse_args(argv)
     args.targets = list(dict.fromkeys(args.targets))
+    if args.android_api_url:
+        from urllib.parse import urlsplit
+        try:
+            url = urlsplit(args.android_api_url)
+            if url.port == 0:
+                raise ValueError("port zero")
+        except ValueError:
+            parser.error("--android-api-url has an invalid host or port")
+        if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password or url.query or url.fragment:
+            parser.error("--android-api-url requires an HTTP(S) backend URL without credentials/query/fragment")
     if args.ci:
-        if args.check or args.no_install or args.skip_unavailable or args.targets != list(TARGETS):
+        if args.check or args.no_install or args.skip_unavailable or args.android_api_url or args.targets != list(TARGETS):
             parser.error("--ci builds all three targets; local-only selection/check/install flags do not apply")
         if executable("gh") is None:
             print("Install/authenticate GitHub CLI, or open Actions > Build all native apps > Run workflow.", file=sys.stderr)

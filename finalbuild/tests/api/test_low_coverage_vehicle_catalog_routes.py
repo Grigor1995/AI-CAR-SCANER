@@ -4,6 +4,12 @@ from fastapi import HTTPException
 import api.vehicle_catalog_routes as routes
 
 
+@pytest.fixture(autouse=True)
+def isolate_reference_catalog(monkeypatch):
+    # This module verifies SQL construction. Integration tests cover merged data.
+    monkeypatch.setattr(routes, "selector_entries", lambda **filters: [])
+
+
 def sample_entry(**overrides):
     row = {
         "make": "Mercedes-Benz",

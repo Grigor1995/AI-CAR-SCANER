@@ -6,6 +6,8 @@ struct VehicleModelArtwork: View {
     let make: String
     let model: String
     let chassis: String
+    var backendURL: String? = nil
+    var photoAttribution: [String: String]? = nil
 
     private func piece(_ text: String) -> String {
         text.lowercased()
@@ -21,7 +23,31 @@ struct VehicleModelArtwork: View {
         return UIImage(data: data)
     }
 
+    private var remoteURL: URL? {
+        guard let backendURL, var url = URLComponents(string: backendURL) else { return nil }
+        url.path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/api/v1/vehicle-reference/image"
+        if !url.path.hasPrefix("/") { url.path = "/" + url.path }
+        url.queryItems = [URLQueryItem(name: "make", value: make), URLQueryItem(name: "model", value: model), URLQueryItem(name: "chassis", value: chassis)]
+        return url.url
+    }
+
     var body: some View {
+        if let remoteURL {
+            AsyncImage(url: remoteURL) { phase in
+                if let image = phase.image {
+                    VStack {
+                        image.resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: 170)
+                        if let credit = photoAttribution, let source = credit["source_page"], let url = URL(string: source) {
+                            Link([credit["creator"], credit["license"]].compactMap { $0 }.joined(separator: " • "), destination: url).font(.caption)
+                        }
+                    }
+                }
+                else { bundledArtwork }
+            }.id(remoteURL)
+        } else { bundledArtwork }
+    }
+
+    private var bundledArtwork: some View {
         Group {
             if let portrait {
                 Image(uiImage: portrait)

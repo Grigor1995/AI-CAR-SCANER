@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import re
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -10,6 +11,7 @@ from sqlalchemy import text
 
 from diagnostic.db_models import VehicleCatalogEntryRow
 from diagnostic.database import database_engine
+from obd.catalog import selector_entries
 
 
 router = APIRouter(prefix="/api/v1/vehicle-catalog", tags=["vehicle-catalog"])
@@ -31,6 +33,12 @@ class CatalogEntry(BaseModel):
     fuel: list[str] = Field(default_factory=list)
     source: str
     scope: str
+    engine_type: str | None = None
+    image_url: str | None = None
+    image_attribution: dict[str, str] | None = None
+    vehicle_reference_id: str | None = None
+    fitment_verified: bool = False
+    protocol_policy: str = "auto_detect_on_vehicle"
 
 
 def _ensure_catalog_table() -> None:
@@ -50,6 +58,27 @@ def _run_all(sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
             return rows
     except Exception as exc:
         raise HTTPException(503, f"Vehicle catalog database unavailable: {exc}") from exc
+
+
+def _catalog_rows(sql, params):
+    try:
+        rows = _run_all(sql, params)
+    except HTTPException as error:
+        if error.status_code != 503:
+            raise
+        rows = []
+    refs = selector_entries(**{k: v for k, v in params.items() if k in {"make", "model", "chassis", "year", "engine", "ecu"}})
+    distinct = re.search(r"SELECT\s+DISTINCT\s+(\w+)", sql, re.IGNORECASE)
+    if distinct:
+        key = distinct[1]
+        values = {r[key] for r in rows+refs if r.get(key) is not None}
+        return [{key: value} for value in sorted(values, reverse=key == "year")]
+    artwork = {(r["make"], r["model"], r["chassis"]): r for r in refs}
+    for row in rows:
+        match = artwork.get((row.get("make"), row.get("model"), row.get("chassis")))
+        if match:
+            row.update({key: match[key] for key in ("image_url", "image_attribution", "vehicle_reference_id")})
+    return rows
 
 
 def _require_make_model(make: str, model: str) -> None:
@@ -82,7 +111,7 @@ def list_entries(
             clauses.append(f"{key} = :{key}")
             params[key] = value
     where_clause = " AND ".join(clauses)
-    return _run_all(
+    rows = _catalog_rows(
         f"""
         SELECT make, model, chassis, year, engine, ecu, fuel, source, scope
         FROM vehicle_catalog_entries
@@ -91,9 +120,13 @@ def list_entries(
         """,
         params,
     )
+    references = selector_entries(make=make, model=model, chassis=chassis, year=year, engine=engine, ecu=ecu)
+    keys = {(r["make"], r["model"], r.get("chassis"), r["year"], r["engine"]) for r in rows}
+    return rows + [r for r in references if (r["make"], r["model"], r.get("chassis"), r["year"], r["engine"]) not in keys]
+
 @router.get("/makes", response_model=list[str])
 def list_makes() -> list[str]:
-    rows = _run_all(
+    rows = _catalog_rows(
         "SELECT DISTINCT make FROM vehicle_catalog_entries ORDER BY make",
         {},
     )
@@ -102,7 +135,7 @@ def list_makes() -> list[str]:
 
 @router.get("/models", response_model=list[str])
 def list_models(make: str = Query(..., min_length=1)) -> list[str]:
-    rows = _run_all(
+    rows = _catalog_rows(
         """
         SELECT DISTINCT model
         FROM vehicle_catalog_entries
@@ -120,7 +153,7 @@ def list_chassis(
     model: str = Query(..., min_length=1),
 ) -> list[str]:
     _require_make_model(make, model)
-    rows = _run_all(
+    rows = _catalog_rows(
         """
         SELECT DISTINCT chassis
         FROM vehicle_catalog_entries
@@ -141,7 +174,7 @@ def list_years(
     chassis: str | None = None,
 ) -> list[int]:
     _require_make_model(make, model)
-    rows = _run_all(
+    rows = _catalog_rows(
         """
         SELECT DISTINCT year
         FROM vehicle_catalog_entries
@@ -167,7 +200,7 @@ def list_engines(
     chassis: str | None = None,
 ) -> list[str]:
     _require_make_model(make, model)
-    rows = _run_all(
+    rows = _catalog_rows(
         """
         WITH exact AS (
             SELECT DISTINCT engine
@@ -207,7 +240,7 @@ def list_ecus(
     chassis: str | None = None,
 ) -> list[str]:
     _require_make_model(make, model)
-    rows = _run_all(
+    rows = _catalog_rows(
         """
         SELECT DISTINCT ecu
         FROM vehicle_catalog_entries

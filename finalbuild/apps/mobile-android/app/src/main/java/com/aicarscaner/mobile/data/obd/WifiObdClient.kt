@@ -1,5 +1,8 @@
 package com.aicarscaner.mobile.data.obd
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -8,7 +11,10 @@ import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 
-class WifiObdClient {
+class WifiObdClient(private val initializationPlan: suspend () -> List<String> = {
+    com.aicarscaner.mobile.data.api.ApiClient.diagnosticApi.obdPlan().initialization
+}) {
+    private val commandMutex = Mutex()
     private var socket: Socket? = null
     private var output: OutputStream? = null
     private var reader: BufferedReader? = null
@@ -32,6 +38,7 @@ class WifiObdClient {
 
     suspend fun command(command: String, timeoutMs: Long = 3000): Result<String> =
         withContext(Dispatchers.IO) {
+            commandMutex.withLock {
             runCatching {
                 val out = output ?: error("OBD Wi-Fi adapter is not connected")
                 val input = reader ?: error("OBD Wi-Fi input is not available")
@@ -41,17 +48,19 @@ class WifiObdClient {
                 val deadline = System.currentTimeMillis() + timeoutMs
                 val response = StringBuilder()
                 while (System.currentTimeMillis() < deadline) {
+                    kotlin.coroutines.coroutineContext.ensureActive()
                     while (input.ready()) {
                         val value = input.read()
                         if (value < 0) break
                         val ch = value.toChar()
                         if (ch == '>') return@runCatching clean(response.toString())
-                        if (ch != '\r' && ch != '\n') response.append(ch)
+                        response.append(ch)
                     }
                     Thread.sleep(20)
                 }
-                clean(response.toString())
-            }
+                throw java.net.SocketTimeoutException("OBD response prompt timed out")
+            }.onFailure { close(); if (it is kotlinx.coroutines.CancellationException) throw it }
+        }
         }
 
     suspend fun readRpm(): Result<String> = command("010C")
@@ -65,11 +74,7 @@ class WifiObdClient {
     }
 
     private suspend fun initialize() {
-        command("ATZ", 4000)
-        command("ATE0")
-        command("ATL0")
-        command("ATS0")
-        command("ATSP0")
+        for (step in initializationPlan()) command(step, 35000).getOrThrow()
     }
 
     private fun clean(value: String): String =

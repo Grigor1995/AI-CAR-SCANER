@@ -71,5 +71,16 @@
     "Do not present a hypothesis as a confirmed component failure without supporting test evidence.",
     "Do not label simulated telemetry as real vehicle data.",
     "A missing or failed catalog request must not be represented as an authoritative vehicle fitment result."
-  ]
+  ],
+  "obd": {
+    "logic_owner": "backend",
+    "native_role": "OS byte transport and UI only",
+    "plan_endpoint": "/api/v1/obd/plan",
+    "decode_endpoint": "/api/v1/obd/decode",
+    "protocol_registry_endpoint": "/api/v1/obd/protocols",
+    "reference_endpoint": "/api/v1/vehicle-reference",
+    "model_names_do_not_confirm_protocol": true,
+    "image_source_of_truth": "backend; bundled portraits are offline cache",
+    "session_raw_snapshots_feed_backend_telemetry": true
+  }
 }

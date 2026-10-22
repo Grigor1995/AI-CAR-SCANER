@@ -9,7 +9,7 @@ import org.junit.Test
 class ObdClientsDisconnectedTest {
     @Test
     fun bluetoothCommandsFailClearlyWhenNotConnected() = runTest {
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
 
         assertFalse(client.isConnected)
         assertEquals("OBD adapter is not connected", client.command("010C").exceptionOrNull()?.message)
@@ -21,7 +21,7 @@ class ObdClientsDisconnectedTest {
 
     @Test
     fun wifiCommandsFailClearlyWhenNotConnected() = runTest {
-        val client = WifiObdClient()
+        val client = WifiObdClient(initializationPlan = { backendInitializationFixture })
 
         assertFalse(client.isConnected)
         val rpm = client.readRpm()
@@ -36,7 +36,7 @@ class ObdClientsDisconnectedTest {
 
     @Test
     fun usbCommandsFailClearlyWhenNotConnected() = runTest {
-        val client = UsbObdClient()
+        val client = UsbObdClient(initializationPlan = { backendInitializationFixture })
 
         assertFalse(client.isConnected)
         val rpm = client.readRpm()

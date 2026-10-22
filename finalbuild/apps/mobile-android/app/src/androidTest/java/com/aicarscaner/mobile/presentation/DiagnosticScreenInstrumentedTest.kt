@@ -504,6 +504,9 @@ class DiagnosticScreenInstrumentedTest {
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {
+    override suspend fun obdPlan() = com.aicarscaner.mobile.data.api.ObdPlanDto(emptyList(), listOf("010C"))
+    override suspend fun decodeObd(frames: com.aicarscaner.mobile.data.api.ObdRawSnapshotDto) = com.aicarscaner.mobile.data.api.ObdDecodedSnapshotDto(com.aicarscaner.mobile.data.obd.LiveDataSnapshot())
+
     private var current = DiagnosticSessionDto(
         session_id = "session-test-123456",
         state = "CREATED"

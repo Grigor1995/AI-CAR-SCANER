@@ -338,7 +338,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         }
 
         while (isActive) {
-            LiveDataReader.read { command ->
+            LiveDataReader.read(sessionId = state.session?.session_id) { command ->
                 when (obdTransport) {
                     "bluetooth" -> bluetoothClient.command(command)
                     "wifi" -> wifiClient.command(command)
@@ -610,15 +610,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         petrol,
                         onPetrol = { petrol = it },
                         lpg,
-                        onLpg = { lpg = it }
+                        onLpg = { lpg = it },
+                        language = appSettings.language
                     )
                     Button(
                         onClick = {
                             viewModel.createSession(
-                                VehicleDto(make, model, chassis, year.toIntOrNull(), engine, buildList {
-                                    if (petrol) add("petrol")
-                                    if (lpg) add("LPG")
-                                }, ecu)
+                                VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(state.vehicleCatalog, make, model, chassis, engine, petrol, lpg), ecu)
                             )
                         },
                         enabled = !state.loading,
@@ -922,15 +920,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     petrol = petrol,
                                     onPetrol = { petrol = it },
                                     lpg = lpg,
-                                    onLpg = { lpg = it }
+                                    onLpg = { lpg = it },
+                        language = appSettings.language
                                 )
                                 Button(
                                     onClick = {
                                         viewModel.updateVehicle(
-                                            VehicleDto(make, model, chassis, year.toIntOrNull(), engine, buildList {
-                                                if (petrol) add("petrol")
-                                                if (lpg) add("LPG")
-                                            }, ecu)
+                                            VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(state.vehicleCatalog, make, model, chassis, engine, petrol, lpg), ecu)
                                         )
                                         editingVehicle = false
                                     },
@@ -1636,7 +1632,8 @@ internal fun VehicleFields(
     petrol: Boolean,
     onPetrol: (Boolean) -> Unit,
     lpg: Boolean,
-    onLpg: (Boolean) -> Unit
+    onLpg: (Boolean) -> Unit,
+    language: AppLanguage = AppLanguage.EN
 ) {
     val makes = modelOptionsFor(catalog, make).let { 
         catalog.map { it.make }.distinct().sorted().ifEmpty { vehicleCatalog.map { it.name } }
@@ -1662,14 +1659,24 @@ internal fun VehicleFields(
     VehicleSelectionField(text.engine, engine, engines, onEngine)
     VehicleSelectionField(text.extra.ecu, ecu, ecus, onEcu)
 
+    val serverFuel = catalog.firstOrNull { it.make == make && it.model == model && it.chassis == chassis && it.engine == engine }?.fuel.orEmpty()
     Text(text.fuel, style = MaterialTheme.typography.titleMedium)
-    Row {
-        Checkbox(checked = petrol, onCheckedChange = onPetrol)
-        Text(text.petrol)
+    if (serverFuel.any { it.lowercase() !in listOf("petrol", "lpg") }) {
+        Text(serverFuel.joinToString(" + ") { code -> when(code.lowercase()) {
+            "diesel" -> when(language) { AppLanguage.RU -> "Дизель"; AppLanguage.HY -> "Դիզել"; else -> "Diesel" }
+            "hybrid" -> when(language) { AppLanguage.RU -> "Гибрид"; AppLanguage.HY -> "Հիբրիդ"; else -> "Hybrid" }
+            else -> code
+        } })
+    } else {
+        Row { Checkbox(checked = petrol, onCheckedChange = onPetrol); Text(text.petrol) }
+        Row { Checkbox(checked = lpg, onCheckedChange = onLpg); Text(text.lpg) }
     }
-    Row {
-        Checkbox(checked = lpg, onCheckedChange = onLpg)
-        Text(text.lpg)
+    if (catalog.any { it.scope == "generation-reference-not-vin-fitment" }) {
+        Text(when(language) {
+            AppLanguage.RU -> "Варианты двигателя зависят от года и рынка. Проверьте VIN и ЭБУ."
+            AppLanguage.HY -> "Շարժիչը կախված է տարեթվից ու շուկայից։ Ստուգեք VIN-ը և ECU-ն։"
+            else -> "Engine options vary by year and market. Confirm VIN and ECU."
+        }, style=MaterialTheme.typography.bodySmall, color=MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -1777,15 +1784,35 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
     val key = "$file/$sample"
     // Reset the displayed bitmap when the asset changes, including cached portraits.
     var portrait by remember(key) { mutableStateOf(vehiclePortraitCache.get(key)) }
+    var photoCredit by remember(key) { mutableStateOf(vehicleCreditCache.get(key)) }
     LaunchedEffect(key) {
-        if (portrait == null) portrait = withContext(Dispatchers.IO) {
-            runCatching {
-                context.assets.open(file).use { stream ->
-                    BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()?.also { vehiclePortraitCache.put(key,it) }
-                }
-            }.getOrNull()
+        if (portrait == null) {
+            // Show the bundled cache immediately while requesting backend artwork.
+            portrait = withContext(Dispatchers.IO) {
+                runCatching { context.assets.open(file).use { stream ->
+                    BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()
+                } }.getOrNull()
+            }
+            val remote = withContext(Dispatchers.IO) {
+                runCatching {
+                    val query = listOf("make" to make, "model" to model, "chassis" to chassis).joinToString("&") { (name, value) -> name + "=" + java.net.URLEncoder.encode(value, "UTF-8") }
+                    val connection = java.net.URL(com.aicarscaner.mobile.data.api.ApiClient.BASE_URL + "api/v1/vehicle-reference/image?" + query).openConnection().apply { connectTimeout=4000; readTimeout=4000 }
+                    val bitmap = connection.getInputStream().use { input -> BitmapFactory.decodeStream(input,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap() }
+                    val author = java.net.URLDecoder.decode(connection.getHeaderField("X-Image-Credit") ?: "", "UTF-8")
+                    val license = connection.getHeaderField("X-Image-License") ?: ""
+                    val credit = listOf(author, license).filter { it.isNotBlank() }.joinToString(" • ")
+                    Triple(bitmap, credit, connection.getHeaderField("X-Image-Source") ?: "")
+                }.getOrNull()
+            }
+            if (remote?.first != null) {
+                portrait = remote.first
+                photoCredit = remote.second to remote.third
+                vehicleCreditCache.put(key, photoCredit!!)
+            }
+            portrait?.let { vehiclePortraitCache.put(key,it) }
         }
     }
+
     if (portrait != null) {
         Image(
             bitmap = portrait,
@@ -1793,6 +1820,14 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxWidth().height(height)
         )
+        photoCredit?.takeIf { it.first.isNotBlank() }?.let { credit ->
+            TextButton(onClick = {
+                val uri = android.net.Uri.parse(credit.second)
+                if (uri.scheme == "https" && uri.host == "commons.wikimedia.org") {
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri))
+                }
+            }) { Text(credit.first, style=MaterialTheme.typography.labelSmall, maxLines=2) }
+        }
     } else {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(height),contentAlignment=androidx.compose.ui.Alignment.Center) {
             DashboardIcon(6,Modifier.size(if(height<=72.dp) 32.dp else 64.dp),MaterialTheme.colorScheme.primary.copy(alpha=.45f))
@@ -1802,4 +1837,12 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
 
 private val vehiclePortraitCache = object : android.util.LruCache<String, androidx.compose.ui.graphics.ImageBitmap>(24 * 1024 * 1024) {
     override fun sizeOf(key: String, value: androidx.compose.ui.graphics.ImageBitmap): Int = value.width * value.height * 4
+}
+
+private val vehicleCreditCache = android.util.LruCache<String, Pair<String, String>>(96)
+
+internal fun formFuel(catalog: List<VehicleCatalogEntryDto>, make: String, model: String, chassis: String, engine: String, petrol: Boolean, lpg: Boolean): List<String> {
+    val provided = catalog.firstOrNull { it.make == make && it.model == model && it.chassis == chassis && it.engine == engine }?.fuel.orEmpty()
+    return if (provided.any { it.lowercase() !in listOf("petrol", "lpg") }) provided
+    else buildList { if (petrol) add("petrol"); if (lpg) add("LPG") }
 }

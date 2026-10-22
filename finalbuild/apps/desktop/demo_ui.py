@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from .models import Session, Vehicle, user_report_data
-from .vehicle_artwork import vehicle_pixmap
+from .vehicle_artwork import load_backend_portrait
 
 
 class Panel(QGroupBox):
@@ -249,7 +249,7 @@ class DemoDashboard(QWidget):
     def refresh(self):
         app = self.app
         v = app.active_vehicle
-        self.model_artwork.setPixmap(vehicle_pixmap(v.make if v else "", v.model if v else "", v.chassis if v else "", 520, 220))
+        load_backend_portrait(self.model_artwork, app.api.base_url, v.make if v else "", v.model if v else "", v.chassis if v else "", 520, 220)
         self.vehicle_name.setText(f"{v.make} {v.model}" if v else "Select a vehicle")
         self.vehicle_info.setText("  •  ".join(str(x) for x in [v.chassis, v.year, v.engine, "/".join(v.fuel)] if x) if v else "Choose your model to begin a diagnostic session")
         data = app.session_json

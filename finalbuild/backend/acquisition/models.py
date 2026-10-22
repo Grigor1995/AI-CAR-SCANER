@@ -3,7 +3,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 class AcquisitionStartRequest(BaseModel):
-    adapter: str = Field(default='simulator', pattern='^(simulator|ble|wifi|usb)$')
+    adapter: str = Field(default='simulator', pattern='^(simulator|ble|wifi|usb|bound)$')
+    device_id: str | None = Field(default=None, max_length=256)
     poll_interval_ms: int = Field(default=100, ge=20, le=10_000)
     pids: list[int] = Field(default_factory=lambda: [0x0C,0x05,0x0D,0x11], max_length=32)
 

@@ -4,6 +4,8 @@ import Charts
 struct DiagnosticScreen: View {
     @ObservedObject var viewModel: DiagnosticViewModel
     @StateObject private var obd = OBDService()
+    @State private var obdHost = ""
+    @State private var obdPort = "35000"
     @State private var tab = 5
     @AppStorage("repairTitle") private var repairTitle = ""
     @AppStorage("repairDraft") private var repairDraft = ""
@@ -161,7 +163,7 @@ struct DiagnosticScreen: View {
         VStack(alignment: .leading, spacing: 16) {
             VehicleModelArtwork(make: viewModel.session?.vehicle?.make ?? make,
                                 model: viewModel.session?.vehicle?.model ?? model,
-                                chassis: viewModel.session?.vehicle?.chassis ?? chassis)
+                                chassis: viewModel.session?.vehicle?.chassis ?? chassis, backendURL: viewModel.settings.apiURL, photoAttribution: viewModel.catalog.first { $0.make == (viewModel.session?.vehicle?.make ?? make) && $0.model == (viewModel.session?.vehicle?.model ?? model) && $0.chassis == (viewModel.session?.vehicle?.chassis ?? chassis) }?.image_attribution)
             Text("\(viewModel.session?.vehicle?.make ?? make) \(viewModel.session?.vehicle?.model ?? model)")
                 .font(.title2.bold()).frame(maxWidth: .infinity)
             Text(viewModel.session?.vehicle.map { "\($0.chassis ?? "") • \($0.year.map(String.init) ?? "") • \($0.engine ?? "")" } ?? "\(chassis) • \(year) • \(engine)")
@@ -312,10 +314,15 @@ struct DiagnosticScreen: View {
         }
     }
 
+    private var catalogFuel: [String] {
+        viewModel.catalog.first { $0.make == make && $0.model == model && $0.chassis == chassis && $0.engine == engine }?.fuel ?? []
+    }
+    private var usesCatalogFuel: Bool { catalogFuel.contains { !["petrol", "lpg"].contains($0.lowercased()) } }
+
     private var vehicleView:some View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.vehicle).font(.title3.bold())
-            VehicleModelArtwork(make: make, model: model, chassis: chassis)
+            VehicleModelArtwork(make: make, model: model, chassis: chassis, backendURL: viewModel.settings.apiURL, photoAttribution: viewModel.catalog.first { $0.make == make && $0.model == model && $0.chassis == chassis }?.image_attribution)
             if viewModel.catalog.isEmpty {
                 Text(t.tr(
                     "Offline catalog: options may differ from the server catalog.",
@@ -327,7 +334,18 @@ struct DiagnosticScreen: View {
             }
             PickerField(t.make,$make,makes);PickerField(t.model,$model,models);PickerField(t.chassis,$chassis,chassisOptions)
             PickerField(t.year,$year,years);PickerField(t.engine,$engine,engines);PickerField("ECU",$ecu,ecus)
-            HStack{Toggle(t.petrol,isOn:$petrol);Toggle(t.lpg,isOn:$lpg)}
+            if usesCatalogFuel {
+                Text(catalogFuel.map { code in
+                    switch code.lowercased() {
+                    case "diesel": return t.tr("Diesel", "Дизель", "Դիզել")
+                    case "hybrid": return t.tr("Hybrid", "Гибрид", "Հիբրիդ")
+                    default: return code
+                    }
+                }.joined(separator: " + "))
+            } else { HStack{Toggle(t.petrol,isOn:$petrol);Toggle(t.lpg,isOn:$lpg)} }
+            if viewModel.catalog.contains(where: { $0.scope == "generation-reference-not-vin-fitment" }) {
+                Text(t.tr("Engine options vary by year and market. Confirm VIN and ECU.", "Варианты двигателя зависят от года и рынка. Проверьте VIN и ЭБУ.", "Շարժիչը կախված է տարեթվից ու շուկայից։ Ստուգեք VIN-ը և ECU-ն։")).font(.caption).foregroundStyle(.secondary)
+            }
             Button(viewModel.session == nil ? t.create:t.save){Task{await saveVehicle()}}
                 .buttonStyle(.borderedProminent).frame(maxWidth:.infinity)
         }
@@ -374,7 +392,17 @@ struct DiagnosticScreen: View {
             Text(t.obd).font(.title3.bold())
             SectionCard("BLE"){Text(obd.status).font(.subheadline);Button(t.scan){obd.scan()}.buttonStyle(.borderedProminent)
                 ForEach(obd.devices,id:\.identifier){x in Text(x.name ?? t.tr("Unknown adapter", "Неизвестный адаптер", "Անհայտ ադապտեր"))}}
-            SectionCard("Wi-Fi OBD"){Text(t.tr("TCP adapter transport is reserved for the native OBD service.", "TCP-подключение адаптера доступно через нативную службу OBD.", "Ադապտերի TCP կապը նախատեսված է բնիկ OBD ծառայության համար։")).foregroundStyle(.secondary)}
+            SectionCard("Wi-Fi OBD") {
+                TextField(t.tr("Adapter host", "Адрес адаптера", "Ադապտերի հասցե"), text: $obdHost).textInputAutocapitalization(.never).autocorrectionDisabled()
+                TextField(t.tr("Port", "Порт", "Պորտ"), text: $obdPort).keyboardType(.numberPad)
+                Button(t.tr("Connect / Read", "Подключить / Считать", "Միացնել / Կարդալ")) {
+                    Task { await viewModel.readObdWifi(host: obdHost, port: Int(obdPort) ?? 0) }
+                }.buttonStyle(.borderedProminent).disabled(obdHost.isEmpty)
+                Button(t.tr("Disconnect", "Отключить", "Անջատել")) { Task { await viewModel.disconnectObdWifi() } }
+                ForEach(viewModel.obdValues.keys.sorted(), id: \.self) { key in
+                    HStack { Text(key); Spacer(); Text(viewModel.obdValues[key].flatMap { $0 }.map { String(format: "%.1f", $0) } ?? "—") }
+                }
+            }
             Text(t.tr("USB on iOS requires an Apple-approved accessory path (MFi/ExternalAccessory).", "USB в iOS требует одобренного Apple аксессуара (MFi/ExternalAccessory).", "iOS-ում USB կապը պահանջում է Apple-ի հաստատած պարագա (MFi/ExternalAccessory)։")).font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -401,7 +429,7 @@ struct DiagnosticScreen: View {
     private var engines:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && String($0.year)==year}.map(\.engine).unique().sorted().ifEmpty(["M272 E35 3.5"])}
     private var ecus:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && $0.engine==engine}.compactMap(\.ecu).unique().sorted().ifEmpty(["ME9.7"])}
 
-    private func saveVehicle()async{let v=Vehicle(make:make,model:model,chassis:chassis,year:Int(year),engine:engine,fuel:[petrol ? "petrol":"",lpg ? "lpg":""].filter{!$0.isEmpty},ecu:ecu);if viewModel.session == nil{await viewModel.newSession(v)}else{await viewModel.updateVehicle(v)}}
+    private func saveVehicle()async{let v=Vehicle(make:make,model:model,chassis:chassis,year:Int(year),engine:engine,fuel:usesCatalogFuel ? catalogFuel : [petrol ? "petrol":"",lpg ? "lpg":""].filter{!$0.isEmpty},ecu:ecu);if viewModel.session == nil{await viewModel.newSession(v)}else{await viewModel.updateVehicle(v)}}
     private func updateSymptomLocally(_ s:Symptom)async{await viewModel.updateSymptom(s,editText)}
     private func reset(){make="Mercedes-Benz";model="E-Class";chassis="W211";year="2006";engine="M272 E35 3.5";ecu="ME9.7";petrol=true;lpg=true;symptom="";dtc="";tab=0}
 }

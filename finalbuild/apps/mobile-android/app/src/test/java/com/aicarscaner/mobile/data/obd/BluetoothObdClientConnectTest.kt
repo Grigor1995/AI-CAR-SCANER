@@ -25,7 +25,7 @@ class BluetoothObdClientConnectTest {
         every { socket.connect() } throws IOException("Bluetooth connect failed")
         every { socket.close() } returns Unit
 
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(device)
 
         assertTrue(result.isFailure)
@@ -52,7 +52,7 @@ class BluetoothObdClientConnectTest {
         every { socket.outputStream } returns commands
         every { socket.close() } returns Unit
 
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
         val connected = client.connect(device)
 
         assertTrue(connected.isSuccess)
@@ -76,7 +76,7 @@ class BluetoothObdClientConnectTest {
         every { device.createRfcommSocketToServiceRecord(any<UUID>()) } throws
             IOException("RFCOMM socket unavailable")
 
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(device)
 
         assertTrue(result.isFailure)
@@ -87,7 +87,7 @@ class BluetoothObdClientConnectTest {
     fun revokedPermissionReturnsFailureWithoutOpeningASocket() = runTest {
         val device = mockk<BluetoothDevice>()
         every { device.createRfcommSocketToServiceRecord(any<UUID>()) } throws SecurityException("permission revoked")
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
         val result = client.connect(device)
         assertTrue(result.exceptionOrNull() is SecurityException)
         assertFalse(client.isConnected)
@@ -100,7 +100,7 @@ class BluetoothObdClientConnectTest {
         every { device.createRfcommSocketToServiceRecord(any<UUID>()) } returns socket
         every { socket.connect() } throws CancellationException("cancelled")
         every { socket.close() } returns Unit
-        val client = BluetoothObdClient()
+        val client = BluetoothObdClient(initializationPlan = { backendInitializationFixture })
         try {
             client.connect(device)
             org.junit.Assert.fail("Cancellation must propagate")

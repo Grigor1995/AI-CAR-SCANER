@@ -208,3 +208,14 @@ Ctrl+C stops the builder-owned command tree, writes `CANCELLED` to
 `build-summary.json`, marks remaining targets `NOT_RUN`, and exits with code
 130. Previously completed artifacts remain available. An interrupted Android
 build is not evidence of a compilation failure.
+
+### Android backend URL
+
+For a local backend reached from an emulator:
+
+```bash
+python build.py --targets android --with-tests --android-api-url http://10.0.2.2:8001/
+```
+
+The URL is embedded into the Android build. Physical phones need the backend's
+reachable LAN/HTTPS address. See [OBD setup](../obd/SETUP_AND_API.md).

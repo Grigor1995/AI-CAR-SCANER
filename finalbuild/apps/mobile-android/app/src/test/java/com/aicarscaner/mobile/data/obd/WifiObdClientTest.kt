@@ -16,7 +16,7 @@ class WifiObdClientTest {
     @Test
     fun connectsInitializesAdapterAndSanitizesCommandResponses() = runTest {
         FakeElmServer().use { server ->
-            val client = WifiObdClient()
+            val client = WifiObdClient(initializationPlan = { backendInitializationFixture })
             try {
                 val connection = client.connect("127.0.0.1", server.port, timeoutMs = 1_000)
 
@@ -45,21 +45,20 @@ class WifiObdClientTest {
     }
 
     @Test
-    fun commandWithoutPromptReturnsPartialResponseAtTimeoutAndConnectionCanContinue() = runTest {
+    fun commandWithoutPromptFailsAndClosesConnection() = runTest {
         FakeElmServer(partialResponseFor = "010C").use { server ->
-            val client = WifiObdClient()
+            val client = WifiObdClient(initializationPlan = { backendInitializationFixture })
             try {
                 assertTrue(client.connect("127.0.0.1", server.port, timeoutMs = 1_000).isSuccess)
 
                 // A truncated ELM327 frame must not leave the command loop hanging forever.
                 val partial = client.command("010C", timeoutMs = 700)
-                assertTrue(partial.isSuccess)
-                assertEquals("410C1AF8", partial.getOrThrow())
+                assertTrue(partial.isFailure)
+                assertTrue(partial.exceptionOrNull() is java.net.SocketTimeoutException)
 
-                // The next fully terminated frame must still be consumable.
-                assertTrue(client.isConnected)
-                assertEquals("430102", client.readDtcs().getOrThrow())
-                assertTrue(server.commands.containsAll(listOf("010C", "03")))
+                // A late reply must not be reused as the next command's response.
+                assertFalse(client.isConnected)
+                assertTrue(client.readDtcs().isFailure)
             } finally {
                 client.close()
             }
@@ -69,7 +68,7 @@ class WifiObdClientTest {
 
     @Test
     fun invalidPortReturnsFailureAndLeavesClientDisconnected() = runTest {
-        val client = WifiObdClient()
+        val client = WifiObdClient(initializationPlan = { backendInitializationFixture })
 
         val result = client.connect("127.0.0.1", -1, timeoutMs = 100)
 

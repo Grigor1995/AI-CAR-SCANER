@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Restore the dashboard before layout sliders
+
+- Restored the dashboard layout from before resizable/movable widget controls.
+- Retained analog gauges, readable parameter names, USB OBD fixes and responsive
+  shutdown. Saved slider-layout preferences are no longer used.
+- Validated locally; CI/CD is skipped.
+
 ## Unreleased — Responsive Desktop shutdown
 
 - Cancel outstanding API response waits when closing, including long-running AI

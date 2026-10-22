@@ -127,3 +127,8 @@ def _build_vci_manager():
 
 
 vci_manager = _build_vci_manager()
+if type(vci_manager).__name__ == "LocalVciManager":
+    # Keep the public API's error mapping (409/502) consistent across real and
+    # simulated manager implementations.
+    from vehicle.devices.connection import DeviceConnectionError as DeviceConnectionError
+

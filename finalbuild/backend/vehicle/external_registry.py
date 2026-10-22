@@ -48,6 +48,59 @@ def _get_json(url: str) -> dict[str, Any]:
     return payload
 
 
+@lru_cache(maxsize=1)
+def nhtsa_available_makes() -> dict[str, Any]:
+    """NHTSA GetAllMakes: live optional supplemental list, US-oriented."""
+    payload = _get_json(
+        "https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json"
+    )
+    values = payload.get("Results") or []
+    if not isinstance(values, list):
+        raise RemoteRegistryUnavailable("NHTSA makes response format changed")
+    return {
+        "source": "NHTSA vPIC / GetAllMakes",
+        "market_scope": "US intended-sale/import market; not all world brands",
+        "makes": sorted(set(
+            str(row["Make_Name"]).strip()
+            for row in values if isinstance(row, dict) and row.get("Make_Name")
+        )),
+        "requires_live_network": True,
+    }
+
+
+@lru_cache(maxsize=128)
+def nhtsa_models_for_make(make: str, year: int | None = None) -> dict[str, Any]:
+    """Optional live make/model discovery; NEVER assume engine/ECU specifics."""
+    name = make.strip()
+    if not (1 <= len(name) <= 80) or any(c in name for c in "<>\\\\\r\n"):
+        raise ValueError("Invalid make")
+    if year is not None and not (1996 <= year <= 2100):
+        raise ValueError("vPIC model-year filtering requires >=1996")
+    prefix = "https://vpic.nhtsa.dot.gov/api/vehicles/"
+    if year is not None:
+        url = (
+            prefix + "GetModelsForMakeYear/make/" + quote(name, safe="")
+            + "/modelyear/" + str(year) + "?format=json"
+        )
+    else:
+        url = prefix + "GetModelsForMake/" + quote(name, safe="") + "?format=json"
+    values = _get_json(url).get("Results") or []
+    if not isinstance(values, list):
+        raise RemoteRegistryUnavailable("NHTSA models response format changed")
+    return {
+        "source": "NHTSA vPIC / " + ("GetModelsForMakeYear" if year is not None else "GetModelsForMake"),
+        "make": name,
+        "year": year,
+        "market_scope": "US intended-sale/import; exact engine and ECU require VIN/OEM identification",
+        "model_names": sorted(set(
+            str(row["Model_Name"]).strip() for row in values
+            if isinstance(row, dict) and row.get("Model_Name")
+        )),
+        "engine_details": "not_provided",
+        "requires_live_network": True,
+    }
+
+
 def nhtsa_decode_vin(vin: str, model_year: int | None = None) -> dict[str, Any]:
     """NHTSA vPIC VIN decoder; US-oriented coverage; not an ECU protocol oracle.
 

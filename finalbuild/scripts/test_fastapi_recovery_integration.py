@@ -47,6 +47,7 @@ def execute() -> int:
         "APPDATA", "DATABASE_URL", "AI_CAR_USE_LOCAL_DATABASE",
         "AI_CAR_BACKEND_HOST", "AI_CAR_BACKEND_PORT", "AI_CAR_BACKEND_URL",
         "AI_CAR_DISABLE_LLM_AUTOSTART", "AI_CAR_BACKEND_STARTUP_TIMEOUT",
+        "NO_PROXY", "no_proxy",
     )
     original_env = {key: os.environ.get(key) for key in tracked}
     started = time.monotonic()
@@ -77,6 +78,8 @@ def execute() -> int:
             "AI_CAR_BACKEND_URL": f"http://127.0.0.1:{port}",
             "AI_CAR_DISABLE_LLM_AUTOSTART": "1",
             "AI_CAR_BACKEND_STARTUP_TIMEOUT": "90",
+            "NO_PROXY": "127.0.0.1,localhost",
+            "no_proxy": "127.0.0.1,localhost",
         })
 
         from apps.desktop import main as desktop_main

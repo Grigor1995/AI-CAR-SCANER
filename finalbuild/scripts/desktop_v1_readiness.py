@@ -61,6 +61,21 @@ def main() -> int:
                 issues.append(f'Real FastAPI {mode} startup failed')
         except (OSError, ValueError, RuntimeError) as exc:
             issues.append(str(exc))
+    # Real subprocess crash/recovery is separate from the mocked Qt UI run.
+    try:
+        recovery = read_fresh(
+            REPORT / 'fastapi-recovery' / 'source-integration.json', a.since
+        )
+        if (
+            recovery.get('status') != 'PASS'
+            or recovery.get('health_before_crash') is not True
+            or recovery.get('health_after_recovery') is not True
+            or recovery.get('cleanup') != 'PASS'
+            or recovery.get('original_pid') == recovery.get('replacement_pid')
+        ):
+            issues.append('Real FastAPI crash/restart integration gate did not PASS')
+    except (OSError, ValueError, RuntimeError) as exc:
+        issues.append(str(exc))
     hash_value = None
     if packaged:
         frozen = perf.get('packaged_exe') or {}
@@ -111,6 +126,7 @@ def main() -> int:
                            'desktop-test-reports/performance.json',
                            'desktop-test-reports/real-ui-acceptance/results.json',
                            'desktop-test-reports/real-ui-acceptance/report.html',
+                           'desktop-test-reports/fastapi-recovery/source-integration.json',
                            'desktop-test-reports/fastapi-startup/source.json',
                            *(['desktop-test-reports/fastapi-startup/frozen.json'] if packaged else [])],
         'limitations': 'Real FastAPI startup is checked; GUI mock tests do not validate live LLM/OBD or cloud-host recovery. Manual acceptance is mandatory.',

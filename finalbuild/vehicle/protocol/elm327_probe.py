@@ -24,13 +24,15 @@ def is_obd_mode_01_supported_pids_reply(raw: str) -> bool:
     for line in lines:
         compact = re.sub(r"[^0-9A-F]", "", line)
         # Full ELM CAN headers like 7E8 06 41 00 xx... can precede 4100.
-        if re.search(r"(?:^|[0-9A-F]{2})4100[0-9A-F]{2,}", compact):
+        # Four bytes form the PID-00 supported-PIDs bitmask. A partial
+        # "41 00" header alone is not ECU communication evidence.
+        if re.search(r"4100[0-9A-F]{8}", compact):
             return True
     return False
 
 
 async def discover_elm_obd_protocol(command: AsyncCommand) -> dict[str, Any]:
-    """Passive/read-only detection using a transport already connected.
+    """Read-only *vehicle request* detection using an existing adapter link.
 
     ATSP0 selects adapter automatic protocol; it does not reprogram a vehicle.
     Mode 0100 queries supported standard OBD PIDs. ATDPN reads adapter mode.

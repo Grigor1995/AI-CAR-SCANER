@@ -215,3 +215,35 @@ def test_curated_real_photo_retains_license_author_and_correct_chassis_scope():
     assert images.bundled_image_metadata("Toyota", "Camry", "XV40")[
         "preferred_real_photo"
     ] is None
+
+
+def test_vin_lookup_requires_explicit_consent_before_any_external_request(monkeypatch):
+    outbound = []
+    monkeypatch.setattr(vpic, "urlopen", lambda *_a, **_k: outbound.append(1))
+    rejected = client.post("/api/v1/vehicle-catalog/decode-vin", json={
+        "vin": "WDB2110561A123456",
+        "consent_to_nhtsa_lookup": False,
+    })
+    assert rejected.status_code == 403
+    assert outbound == []
+
+
+def test_opt_in_vin_engine_information_is_not_called_verified_obd_protocol(monkeypatch):
+    def fake_open(request, timeout):
+        assert "DecodeVinValues" in request.full_url
+        return io.BytesIO(json.dumps({"Results": [{
+            "Make": "MERCEDES-BENZ",
+            "Model": "E-Class",
+            "ModelYear": "2006",
+            "EngineModel": "M272",
+            "DisplacementL": "3.5",
+            "ErrorCode": "0",
+        }]}).encode())
+    monkeypatch.setattr(vpic, "urlopen", fake_open)
+    result = client.post("/api/v1/vehicle-catalog/decode-vin", json={
+        "vin": "WDB2110561A123456",
+        "consent_to_nhtsa_lookup": True,
+    })
+    assert result.status_code == 200
+    assert result.json()["vehicle"]["EngineModel"] == "M272"
+    assert result.json()["protocol_confirmed"] is False

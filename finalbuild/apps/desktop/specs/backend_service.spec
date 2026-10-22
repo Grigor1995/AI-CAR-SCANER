@@ -20,6 +20,7 @@ api_packages = (
     "professional_platform", "security", "observability",
 )
 api_hiddenimports = ["api.main", "global_data", "backend.scripts.seed_vehicle_catalog"]
+api_hiddenimports.extend(collect_submodules("vehicle_knowledge"))
 for package in api_packages:
     api_hiddenimports.extend(collect_submodules(package))
 
@@ -28,7 +29,9 @@ a = Analysis(
     pathex=[str(project_root), str(backend_root)],
     binaries=[],
     datas=[(str(backend_root), "backend"),
-           (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data")],
+           (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data"),
+           (str(project_root / "data" / "vehicle_catalog.json"), "data"),
+           (str(project_root / "assets" / "vehicle_models"), "assets/vehicle_models")],
     hiddenimports=[
         "uvicorn", "uvicorn.logging", "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto", "uvicorn.protocols.websockets.auto",

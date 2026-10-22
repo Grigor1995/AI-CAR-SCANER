@@ -417,7 +417,12 @@ def run(argv: list[str] | None = None) -> None:
     backend_error: str | None = None
     backend_recovery = None
     initial_failure_recovered = False
-    if LOCAL_BACKEND and not args.no_backend:
+    llm_backend = os.environ.get("DIAGNOSTIC_LLM_PROVIDER", "llama-server").lower()
+    # OpenAI-compatible runtimes (LM Studio, Jan) manage their own model
+    # lifecycle. Never spawn a competing llama-server on port 8000 for them.
+    if LOCAL_BACKEND and not args.no_backend and llm_backend in {
+        "llama-server", "llama_server", "llamaserver", "local"
+    }:
         try:
             start_llama_server(wait_for_ready=False)
         except Exception as exc:

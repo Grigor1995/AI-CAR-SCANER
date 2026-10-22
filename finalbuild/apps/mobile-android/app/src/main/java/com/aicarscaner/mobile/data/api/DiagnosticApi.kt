@@ -1,5 +1,6 @@
 package com.aicarscaner.mobile.data.api
 
+import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -132,6 +133,40 @@ interface DiagnosticApi {
 
     @GET("api/v1/vehicle-catalog/entries")
     suspend fun vehicleCatalog(): List<VehicleCatalogEntryDto>
+
+    // Native transport/UI only. Business rules and protocol confidence live
+    // in FastAPI; the device must not infer a vehicle's ECU protocol itself.
+    @GET("api/v1/vehicle-catalog/global-models")
+    suspend fun globalVehicleModels(
+        @Query("make") make: String? = null,
+        @Query("year") year: Int? = null,
+    ): JsonObject
+
+    @GET("api/v1/vehicle-catalog/curated-variants")
+    suspend fun curatedVehicleVariants(
+        @Query("make") make: String,
+        @Query("model") model: String,
+        @Query("chassis") chassis: String? = null,
+        @Query("year") year: Int? = null,
+    ): JsonObject
+
+    @GET("api/v1/vehicle-catalog/obd-protocols")
+    suspend fun obdProtocolCatalog(): JsonObject
+
+    @GET("api/v1/vehicle-catalog/protocol-hints")
+    suspend fun protocolHints(
+        @Query("make") make: String,
+        @Query("model") model: String,
+        @Query("year") year: Int? = null,
+        @Query("chassis") chassis: String? = null,
+    ): JsonObject
+
+    @GET("api/v1/vehicle-catalog/image-metadata")
+    suspend fun vehicleImageMetadata(
+        @Query("make") make: String,
+        @Query("model") model: String,
+        @Query("chassis") chassis: String,
+    ): JsonObject
 
     @POST("api/v1/sessions")
     suspend fun createSession(@Body vehicle: VehicleDto): DiagnosticSessionDto

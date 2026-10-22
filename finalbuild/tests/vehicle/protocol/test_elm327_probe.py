@@ -54,3 +54,17 @@ async def test_probe_error_is_structured_and_not_claimed_supported():
     assert result["status"] == "error"
     assert result["protocol_id"] is None
     assert result["commands"] == []
+
+
+def test_partial_obd_header_is_not_measured_communication():
+    assert not is_obd_mode_01_supported_pids_reply("41 00 BE")
+    assert not is_obd_mode_01_supported_pids_reply("7E8 06 41 00")
+
+
+@pytest.mark.asyncio
+async def test_partial_mode_01_reply_never_proves_ecu_protocol():
+    async def command(code):
+        return {"ATSP0":"OK","0100":"41 00 BE","ATDPN":"A6"}[code]
+    result = await discover_elm_obd_protocol(command)
+    assert result["status"] == "adapter_only"
+    assert result["confirmed_ecu_communication"] is False

@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val repository = DiagnosticRepository(ApiClient.diagnosticApi)
+        val repository = DiagnosticRepository(ApiClient.diagnosticApi, applicationContext)
 
         setContent {
             val diagnosticViewModel: DiagnosticViewModel = viewModel(

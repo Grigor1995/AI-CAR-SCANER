@@ -24,7 +24,8 @@ data class DiagnosticUiState(
 )
 
 class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(DiagnosticUiState())
+    private val offlineCatalog = repository.offlineVehicleCatalog()
+    private val _uiState = MutableStateFlow(DiagnosticUiState(vehicleCatalog = offlineCatalog))
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
 
     fun openSession(id: String, language: String = "en") = execute { repository.getSession(id, language) }
@@ -41,13 +42,27 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         viewModelScope.launch {
             runCatching { repository.vehicleCatalog() }
                 .onSuccess { catalog ->
-                    _uiState.value = _uiState.value.copy(vehicleCatalog = catalog, error = null)
+                    _uiState.value = _uiState.value.copy(vehicleCatalog = mergeVehicleCatalog(catalog, offlineCatalog), error = null)
                 }
                 .onFailure {
                     // The screen keeps its local safety catalog as a fallback.
                     // Catalog transport failures must not block session creation.
                 }
         }
+    }
+
+
+    /** Server entries override matching snapshot rows, matching Desktop VehicleDialog. */
+    private fun mergeVehicleCatalog(
+        server: List<VehicleCatalogEntryDto>,
+        offline: List<VehicleCatalogEntryDto>
+    ): List<VehicleCatalogEntryDto> {
+        val entries = linkedMapOf<String, VehicleCatalogEntryDto>()
+        for (row in server + offline) {
+            val key = listOf(row.make, row.model, row.chassis.orEmpty(), row.year.toString(), row.engine, row.ecu.orEmpty()).joinToString("|")
+            entries.putIfAbsent(key, row)
+        }
+        return entries.values.toList()
     }
 
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }

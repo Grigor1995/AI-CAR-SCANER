@@ -422,10 +422,10 @@ struct DiagnosticScreen: View {
         }.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
     }
 
-    private var makes:[String]{viewModel.catalog.map(\.make).unique().sorted().ifEmpty(["Mercedes-Benz","Toyota","Kia"])}
-    private var models:[String]{viewModel.catalog.filter{$0.make==make}.map(\.model).unique().sorted().ifEmpty(["E-Class"])}
-    private var chassisOptions:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model}.compactMap(\.chassis).unique().sorted().ifEmpty(["W211"])}
-    private var years:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis}.map{String($0.year)}.unique().sorted().ifEmpty(["2006"])}
+    private var makes:[String]{viewModel.catalog.map(\.make).unique().sorted()}
+    private var models:[String]{viewModel.catalog.filter{$0.make==make}.map(\.model).unique().sorted()}
+    private var chassisOptions:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model}.compactMap(\.chassis).unique().sorted()}
+    private var years:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis}.map{String($0.year)}.unique().sorted()}
     private var engines:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && String($0.year)==year}.map(\.engine).unique().sorted().ifEmpty(["M272 E35 3.5"])}
     private var ecus:[String]{viewModel.catalog.filter{$0.make==make && $0.model==model && $0.chassis==chassis && $0.engine==engine}.compactMap(\.ecu).unique().sorted().ifEmpty(["ME9.7"])}
 

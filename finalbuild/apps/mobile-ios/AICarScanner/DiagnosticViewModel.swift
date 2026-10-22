@@ -6,7 +6,8 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var session: DiagnosticSession?
     @Published var history: [DiagnosticSession] = []
     @Published var liveRecords: [LiveRecord] = []
-    @Published var catalog: [VehicleCatalogEntry] = []
+    @Published var catalog: [VehicleCatalogEntry] = SharedVehicleCatalog.offline()
+    @Published var catalogOnline = false
     @Published var obdValues: [String: Double?] = [:]
     private let obdWifi = NativeObdWifiBridge()
 
@@ -68,7 +69,14 @@ final class DiagnosticViewModel: ObservableObject {
     }
 
     func loadCatalog() async {
-        catalog = (try? await api.vehicleCatalog()) ?? []
+        do {
+            let server = try await api.vehicleCatalog()
+            catalog = SharedVehicleCatalog.merge(server: server, offline: SharedVehicleCatalog.offline())
+            catalogOnline = true
+        } catch {
+            catalog = SharedVehicleCatalog.offline()
+            catalogOnline = false
+        }
     }
 
     func newSession(_ vehicle: Vehicle) async {

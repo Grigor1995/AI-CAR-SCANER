@@ -41,7 +41,7 @@ This document records the shared contract for PySide6 Desktop, Kotlin/Jetpack Co
 | Reports/export | Reports panel | Not at Desktop parity | Not implemented | Common report schema and export/share on each platform |
 | Local AI provider status/live-data AI | Provider status and live-data AI endpoint | Not exposed in app UI | Not exposed in app UI | Provider availability/error state, timeout handling and AI result display |
 | UI localization completeness | Settings persist language, but the full Desktop UI is not translated | English/Russian/Armenian strings available | English/Russian/Armenian strings available | Complete and test all Desktop strings; audit terminology across platforms |
-| Vehicle catalog parity offline | Backend catalog | Local fallback may differ from backend catalog | No matching offline catalog guarantee | Shared catalog snapshot/versioning and visible stale/offline state |
+| Vehicle catalog parity offline | Backend catalog | Shared JSON snapshot bundled with Desktop and iOS | Shared JSON snapshot bundled with Desktop and Android | Shared catalog snapshot/versioning and visible stale/offline state |
 
 **Definition of done for full functional parity:** each row above must be implemented on all three platforms, use the same API semantics and status values, have automated contract/UI tests, and pass the release matrix on actual build runners. A matching feature label or shared API alone is not proof of parity.
 

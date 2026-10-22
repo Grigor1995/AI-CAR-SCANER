@@ -1635,14 +1635,12 @@ internal fun VehicleFields(
     onLpg: (Boolean) -> Unit,
     language: AppLanguage = AppLanguage.EN
 ) {
-    val makes = modelOptionsFor(catalog, make).let { 
-        catalog.map { it.make }.distinct().sorted().ifEmpty { vehicleCatalog.map { it.name } }
-    }
-    val models = modelOptionsFor(catalog, make).ifEmpty { modelOptionsFor(make).map { it.name }.distinct() }
-    val chassisOptions = chassisOptionsFor(catalog, make, model).ifEmpty { chassisOptionsFor(make, model).map { it.chassis } }
-    val years = yearOptionsFor(catalog, make, model, chassis).map(Int::toString).ifEmpty { yearOptionsFor(make, model, chassis).map(Int::toString) }
-    val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).ifEmpty { engineOptionsFor(make, model, chassis).map { it.name } }
-    val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).ifEmpty { ecuOptionsFor(make, model, chassis, engine) }
+    val makes = catalog.map { it.make }.distinct().sorted()
+    val models = modelOptionsFor(catalog, make)
+    val chassisOptions = chassisOptionsFor(catalog, make, model)
+    val years = yearOptionsFor(catalog, make, model, chassis).map(Int::toString)
+    val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull())
+    val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull())
 
     var previewModel by remember(make) { mutableStateOf<String?>(null) }
     // A default catalog value is not an explicit selection by the user.

@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import html
 import json
+import math
 from collections import defaultdict
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRectF, QPointF
 from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QFileDialog, QComboBox,
 )
 
+from .channel_labels import CHANNEL_LABELS
 from .models import Session, Vehicle, user_report_data
 from .vehicle_artwork import load_backend_portrait
 
@@ -92,18 +94,77 @@ class Trace(QWidget):
             p.drawLine(int(x1), int(y1), int(x2), int(y2))
 
 
+class AnalogGauge(QWidget):
+    """Presentation scale only, never a diagnostic threshold or redline."""
+    def __init__(self, color):
+        super().__init__()
+        self.color = color
+        self.value = None
+        self.unit = ""
+        self.setMinimumHeight(160)
+
+    def scale(self):
+        return {"rpm": (0, 8000), "C": (-40, 160), "°C": (-40, 160),
+                "°F": (-40, 320), "km/h": (0, 260), "mph": (0, 160),
+                "%": (0, 100)}.get(self.unit, (0, max(100, (self.value or 0) * 1.2)))
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        size = min(self.width() - 48, self.height() - 34)
+        center = QPointF(self.width() / 2, self.height() / 2 + 5)
+        radius = max(10, size / 2)
+        rect = QRectF(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
+        p.setPen(QPen(QColor("#294563"), 9))
+        p.drawArc(rect, -45 * 16, 270 * 16)
+        low, high = self.scale()
+        for i in range(9):
+            angle = math.radians(225 - 270 * i / 8)
+            def point(r):
+                return QPointF(center.x() + r * math.cos(angle), center.y() - r * math.sin(angle))
+            p.setPen(QPen(QColor("#829EB8"), 2))
+            p.drawLine(point(radius - 8), point(radius - 16))
+            pos = point(radius + 15)
+            p.drawText(QRectF(pos.x()-24, pos.y()-9, 48, 18), Qt.AlignCenter, f"{low+(high-low)*i/8:g}")
+        if self.value is None:
+            return
+        fraction = max(0, min(1, (self.value-low)/(high-low)))
+        angle = math.radians(225 - fraction * 270)
+        p.setPen(QPen(QColor(self.color), 4))
+        p.drawLine(center, QPointF(center.x() + (radius-20)*math.cos(angle), center.y()-(radius-20)*math.sin(angle)))
+        p.setBrush(QColor(self.color))
+        p.drawEllipse(center, 5, 5)
+
+
 class SignalCard(Panel):
     def __init__(self, name, color):
         super().__init__(name)
         self.value = label("—", "signalValue")
         self.body.addWidget(self.value)
+        self.mode = QComboBox()
+        self.mode.setAccessibleName("Widget display")
+        self.mode.addItem("Analog gauge", "analog")
+        self.mode.addItem("Line chart", "chart")
+        self.body.addWidget(self.mode)
+        self.gauge = AnalogGauge(color)
+        self.body.addWidget(self.gauge)
         self.trace = Trace(color)
         self.body.addWidget(self.trace)
+        self.mode.currentIndexChanged.connect(self._mode_changed)
+        self._mode_changed()
+
+    def _mode_changed(self):
+        analog = self.mode.currentData() == "analog"
+        self.gauge.setVisible(analog)
+        self.trace.setVisible(not analog)
 
     def set_samples(self, rows):
         values = [float(row["numeric_value"]) for row in rows if row.get("numeric_value") is not None]
         unit = rows[-1].get("unit", "") if rows else ""
         self.value.setText(f"{values[-1]:g} {unit}" if values else "—")
+        self.gauge.value = values[-1] if values else None
+        self.gauge.unit = unit
+        self.gauge.update()
         self.trace.values = values[-90:]
         self.trace.update()
 
@@ -129,6 +190,10 @@ class SignalGrid(QWidget):
         selector = QComboBox()
         selector.setAccessibleName("Telemetry channel")
         card.body.insertWidget(0, selector)
+        if self.settings:
+            mode = self.settings.value(f"{self.prefix}_mode_{index}", "analog")
+            card.mode.setCurrentIndex(max(0, card.mode.findData(mode)))
+            card.mode.currentIndexChanged.connect(lambda _value, c=card, i=index: self.settings.setValue(f"{self.prefix}_mode_{i}", c.mode.currentData()))
         selector.currentIndexChanged.connect(self._update_cards)
         self.cards.append(card)
         self.selectors.append(selector)
@@ -140,13 +205,15 @@ class SignalGrid(QWidget):
             if record.get("numeric_value") is not None:
                 groups[str(record.get("pid") or record.get("channel") or "Unknown channel")].append(record)
         self.groups = groups
-        self.channel_labels = {key: (rows[-1].get("display_name") or rows[-1].get("metadata", {}).get("display_name") or key) for key, rows in groups.items()}
+        self.channel_labels = {key: (rows[-1].get("display_name") or rows[-1].get("metadata", {}).get("display_name") or CHANNEL_LABELS.get(key.casefold(), key)) for key, rows in groups.items()}
         names = [name for name in getattr(self, "_channel_names", []) if name in groups]
         names += [name for name in groups if name not in names]
-        if names == getattr(self, "_channel_names", None):
+        signature = (tuple(names), tuple(self.channel_labels.items()), len(self.selectors))
+        if signature == getattr(self, "_channel_signature", None):
             self._update_cards()
             return
         self._channel_names = names
+        self._channel_signature = signature
         used = set()
         for i, selector in enumerate(self.selectors):
             previous = selector.currentData()

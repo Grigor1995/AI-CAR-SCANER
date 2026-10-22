@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased — Named widgets and analog dashboard gauges
+
+- Fixed newly added telemetry widgets retaining raw PID titles or empty channel
+  selectors; backend names take precedence, with an offline backend-registry
+  snapshot for older acquisition responses. Stable channel IDs remain unchanged.
+- Added analog dials alongside selectable line charts, with numeric readouts and
+  saved per-widget display modes. RPM, temperature and speed use unit-aware
+  display scales; scales are visual ranges, not diagnostic limits.
+- Kept the vehicle-list stale-index regression protection from the preceding fix.
+
 ## Unreleased — Real USB OBD connection selection
 
 - Keep USB serial names (COM3, COM4, /dev/ttyUSB0) separate from numeric Wi-Fi

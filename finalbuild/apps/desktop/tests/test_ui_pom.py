@@ -1957,3 +1957,40 @@ def test_vehicle_selection_during_list_replacement_ignores_stale_index(window_fa
     page.refresh()
     assert page.list.count() == 0
     assert not page.delete_btn.isEnabled()
+
+
+def test_added_widget_populates_names_and_renders_analog_values(window_factory, qapp):
+    grid = window_factory().pages[4].signals
+    records = [{'channel': key, 'numeric_value': value, 'unit': unit} for key, value, unit in [
+        ('0x0C', 750, 'rpm'), ('0x0D', 40, 'km/h'), ('0x11', 32, '%'),
+        ('0x0B', 45, 'kPa'), ('0x05', 90, 'C')]]
+    grid.set_records(records)
+    grid.add_widget()
+    card = grid.cards[-1]
+    assert len(grid.cards) == 5
+    assert card.title() == 'Coolant temperature'
+    assert grid.selectors[-1].currentData() == '0x05'
+    assert grid.selectors[-1].currentText() == 'Coolant temperature'
+    assert card.gauge.value == 90
+    assert card.gauge.scale() == (-40, 160)
+    assert not card.gauge.grab().isNull()
+    card.mode.setCurrentIndex(card.mode.findData('chart'))
+    assert card.gauge.isHidden()
+    assert not card.trace.isHidden()
+    assert grid.settings.value('live_mode_4') == 'chart'
+    grid.set_records(records)
+    assert card.title() == 'Coolant temperature'
+
+
+def test_backend_label_arriving_after_raw_samples_updates_selector(window_factory):
+    grid = window_factory().pages[4].signals
+    grid.set_records([{'channel': '0x05', 'numeric_value': 90, 'unit': 'C'}])
+    assert grid.selectors[0].currentText() == 'Coolant temperature'
+    grid.set_records([{'channel': '0x05', 'display_name': 'Custom temperature', 'numeric_value': 91, 'unit': 'C'}])
+    assert grid.selectors[0].currentText() == 'Custom temperature'
+
+
+def test_offline_channel_labels_match_backend_registry():
+    from apps.desktop.channel_labels import CHANNEL_LABELS
+    from telemetry.channels import _NAMES
+    assert CHANNEL_LABELS == _NAMES

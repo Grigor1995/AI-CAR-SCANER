@@ -22,6 +22,7 @@ from api.network_discovery_routes import router as network_discovery_router
 from api.active_discovery_routes import router as active_discovery_router
 from api.device_routes import router as device_router
 from api.vehicle_catalog_routes import router as vehicle_catalog_router
+from api.vehicle_registry_routes import router as vehicle_registry_router
 from api.global_data_routes import router as global_data_router
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -56,6 +57,7 @@ app.include_router(network_discovery_router)
 app.include_router(active_discovery_router)
 app.include_router(device_router)
 app.include_router(vehicle_catalog_router)
+app.include_router(vehicle_registry_router)
 app.include_router(global_data_router)
 @app.get('/health')
 def health(): return {'status':'ok','service':'diagnostic-api','version':'0.1.0'}

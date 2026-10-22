@@ -42,6 +42,7 @@ python -m pytest -q tests/desktop/test_backend_recovery.py \
   apps/desktop/tests/test_main_lifecycle.py \
   apps/desktop/tests/test_ui_pom.py -k 'backend or health or recovery or startup'
 python scripts/test_fastapi_startup.py --mode source
+python scripts/test_fastapi_recovery_integration.py
 ```
 
 For source-only regression/coverage:
@@ -71,6 +72,31 @@ tail -n 100 desktop-test-reports/fastapi-startup/source.log
 cat desktop-test-reports/fastapi-startup/frozen.json
 tail -n 100 desktop-test-reports/fastapi-startup/frozen.log
 ```
+
+## Real recovery automation evidence
+
+The integration test starts the **real source FastAPI child** on its own
+127.0.0.1 port with isolated SQLite, asserts `/health`, terminates only its
+owned PID, and waits for the recovery supervisor to restart a **different PID**
+and restore `/health`. It writes:
+
+```text
+desktop-test-reports/fastapi-recovery/source-integration.json
+desktop-test-reports/fastapi-recovery/source-backend.log
+```
+
+A PASS here proves source backend process recovery, **not** that a packaged
+Windows GUI automatically displays the recovered status; the Qt reconnect
+callback has its own POM regression test. Real user-visible recovery still
+requires manual Desktop acceptance.
+
+```bash
+python scripts/test_fastapi_recovery_integration.py
+cat desktop-test-reports/fastapi-recovery/source-integration.json
+```
+
+The unified `bash windows_test_runner.sh` now requires a fresh real recovery
+report in addition to source and frozen startup checks.
 
 ## Recovery acceptance test (manual)
 - Start a **disposable local** Desktop backend (`--with-backend`).

@@ -1234,7 +1234,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Text(demo("No server samples", "Нет записей сервера", "Սերվերի չափումներ չկան"))
                                 }
                                 state.backendLiveRecords.take(100).forEach { record ->
-                                    val label = record.channel ?: record.pid ?: "—"
+                                    val label = record.display_name ?: record.channel ?: record.pid ?: "—"
                                     val value = record.numeric_value?.toString() ?: "—"
                                     val provenance = if (record.metadata?.get("adapter") == "simulator")
                                         "Simulator / synthetic" else (record.source_type ?: "Unknown source")

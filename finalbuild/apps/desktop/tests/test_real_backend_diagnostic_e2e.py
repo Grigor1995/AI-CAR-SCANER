@@ -208,3 +208,18 @@ def test_negative_real_backend_requires_analysis_before_decision_candidates(
     plan = desktop.decision_plan(session_id)
     assert not plan["candidates"]
     assert plan["stop_reasons"]
+
+
+def test_shared_registry_contract_reaches_real_backend(desktop_with_real_backend, monkeypatch):
+    from api import vehicle_registry_routes as registry
+    desktop, _calls = desktop_with_real_backend
+    assert "Mercedes-Benz" in desktop.registry_makes("Mercedes")
+    for year in (None, 2006):
+        assert any(row["model"] == "E-Class" for row in desktop.registry_models("Mercedes-Benz", year))
+        assert any(row["chassis"] == "W211" for row in desktop.registry_fitments("Mercedes-Benz", "E-Class", year))
+    hints = desktop.obd_protocol_hints(2006, "EU", "Mercedes-Benz")
+    assert hints["detected"] is None
+    observed = desktop.obd_protocol_hints(2006, "EU", "Mercedes-Benz", "A6")
+    assert observed["detected"]["confirmed_ecu_communication"] is False
+    monkeypatch.setattr(registry, "commons_photo_candidate", lambda *args: {"status": "no_licensed_candidate"})
+    assert desktop.registry_photo("Mercedes-Benz", "E-Class", "W211")["status"] == "no_licensed_candidate"

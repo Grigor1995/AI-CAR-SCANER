@@ -164,3 +164,26 @@ cases. Coverage above is scoped to the named modules, not all vehicle protocols.
 The generated Android debug APK was 53,872,454 bytes with SHA-256
 `f53df634896cdaf7baa01dab502054c743d116a32e07967e5c7d8771c8fdada3`.
 This is a local validation artifact, not a published release binary.
+
+## Feature branch integration follow-up (2026-10-22)
+
+Merged `feature/backend-unified-vehicle-obd-audit-20261022` through `da595c8`
+into the shared-backend implementation. Its global registry/NHTSA contracts,
+conservative protocol hints and explicit simulator evidence tags are retained.
+The two textual conflicts were the backend PyInstaller data list and the
+single device protocol route. Both data sets are packaged; one route now
+supports facade-backed and explicitly opted-in physical managers. A regression
+check protects each manager shape and the simulator/disconnected cases.
+
+The import shim redirects only the top-level `vehicle` package. Explicit
+`backend.vehicle` simulator helpers retain their original namespace; redirecting
+that namespace too broke collection of the legacy simulator regression suite.
+Existing API assertions now require simulated evidence to be marked as such.
+A Desktop-to-real-FastAPI registry test validates the new client contracts.
+
+Post-merge verification: **739 Python passed / 2 skipped**, **387 Desktop
+passed / 1 skipped**, Desktop source/core coverage **90.42% / 91.39%**,
+FastAPI source startup passed, Android unified build/tests passed. Swift syntax
+parsing passed; no Xcode or physical-device verification was performed.
+The root and Desktop suites overlap. The earlier coverage/asset hash table
+records the pre-integration snapshot; it is not the merged APK checksum.

@@ -16,6 +16,7 @@ def test_vehicle_diagnostic_api():
     trace = c.get(f'/api/v1/vehicle-diagnostic/sessions/{sid}/trace')
     assert trace.status_code == 200 and len(trace.json()['events']) >= 1
     session_after = c.get(f'/api/v1/sessions/{sid}').json()
-    assert any('UDS DTC' in e['fact'] for e in session_after['evidence'])
+    assert any('Simulated DTC' in e['fact'] and e['source'] == 'SIMULATOR'
+               and e['status'] == 'simulated' for e in session_after['evidence'])
     status = c.get(f'/api/v1/vehicle-diagnostic/sessions/{sid}/status').json()
     assert status['can'] and status['isotp'] and status['uds'] and not status['dtc_clear']

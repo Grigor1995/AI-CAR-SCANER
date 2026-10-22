@@ -2,6 +2,22 @@
 
 ## Unreleased — Shared OBD backend and vehicle references
 
+### Feature branch integration
+
+- Merged `feature/backend-unified-vehicle-obd-audit-20261022`, retaining its
+  global registry, engine/protocol profiles, NHTSA lookup adapters and source
+  metadata alongside shared backend decoding/native transport bridges.
+- Resolved the backend packaging and device protocol endpoint conflicts. The
+  packaged backend includes both catalogs and images; protocol observation
+  accepts both backend manager implementations and never labels a simulator
+  as physical ECU evidence.
+- Preserved explicit `backend.vehicle` simulator imports while routing the
+  unqualified `vehicle` name to the canonical shared implementation.
+- Verified 739 Python tests (2 skipped), 387 Desktop tests (1 skipped), actual
+  FastAPI source startup and Android build/tests. Desktop source/core coverage
+  was 90.42% / 91.39%. iOS syntax was checked; Xcode was unavailable.
+
+
 - Centralized ELM initialization, ten live-data PID formulas, protocol selection,
   telemetry ingestion and vehicle references in the backend. Android and iOS
   native bridges forward adapter bytes; Desktop can start a connected adapter.

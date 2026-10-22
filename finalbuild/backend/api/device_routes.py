@@ -125,11 +125,21 @@ async def read_live_data(device_id: str):
 
 
 @router.get("/{device_id:path}/obd/protocol")
-async def protocol_status(device_id: str):
+async def read_device_obd_protocol(device_id: str):
+    """Observe a connected adapter through either supported backend manager.
+
+    A simulator never establishes physical ECU communication. Model/engine
+    metadata is never used to infer a measured protocol.
+    """
+    from vehicle.protocol.elm327_probe import discover_elm_obd_protocol
+
+    if device_id == "simulator-vci":
+        return {"device_id": device_id, "simulated": True, "observed": False,
+                "protocol_id": None, "confirmed_ecu_communication": False}
     try:
-        if device_id == "simulator-vci":
-            return {"simulated": True, "observed": False, "protocol_id": None}
-        result = await manager._physical().connected_obd(device_id).protocol_status()
-        return result | {"simulated": False}
+        physical = manager if hasattr(manager, "connected_obd") else manager._physical()
+        client = physical.connected_obd(device_id)
+        result = await discover_elm_obd_protocol(client.command)
     except Exception as error:
         raise HTTPException(409, str(error)) from error
+    return {"device_id": device_id, "simulated": False, **result}

@@ -214,3 +214,46 @@ async def test_obd_read_routes_map_connection_errors_to_409(monkeypatch, handler
     with pytest.raises(HTTPException) as error:
         await handler("vci-1")
     assert error.value.status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('facade', [False, True])
+async def test_protocol_observation_handles_both_backend_manager_shapes(monkeypatch, facade):
+    from types import SimpleNamespace
+    seen = []
+
+    async def command(value):
+        seen.append(value)
+        return {'ATSP0': 'OK', '0100': '41 00 BE 1F A8 13', 'ATDPN': 'A6'}[value]
+
+    physical = SimpleNamespace(connected_obd=lambda device_id: SimpleNamespace(command=command))
+    manager = SimpleNamespace(_physical=lambda: physical) if facade else physical
+    monkeypatch.setattr(routes, 'manager', manager)
+    result = await routes.read_device_obd_protocol('wifi:127.0.0.1:35000')
+    assert result['confirmed_ecu_communication'] is True
+    assert result['simulated'] is False
+    assert result['protocol_id'] == 'iso15765_4_can11_500'
+    assert seen == ['ATSP0', '0100', 'ATDPN']
+
+
+@pytest.mark.asyncio
+async def test_protocol_simulator_is_never_reported_as_physical_observation(monkeypatch):
+    monkeypatch.setattr(routes, 'manager', object())
+    result = await routes.read_device_obd_protocol('simulator-vci')
+    assert result['simulated'] is True
+    assert result['observed'] is False
+    assert result['confirmed_ecu_communication'] is False
+    assert result['protocol_id'] is None
+
+
+@pytest.mark.asyncio
+async def test_protocol_connection_failure_is_public_conflict(monkeypatch):
+    from types import SimpleNamespace
+
+    def missing(_device_id):
+        raise RuntimeError('Adapter is disconnected')
+
+    monkeypatch.setattr(routes, 'manager', SimpleNamespace(connected_obd=missing))
+    with pytest.raises(HTTPException) as error:
+        await routes.read_device_obd_protocol('usb:COM9')
+    assert error.value.status_code == 409

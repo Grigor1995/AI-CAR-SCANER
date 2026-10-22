@@ -52,9 +52,11 @@ def test_vci_binds_to_session_and_syncs_obd_data_into_session():
     stored = client.get(f'/api/v1/sessions/{session_id}').json()
     assert stored['connected_device_id'] == device_id
     assert stored['vehicle']['metadata']['vin'] == 'WDD2110801A123456'
-    assert any(e['source_ref'] == 'OBD:MODE:09:02' for e in stored['evidence'])
-    assert any(e['source_ref'] == 'OBD:MODE:03' and e['metadata']['dtc'] == 'P0102' for e in stored['evidence'])
-    assert any(e['source'] == 'VEHICLE_MEASURED' for e in stored['evidence'])
+    assert any(e['source_ref'] == 'SIM:OBD:MODE:09:02' for e in stored['evidence'])
+    assert any(e['source_ref'] == 'SIM:OBD:MODE:03' and e['metadata']['dtc'] == 'P0102' for e in stored['evidence'])
+    assert all(e['source'] == 'SIMULATOR' and e['status'] == 'simulated'
+               and e['metadata']['simulated'] for e in stored['evidence'])
+    assert all(m['source'] == 'SIMULATOR' and m['simulated'] for m in stored['measurements'])
     assert len(stored['measurements']) >= 4
     assert len(stored['live_data']) == 1
 
@@ -78,7 +80,7 @@ def test_repeated_sync_does_not_duplicate_vin_or_dtc_evidence():
     second = client.post(f'/api/v1/vehicle-diagnostic/sessions/{sid}/obd/sync').json()
     assert first['vin'] == second['vin']
     stored = client.get(f'/api/v1/sessions/{sid}').json()
-    vin_evidence = [e for e in stored['evidence'] if e['source_ref'] == 'OBD:MODE:09:02']
-    dtc_evidence = [e for e in stored['evidence'] if e['source_ref'] == 'OBD:MODE:03' and e['metadata'].get('dtc') == 'P0102']
+    vin_evidence = [e for e in stored['evidence'] if e['source_ref'] == 'SIM:OBD:MODE:09:02']
+    dtc_evidence = [e for e in stored['evidence'] if e['source_ref'] == 'SIM:OBD:MODE:03' and e['metadata'].get('dtc') == 'P0102']
     assert len(vin_evidence) == 1
     assert len(dtc_evidence) == 1

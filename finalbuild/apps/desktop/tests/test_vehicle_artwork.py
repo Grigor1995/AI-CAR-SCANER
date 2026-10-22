@@ -90,7 +90,7 @@ def test_backend_photo_is_async_cached_and_keeps_credit(monkeypatch):
             self.deleted = False
         def error(self): return QtNetwork.QNetworkReply.NoError
         def readAll(self): return content.getvalue()
-        def rawHeader(self, name): return {b'X-Image-Credit':b'Photo%20Author',b'X-Image-License':b'CC BY 4.0',b'X-Image-Source':b'https://commons.wikimedia.org/wiki/File:Car.jpg'}[name]
+        def rawHeader(self, name): return {'X-Image-Credit':b'Photo%20Author','X-Image-License':b'CC BY 4.0','X-Image-Source':b'https://commons.wikimedia.org/wiki/File:Car.jpg'}[name]
         def deleteLater(self): self.deleted = True
     class Manager:
         def __init__(self, parent): pass
@@ -113,3 +113,58 @@ def test_backend_photo_is_async_cached_and_keeps_credit(monkeypatch):
     replies[1].callback()
     assert label._backend_portrait is None
     label.close(); label.deleteLater(); app.processEvents()
+
+
+def test_real_qt_network_reply_loads_portrait_and_attribution(monkeypatch):
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from io import BytesIO
+    import sys
+    from threading import Thread
+    from time import monotonic
+    from urllib.parse import quote
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QLabel
+    from apps.desktop.vehicle_artwork import load_backend_portrait
+
+    app = QApplication.instance() or QApplication([])
+    content = BytesIO()
+    Image.new('RGBA', (24, 12), (30, 100, 220, 255)).save(content, format='PNG')
+    author = 'Լուսանկարիչ / Photo Author'
+    errors = []
+    monkeypatch.setattr(sys, 'excepthook', lambda *args: errors.append(args))
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self.send_header('Content-Length', str(len(content.getvalue())))
+            self.send_header('X-Image-Credit', quote(author))
+            self.send_header('X-Image-License', 'CC BY 4.0')
+            self.send_header('X-Image-Source', 'https://commons.wikimedia.org/wiki/File:Car.jpg')
+            self.end_headers()
+            self.wfile.write(content.getvalue())
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    label = QLabel()
+    try:
+        base_url = f'http://127.0.0.1:{server.server_port}'
+        load_backend_portrait(label, base_url, 'Toyota', 'Corolla', 'E140/E150', 48, 24)
+        deadline = monotonic() + 5
+        while label._backend_portrait is None and not errors and monotonic() < deadline:
+            app.processEvents()
+            QTest.qWait(10)
+        assert errors == [], errors
+        assert label._backend_portrait is not None
+        assert label.toolTip() == author+'\nCC BY 4.0\nhttps://commons.wikimedia.org/wiki/File:Car.jpg'
+    finally:
+        label.close()
+        label.deleteLater()
+        app.processEvents()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)

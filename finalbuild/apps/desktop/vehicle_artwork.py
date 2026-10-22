@@ -84,9 +84,9 @@ def load_backend_portrait(label, base_url, make, model, chassis, width=420, heig
                     pixmap = QPixmap.fromImage(image.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                     label._backend_portrait = pixmap
                     label.setPixmap(pixmap)
-                    credit = unquote(bytes(reply.rawHeader(b"X-Image-Credit")).decode())
-                    license_name = bytes(reply.rawHeader(b"X-Image-License")).decode()
-                    source = bytes(reply.rawHeader(b"X-Image-Source")).decode()
+                    credit = unquote(bytes(reply.rawHeader("X-Image-Credit")).decode())
+                    license_name = bytes(reply.rawHeader("X-Image-License")).decode()
+                    source = bytes(reply.rawHeader("X-Image-Source")).decode()
                     if credit or license_name:
                         label.setToolTip("\n".join([credit, license_name, source]))
         finally:

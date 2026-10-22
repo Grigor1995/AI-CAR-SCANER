@@ -2,6 +2,10 @@
 
 ## Unreleased — Generation portraits and advanced read protocols
 
+- Fixed Desktop portrait loading on supported PySide6 versions by passing
+  string header names to `QNetworkReply.rawHeader`. Added a real Qt/loopback
+  HTTP regression test for image loading and UTF-8 attribution.
+
 - Expanded shared selection from 50 to 70 generations and 199 engine options.
 - Added 51 generated transparent portraits; all 70 generation references now
   have distinct images served by the backend.

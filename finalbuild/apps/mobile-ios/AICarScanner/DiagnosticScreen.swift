@@ -61,15 +61,24 @@ struct DiagnosticScreen: View {
                     }
                     ScrollView(.horizontal, showsIndicators:false) {
                         HStack(spacing:8) {
-                            ForEach([5, 0, 3, 1, 6, 2, 7, 8, 9, 10, 4], id:\.self) { index in
-                                let titles = [t.vehicle, t.inputs, t.analysis, t.obd, t.activity, t.tr("Home", "Обзор", "Գլխավոր"), "DTC", t.nextTests, t.tr("Live Data", "Данные", "Ուղիղ տվյալներ"), t.tr("Reports", "Отчёты", "Հաշվետվություններ"), t.tr("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին")]
-                                let symbols = ["car.side.fill", "exclamationmark.bubble.fill",
-                                               "brain.head.profile", "waveform.path.ecg",
-                                               "clock.arrow.circlepath", "house.fill", "exclamationmark.triangle", "checklist", "chart.xyaxis.line", "doc.text", "brain.head.profile"]
+                            ForEach([
+                                (5, t.tr("Dashboard", "Обзор", "Գլխավոր"), "house.fill"),
+                                (0, t.tr("Vehicles", "Автомобили", "Մեքենաներ"), "car.side.fill"),
+                                (3, t.tr("VCI / Devices", "Устройства", "Սարքեր"), "cable.connector"),
+                                (1, t.tr("Diagnostic", "Диагностика", "Ախտորոշում"), "stethoscope"),
+                                (8, t.tr("Live Data", "Данные", "Ուղիղ տվյալներ"), "chart.xyaxis.line"),
+                                (7, t.tr("Tests", "Тесты", "Թեստեր"), "checklist"),
+                                (6, "DTC", "exclamationmark.triangle"),
+                                (2, t.tr("AI Analysis", "ИИ-анализ", "AI վերլուծություն"), "brain.head.profile"),
+                                (9, t.tr("Reports", "Отчёты", "Հաշվետվություններ"), "doc.text"),
+                                (10, t.tr("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին"), "graduationcap"),
+                                (4, t.tr("Activity", "История", "Պատմություն"), "clock.arrow.circlepath")
+                            ], id: \.0) { item in
+                                let index = item.0
                                 Button {
                                     tab = index
                                 } label: {
-                                    Label(titles[index], systemImage:symbols[index])
+                                    Label(item.1, systemImage:item.2)
                                         .font(.subheadline.weight(.semibold))
                                         .lineLimit(1)
                                         .padding(.horizontal,13)

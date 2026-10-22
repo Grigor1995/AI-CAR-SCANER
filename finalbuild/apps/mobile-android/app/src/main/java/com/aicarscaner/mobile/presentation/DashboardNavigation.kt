@@ -59,7 +59,12 @@ internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
 
 @Composable
 internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
-    val sections=listOf(1 to "Vehicle selection",2 to "Device connection",0 to "Symptoms",7 to "DTC list & details",4 to "AI analysis",8 to "Guided tests",13 to "Testing progress",3 to "Live data",12 to "Custom dashboard",9 to "Reports",10 to "Teach AI",5 to "Activity")
+    val sections=listOf(
+        6 to "Dashboard", 1 to "Vehicles", 2 to "VCI / Devices",
+        0 to "Diagnostic", 3 to "Live Data", 8 to "Tests",
+        7 to "DTC", 4 to "AI Analysis", 9 to "Reports", 10 to "Teach AI",
+        13 to "Testing progress", 12 to "Custom dashboard", 5 to "Activity"
+    )
     sections.forEachIndexed { index,(id,title) ->
         Card(onClick={navigate(id)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
             colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {

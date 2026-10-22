@@ -57,8 +57,16 @@ def _plaintext(value: Any) -> str:
 
 def _license_accepted(license_name: str, usage: str) -> bool:
     value = license_name.upper().replace("_", " ")
-    license_ok = any(t in value for t in LICENSE_TOKENS)
-    return license_ok and "NONCOMMERCIAL" not in value and "NO DERIV" not in value and "FAIR USE" not in usage.upper()
+    terms = usage.upper().replace("_", " ")
+    restricted = (
+        "NONCOMMERCIAL", "NON-COMMERCIAL", "NO DERIV", "FAIR USE",
+        "CC BY-NC", "CC-BY-NC", "CC BY-ND", "CC-BY-ND",
+        " CC NC", " CC ND",
+    )
+    return (
+        any(t in value for t in LICENSE_TOKENS)
+        and not any(t in value or t in terms for t in restricted)
+    )
 
 
 @lru_cache(maxsize=128)

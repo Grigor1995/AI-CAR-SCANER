@@ -21,9 +21,12 @@ def _root() -> Path:
 
 
 def artwork_path(make: str, model: str, chassis: str) -> Path | None:
-    filename = "_".join(map(slug_piece, (make, model, chassis))) + ".png"
-    path = _root() / "assets" / "vehicle_models" / filename
-    return path if path.is_file() else None
+    stem = "_".join(map(slug_piece, (make, model, chassis)))
+    for extension in (".png", ".svg"):
+        path = _root() / "assets" / "vehicle_models" / (stem + extension)
+        if path.is_file():
+            return path
+    return None
 
 
 @lru_cache(maxsize=96)

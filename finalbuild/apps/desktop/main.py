@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
+from urllib.parse import urlsplit
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
 if getattr(sys, "frozen", False):
@@ -23,9 +24,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
-PORT = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
-BACKEND_URL = os.environ.get("AI_CAR_BACKEND_URL", f"http://127.0.0.1:{PORT}").rstrip("/")
-LOCAL_BACKEND = BACKEND_URL.startswith(("http://127.0.0.1", "http://localhost"))
+_configured_backend_url = os.environ.get("AI_CAR_BACKEND_URL", "").rstrip("/")
+_configured_backend_port = os.environ.get("AI_CAR_BACKEND_PORT", "8001")
+_parsed_backend_url = urlsplit(_configured_backend_url) if _configured_backend_url else None
+LOCAL_BACKEND = bool(
+    _parsed_backend_url is None or (
+        _parsed_backend_url.scheme == "http"
+        and _parsed_backend_url.hostname in {"127.0.0.1", "localhost"}
+    )
+)
+# Local URL port is authoritative. Otherwise Desktop could launch FastAPI on
+# :8001 while its API client waits forever for http://localhost:8123/health.
+PORT = int(
+    _parsed_backend_url.port
+    if LOCAL_BACKEND and _parsed_backend_url is not None and _parsed_backend_url.port
+    else _configured_backend_port
+)
+BACKEND_URL = _configured_backend_url or f"http://127.0.0.1:{PORT}"
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))
 LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/")
@@ -241,6 +256,10 @@ def _backend_log_path() -> Path:
 
 def start_backend() -> subprocess.Popen[bytes] | None:
     global _backend_process, _backend_log
+    # A previous child may have crashed after a successful startup.
+    if _backend_process is not None and _backend_process.poll() is not None:
+        _backend_process = None
+        _close_backend_log()
     if not LOCAL_BACKEND:
         # The default is the shared cloud API. Do not spawn an unused local API
         # process when Desktop is configured for Render or another remote host.
@@ -279,6 +298,9 @@ def start_backend() -> subprocess.Popen[bytes] | None:
     if backend_path.exists():
         existing = env.get("PYTHONPATH")
         env["PYTHONPATH"] = str(backend_path) if not existing else str(backend_path) + os.pathsep + existing
+    # Keep the child bind address/port in sync with the URL Desktop is polling.
+    env["AI_CAR_BACKEND_HOST"] = HOST
+    env["AI_CAR_BACKEND_PORT"] = str(PORT)
     env.setdefault("DIAGNOSTIC_LLM_PROVIDER", "llama-server")
     env.setdefault("LOCAL_LLM_SERVER_URL", LLM_BASE_URL)
     env.setdefault("LOCAL_LLM_SERVER_MODEL", LLM_MODEL)
@@ -391,6 +413,7 @@ def run(argv: list[str] | None = None) -> None:
         from apps.desktop.ui import run as run_ui
 
     backend_error: str | None = None
+    backend_recovery = None
     if LOCAL_BACKEND and not args.no_backend:
         try:
             start_llama_server(wait_for_ready=False)
@@ -403,6 +426,23 @@ def run(argv: list[str] | None = None) -> None:
         except Exception as exc:
             backend_error = str(exc)
             print(f"[AI-Car-Scanner] Backend startup failed: {backend_error}", file=sys.stderr)
+
+    # Only supervise the FastAPI child created by this launcher. Remote APIs
+    # and an already-running externally owned local API are not restarted.
+    if LOCAL_BACKEND and os.environ.get("AI_CAR_BACKEND_AUTO_RECOVER", "1").lower() in {"1", "true", "yes"}:
+        try:
+            from .backend_recovery import BackendRecoverySupervisor
+        except ImportError:
+            from apps.desktop.backend_recovery import BackendRecoverySupervisor
+        backend_recovery = BackendRecoverySupervisor(
+            process=lambda: _backend_process,
+            restart=start_backend,
+            healthy=_backend_healthy,
+            # An initial import/missing-module failure may clear the child
+            # before the GUI appears. Retry it without blocking Qt startup.
+            allow_initial_retry=backend_error is not None,
+        )
+        backend_recovery.start()
 
     def trace_shutdown(stage: str) -> None:
         path = os.environ.get("AI_CAR_SHUTDOWN_TRACE_PATH")
@@ -419,11 +459,14 @@ def run(argv: list[str] | None = None) -> None:
         trace_shutdown("ui.run returned")
     finally:
         trace_shutdown("starting backend/LLM cleanup")
+        if backend_recovery is not None:
+            backend_recovery.stop()
         stop_backend()
         stop_llama_server()
         trace_shutdown("backend/LLM cleanup complete")
 
-    if backend_error:
+    if backend_error and not _backend_healthy():
+        # A recovered initial failure is not an EXE shutdown failure.
         raise SystemExit(1)
 
 

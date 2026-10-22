@@ -1719,3 +1719,38 @@ def test_session_id_stays_internal_in_dashboard_diagnostics_and_history(window_f
     assert secret not in item.text()
     assert item.data(Qt.UserRole) == secret
     assert window.session.session_id == secret
+def test_backend_health_autoreconnect_is_non_modal(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    monkeypatch.setattr(window, "refresh_pages", Mock())
+    assert window._health_timer.interval() == 12000
+
+    fake_api.health.side_effect = ConnectionError("temporary backend outage")
+    window.refresh_health()
+    work, done = jobs.pop()
+    assert work()["status"] == "offline"
+    done(work())
+    assert window.online is False
+    assert window.statusBar().currentMessage() == "Backend offline"
+    assert window._health_pending is False
+
+    fake_api.health.side_effect = None
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is True
+    assert window.statusBar().currentMessage() == "Backend online"
+
+    fake_api.health.return_value = {"status": "not_ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.online is False
+
+    fake_api.health.return_value = {"status": "ok"}
+    window.refresh_health()
+    work, done = jobs.pop()
+    done(work())
+    assert window.statusBar().currentMessage() == "Backend recovered"

@@ -982,6 +982,14 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
         self.statusBar().showMessage(self.tr_text("Ready"))
         self.refresh_all()
+        # Periodically re-check FastAPI connectivity. This is safe for both
+        # local auto-restarted FastAPI and a temporarily unavailable remote API.
+        self._health_pending = False
+        self._ever_connected = False
+        self._health_timer = QTimer(self)
+        self._health_timer.setInterval(12000)
+        self._health_timer.timeout.connect(self.refresh_health)
+        self._health_timer.start()
 
     def _apply_theme(self) -> None:
         if getattr(self, "_rendered_theme", None) == self.dark_theme:
@@ -1160,6 +1168,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         _trace_shutdown(f"closeEvent: active_workers={len(self._workers)}")
+        if hasattr(self, "_health_timer"):
+            self._health_timer.stop()
         if self._workers:
             if not self._closing:
                 self._closing = True

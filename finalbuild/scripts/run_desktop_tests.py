@@ -28,6 +28,7 @@ PRODUCTION_MODULES = frozenset({
     "api_client.py", "models.py", "storage.py", "main.py",
     "backend_worker.py", "ui.py", "prepare_windows_icon.py",
     "stage_windows_icons.py", "verify_icons.py",
+    "vehicle_artwork.py", "backend_recovery.py",
 })
 GROUPS = {
     "logic": (
@@ -129,7 +130,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--min-core-coverage", type=float, default=0.0,
-        help="Optional coverage gate for 9 production runtime modules (separate from all-source coverage)",
+        help="Optional coverage gate for production runtime modules (separate from all-source coverage)",
     )
     parser.add_argument("--reports-dir", default="desktop-test-reports")
     args = parser.parse_args()

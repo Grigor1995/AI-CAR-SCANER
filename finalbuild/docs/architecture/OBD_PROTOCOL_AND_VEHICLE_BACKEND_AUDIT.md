@@ -131,3 +131,32 @@ Commons or vPIC are unreachable.
 - [NHTSA vPIC APIs](https://vpic.nhtsa.dot.gov/api/Home/Index)
 - [Wikimedia Imageinfo licensing metadata](https://www.mediawiki.org/wiki/API:Imageinfo)
 - [Wikimedia attribution](https://attribution.wikimedia.org/attribution-signals/license.html)
+
+
+## Local QA commands (no CI/CD)
+
+From `finalbuild/` on Windows Git Bash:
+
+```bash
+python -m pytest -q tests/api/test_backend_vehicle_knowledge.py tests/vehicle/test_obd_client.py
+python scripts/run_desktop_tests.py --group vehicle-protocol
+python -m pytest -q tests/api/test_low_coverage_vehicle_catalog_routes.py
+python scripts/test_fastapi_startup.py --mode source
+```
+
+When the FastAPI service is already running:
+
+```bash
+curl -fsS 'http://127.0.0.1:8001/api/v1/vehicle-catalog/global-models?make=BMW'
+curl -fsS 'http://127.0.0.1:8001/api/v1/vehicle-catalog/curated-variants?make=Mercedes-Benz&model=E-Class&chassis=W211'
+curl -fsS 'http://127.0.0.1:8001/api/v1/vehicle-catalog/obd-protocols'
+curl -fsS 'http://127.0.0.1:8001/api/v1/vehicle-catalog/runtime-capabilities'
+curl -fsS -X POST -H 'Content-Type: application/json' -d '{"atdpn":"A6"}' \
+  'http://127.0.0.1:8001/api/v1/vehicle-catalog/parse-adapter-protocol'
+```
+
+For the Windows frozen backend, REBUILD `backend_service.exe` after
+checking out the feature branch: catalog JSON + image manifest + portraits
+are now bundled. Test source/frozen FastAPI startup after the build.
+Android/iOS have REST DTO accessors only; their UI screen integration and
+hardware adapter E2E are not certified by these tests.

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
+import com.aicarscaner.mobile.data.api.BackendLiveRecordDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,9 @@ import retrofit2.HttpException
 data class DiagnosticUiState(
     val session: DiagnosticSessionDto? = null,
     val history: List<DiagnosticSessionDto> = emptyList(),
+    val backendLiveRecords: List<BackendLiveRecordDto> = emptyList(),
+    val backendLiveLoading: Boolean = false,
+    val backendLiveError: String? = null,
     val vehicleCatalog: List<VehicleCatalogEntryDto> = emptyList(),
     val catalogOnline: Boolean = false,
     val loading: Boolean = false,
@@ -30,6 +34,30 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     val uiState: StateFlow<DiagnosticUiState> = _uiState.asStateFlow()
 
     fun openSession(id: String, language: String = "en") = execute { repository.getSession(id, language) }
+
+    /** Reads persisted server samples; never labels them as the locally connected adapter. */
+    fun refreshBackendLiveRecords() {
+        val sessionId = _uiState.value.session?.session_id ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(backendLiveLoading = true, backendLiveError = null)
+            try {
+                val rows = repository.acquisitionRecords(sessionId).records
+                if (_uiState.value.session?.session_id == sessionId) {
+                    _uiState.value = _uiState.value.copy(
+                        backendLiveRecords = rows, backendLiveLoading = false
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (_uiState.value.session?.session_id == sessionId) {
+                    _uiState.value = _uiState.value.copy(
+                        backendLiveLoading = false, backendLiveError = error.message
+                    )
+                }
+            }
+        }
+    }
 
     fun loadHistory() {
         viewModelScope.launch {
@@ -134,6 +162,9 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
                 // Publish that complete response without a second analysis overwriting it.
                 _uiState.value = previous.copy(
                     session = result,
+                    backendLiveRecords = if (previous.session?.session_id == result.session_id) previous.backendLiveRecords else emptyList(),
+                    backendLiveLoading = false,
+                    backendLiveError = null,
                     loading = false,
                     error = null,
                     testResultRevision = revision + if (resultRecorded) 1 else 0,

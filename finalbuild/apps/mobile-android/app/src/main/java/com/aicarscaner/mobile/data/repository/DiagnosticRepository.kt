@@ -29,6 +29,9 @@ class DiagnosticRepository(private val api: DiagnosticApi, private val context: 
 
     suspend fun vehicleCatalog() = api.vehicleCatalog()
 
+    suspend fun acquisitionRecords(id: String, limit: Int = 100) =
+        api.acquisitionRecords(id, limit.coerceIn(1, 1000))
+
     suspend fun createSession(vehicle: VehicleDto) =
         api.createSession(vehicle)
 

@@ -1215,6 +1215,32 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     )
                                 }
                             }
+                            DemoPanel(demo("Backend acquisition records", "Записи сервера", "Սերվերի չափումներ")) {
+                                Text(
+                                    demo("Stored server samples; not local OBD live streaming.",
+                                         "Сохранённые данные сервера, не локальный OBD-поток.",
+                                         "Սերվերում պահպանված չափումներ, ոչ տեղային OBD հոսք։"),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedButton(
+                                    onClick = { viewModel.refreshBackendLiveRecords() },
+                                    enabled = state.session != null && !state.backendLiveLoading
+                                ) {
+                                    Text(demo("Refresh server samples", "Обновить данные сервера", "Թարմացնել սերվերի տվյալները"))
+                                }
+                                if (state.backendLiveLoading) CircularProgressIndicator()
+                                state.backendLiveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                                if (!state.backendLiveLoading && state.backendLiveRecords.isEmpty()) {
+                                    Text(demo("No server samples", "Нет записей сервера", "Սերվերի չափումներ չկան"))
+                                }
+                                state.backendLiveRecords.take(100).forEach { record ->
+                                    val label = record.channel ?: record.pid ?: "—"
+                                    val value = record.numeric_value?.toString() ?: "—"
+                                    val provenance = if (record.metadata?.get("adapter") == "simulator")
+                                        "Simulator / synthetic" else (record.source_type ?: "Unknown source")
+                                    Text("$label: $value ${record.unit.orEmpty()} • $provenance")
+                                }
+                            }
                             OutlinedButton(onClick={selectedTab=12},modifier=Modifier.fillMaxWidth()) {Text(dashboardLabel("Custom dashboard")+" ›")}
 
                             DemoLiveCharts(channelHistory)

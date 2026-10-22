@@ -161,7 +161,24 @@ data class DiagnosticSessionDto(
     val audit_log: List<AuditEventDto> = emptyList()
 )
 
+data class BackendLiveRecordDto(
+    val channel: String? = null,
+    val pid: String? = null,
+    val numeric_value: Double? = null,
+    val unit: String? = null,
+    val source_type: String? = null,
+    val metadata: Map<String, String>? = null
+)
+
+data class BackendLiveRecordsDto(val records: List<BackendLiveRecordDto> = emptyList())
+
 interface DiagnosticApi {
+    @GET("api/v1/acquisition/sessions/{sessionId}/records")
+    suspend fun acquisitionRecords(
+        @Path("sessionId") sessionId: String,
+        @Query("limit") limit: Int = 100
+    ): BackendLiveRecordsDto
+
     @GET("api/v1/obd/plan")
     suspend fun obdPlan(): ObdPlanDto
 

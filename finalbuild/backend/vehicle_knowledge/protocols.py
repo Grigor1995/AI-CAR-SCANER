@@ -37,6 +37,13 @@ OBD_PROTOCOLS: tuple[dict[str, Any], ...] = (
     {"id": "iso_27145_wwh_obd", "label": "ISO 27145 WWH-OBD", "family": "heavy_duty", "elm_id": None, "supported_by_generic_elm": False},
     {"id": "sae_j1979_2_obdonuds", "label": "SAE J1979-2 OBDonUDS", "family": "emissions_service", "elm_id": None, "supported_by_generic_elm": False},
     {"id": "iso_14230_kwp_on_can", "label": "KWP2000 on CAN (manufacturer diagnostics)", "family": "enhanced_ecu", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "sae_j1979_classic", "label": "SAE J1979 generic emissions OBD services", "family": "emissions_service", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "sae_j2411_swcan", "label": "SAE J2411 single-wire CAN (OEM network)", "family": "manufacturer_network", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "sae_j1708_j1587", "label": "SAE J1708/J1587 legacy heavy-duty diagnostics", "family": "heavy_duty", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "kw1281_vag", "label": "KW1281 proprietary VAG K-Line diagnostics", "family": "manufacturer_network", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "iso_14229_uds_lin", "label": "ISO 14229 UDS on ISO 17987 LIN", "family": "enhanced_ecu", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "iso_14229_uds_flexray", "label": "ISO 14229 UDS on FlexRay", "family": "enhanced_ecu", "elm_id": None, "supported_by_generic_elm": False},
+    {"id": "iso_11898_can_fd", "label": "ISO 11898 CAN FD transport (not generic OBD protocol)", "family": "manufacturer_network", "elm_id": None, "supported_by_generic_elm": False},
 )
 _BY_ID = {p["id"]: p for p in OBD_PROTOCOLS}
 _BY_ELM = {p["elm_id"]: p for p in OBD_PROTOCOLS if p["elm_id"] is not None}

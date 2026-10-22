@@ -181,16 +181,28 @@ def commons_photo_candidate(make: str, model: str, chassis: str = "") -> dict[st
     pages = ((payload.get("query") or {}).get("pages") or [])
     if not isinstance(pages, list):
         return {"status": "no_licensed_candidate", "source": "Wikimedia Commons"}
-    requested = [p.casefold() for p in (make, model, chassis) if p.strip()]
+    make_aliases = {make.casefold()}
+    if make.casefold() == "volkswagen":
+        make_aliases.add("vw")
+    elif make.casefold() == "mercedes-benz":
+        make_aliases.add("mercedes")
+    elif make.casefold() == "chevrolet":
+        make_aliases.add("chevy")
     for page in pages:
         title = str(page.get("title", ""))
+        lower_title = title.casefold()
         # Preserve only actual image files; don't use SVG or remote HTML.
-        if not title.lower().endswith((".jpg", ".jpeg", ".png")):
+        if not lower_title.endswith((".jpg", ".jpeg", ".png")):
             continue
-        # Chassis-specific search should include the chassis designation.
-        if chassis and chassis.casefold() not in title.casefold():
+        if not any(alias in lower_title for alias in make_aliases):
             continue
-        if not all(p in title.casefold() for p in requested[:2]):
+        if chassis:
+            if chassis.casefold() not in lower_title:
+                continue
+            basis = "make_and_chassis_filename"
+        elif model.casefold() in lower_title:
+            basis = "make_and_model_filename"
+        else:
             continue
         info = (page.get("imageinfo") or [{}])[0]
         extra = info.get("extmetadata") or {}
@@ -209,11 +221,13 @@ def commons_photo_candidate(make: str, model: str, chassis: str = "") -> dict[st
         author = _plain(str((extra.get("Artist") or {}).get("value", "")))
         return {
             "status": "candidate_unverified",
+            "filename_match_basis": basis,
             "image_url": thumb,
             "file_page": description_page,
             "title": title,
             "author": author or "See file page",
             "license": label,
+            "license_url": _plain(str((extra.get("LicenseUrl") or {}).get("value", ""))) or None,
             "source": "Wikimedia Commons",
             "notice": "Real photo, but exact chassis/trim/year has NOT been independently verified; attribution and license apply.",
         }

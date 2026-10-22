@@ -332,7 +332,7 @@ struct DiagnosticScreen: View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.vehicle).font(.title3.bold())
             VehicleModelArtwork(make: make, model: model, chassis: chassis, backendURL: viewModel.settings.apiURL, photoAttribution: viewModel.catalog.first { $0.make == make && $0.model == model && $0.chassis == chassis }?.image_attribution)
-            if viewModel.catalog.isEmpty {
+            if !viewModel.catalogOnline {
                 Text(t.tr(
                     "Offline catalog: options may differ from the server catalog.",
                     "Офлайн-каталог: список может отличаться от серверного каталога.",
@@ -341,8 +341,35 @@ struct DiagnosticScreen: View {
                 .font(.footnote)
                 .foregroundStyle(.orange)
             }
-            PickerField(t.make,$make,makes);PickerField(t.model,$model,models);PickerField(t.chassis,$chassis,chassisOptions)
-            PickerField(t.year,$year,years);PickerField(t.engine,$engine,engines);PickerField("ECU",$ecu,ecus)
+            PickerField(t.make,$make,makes)
+                .onChange(of: make) { _, _ in
+                    model = models.first ?? ""
+                    chassis = chassisOptions.first ?? ""
+                    year = years.first ?? ""
+                    engine = engines.first ?? ""
+                    ecu = ecus.first ?? ""
+                }
+            PickerField(t.model,$model,models)
+                .onChange(of: model) { _, _ in
+                    chassis = chassisOptions.first ?? ""
+                    year = years.first ?? ""
+                    engine = engines.first ?? ""
+                    ecu = ecus.first ?? ""
+                }
+            PickerField(t.chassis,$chassis,chassisOptions)
+                .onChange(of: chassis) { _, _ in
+                    year = years.first ?? ""
+                    engine = engines.first ?? ""
+                    ecu = ecus.first ?? ""
+                }
+            PickerField(t.year,$year,years)
+                .onChange(of: year) { _, _ in
+                    engine = engines.first ?? ""
+                    ecu = ecus.first ?? ""
+                }
+            PickerField(t.engine,$engine,engines)
+                .onChange(of: engine) { _, _ in ecu = ecus.first ?? "" }
+            PickerField("ECU",$ecu,ecus)
             if usesCatalogFuel {
                 Text(catalogFuel.map { code in
                     switch code.lowercased() {
@@ -427,7 +454,7 @@ struct DiagnosticScreen: View {
         NavigationStack{Form{
             Section(t.languageLabel){Picker(t.languageLabel,selection:Binding(get:{viewModel.settings.language},set:{viewModel.settings.language=$0;viewModel.saveSettings()})){ForEach(AppLanguage.allCases){Text($0.label).tag($0)}}}
             Section(t.theme){Toggle(t.dark,isOn:Binding(get:{viewModel.settings.darkTheme},set:{viewModel.settings.darkTheme=$0;viewModel.saveSettings()}))}
-            Section(t.tr("Server", "Сервер", "Սերվեր")){TextField(t.tr("API URL", "Адрес API", "API հասցե"),text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled()}
+            Section(t.tr("Server", "Сервер", "Սերվեր")){TextField(t.tr("API URL", "Адрес API", "API հասցե"),text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled(); Button(t.tr("Refresh catalog", "Обновить каталог", "Թարմացնել մեքենաների ցանկը")) { Task { await viewModel.loadCatalog() } }}
         }.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
     }
 
@@ -440,7 +467,7 @@ struct DiagnosticScreen: View {
 
     private func saveVehicle()async{let v=Vehicle(make:make,model:model,chassis:chassis,year:Int(year),engine:engine,fuel:usesCatalogFuel ? catalogFuel : [petrol ? "petrol":"",lpg ? "lpg":""].filter{!$0.isEmpty},ecu:ecu);if viewModel.session == nil{await viewModel.newSession(v)}else{await viewModel.updateVehicle(v)}}
     private func updateSymptomLocally(_ s:Symptom)async{await viewModel.updateSymptom(s,editText)}
-    private func reset(){make="Mercedes-Benz";model="E-Class";chassis="W211";year="2006";engine="M272 E35 3.5";ecu="ME9.7";petrol=true;lpg=true;symptom="";dtc="";tab=0}
+    private func reset(){make=makes.first ?? "";model=models.first ?? "";chassis=chassisOptions.first ?? "";year=years.first ?? "";engine=engines.first ?? "";ecu=ecus.first ?? "";petrol=true;lpg=false;symptom="";dtc="";tab=0}
 }
 
 private struct PickerField:View{

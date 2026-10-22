@@ -61,6 +61,33 @@ class DiagnosticApiClient:
     def vehicle_catalog_entries(self) -> list[dict[str, Any]]:
         return self._request("GET", "/api/v1/vehicle-catalog/entries")
 
+    # Presentation clients all consume this same backend authoritative registry.
+    def registry_makes(self, query: str = "") -> list[str]:
+        return self._request("GET", "/api/v1/vehicle-registry/makes", params={"q": query})
+
+    def registry_models(self, make: str, year: int | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"make": make}
+        if year is not None:
+            params["year"] = year
+        return self._request("GET", "/api/v1/vehicle-registry/models", params=params)
+
+    def registry_fitments(self, make: str, model: str, year: int | None = None) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"make": make, "model": model}
+        if year is not None:
+            params["year"] = year
+        return self._request("GET", "/api/v1/vehicle-registry/fitments", params=params)
+
+    def obd_protocol_hints(self, year: int, market: str = "unknown",
+                           make: str = "", detected_elm: str | None = None) -> dict[str, Any]:
+        return self._request("GET", "/api/v1/vehicle-registry/compatibility",
+                             params={"year": year, "market": market, "make": make,
+                                     **({"detected_elm": detected_elm} if detected_elm else {})})
+
+    def registry_photo(self, make: str, model: str, chassis: str = "") -> dict[str, Any]:
+        return self._request("GET", "/api/v1/vehicle-registry/photo",
+                             params={"make": make, "model": model, "chassis": chassis})
+
+
     def get_session(self, session_id: str, language: str | None = None) -> dict[str, Any]:
         kwargs = {"params": {"language": language}} if language else {}
         return self._request("GET", f"/api/v1/sessions/{session_id}", **kwargs)

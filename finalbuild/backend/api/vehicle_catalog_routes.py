@@ -269,7 +269,10 @@ from vehicle_knowledge.protocols import (
     all_protocols as _protocols,
     parse_elm_protocol as _parse_elm_protocol,
 )
-from vehicle_knowledge.vpic import nhtsa_models_for_make_year as _vpic_models
+from vehicle_knowledge.vpic import (
+    nhtsa_models_for_make_year as _vpic_models,
+    nhtsa_decode_vin as _vpic_vin_decode,
+)
 from vehicle_knowledge.images import (
     bundled_image_metadata as _image_info,
     bundled_model_artwork as _artwork,
@@ -435,3 +438,26 @@ def vehicle_diagnostic_runtime_capabilities():
             "Remote FastAPI cannot open client-device Bluetooth/USB without native transport bridge.",
         ],
     }
+
+
+class ConsentedVinLookup(BaseModel):
+    vin: str = Field(min_length=17, max_length=17)
+    consent_to_nhtsa_lookup: bool = False
+
+
+@router.post("/decode-vin")
+def decode_vin_with_opt_in(payload: ConsentedVinLookup):
+    """Never transmit VINs from automatic UI refresh or background processes."""
+    if not payload.consent_to_nhtsa_lookup:
+        raise HTTPException(
+            403, "Explicit consent required before transmitting a VIN to NHTSA",
+        )
+    try:
+        return _vpic_vin_decode(
+            payload.vin,
+            consent_to_nhtsa_lookup=payload.consent_to_nhtsa_lookup,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except (HTTPError, URLError, OSError, TimeoutError) as exc:
+        raise HTTPException(503, "NHTSA VIN lookup is temporarily unavailable") from exc

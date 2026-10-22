@@ -2,6 +2,10 @@
 
 Audit date: 2026-10-22. Baseline: `b74a8eb`.
 
+This document records the original snapshot. See the
+[70-generation catalog and advanced protocol update](EXPANDED_CATALOG_AND_PROTOCOLS.md)
+for current image coverage and newly implemented read-only capabilities.
+
 ## Findings and changes
 
 The public backend device facade previously exposed only a deterministic

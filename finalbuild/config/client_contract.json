@@ -81,6 +81,18 @@
     "reference_endpoint": "/api/v1/vehicle-reference",
     "model_names_do_not_confirm_protocol": true,
     "image_source_of_truth": "backend; bundled portraits are offline cache",
-    "session_raw_snapshots_feed_backend_telemetry": true
+    "session_raw_snapshots_feed_backend_telemetry": true,
+    "advanced_read_endpoints": {
+      "elm_can_uds": "/api/v1/obd/uds/elm/read",
+      "doip_uds": "/api/v1/obd/uds/doip/read",
+      "j1939_dm": "/api/v1/obd/j1939/decode",
+      "j1939_bam": "/api/v1/obd/j1939/decode-bam",
+      "j1708_j1587": "/api/v1/obd/j1708/decode"
+    },
+    "advanced_services": [
+      "UDS 22 ReadDataByIdentifier",
+      "UDS 19/02 reportDTCByStatusMask"
+    ],
+    "advanced_scope": "Explicit ECU addressing/read services or passive frame decoding; not universal OEM compatibility"
   }
 }

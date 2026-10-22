@@ -1,5 +1,8 @@
 # Shared OBD backend: setup and API
 
+See [advanced reads and generation portraits](EXPANDED_CATALOG_AND_PROTOCOLS.md)
+for the newer ELM UDS, DoIP, J1939 and J1708/J1587 interfaces.
+
 ## Two deployment modes
 
 **Backend beside the vehicle:** Desktop/PC/Raspberry Pi runs the backend and

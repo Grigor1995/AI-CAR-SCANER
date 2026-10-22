@@ -9,8 +9,8 @@ from catalog_sources.wikimedia import image_metadata
 
 def test_reference_engines_are_real_named_options_without_fitment_claims():
     cars = reference_vehicles()
-    assert len(cars) == 50
-    assert sum(len(c['engines']) for c in cars) == 147
+    assert len(cars) == 70
+    assert sum(len(c['engines']) for c in cars) == 199
     assert len({c['id'] for c in cars}) == len(cars)
     assert all(c['source_url'].startswith('https://en.wikipedia.org/wiki/') for c in cars)
     assert all(c['protocol_policy'] == 'auto_detect_on_vehicle' for c in cars)
@@ -66,13 +66,13 @@ def test_reference_api_images_and_catalog_survive_unavailable_database(monkeypat
     def offline(*args):raise HTTPException(503,'database offline')
     monkeypatch.setattr(catalog,'_run_all',offline)
     with TestClient(main.app) as client:
-        assert len(client.get('/api/v1/vehicle-reference').json()['vehicles']) == 50
+        assert len(client.get('/api/v1/vehicle-reference').json()['vehicles']) == 70
         entries = client.get('/api/v1/vehicle-catalog/entries?make=Toyota&model=Prius').json()
         assert entries and all(e['scope']=='generation-reference-not-vin-fitment' for e in entries)
         assert 'Nissan' in client.get('/api/v1/vehicle-catalog/makes').json()
         assert client.get('/api/v1/vehicle-reference/toyota_corolla_e140-e150/image').headers['content-type'] == 'image/png'
         assert client.get('/api/v1/vehicle-reference/unknown/image').status_code == 404
-        assert client.get('/api/v1/vehicle-reference/nissan_qashqai_j10/image').status_code == 404
+        assert client.get('/api/v1/vehicle-reference/nissan_qashqai_j10/image').status_code == 200
 
 
 def test_reference_image_manifest_cannot_serve_arbitrary_files(monkeypatch,tmp_path):
@@ -161,3 +161,28 @@ def test_reference_lookup_and_image_url_do_not_depend_on_database():
         image = client.get('/api/v1/vehicle-reference/image',params={'make':'Toyota','model':'Corolla','chassis':'E140/E150'})
         assert image.status_code==200 and image.content.startswith(b'\x89PNG')
         assert client.get('/api/v1/vehicle-reference/image',params={'make':'Missing','model':'Missing','chassis':'Missing'}).status_code==404
+
+
+def test_all_selector_generations_have_unique_transparent_backend_portraits():
+    from hashlib import sha256
+    from PIL import Image
+    from obd.catalog import project_root
+    root = project_root()
+    cars = reference_vehicles()
+    digests = set()
+    for car in cars:
+        path = root/car['image']['path']
+        with Image.open(path) as portrait:
+            assert portrait.format == 'PNG' and portrait.mode == 'RGBA', car['id']
+            low, high = portrait.getchannel('A').getextrema()
+            assert low == 0 and high > 128, car['id']
+        digests.add(sha256(path.read_bytes()).hexdigest())
+        assert car['image']['url'] == f"/api/v1/vehicle-reference/{car['id']}/image"
+    assert len(digests) == len(cars)
+
+
+def test_new_generations_and_lada_are_available_through_shared_selector():
+    assert selector_entries(make='Lada',model='Vesta',year=2017)
+    assert selector_entries(make='Toyota',model='Corolla',year=2021,chassis='E210')
+    diesel = selector_entries(make='Audi',model='Q5',engine='CGLC 2.0 TDI',year=2012)
+    assert diesel and all(row['fuel'] == ['diesel'] and not row['fitment_verified'] for row in diesel)

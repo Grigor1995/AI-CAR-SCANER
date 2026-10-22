@@ -204,7 +204,7 @@ def test_public_protocol_registry_and_detected_response_errors():
     import api.main as main
     with TestClient(main.app) as client:
         protocols = client.get('/api/v1/obd/protocols').json()['protocols']
-        assert any(p['id']=='doip' and p['status']=='not_implemented' for p in protocols)
+        assert any(p['id']=='doip' and p['status']=='read_only_tcp_routing_and_uds_22_19' for p in protocols)
         assert client.get('/api/v1/obd/detected-protocol',params={'raw':'A6'}).json()['id']=='can-11-500'
         assert client.get('/api/v1/obd/detected-protocol',params={'raw':'UNKNOWN'}).status_code==422
         result = client.post('/api/v1/obd/decode',json={'responses':{'ATDPN':'UNKNOWN'}}).json()

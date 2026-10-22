@@ -124,9 +124,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/toyota_prius_xw30.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -158,9 +158,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/toyota_yaris_xp90.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -197,9 +197,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/toyota_land-cruiser-prado_j150.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -255,9 +255,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/honda_civic_fb.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -284,9 +284,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/honda_accord_cp.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -318,9 +318,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/honda_cr-v_re.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -357,9 +357,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/nissan_qashqai_j10.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -391,9 +391,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/nissan_x-trail_t31.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -420,9 +420,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/nissan_altima_l32.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -459,9 +459,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/mazda_mazda3_bl.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -493,9 +493,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/mazda_cx-5_ke.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -527,9 +527,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/subaru_forester_sh.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -561,9 +561,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/subaru_outback_br.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -595,9 +595,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/mitsubishi_lancer_cy.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -736,9 +736,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/mercedes-benz_ml-class_w164.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -892,9 +892,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/bmw_x5_e70.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -926,9 +926,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/audi_a4_b8.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -960,9 +960,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/audi_a6_c6.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1096,9 +1096,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/volkswagen_tiguan_5n.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1130,9 +1130,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/skoda_octavia_1z.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1164,9 +1164,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/hyundai_elantra_hd.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1227,9 +1227,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/hyundai_sonata_yf.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1256,9 +1256,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/hyundai_tucson_lm.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1450,9 +1450,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/ford_fiesta_b299.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1489,9 +1489,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/chevrolet_cruze_j300.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1518,9 +1518,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/chevrolet_malibu_eighth-generation.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1552,9 +1552,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/renault_megane_iii.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1586,9 +1586,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/renault_duster_hs.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1620,9 +1620,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/peugeot_308_t7.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1654,9 +1654,9 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/opel_astra_j.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     },
     {
@@ -1683,9 +1683,649 @@
       "verification": "reference_requires_source_review",
       "protocol_policy": "auto_detect_on_vehicle",
       "image": {
-        "path": null,
-        "kind": "not_imported",
-        "attribution": null
+        "path": "assets/vehicle_models/lexus_rx_al10.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "toyota_corolla_e210",
+      "make": "Toyota",
+      "model": "Corolla",
+      "chassis": "E210",
+      "year_start": 2018,
+      "year_end": 2025,
+      "engines": [
+        {
+          "name": "M20A-FKS 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "2ZR-FXE 1.8",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Toyota_Corolla_(E210)",
+      "wikipedia_title": "Toyota Corolla (E210)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/toyota_corolla_e210.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "toyota_camry_xv70",
+      "make": "Toyota",
+      "model": "Camry",
+      "chassis": "XV70",
+      "year_start": 2017,
+      "year_end": 2024,
+      "engines": [
+        {
+          "name": "A25A-FKS 2.5",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "2GR-FKS 3.5 V6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "A25A-FXS 2.5",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Toyota_Camry_(XV70)",
+      "wikipedia_title": "Toyota Camry (XV70)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/toyota_camry_xv70.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "toyota_rav4_xa50",
+      "make": "Toyota",
+      "model": "RAV4",
+      "chassis": "XA50",
+      "year_start": 2018,
+      "year_end": 2025,
+      "engines": [
+        {
+          "name": "M20A-FKS 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "A25A-FKS 2.5",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "A25A-FXS 2.5",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Toyota_RAV4",
+      "wikipedia_title": "Toyota RAV4",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/toyota_rav4_xa50.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "toyota_prius_xw50",
+      "make": "Toyota",
+      "model": "Prius",
+      "chassis": "XW50",
+      "year_start": 2015,
+      "year_end": 2022,
+      "engines": [
+        {
+          "name": "2ZR-FXE 1.8",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Toyota_Prius",
+      "wikipedia_title": "Toyota Prius",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/toyota_prius_xw50.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "toyota_land-cruiser_j200",
+      "make": "Toyota",
+      "model": "Land Cruiser",
+      "chassis": "J200",
+      "year_start": 2007,
+      "year_end": 2021,
+      "engines": [
+        {
+          "name": "1UR-FE 4.6 V8",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "3UR-FE 5.7 V8",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "1VD-FTV 4.5 V8",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Toyota_Land_Cruiser",
+      "wikipedia_title": "Toyota Land Cruiser",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/toyota_land-cruiser_j200.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "honda_civic_fc-fk",
+      "make": "Honda",
+      "model": "Civic",
+      "chassis": "FC/FK",
+      "year_start": 2015,
+      "year_end": 2021,
+      "engines": [
+        {
+          "name": "L15B7 1.5 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "K20C2 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Honda_Civic_(tenth_generation)",
+      "wikipedia_title": "Honda Civic (tenth generation)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/honda_civic_fc-fk.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "honda_cr-v_rw-rt",
+      "make": "Honda",
+      "model": "CR-V",
+      "chassis": "RW/RT",
+      "year_start": 2016,
+      "year_end": 2022,
+      "engines": [
+        {
+          "name": "L15B7 1.5 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "K24W 2.4",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "LFA 2.0",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Honda_CR-V",
+      "wikipedia_title": "Honda CR-V",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/honda_cr-v_rw-rt.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "nissan_rogue_t32",
+      "make": "Nissan",
+      "model": "Rogue",
+      "chassis": "T32",
+      "year_start": 2013,
+      "year_end": 2020,
+      "engines": [
+        {
+          "name": "QR25DE 2.5",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "MR20DD 2.0",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Nissan_Rogue",
+      "wikipedia_title": "Nissan Rogue",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/nissan_rogue_t32.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "nissan_sentra_b17",
+      "make": "Nissan",
+      "model": "Sentra",
+      "chassis": "B17",
+      "year_start": 2012,
+      "year_end": 2019,
+      "engines": [
+        {
+          "name": "MRA8DE 1.8",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "MR16DDT 1.6 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Nissan_Sentra",
+      "wikipedia_title": "Nissan Sentra",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/nissan_sentra_b17.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "mercedes-benz_c-class_w205",
+      "make": "Mercedes-Benz",
+      "model": "C-Class",
+      "chassis": "W205",
+      "year_start": 2014,
+      "year_end": 2021,
+      "engines": [
+        {
+          "name": "M274 2.0 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "M276 3.0 V6 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "OM651 2.1",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Mercedes-Benz_C-Class_(W205)",
+      "wikipedia_title": "Mercedes-Benz C-Class (W205)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/mercedes-benz_c-class_w205.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "bmw_5-series_f10",
+      "make": "BMW",
+      "model": "5 Series",
+      "chassis": "F10",
+      "year_start": 2010,
+      "year_end": 2017,
+      "engines": [
+        {
+          "name": "N20 2.0 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "N55 3.0 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "N57 3.0",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/BMW_5_Series_(F10)",
+      "wikipedia_title": "BMW 5 Series (F10)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/bmw_5-series_f10.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "bmw_x5_f15",
+      "make": "BMW",
+      "model": "X5",
+      "chassis": "F15",
+      "year_start": 2013,
+      "year_end": 2018,
+      "engines": [
+        {
+          "name": "N55 3.0 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "N63 4.4 V8 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "N57 3.0",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/BMW_X5_(F15)",
+      "wikipedia_title": "BMW X5 (F15)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/bmw_x5_f15.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "hyundai_elantra_ad",
+      "make": "Hyundai",
+      "model": "Elantra",
+      "chassis": "AD",
+      "year_start": 2015,
+      "year_end": 2020,
+      "engines": [
+        {
+          "name": "G4FG 1.6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "G4NA 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "D4FB 1.6",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Hyundai_Elantra",
+      "wikipedia_title": "Hyundai Elantra",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/hyundai_elantra_ad.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "kia_sportage_ql",
+      "make": "Kia",
+      "model": "Sportage",
+      "chassis": "QL",
+      "year_start": 2015,
+      "year_end": 2021,
+      "engines": [
+        {
+          "name": "G4NA 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "G4FJ 1.6 Turbo",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "D4HA 2.0",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Kia_Sportage",
+      "wikipedia_title": "Kia Sportage",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/kia_sportage_ql.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "volkswagen_jetta_a6",
+      "make": "Volkswagen",
+      "model": "Jetta",
+      "chassis": "A6",
+      "year_start": 2010,
+      "year_end": 2018,
+      "engines": [
+        {
+          "name": "CBTA 2.5",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "CAXA 1.4 TSI",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "CJAA 2.0 TDI",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Volkswagen_Jetta_(A6)",
+      "wikipedia_title": "Volkswagen Jetta (A6)",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/volkswagen_jetta_a6.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "lexus_es_xv60",
+      "make": "Lexus",
+      "model": "ES",
+      "chassis": "XV60",
+      "year_start": 2012,
+      "year_end": 2018,
+      "engines": [
+        {
+          "name": "2GR-FE 3.5 V6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "2AR-FXE 2.5",
+          "type": "hybrid",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Lexus_ES",
+      "wikipedia_title": "Lexus ES",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/lexus_es_xv60.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "lada_granta_2190",
+      "make": "Lada",
+      "model": "Granta",
+      "chassis": "2190",
+      "year_start": 2011,
+      "year_end": 2025,
+      "engines": [
+        {
+          "name": "VAZ-11186 1.6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "VAZ-21127 1.6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Lada_Granta",
+      "wikipedia_title": "Lada Granta",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/lada_granta_2190.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "lada_vesta_2180",
+      "make": "Lada",
+      "model": "Vesta",
+      "chassis": "2180",
+      "year_start": 2015,
+      "year_end": 2025,
+      "engines": [
+        {
+          "name": "VAZ-21129 1.6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "VAZ-21179 1.8",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "H4M 1.6",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Lada_Vesta",
+      "wikipedia_title": "Lada Vesta",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/lada_vesta_2180.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "mazda_mazda6_gj",
+      "make": "Mazda",
+      "model": "Mazda6",
+      "chassis": "GJ",
+      "year_start": 2012,
+      "year_end": 2024,
+      "engines": [
+        {
+          "name": "PE-VPS 2.0",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "PY-VPS 2.5",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "SH-VPTS 2.2",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Mazda6",
+      "wikipedia_title": "Mazda6",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/mazda_mazda6_gj.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
+      }
+    },
+    {
+      "id": "audi_q5_8r",
+      "make": "Audi",
+      "model": "Q5",
+      "chassis": "8R",
+      "year_start": 2008,
+      "year_end": 2017,
+      "engines": [
+        {
+          "name": "CAEB 2.0 TFSI",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "CPMA 2.0 TFSI",
+          "type": "petrol",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        },
+        {
+          "name": "CGLC 2.0 TDI",
+          "type": "diesel",
+          "fitment_status": "generation_reference_not_year_or_market_verified"
+        }
+      ],
+      "source_url": "https://en.wikipedia.org/wiki/Audi_Q5",
+      "wikipedia_title": "Audi Q5",
+      "verification": "reference_requires_source_review",
+      "protocol_policy": "auto_detect_on_vehicle",
+      "image": {
+        "path": "assets/vehicle_models/audi_q5_8r.png",
+        "kind": "generated_illustration",
+        "attribution": "AI-generated vehicle illustration; not a manufacturer photograph"
       }
     }
   ]

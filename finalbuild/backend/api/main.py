@@ -10,6 +10,7 @@ from api.platform_routes import router as platform_router
 from api.intelligence_routes import router as intelligence_router
 from api.state import sessions, load_persisted_sessions, persist_sessions
 from api.obd_routes import router as obd_router
+from api.advanced_obd_routes import router as advanced_obd_router
 from api.vehicle_reference_routes import router as reference_router
 from api.ai_routes import router as ai_router
 from api.knowledge_routes import router as knowledge_router
@@ -51,6 +52,7 @@ engine=DiagnosticReasoningEngine()
 intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()
 app.include_router(obd_router)
+app.include_router(advanced_obd_router)
 app.include_router(reference_router)
 app.include_router(platform_router)
 app.include_router(intelligence_router)

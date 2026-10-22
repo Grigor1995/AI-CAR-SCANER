@@ -41,3 +41,5 @@ The platform is **evidence-driven first, AI-assisted second**. Deterministic dia
 ## Important implementation note
 
 The repository contains both a normalized SQLAlchemy schema and complete-session snapshot persistence (diagnostic_session_state). The API keeps DiagnosticSession objects in an in-process registry for fast reasoning and persists snapshots when DATABASE_URL is configured. This documentation describes the current implementation rather than presenting future architecture as complete.
+
+- [70-generation portraits and advanced read-only OBD interfaces](obd/EXPANDED_CATALOG_AND_PROTOCOLS.md)

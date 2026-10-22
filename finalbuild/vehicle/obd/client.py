@@ -22,15 +22,64 @@ class GenericObdClient:
             await self.transport.disconnect()
             raise
     async def disconnect(self): await self.transport.disconnect()
+    async def _command_unlocked(self, cmd: str) -> str:
+        try:
+            await self.transport.write((cmd.strip()+"\r").encode("ascii"))
+            raw = await self.transport.read_until(timeout=35 if cmd == "0100" else (10 if cmd == "0902" else 3))
+            return raw.decode("ascii").rstrip("> \r\n")
+        except BaseException:
+            await self.transport.disconnect()
+            raise
+
     async def command(self, cmd: str) -> str:
         async with self._lock:
+            return await self._command_unlocked(cmd)
+
+    async def read_uds(self, request_id: int, response_id: int, request: bytes) -> bytes:
+        """One explicitly addressed CAN UDS read; restore generic OBD afterward.
+
+        Hold the command lock throughout configuration, exchange and restoration,
+        so live-data polling cannot consume a response under another CAN header.
+        """
+        from vehicle.uds.read_only import validate_read_request, validate_positive
+        validate_read_request(request)
+        async with self._lock:
+            configured = False
             try:
-                await self.transport.write((cmd.strip()+"\r").encode("ascii"))
-                raw = await self.transport.read_until(timeout=35 if cmd == "0100" else (10 if cmd == "0902" else 3))
-                return raw.decode("ascii").rstrip("> \r\n")
-            except BaseException:
-                await self.transport.disconnect()
-                raise
+                supported = self.protocol.parse_pid(0, await self._command_unlocked("0100"))
+                if len(supported) != 4:
+                    raise ValueError("A complete Mode 01 PID 00 reply is required")
+                observed = detected_protocol(await self._command_unlocked("ATDPN"))
+                bits = observed["id_bits"]
+                if bits not in (11, 29):
+                    raise ValueError("ELM UDS reads require an observed ISO 15765 CAN transport")
+                if not all(0 <= value < (1 << bits) for value in (request_id, response_id)):
+                    raise ValueError("ECU CAN addresses do not fit the observed CAN identifier width")
+                configured = True
+                width = 3 if bits == 11 else 8
+                for cmd in (f"ATSH{request_id:0{width}X}", f"ATCRA{response_id:0{width}X}", "ATCFC1"):
+                    reply = await self._command_unlocked(cmd)
+                    if self.protocol.normalize(reply).upper().removeprefix(cmd).strip() != "OK":
+                        raise ValueError(f"Adapter rejected {cmd}")
+                raw = await self._command_unlocked(request.hex().upper())
+                for payload in self.protocol.payloads(request.hex(), raw):
+                    if payload == bytes((127,request[0],120)):
+                        continue
+                    validate_positive(request, payload)
+                    return payload
+                raise ValueError("UDS read did not contain a final ECU response")
+            finally:
+                if configured and self.transport.connected:
+                    try:
+                        for cmd in initialization(self.protocol_id):
+                            reply = await self._command_unlocked(cmd)
+                            if cmd != "ATZ" and self.protocol.normalize(reply).upper().removeprefix(cmd).strip() != "OK":
+                                raise ValueError("Adapter rejected generic OBD restoration")
+                        await self._command_unlocked("0100")
+                    except BaseException:
+                        await self.transport.disconnect()
+                        raise
+
     async def protocol_status(self):
         await self.read_pid(0)  # Trigger auto negotiation before querying ATDPN.
         return detected_protocol(await self.command("ATDPN"))

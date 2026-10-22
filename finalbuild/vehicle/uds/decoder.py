@@ -10,9 +10,9 @@ class UdsDtcRecord:
 
     @property
     def confirmed(self) -> bool:
-        # ISO 14229 status bit 3 is pending/confirmed-status dependent on mask;
-        # keep raw mask authoritative and expose only a conservative flag.
-        return bool(self.status_byte & 0x01)
+        # ISO 14229 DTC status bit 3 is confirmedDTC. Bit 0 only says
+        # testFailed and must not be presented as a confirmed DTC.
+        return bool(self.status_byte & 0x08)
 
 
 def format_uds_dtc(raw_dtc: int) -> str:

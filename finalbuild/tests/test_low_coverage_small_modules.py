@@ -65,8 +65,8 @@ def test_uds_dtc_decoder_all_prefixes_boundaries_and_payload_shapes():
 
     records = parse_dtc_information(bytes([0x02, 0xFF, 0x03, 0x02, 0x00, 0x28, 0xC1, 0x23, 0x45, 0x01, 0xAA]))
     assert [(r.raw_dtc, r.status_byte) for r in records] == [(0x030200, 0x28), (0xC12345, 0x01)]
-    assert records[1].confirmed is True
-    assert records[0].confirmed is False
+    assert records[1].confirmed is False  # testFailed alone is not confirmedDTC.
+    assert records[0].confirmed is True   # confirmedDTC is status bit 3.
 
 
 def test_device_health_monitor_ok_warning_and_critical_levels():

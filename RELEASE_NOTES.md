@@ -1,5 +1,19 @@
 # Release notes
 
+## Unreleased — Generation portraits and advanced read protocols
+
+- Expanded shared selection from 50 to 70 generations and 199 engine options.
+- Added 51 generated transparent portraits; all 70 generation references now
+  have distinct images served by the backend.
+- Added explicitly addressed ELM/CAN UDS reads, DoIP TCP routing/UDS reads,
+  passive J1939 DM1/DM2 with TP.BAM reassembly and J1708/J1587 packet decoding.
+- Corrected confirmed-DTC interpretation to ISO 14229 status bit 3.
+- Verified 802 Python tests (2 skipped), 387 Desktop tests (1 skipped), 70/70
+  transparent generation portraits and the Android build/unit tests.
+- Preserved read-only operations and explicit capability limits. OEM drivers,
+  CAN FD and regulatory WWH-OBD/OBDonUDS profiles are not universally implemented.
+- See [scope, endpoints and validation](finalbuild/docs/obd/EXPANDED_CATALOG_AND_PROTOCOLS.md).
+
 ## Unreleased — Shared OBD backend and vehicle references
 
 ### Feature branch integration

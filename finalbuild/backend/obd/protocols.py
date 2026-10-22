@@ -27,12 +27,13 @@ PROTOCOLS = (
     Protocol("can-29-500", "ISO 15765-4 CAN", "7", 500000, 29),
     Protocol("can-11-250", "ISO 15765-4 CAN", "8", 250000, 11),
     Protocol("can-29-250", "ISO 15765-4 CAN", "9", 250000, 29),
-    Protocol("j1939", "SAE J1939 CAN (heavy-duty; not generic Mode 01 decoding)", "A", 250000, 29, "adapter_only_no_j1939_decoder"),
-    Protocol("uds-can", "ISO 14229 UDS over ISO 15765-2", None, status="read_only_isotp_library_not_generic_elm_polling"),
-    Protocol("doip", "ISO 13400 diagnostic transport over IP", None, status="not_implemented"),
+    Protocol("j1939", "SAE J1939 CAN (heavy-duty; not generic Mode 01 decoding)", "A", 250000, 29, "passive_dm1_dm2_and_tp_bam_decoder"),
+    Protocol("uds-can", "ISO 14229 UDS over ISO 15765-2", None, status="read_only_addressed_elm_can_and_isotp_library"),
+    Protocol("doip", "ISO 13400 diagnostic transport over IP", None, status="read_only_tcp_routing_and_uds_22_19"),
     Protocol("can-fd", "ISO 11898-1 CAN FD / ISO 15765-2", None, status="not_implemented"),
+    Protocol("obdonuds", "SAE J1979-2 OBDonUDS", None, status="requires_regulatory_did_profile_not_implemented"),
     Protocol("wwh-obd", "ISO 27145 worldwide harmonized OBD", None, status="not_implemented"),
-    Protocol("j1708-j1587", "SAE J1708/J1587 legacy heavy-duty", None, status="not_implemented"),
+    Protocol("j1708-j1587", "SAE J1708/J1587 legacy heavy-duty", None, status="passive_checksum_and_parameter_framing_decoder"),
     Protocol("oem-diagnostics", "Manufacturer-specific diagnostics/security/OBD-I", None, status="oem_documentation_and_driver_required"),
 )
 BY_ID = {p.id: p for p in PROTOCOLS}

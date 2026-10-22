@@ -182,6 +182,20 @@ struct DiagnosticScreen: View {
                 demoMetric(t.tr("Tests", "Тесты", "Թեստեր"), viewModel.session?.test_results.count ?? 0, "checkmark.shield.fill", .green)
                 demoMetric(t.hypotheses, viewModel.session?.hypotheses.count ?? 0, "brain.head.profile", AutomotivePalette.violet)
             }
+            SectionCard(t.tr("Diagnostic session", "Диагностический сеанс", "Ախտորոշման սեսիա")) {
+                HStack {
+                    Text(t.tr("Status", "Статус", "Կարգավիճակ"))
+                    Spacer()
+                    Text(viewModel.session?.state ?? t.tr("No active session", "Нет активного сеанса", "Ակտիվ սեսիա չկա"))
+                        .font(.caption.monospaced())
+                }
+                HStack(spacing: 10) {
+                    Button(t.tr("Diagnostic", "Диагностика", "Ախտորոշում")) { tab = 1 }
+                        .buttonStyle(.borderedProminent)
+                    Button(t.tr("VCI / Devices", "Устройства", "Սարքեր")) { tab = 3 }
+                        .buttonStyle(.bordered)
+                }
+            }
             Text(t.tr("Quick actions", "Быстрые действия", "Արագ գործողություններ")).font(.headline)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 demoShortcut("DTC", "exclamationmark.triangle", 6)

@@ -265,7 +265,10 @@ from vehicle_knowledge.catalog import (
     list_curated_variants as _curated_variants,
     resolve_vehicle_protocols as _resolve_protocols,
 )
-from vehicle_knowledge.protocols import all_protocols as _protocols
+from vehicle_knowledge.protocols import (
+    all_protocols as _protocols,
+    parse_elm_protocol as _parse_elm_protocol,
+)
 from vehicle_knowledge.vpic import nhtsa_models_for_make_year as _vpic_models
 from vehicle_knowledge.images import (
     bundled_image_metadata as _image_info,
@@ -388,3 +391,22 @@ def vpic_models(
         raise HTTPException(400, str(exc)) from exc
     except (HTTPError, URLError, OSError, TimeoutError) as exc:
         raise HTTPException(503, "NHTSA vPIC is temporarily unavailable") from exc
+
+
+class AdapterProtocolObservation(BaseModel):
+    """Raw ATDPN reply from an adapter client, not a server-verified ECU claim."""
+    adapter_id: str | None = Field(default=None, max_length=200)
+    atdpn: str = Field(min_length=1, max_length=64)
+    atdp: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/parse-adapter-protocol")
+def parse_adapter_protocol(payload: AdapterProtocolObservation):
+    observation = _parse_elm_protocol(payload.atdpn)
+    return {
+        **observation,
+        "adapter_id": payload.adapter_id,
+        "description_from_adapter": payload.atdp,
+        "observation_provenance": "caller_supplied_not_backend_hardware_attested",
+        "note": "ATDPN shows the adapter-reported link, not VIN fitment or OEM ECU access.",
+    }

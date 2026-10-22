@@ -163,11 +163,12 @@ data class DiagnosticSessionDto(
 
 data class BackendLiveRecordDto(
     val channel: String? = null,
+    val display_name: String? = null,
     val pid: String? = null,
     val numeric_value: Double? = null,
     val unit: String? = null,
     val source_type: String? = null,
-    val metadata: Map<String, String>? = null
+    val metadata: Map<String, Any?>? = null
 )
 
 data class BackendLiveRecordsDto(val records: List<BackendLiveRecordDto> = emptyList())

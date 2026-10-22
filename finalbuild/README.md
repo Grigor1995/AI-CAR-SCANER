@@ -102,6 +102,9 @@ See [architecture overview](docs/architecture/system-overview.md) and [dependenc
 
 ## Phase 32 — Clean local AI runtime
 
+For managed offline AI, run `python -m apps.desktop.main --with-backend --local-ai`
+from this directory. See [offline AI setup and diagnostics](docs/ai/OFFLINE_AI.md).
+
 The recommended Windows runtime uses standalone `llama-server.exe` on `127.0.0.1:8000` and FastAPI on `127.0.0.1:8001`. The Desktop launcher starts both services automatically. No Ollama runtime and no Python `llama_cpp` binding are required. See [Windows setup](START_HERE_WINDOWS.md) for runtime setup.
 
 ## Phase 35

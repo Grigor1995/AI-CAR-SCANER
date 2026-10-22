@@ -28,7 +28,7 @@ class LlamaServerConfig:
             base_url=os.getenv(
                 "LOCAL_LLM_SERVER_URL",
                 os.getenv("LLM_BASE_URL", "http://127.0.0.1:8000"),
-            ).rstrip("/"),
+            ).rstrip("/").removesuffix("/v1"),
             model=os.getenv(
                 "LOCAL_LLM_SERVER_MODEL",
                 os.getenv("LLM_MODEL", "Qwen3-8B-Q4_K_M.gguf"),

@@ -77,3 +77,15 @@ def test_localhost_prefix_does_not_match_remote_hostname(monkeypatch):
         importlib.reload(desktop_main)
         assert desktop_main.LOCAL_BACKEND is False
     importlib.reload(desktop_main)
+
+
+def test_local_ai_url_controls_bind_port_and_normalizes_v1_suffix(monkeypatch):
+    with monkeypatch.context() as env:
+        env.setenv('LOCAL_LLM_SERVER_URL','http://127.0.0.1:8555/v1/')
+        env.setenv('LOCAL_LLM_SERVER_PORT','8000')
+        reloaded=importlib.reload(desktop_main)
+        assert reloaded.LLM_HOST == '127.0.0.1'
+        assert reloaded.LLM_PORT == 8555
+        assert reloaded.LLM_HEALTH_URL == 'http://127.0.0.1:8555/health'
+        assert LlamaServerConfig.from_env().base_url == 'http://127.0.0.1:8555'
+    importlib.reload(desktop_main)

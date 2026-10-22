@@ -107,3 +107,48 @@ def test_start_llama_server_starts_when_unhealthy(monkeypatch, tmp_path):
         assert "--port" in command and "8000" in command
     finally:
         desktop_main.stop_llama_server()
+
+
+def test_source_runtime_is_found_next_to_project_without_path_env(monkeypatch,tmp_path):
+    monkeypatch.delenv('LOCAL_LLM_SERVER_PATH',raising=False)
+    monkeypatch.setattr(desktop_main,'ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main,'BUNDLE_ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main.shutil,'which',lambda _:None)
+    runtime = tmp_path/'llama-server.exe'
+    runtime.write_bytes(b'fixture')
+    assert desktop_main._resolve_llama_server() == runtime.resolve()
+
+
+def test_source_runtime_is_found_in_documented_tools_directory(monkeypatch,tmp_path):
+    monkeypatch.delenv('LOCAL_LLM_SERVER_PATH',raising=False)
+    monkeypatch.setattr(desktop_main,'ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main,'BUNDLE_ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main.shutil,'which',lambda _:None)
+    runtime = tmp_path/'tools/llama.cpp/llama-server.exe'
+    runtime.parent.mkdir(parents=True)
+    runtime.write_bytes(b'fixture')
+    assert desktop_main._resolve_llama_server() == runtime.resolve()
+
+
+def test_single_installed_gguf_is_used_without_renaming(monkeypatch,tmp_path):
+    monkeypatch.delenv('LOCAL_LLM_MODEL_PATH',raising=False)
+    monkeypatch.delenv('LOCAL_LLM_SERVER_MODEL',raising=False)
+    monkeypatch.setattr(desktop_main,'ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main,'LLM_MODEL','default.gguf')
+    models = tmp_path/'models';models.mkdir()
+    installed = models/'my-existing-qwen.gguf';installed.write_bytes(b'fixture')
+    assert desktop_main._resolve_model_path() == installed.resolve()
+    monkeypatch.setenv('LOCAL_LLM_SERVER_MODEL',installed.name)
+    assert desktop_main._resolve_model_path() == installed.resolve()
+    monkeypatch.setenv('LOCAL_LLM_SERVER_MODEL','explicit-missing.gguf')
+    assert desktop_main._resolve_model_path() == (models/'explicit-missing.gguf').resolve()
+
+
+def test_multiple_ggufs_require_explicit_choice(monkeypatch,tmp_path):
+    monkeypatch.delenv('LOCAL_LLM_MODEL_PATH',raising=False)
+    monkeypatch.delenv('LOCAL_LLM_SERVER_MODEL',raising=False)
+    monkeypatch.setattr(desktop_main,'ROOT',tmp_path)
+    monkeypatch.setattr(desktop_main,'LLM_MODEL','default.gguf')
+    models=tmp_path/'models';models.mkdir()
+    for name in ('one.gguf','two.gguf'):(models/name).write_bytes(b'fixture')
+    assert desktop_main._resolve_model_path() == (models/'default.gguf').resolve()

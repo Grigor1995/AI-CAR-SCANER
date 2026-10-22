@@ -350,3 +350,62 @@ def test_external_ai_runtime_does_not_launch_competing_llama_server(monkeypatch)
     main.run()
     backend.assert_called_once_with()
     llm.assert_not_called()
+
+
+def test_local_ai_flag_overrides_external_provider_for_managed_backend(monkeypatch,tmp_path):
+    import os
+    monkeypatch.setenv('DIAGNOSTIC_LLM_PROVIDER','openai-compatible')
+    monkeypatch.setenv('AI_CAR_DISABLE_LLM_AUTOSTART','1')
+    monkeypatch.setenv('AI_CAR_BACKEND_AUTO_RECOVER','0')
+    monkeypatch.delenv('LOCAL_LLM_MODEL_PATH',raising=False)
+    monkeypatch.setenv('LOCAL_LLM_SERVER_MODEL','')
+    monkeypatch.setenv('LOCAL_LLM_SERVER_URL','http://127.0.0.1:8000')
+    monkeypatch.setenv('AI_CAR_USE_LOCAL_DATABASE','0')
+    monkeypatch.setenv('AI_CAR_BACKEND_URL','http://127.0.0.1:8001')
+    monkeypatch.setattr(main,'ROOT',tmp_path)
+    monkeypatch.setattr(main,'LLM_MODEL','default.gguf')
+    monkeypatch.setattr(main,'LOCAL_BACKEND',True)
+    monkeypatch.setattr(main,'BACKEND_URL',main.BACKEND_URL)
+    monkeypatch.setattr(main,'HEALTH_URL',main.HEALTH_URL)
+    models=tmp_path/'models';models.mkdir()
+    model=models/'installed.gguf';model.write_bytes(b'fixture')
+    llm=Mock()
+    monkeypatch.setattr(main,'start_llama_server',llm)
+    captured=[]
+    monkeypatch.setattr(main,'start_backend',lambda:captured.append((os.environ['DIAGNOSTIC_LLM_PROVIDER'],os.environ['LOCAL_LLM_SERVER_MODEL'])))
+    monkeypatch.setattr(main,'stop_backend',Mock())
+    monkeypatch.setattr(main,'stop_llama_server',Mock())
+    monkeypatch.setattr('apps.desktop.ui.run',Mock())
+    main.run(['--with-backend','--local-ai'])
+    llm.assert_called_once_with(wait_for_ready=False)
+    assert captured == [('llama-server','installed.gguf')]
+    assert os.environ['AI_CAR_DISABLE_LLM_AUTOSTART'] == '0'
+    assert main._resolve_model_path() == model.resolve()
+
+
+def test_local_ai_flag_rejects_external_backend_lifecycle(monkeypatch):
+    with pytest.raises(SystemExit) as error:
+        main.run(['--local-ai','--no-backend'])
+    assert error.value.code == 2
+    monkeypatch.setattr(main,'LOCAL_BACKEND',False)
+    with pytest.raises(SystemExit) as error:
+        main.run(['--local-ai'])
+    assert error.value.code == 2
+
+
+def test_local_ai_flag_rejects_remotely_managed_llm_endpoint(monkeypatch):
+    monkeypatch.setattr(main,'LOCAL_BACKEND',True)
+    monkeypatch.setattr(main,'LLM_BASE_URL','https://ai.example.test/v1')
+    with pytest.raises(SystemExit) as error:
+        main.run(['--local-ai'])
+    assert error.value.code == 2
+
+
+def test_remote_llm_endpoint_never_starts_a_local_model_process(monkeypatch):
+    monkeypatch.setenv('AI_CAR_DISABLE_LLM_AUTOSTART','0')
+    monkeypatch.setattr(main,'_llm_healthy',lambda:False)
+    monkeypatch.setattr(main,'LLM_BASE_URL','http://ai.example.test:8000')
+    process=Mock()
+    monkeypatch.setattr(main.subprocess,'Popen',process)
+    assert main.start_llama_server() is None
+    process.assert_not_called()

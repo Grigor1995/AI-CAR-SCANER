@@ -40,7 +40,12 @@ PORT = (
 BACKEND_URL = _requested_url or f"http://127.0.0.1:{PORT}"
 LLM_HOST = os.environ.get("LOCAL_LLM_SERVER_HOST", "127.0.0.1")
 LLM_PORT = int(os.environ.get("LOCAL_LLM_SERVER_PORT", "8000"))
-LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/")
+LLM_BASE_URL = os.environ.get("LOCAL_LLM_SERVER_URL", f"http://{LLM_HOST}:{LLM_PORT}").rstrip("/").removesuffix("/v1")
+if os.environ.get("LOCAL_LLM_SERVER_URL"):
+    _llm_target = urlsplit(LLM_BASE_URL)
+    if _llm_target.hostname:
+        LLM_HOST = _llm_target.hostname
+        LLM_PORT = _llm_target.port or (443 if _llm_target.scheme == "https" else 80)
 LLM_MODEL = os.environ.get("LOCAL_LLM_SERVER_MODEL", "Qwen3-8B-Q4_K_M.gguf")
 HEALTH_URL = f"{BACKEND_URL}/health"
 LLM_HEALTH_URL = f"{LLM_BASE_URL}/health"
@@ -100,10 +105,14 @@ def _resolve_llama_server() -> Path | None:
     candidates: list[Path] = []
     if configured:
         candidates.append(Path(configured).expanduser())
-    if getattr(sys, "frozen", False):
+    for directory in (ROOT, BUNDLE_ROOT):
         candidates.extend([
-            ROOT / "llama-server.exe",
-            BUNDLE_ROOT / "llama-server.exe",
+            directory / "llama-server.exe",
+            directory / "llama-server",
+            directory / "tools" / "llama.cpp" / "llama-server.exe",
+            directory / "tools" / "llama.cpp" / "llama-server",
+            directory / "bin" / "llama-server.exe",
+            directory / "bin" / "llama-server",
         ])
     which = shutil.which("llama-server.exe") or shutil.which("llama-server")
     if which:
@@ -121,7 +130,13 @@ def _resolve_model_path() -> Path:
     configured = os.environ.get("LOCAL_LLM_MODEL_PATH")
     if configured:
         return Path(configured).expanduser().resolve()
-    return (ROOT / "models" / LLM_MODEL).resolve()
+    preferred = (ROOT / "models" / (os.environ.get("LOCAL_LLM_SERVER_MODEL") or LLM_MODEL)).resolve()
+    if preferred.is_file() or os.environ.get("LOCAL_LLM_SERVER_MODEL"):
+        return preferred
+    # A single installed GGUF is unambiguous; never guess among several models
+    # or override an explicitly requested filename/path.
+    installed = sorted((ROOT / "models").glob("*.gguf"))
+    return installed[0].resolve() if len(installed) == 1 else preferred
 
 
 def start_llama_server(wait_for_ready: bool = True) -> subprocess.Popen[bytes] | None:
@@ -131,6 +146,10 @@ def start_llama_server(wait_for_ready: bool = True) -> subprocess.Popen[bytes] |
     if os.environ.get("AI_CAR_DISABLE_LLM_AUTOSTART", "0").lower() in {"1", "true", "yes"}:
         return None
     if _llm_healthy():
+        return None
+    target = urlsplit(LLM_BASE_URL)
+    if target.scheme != "http" or target.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        print("[AI-Car-Scanner] LLM endpoint is externally managed; local autostart skipped.", file=sys.stderr)
         return None
 
     model = _resolve_model_path()
@@ -402,7 +421,24 @@ def run(argv: list[str] | None = None) -> None:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--with-backend", action="store_true", help="Start a local backend with persistent SQLite storage before opening Desktop")
     mode.add_argument("--no-backend", action="store_true", help="Connect to an existing backend without starting local services")
+    parser.add_argument("--local-ai", action="store_true",
+                        help="Use and autostart local llama-server with a GGUF in models, overriding an external AI provider for this launch")
     args = parser.parse_args(argv or [])
+    if args.local_ai:
+        if args.no_backend:
+            parser.error("--local-ai needs a launcher-managed local backend; remove --no-backend")
+        if not LOCAL_BACKEND and not args.with_backend:
+            parser.error("--local-ai requires --with-backend when a remote backend is configured")
+        target = urlsplit(LLM_BASE_URL)
+        if target.scheme != "http" or target.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            parser.error("--local-ai needs a local HTTP LOCAL_LLM_SERVER_URL, for example http://127.0.0.1:8000")
+        os.environ["DIAGNOSTIC_LLM_PROVIDER"] = "llama-server"
+        os.environ["AI_CAR_DISABLE_LLM_AUTOSTART"] = "0"
+        os.environ["LOCAL_LLM_SERVER_URL"] = LLM_BASE_URL
+        selected_model = _resolve_model_path()
+        if selected_model.is_file():
+            os.environ["LOCAL_LLM_SERVER_MODEL"] = selected_model.name
+        print(f"[AI-Car-Scanner] Local AI selected: {selected_model}; endpoint={LLM_BASE_URL}")
     if args.with_backend:
         BACKEND_URL = f"http://127.0.0.1:{PORT}"
         HEALTH_URL = f"{BACKEND_URL}/health"

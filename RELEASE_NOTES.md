@@ -1,5 +1,18 @@
 # Release notes
 
+## Unreleased — Managed offline AI startup
+
+- Added Desktop `--local-ai` to override an earlier external OpenAI-compatible
+  selection and start a local GGUF runtime with the managed backend.
+- Fixed source-mode llama-server discovery, single-GGUF model selection and
+  custom local endpoint port/`/v1` normalization.
+- Added `python scripts/check_offline_ai.py` to inspect required files and the
+  actual runtime/backend provider, including stale external-provider instances.
+- Verified 810 Python tests (2 skipped) and 400 Desktop tests (1 skipped);
+  Desktop source/core coverage was 90.53% / 91.51%. These checks do not claim
+  real model inference: the model weights are on the user machine.
+- See [offline AI setup](finalbuild/docs/ai/OFFLINE_AI.md).
+
 ## Unreleased — Generation portraits and advanced read protocols
 
 - Fixed Desktop portrait loading on supported PySide6 versions by passing

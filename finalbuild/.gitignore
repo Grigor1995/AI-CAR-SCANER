@@ -40,3 +40,6 @@ build-release/
 desktop-test-reports/
 dist-desktop-ci/
 build-desktop-ci/
+
+# External llama.cpp release binaries and companion libraries
+tools/llama.cpp/

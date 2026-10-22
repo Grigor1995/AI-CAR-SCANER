@@ -2060,7 +2060,7 @@ def test_dashboard_widgets_resize_reorder_and_restore_without_changing_channels(
 def test_widget_drag_drop_accepts_only_its_own_board(window_factory):
     window = window_factory()
     board = window.pages[0].board
-    source = board.tiles['vehicle'].handle
+    source = board.tiles['vehicle']
     target = board.tiles['dtcs']
     event = Mock()
     event.source.return_value = source
@@ -2069,7 +2069,7 @@ def test_widget_drag_drop_accepts_only_its_own_board(window_factory):
     target.dropEvent(event)
     assert board.order.index('vehicle') + 1 == board.order.index('dtcs')
     event.reset_mock()
-    event.source.return_value = window.pages[4].signals.board.tiles['0'].handle
+    event.source.return_value = window.pages[4].signals.board.tiles['0']
     target.dragEnterEvent(event)
     target.dropEvent(event)
     event.acceptProposedAction.assert_not_called()
@@ -2089,3 +2089,20 @@ def test_added_widget_count_and_size_survive_grid_recreation(window_factory):
     assert restored.board.tiles['4'].height() == 550
     assert restored.selectors[4].currentData() == 'channel-4'
     restored.deleteLater()
+
+
+def test_layout_has_no_move_buttons_and_title_drag_preserves_controls(window_factory, monkeypatch):
+    from PySide6.QtCore import QEvent, QPointF
+    from PySide6.QtGui import QMouseEvent
+    from apps.desktop import widget_layout
+    tile = window_factory().pages[0].board.tiles['vehicle']
+    assert not any(b.text() in {'⠿', '←', '→'} for b in tile.findChildren(QPushButton))
+    fake_drag = Mock()
+    monkeypatch.setattr(widget_layout, 'QDrag', lambda source: fake_drag)
+    press = QMouseEvent(QEvent.MouseButtonPress, QPointF(10, 8), QPointF(10, 8), Qt.LeftButton, Qt.LeftButton, Qt.NoModifier)
+    move = QMouseEvent(QEvent.MouseMove, QPointF(80, 8), QPointF(80, 8), Qt.NoButton, Qt.LeftButton, Qt.NoModifier)
+    tile.eventFilter(tile.content, press)
+    assert tile.eventFilter(tile.content, move) is True
+    fake_drag.exec.assert_called_once_with(Qt.MoveAction)
+    assert tile.width_slider.isEnabled()
+    assert tile.height_slider.isEnabled()

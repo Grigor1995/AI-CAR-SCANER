@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Dashboard layout controls without extra buttons
+
+- Removed the extra drag-handle and arrow button row from every widget.
+- Drag widgets by their existing title; retain width/height sliders and saved
+  layout settings. Embedded diagnostic controls keep their mouse behavior.
+- Local validation only; CI/CD is skipped.
+
 ## Unreleased — Adjustable Desktop dashboard layout
 
 - Added width/height sliders to home dashboard panels and telemetry widgets.

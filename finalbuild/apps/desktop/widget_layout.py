@@ -1,21 +1,9 @@
 """Local, persistent layout controls for native dashboard widgets."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QMimeData
+from PySide6.QtCore import Qt, QMimeData, QEvent
 from PySide6.QtGui import QDrag
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QSlider, QPushButton, QScrollArea
-
-
-class MoveHandle(QPushButton):
-    def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.LeftButton:
-            drag = QDrag(self)
-            mime = QMimeData()
-            mime.setText(self.parent().key)
-            drag.setMimeData(mime)
-            drag.exec(Qt.MoveAction)
-        else:
-            super().mouseMoveEvent(event)
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QSlider, QScrollArea, QApplication
 
 
 class WidgetTile(QWidget):
@@ -31,16 +19,9 @@ class WidgetTile(QWidget):
         """)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(2, 2, 2, 2)
-        toolbar = QHBoxLayout()
-        self.handle = MoveHandle("⠿", self)
-        self.handle.setToolTip("Drag to move widget")
-        toolbar.addWidget(self.handle)
-        for text, offset in (("←", -1), ("→", 1)):
-            button = QPushButton(text)
-            button.setToolTip("Move widget")
-            button.clicked.connect(lambda _checked=False, step=offset: board.move(key, step))
-            toolbar.addWidget(button)
-        layout.addLayout(toolbar)
+        self.content = content
+        self._drag_start = None
+        content.installEventFilter(self)
         sizes = QHBoxLayout()
         self.width_slider = QSlider(Qt.Horizontal)
         self.height_slider = QSlider(Qt.Horizontal)
@@ -72,15 +53,35 @@ class WidgetTile(QWidget):
             for slider, title in ((self.width_slider, "Widget width"), (self.height_slider, "Widget height")):
                 self.board.settings.setValue(f"{self.board.prefix}/{self.key}/{title}", slider.value())
 
+    def eventFilter(self, watched, event):
+        if watched is self.content:
+            if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+                # The existing group-box title is the drag surface; controls
+                # inside the widget retain their normal mouse interaction.
+                if event.position().y() <= self.content.fontMetrics().height() + 12:
+                    self._drag_start = event.position().toPoint()
+            elif event.type() == QEvent.MouseButtonRelease:
+                self._drag_start = None
+            elif event.type() == QEvent.MouseMove and self._drag_start is not None:
+                if event.buttons() & Qt.LeftButton and (event.position().toPoint() - self._drag_start).manhattanLength() >= QApplication.startDragDistance():
+                    self._drag_start = None
+                    drag = QDrag(self)
+                    mime = QMimeData()
+                    mime.setText(self.key)
+                    drag.setMimeData(mime)
+                    drag.exec(Qt.MoveAction)
+                    return True
+        return super().eventFilter(watched, event)
+
     def dragEnterEvent(self, event):
         source = event.source()
-        if isinstance(source, MoveHandle) and source.parent().board is self.board:
+        if isinstance(source, WidgetTile) and source.board is self.board:
             event.acceptProposedAction()
 
     def dropEvent(self, event):
         source = event.source()
-        if isinstance(source, MoveHandle) and source.parent().board is self.board:
-            self.board.move_before(source.parent().key, self.key)
+        if isinstance(source, WidgetTile) and source.board is self.board:
+            self.board.move_before(source.key, self.key)
             event.acceptProposedAction()
 
 

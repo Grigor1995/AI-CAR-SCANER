@@ -12,6 +12,9 @@ from .models import DiagnosticSession, DiagnosticTest, SessionState
 
 
 class DecisionCandidate(BaseModel):
+    risk_level: str = "LOW"
+    prerequisites: list[str] = Field(default_factory=list)
+    expected_observation: str | None = None
     test_id: UUID
     name: str
     purpose: str
@@ -108,7 +111,7 @@ class DiagnosticDecisionEngine:
         disfavored_categories = {
             h.category for h in active_hypotheses if h.status == "disfavored_by_test"
         }
-        if not categories:
+        if not categories and not session.recommendations:
             return DiagnosticDecisionPlan(
                 session_id=session.session_id,
                 state=session.state,
@@ -116,16 +119,10 @@ class DiagnosticDecisionEngine:
             )
 
         results_by_name = {self._recommendation_key(r.name) for r in session.recommendations}
-        completed_ids = {str(r.test_id) for r in session.test_results}
-        # Rule analysis can regenerate DiagnosticTest UUIDs on every pass.
-        # Therefore completion must also be tracked by the stable test name,
-        # otherwise a just-completed recommendation can immediately reappear
-        # with a new UUID after re-analysis.
-        completed_names = {
-            self._recommendation_key(r.test_name)
-            for r in session.test_results
-            if r.test_name
-        }
+        latest_ids = {str(r.test_id): r.result for r in session.test_results}
+        latest_names = {self._recommendation_key(r.test_name): r.result for r in session.test_results if r.test_name}
+        completed_ids = {key for key, result in latest_ids.items() if result in {"PASS", "FAIL"}}
+        completed_names = {key for key, result in latest_names.items() if result in {"PASS", "FAIL"}}
         existing_recommendation_ids = {self._recommendation_key(r.name): r.id for r in session.recommendations}
         evidence_text = " ".join(e.fact.lower() for e in session.evidence)
 
@@ -207,6 +204,8 @@ class DiagnosticDecisionEngine:
             candidates.append(
                 DecisionCandidate(
                     test_id=diagnostic_test.id,
+                    risk_level=diagnostic_test.risk_level, prerequisites=diagnostic_test.prerequisites,
+                    expected_observation=diagnostic_test.expected_observation,
                     name=diagnostic_test.name,
                     purpose=diagnostic_test.purpose,
                     priority_score=diagnostic_test.priority_score,
@@ -219,6 +218,20 @@ class DiagnosticDecisionEngine:
                     prerequisite_gaps=gaps,
                 )
             )
+
+        # The reasoning engine can supply valid model/rule-specific tests that
+        # are outside the small generic catalog. Keep their stable IDs usable.
+        catalog_names = {self._recommendation_key(spec.name) for spec in self.catalog}
+        external = [test for test in session.recommendations if self._recommendation_key(test.name) not in catalog_names]
+        for test in self.enrich_external_recommendations(session, external):
+            key = self._recommendation_key(test.name)
+            if key in catalog_names or key in completed_names or str(test.id) in completed_ids:
+                continue
+            candidates.append(DecisionCandidate(test_id=test.id, name=test.name, purpose=test.purpose,
+                priority_score=test.priority_score, information_gain=test.expected_information_gain,
+                evidence_fit=0.0, cost_penalty=0.0, risk_penalty=0.0,
+                safety_notes=test.safety_notes, risk_level=test.risk_level, prerequisites=test.prerequisites,
+                expected_observation=test.expected_observation, prerequisite_gaps=[]))
 
         candidates.sort(key=lambda c: (-c.priority_score, c.risk_penalty, c.cost_penalty, c.name))
         selected = candidates[0].test_id if candidates else None
@@ -241,6 +254,9 @@ class DiagnosticDecisionEngine:
         for candidate in plan.candidates:
             spec = catalog_by_name.get(candidate.name)
             if spec is None:
+                prior = previous.get(self._recommendation_key(candidate.name))
+                if prior is not None:
+                    session.recommendations.append(prior.model_copy(update={"priority_score":candidate.priority_score}))
                 continue
             prior = previous.get(self._recommendation_key(spec.name))
             session.recommendations.append(

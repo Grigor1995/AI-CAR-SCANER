@@ -822,7 +822,7 @@ class LiveDataPage(QWidget):
         for st in stats:
             row = self.table.rowCount()
             self.table.insertRow(row)
-            vals = [st.get("pid", ""), st.get("count", 0), st.get("min_value", "—"), st.get("max_value", "—"), st.get("mean", "—"), st.get("event_count", 0)]
+            vals = [st.get("display_name") or st.get("pid", ""), st.get("count", 0), st.get("min_value", "—"), st.get("max_value", "—"), st.get("mean", "—"), st.get("event_count", 0)]
             for column, value in enumerate(vals):
                 self.table.setItem(row, column, QTableWidgetItem(str(value)))
         values = [float(record["numeric_value"]) for record in self._records_data if record.get("numeric_value") is not None]
@@ -835,6 +835,7 @@ class TestsPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); title=QLabel("Guided Tests"); title.setObjectName("title"); title.setMaximumHeight(42); lay.addWidget(title)
+        self.generate=QPushButton("Generate recommended tests"); self.generate.clicked.connect(lambda:app.refresh_recommended_tests()); lay.addWidget(self.generate)
         self.progress=QProgressBar(); self.progress.setFixedHeight(18); lay.addWidget(self.progress)
         self.list=QListWidget(); self.instructions=QPlainTextEdit(); self.instructions.setReadOnly(True); self.instructions.setPlaceholderText("Select a recommended test to view prerequisites and safety notes")
         split=QSplitter(); split.addWidget(self.list); split.addWidget(self.instructions); lay.addWidget(split,1)
@@ -845,7 +846,7 @@ class TestsPage(QWidget):
             button.clicked.connect(lambda _=False, value=code:self._record_outcome(value)); outcomes.addWidget(button)
         lay.addLayout(outcomes)
         bar=QHBoxLayout(); language = getattr(app, "language", "en")
-        self.result=QComboBox(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.result.setCurrentIndex(2); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); submit=QPushButton("Record selected result"); submit.clicked.connect(app.record_selected_test); bar.addWidget(self.result); bar.addWidget(self.notes); bar.addWidget(submit); lay.addLayout(bar)
+        self.result=QComboBox(self); self.result.hide(); self.result.addItem(_translate_ui_text("PASS", language), "PASS"); self.result.addItem(_translate_ui_text("FAIL", language), "FAIL"); self.result.addItem(_translate_ui_text("INCOMPLETE", language), "INCOMPLETE"); self.result.setCurrentIndex(2); self.notes=QLineEdit(); self.notes.setPlaceholderText("Technician notes / measurements"); bar.addWidget(self.notes); lay.addLayout(bar)
     def _record_outcome(self, value):
         self.result.setCurrentIndex(self.result.findData(value))
         self.app.record_selected_test()
@@ -879,6 +880,8 @@ class TestsPage(QWidget):
             c=TestCandidate.from_json(item); self.app.test_candidates.append(c)
             label=f"{c.priority_score:.2f} • {c.name} • risk={c.risk_level}\n{c.purpose}"
             q=QListWidgetItem(label); q.setData(Qt.UserRole,c.test_id); self.list.addItem(q)
+        if not self.list.count():
+            self.instructions.setPlainText("\n".join(self.app.decision.get("stop_reasons") or ["Add symptoms or DTCs, then analyze the session to generate recommended tests."]))
         if self.list.count():
             row = next((i for i in range(self.list.count()) if self.list.item(i).data(Qt.UserRole) == selected), 0)
             self.list.setCurrentRow(row)
@@ -1500,6 +1503,7 @@ class MainWindow(QMainWindow):
         )
         self.telemetry=data.get("telemetry", self.telemetry)
         self.session_json=data.get("session", self.session_json)
+        self.decision=data.get("decision", self.decision)
         self.refresh_pages()
         self.statusBar().showMessage(self.tr_text("Live-data AI analysis completed"))
     def refresh_network(self):
@@ -1520,6 +1524,20 @@ class MainWindow(QMainWindow):
             return {"session": self.api.get_session(sid, language=language), "decision": self.api.decision_plan(sid, language=language)}
         def done(data):
             if self.session and self.session.session_id == sid and self.language == language:
+                self.session_json = data["session"]
+                self.decision = data["decision"]
+                self.refresh_pages()
+        self.run_worker(work, done)
+
+    def refresh_recommended_tests(self):
+        if not self.session:
+            self.show_error("No active session."); return
+        sid, language = self.session.session_id, self.language
+        def work():
+            session = self.api.analyze(sid, language=language)
+            return {"session": session, "decision": self.api.decision_plan(sid, language=language)}
+        def done(data):
+            if self.session and self.session.session_id == sid:
                 self.session_json = data["session"]
                 self.decision = data["decision"]
                 self.refresh_pages()

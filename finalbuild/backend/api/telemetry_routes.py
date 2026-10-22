@@ -60,6 +60,9 @@ async def ai_analyze_live(session_id: str, language: str = "en"):
     summary = service.summarize(session.session_id)
     samples = service.samples(session.session_id)
     result = await analyze_live_session(session, summary, samples, language=language)
+    from diagnostic.decision import DiagnosticDecisionEngine
+    from diagnostic.localization import localize_decision_plan
+    result["decision"] = localize_decision_plan(DiagnosticDecisionEngine().build_plan(session), language).model_dump(mode="json")
     session.audit_log.append({
         "event": "LIVE_DATA_AI_ANALYSIS_COMPLETED",
         "sample_count": summary.sample_count,

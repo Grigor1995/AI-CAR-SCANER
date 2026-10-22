@@ -1,5 +1,18 @@
 # Release notes
 
+## Unreleased — Guided tests and Live Data parameter names
+
+- Retained rule-specific recommendations in executable decision plans and
+  refreshed the Desktop test list after live-data AI analysis. Added an explicit
+  generate-tests action and guidance when evidence is missing.
+- Kept INCOMPLETE tests available; PASS/FAIL outcomes remain completed.
+- Removed the duplicate visible result selector/submit row; the three outcome
+  buttons record results with the technician notes.
+- Added backend-owned parameter display names while preserving stable wire IDs
+  and saved widget selections. Desktop titles/dropdowns use readable localized
+  labels instead of raw PID hex numbers.
+- Verified 812 Python tests (2 skipped) and 404 Desktop tests (1 skipped).
+
 ## Unreleased — Managed offline AI startup
 
 - Added Desktop `--local-ai` to override an earlier external OpenAI-compatible

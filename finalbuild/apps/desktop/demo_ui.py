@@ -137,6 +137,7 @@ class SignalGrid(QWidget):
             if record.get("numeric_value") is not None:
                 groups[str(record.get("pid") or record.get("channel") or "Unknown channel")].append(record)
         self.groups = groups
+        self.channel_labels = {key: (rows[-1].get("display_name") or rows[-1].get("metadata", {}).get("display_name") or key) for key, rows in groups.items()}
         names = list(groups)
         if names == getattr(self, "_channel_names", None):
             self._update_cards()
@@ -150,7 +151,7 @@ class SignalGrid(QWidget):
             selector.clear()
             selector.addItem("No samples", "")
             for name in names:
-                selector.addItem(name, name)
+                selector.addItem(self.channel_labels.get(name, name), name)
             selector.setCurrentIndex(max(0, selector.findData(selected)))
             selector.blockSignals(False)
         self._update_cards()
@@ -161,7 +162,7 @@ class SignalGrid(QWidget):
             channel = selector.currentData() or ""
             if channel:
                 selected.append(channel)
-                card.setTitle(channel)
+                card.setTitle(self.channel_labels.get(channel, channel))
                 if self.settings and self.settings.value(f"{self.prefix}_channel_{i}", "") != channel:
                     self.settings.setValue(f"{self.prefix}_channel_{i}", channel)
             card.set_samples(self.groups.get(channel, []))

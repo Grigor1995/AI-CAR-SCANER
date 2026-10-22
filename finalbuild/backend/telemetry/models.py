@@ -25,6 +25,7 @@ class TelemetrySample(BaseModel):
 
 
 class SignalStats(BaseModel):
+    display_name: str | None = None
     session_id: UUID
     pid: str
     count: int

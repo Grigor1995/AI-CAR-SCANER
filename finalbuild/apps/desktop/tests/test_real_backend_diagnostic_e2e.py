@@ -161,9 +161,10 @@ def test_w211_real_api_full_diagnostic_result_reanalysis_and_persistence(
     followup = desktop.analyze(session_id, language="en")
     next_plan = desktop.decision_plan(session_id)
     _assert_no_unproven_hardware_diagnosis(followup)
-    assert all(
-        c["name"] != selected["name"] for c in next_plan["candidates"]
-    ), "Completed diagnostic test was suggested again after re-analysis"
+    if outcome == "INCOMPLETE":
+        assert any(c["name"] == selected["name"] for c in next_plan["candidates"]), "Incomplete test must remain available"
+    else:
+        assert all(c["name"] != selected["name"] for c in next_plan["candidates"]), "Completed diagnostic test was suggested again after re-analysis"
 
     # Cross-language UI presentations must not alter canonical stored status.
     persisted = desktop.get_session(session_id)

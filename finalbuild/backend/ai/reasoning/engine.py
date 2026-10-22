@@ -112,12 +112,10 @@ class DiagnosticIntelligenceEngine:
         accidentally resurrect a test that was already recorded. Stable names are
         the fallback identity for completed tests.
         """
-        completed_ids = {str(item.test_id) for item in session.test_results}
-        completed_names = {
-            self.decision._recommendation_key(item.test_name)
-            for item in session.test_results
-            if item.test_name
-        }
+        latest_ids = {str(item.test_id): item.result for item in session.test_results}
+        latest_names = {self.decision._recommendation_key(item.test_name): item.result for item in session.test_results if item.test_name}
+        completed_ids = {key for key, result in latest_ids.items() if result in {"PASS", "FAIL"}}
+        completed_names = {key for key, result in latest_names.items() if result in {"PASS", "FAIL"}}
         remaining = [
             item for item in candidates
             if str(item.id) not in completed_ids

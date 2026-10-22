@@ -257,3 +257,23 @@ MESSAGES["ru"].update({
 
 MESSAGES["ru"].update({"Start connected adapter": "Запустить подключённый адаптер", "Connected adapter acquisition started": "Сбор данных подключённого адаптера запущен"})
 MESSAGES["hy"].update({"Start connected adapter": "Սկսել միացված ադապտերով", "Connected adapter acquisition started": "Միացված ադապտերի տվյալների հավաքումը սկսված է"})
+
+
+MESSAGES['hy'].update({
+    'Engine speed':'Շարժիչի պտույտներ', 'Vehicle speed':'Մեքենայի արագություն',
+    'Throttle position':'Դրոսելի դիրք', 'MAF airflow':'MAF օդի հոսք',
+    'Engine load':'Շարժիչի բեռնվածություն', 'Intake air temperature':'Մուտքային օդի ջերմաստիճան',
+    'Short-term fuel trim':'Կարճաժամկետ վառելիքային շտկում',
+    'Long-term fuel trim':'Երկարաժամկետ վառելիքային շտկում', 'Battery voltage':'Մարտկոցի լարում',
+    'Generate recommended tests':'Ստանալ առաջարկվող թեստերը',
+    'Add symptoms or DTCs, then analyze the session to generate recommended tests.':'Ավելացրեք ախտանշաններ կամ DTC կոդեր և վերլուծեք սեսիան՝ առաջարկվող թեստերը ստանալու համար։',
+})
+MESSAGES['ru'].update({
+    'Engine speed':'Обороты двигателя', 'Vehicle speed':'Скорость автомобиля',
+    'Throttle position':'Положение дросселя', 'MAF airflow':'Расход воздуха MAF',
+    'Engine load':'Нагрузка двигателя', 'Intake air temperature':'Температура впускного воздуха',
+    'Short-term fuel trim':'Краткосрочная топливная коррекция',
+    'Long-term fuel trim':'Долгосрочная топливная коррекция', 'Battery voltage':'Напряжение аккумулятора',
+    'Generate recommended tests':'Получить рекомендуемые тесты',
+    'Add symptoms or DTCs, then analyze the session to generate recommended tests.':'Добавьте симптомы или коды DTC и выполните анализ сеанса, чтобы получить рекомендуемые тесты.',
+})

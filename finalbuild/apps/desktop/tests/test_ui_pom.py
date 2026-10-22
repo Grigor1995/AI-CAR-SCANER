@@ -1845,3 +1845,52 @@ def test_connected_adapter_button_dispatches_backend_acquisition(window_factory,
     monkeypatch.setattr(window, "_sim_changed", callback)
     done(result)
     callback.assert_called_once_with("Connected adapter acquisition started")
+
+
+def test_test_results_have_one_visible_submission_path(window_factory,monkeypatch):
+    from PySide6.QtWidgets import QPushButton
+    window=window_factory()
+    page=window.pages[6]
+    window.decision={'candidates':[{'test_id':'test-one','name':'Check voltage','purpose':'Measure voltage'}]}
+    page.refresh()
+    assert page.result.isHidden()
+    assert not any(button.text() == 'Record selected result' for button in page.findChildren(QPushButton))
+    record=Mock()
+    monkeypatch.setattr(window,'record_selected_test',record)
+    fail=next(button for button in page.findChildren(QPushButton) if button.text() == 'FAIL')
+    fail.click()
+    record.assert_called_once_with()
+    assert page.result.currentData() == 'FAIL'
+
+
+def test_backend_channel_labels_replace_hex_titles_but_keep_selection_ids(window_factory):
+    window=window_factory()
+    grid=window.pages[4].signals
+    grid.set_records([{'channel':'0x0C','display_name':'Engine speed','numeric_value':750,'unit':'rpm'},
+                      {'channel':'0x05','display_name':'Coolant temperature','numeric_value':90,'unit':'C'}])
+    assert grid.cards[0].title() == 'Engine speed'
+    assert grid.selectors[0].currentText() == 'Engine speed'
+    assert grid.selectors[0].currentData() == '0x0C'
+    assert grid.cards[1].title() == 'Coolant temperature'
+
+
+def test_live_ai_response_refreshes_recommended_tests(window_factory):
+    window=window_factory()
+    decision={'candidates':[{'test_id':'test-live','name':'Check voltage','purpose':'Measure voltage'}]}
+    window._live_ai_done({'ai':{'available':True,'text':'Summary'},'decision':decision})
+    assert window.pages[6].list.count() == 1
+    assert window.pages[6].list.item(0).data(Qt.UserRole) == 'test-live'
+
+
+def test_generate_tests_action_uses_backend_analysis_and_plan(window_factory,monkeypatch,fake_api):
+    window=window_factory()
+    window.session=Session('test-session','READY',window.active_vehicle)
+    fake_api.analyze.return_value={'session_id':'test-session','state':'TESTING'}
+    fake_api.decision_plan.return_value={'candidates':[{'test_id':'generated','name':'Check voltage','purpose':'Measure voltage'}]}
+    jobs=[]
+    monkeypatch.setattr(window,'run_worker',lambda work,done:jobs.append((work,done)))
+    window.pages[6].generate.click()
+    work,done=jobs.pop()
+    done(work())
+    assert window.pages[6].list.count() == 1
+    fake_api.analyze.assert_called_once_with('test-session',language=window.language)

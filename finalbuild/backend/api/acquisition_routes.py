@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from api.state import sessions
 from acquisition.models import AcquisitionStartRequest, AcquisitionStatus
 from acquisition.service import AcquisitionApiService
+from telemetry.channels import channel_name
 
 router=APIRouter(prefix='/api/v1/acquisition',tags=['vehicle-acquisition'])
 service=AcquisitionApiService()
@@ -48,5 +49,5 @@ def acquisition_records(session_id: str, limit: int = 100):
     if session_id not in sessions: raise HTTPException(404,'Session not found')
     if limit < 1 or limit > 1000: raise HTTPException(400,'limit must be between 1 and 1000')
     try:
-        return {'records':[r.__dict__ | {'id':str(r.id),'session_id':str(r.session_id),'source_type':r.source_type.value,'raw':r.raw.hex() if r.raw else None} for r in service.snapshot(sessions[session_id].session_id,limit)]}
+        return {'records':[r.__dict__ | {'display_name':channel_name(r.channel),'id':str(r.id),'session_id':str(r.session_id),'source_type':r.source_type.value,'raw':r.raw.hex() if r.raw else None} for r in service.snapshot(sessions[session_id].session_id,limit)]}
     except KeyError: raise HTTPException(404,'Acquisition not started')

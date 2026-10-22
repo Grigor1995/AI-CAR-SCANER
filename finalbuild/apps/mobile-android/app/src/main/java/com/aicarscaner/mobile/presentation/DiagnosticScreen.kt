@@ -323,9 +323,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
     fun applyRemoteEngine(value: String): Boolean {
         val ecus = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, value, year.toIntOrNull())
-        if (ecus.isEmpty()) return false
         engine = value
-        ecu = ecus.first()
+        ecu = ecus.firstOrNull().orEmpty()
         return true
     }
 

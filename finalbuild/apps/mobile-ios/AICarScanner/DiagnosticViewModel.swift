@@ -175,6 +175,7 @@ final class DiagnosticViewModel: ObservableObject {
     func clearSession() {
         liveRecords = []
         session = nil
+        error = nil
     }
 
     private func execute(

@@ -43,6 +43,9 @@ if [[ "$MODE" == source ]]; then
 else
   "$PY" scripts/test_fastapi_startup.py --mode both
 fi
+# Kill only the disposable FastAPI subprocess spawned by the integration test,
+# then verify the real child is restarted and /health becomes available again.
+"$PY" scripts/test_fastapi_recovery_integration.py
 "$PY" scripts/desktop_v1_readiness.py --mode "$MODE" --since "$STARTED_AT"
 echo '[DESKTOP-V1] Automated checks completed; manual acceptance remains PENDING.'
 echo '[DESKTOP-V1] Review desktop-test-reports/release-v1-readiness.json and real-ui-acceptance/report.html'

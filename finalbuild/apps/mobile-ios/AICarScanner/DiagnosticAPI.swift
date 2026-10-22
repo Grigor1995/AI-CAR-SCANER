@@ -86,6 +86,38 @@ final class DiagnosticAPI {
         try await request("/api/v1/vehicle-catalog/entries")
     }
 
+    func globalVehicleModels(make: String? = nil, year: Int? = nil) async throws -> GlobalVehicleModelsResponse {
+        let query = [
+            make.map { URLQueryItem(name: "make", value: $0) },
+            year.map { URLQueryItem(name: "year", value: String($0)) },
+        ].compactMap { $0 }
+        return try await request("/api/v1/vehicle-catalog/global-models", query: query)
+    }
+
+    func curatedVehicleVariants(
+        make: String, model: String, chassis: String? = nil, year: Int? = nil
+    ) async throws -> CuratedVehicleVariantsResponse {
+        var query = [
+            URLQueryItem(name: "make", value: make),
+            URLQueryItem(name: "model", value: model),
+        ]
+        if let chassis { query.append(URLQueryItem(name: "chassis", value: chassis)) }
+        if let year { query.append(URLQueryItem(name: "year", value: String(year))) }
+        return try await request("/api/v1/vehicle-catalog/curated-variants", query: query)
+    }
+
+    func backendOBDProtocols() async throws -> BackendProtocolRegistryResponse {
+        try await request("/api/v1/vehicle-catalog/obd-protocols")
+    }
+
+    func vehicleImageMetadata(make: String, model: String, chassis: String) async throws -> VehicleImageMetadata {
+        try await request("/api/v1/vehicle-catalog/image-metadata", query: [
+            URLQueryItem(name: "make", value: make),
+            URLQueryItem(name: "model", value: model),
+            URLQueryItem(name: "chassis", value: chassis),
+        ])
+    }
+
     func createSession(_ vehicle: Vehicle) async throws -> DiagnosticSession {
         try await request("/api/v1/sessions", method: "POST", body: vehicle)
     }

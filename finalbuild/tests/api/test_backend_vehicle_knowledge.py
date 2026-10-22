@@ -163,3 +163,24 @@ def test_nhtsa_vpic_is_explicit_online_and_does_not_fabricate_engine_codes(monke
     with pytest.raises(ValueError):
         vpic.nhtsa_models_for_make_year("../bad", 2018)
     vpic.nhtsa_models_for_make_year.cache_clear()
+
+
+def test_backend_normalizes_adapter_protocol_for_all_native_clients():
+    response = client.post("/api/v1/vehicle-catalog/parse-adapter-protocol", json={
+        "adapter_id": "user-adapter",
+        "atdpn": "A6",
+        "atdp": "AUTO, ISO 15765-4 CAN (11/500)",
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["protocol"]["id"] == "iso_15765_4_11_500"
+    assert data["observation_provenance"] == "caller_supplied_not_backend_hardware_attested"
+    malformed = client.post("/api/v1/vehicle-catalog/parse-adapter-protocol", json={
+        "atdpn": "A" * 300
+    })
+    assert malformed.status_code == 422
+
+
+def test_elm_text_description_must_not_be_mistaken_for_numeric_protocol_code():
+    assert not protocols.parse_elm_protocol("ISO 15765-4 CAN (11/500)")["detected"]
+    assert protocols.parse_elm_protocol("A")["protocol"]["id"] == "sae_j1939_250"

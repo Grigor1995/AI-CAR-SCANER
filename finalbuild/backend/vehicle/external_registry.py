@@ -93,7 +93,15 @@ def nhtsa_decode_vin(vin: str, model_year: int | None = None) -> dict[str, Any]:
     }
 
 
-LICENSES = ("cc0", "public domain", "pd", "cc by", "cc-by", "cc by-sa", "cc-by-sa")
+def _permissive_license(name: str) -> bool:
+    normalized = re.sub(r"[-_\\s]+", " ", name.casefold()).strip()
+    # Never accept NonCommercial / NoDerivatives licences.
+    if re.search(r"\\b(nc|nd|noncommercial|no derivatives)\\b", normalized):
+        return False
+    return (
+        normalized.startswith(("cc0", "public domain", "pd "))
+        or bool(re.fullmatch(r"cc by(?: sa)?(?: [0-9.]+)?", normalized))
+    )
 
 
 @lru_cache(maxsize=160)
@@ -135,7 +143,7 @@ def commons_photo_candidate(make: str, model: str, chassis: str = "") -> dict[st
         extra = info.get("extmetadata") or {}
         label = _plain(str((extra.get("LicenseShortName") or {}).get("value", "")))
         license_lc = label.casefold()
-        if not any(x in license_lc for x in LICENSES):
+        if not _permissive_license(license_lc):
             continue
         thumb = info.get("thumburl") or info.get("url")
         description_page = info.get("descriptionurl")

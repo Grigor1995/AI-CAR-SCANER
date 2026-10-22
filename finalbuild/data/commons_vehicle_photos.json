@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "purpose": "Manually source-reviewed Wikimedia Commons real photographs. Model/chassis matches are photographic references; engine/trim/paint/year are not guaranteed.",
+  "items": [
+    {
+      "make": "Mercedes-Benz",
+      "model": "E-Class",
+      "chassis": "W211",
+      "file_name": "E-Klasse W211.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:E-Klasse_W211.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/E-Klasse_W211.jpg?width=960",
+      "author": "Adrian Kot",
+      "license": "CC BY-SA 2.5",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.5/",
+      "source": "Wikimedia Commons",
+      "source_verified_on": "2026-10-22",
+      "model_match_scope": "chassis_generation_only_not_exact_engine_or_trim",
+      "modifications": "none"
+    },
+    {
+      "make": "BMW",
+      "model": "3 Series",
+      "chassis": "E90",
+      "file_name": "BMW E90 320d Titanium Silver (1).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:BMW_E90_320d_Titanium_Silver_(1).jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:FilePath/BMW_E90_320d_Titanium_Silver_(1).jpg?width=960",
+      "author": "Damian B Oh",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "source": "Wikimedia Commons",
+      "source_verified_on": "2026-10-22",
+      "model_match_scope": "E90_320d_not_other_engine_or_trim",
+      "modifications": "none"
+    }
+  ]
+}

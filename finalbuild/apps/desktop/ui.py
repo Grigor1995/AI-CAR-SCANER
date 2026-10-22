@@ -624,11 +624,14 @@ class VehiclesPage(QWidget):
             return
         self._vehicle_signature = signature
         selected = self.list.currentRow()
+        self.list.blockSignals(True)
         self.list.clear()
         for idx,v in enumerate(self.app.vehicles):
             item=QListWidgetItem(f"{v.make} {v.model} ({v.year or '—'})"); item.setData(Qt.UserRole, idx); item.setIcon(QIcon(vehicle_pixmap(v.make,v.model,v.chassis,112,56))); self.list.addItem(item)
+        self.list.blockSignals(False)
         self.search.textChanged.emit(self.search.text())
         self.delete_btn.setEnabled(bool(self.app.vehicles))
+        self.edit_btn.setEnabled(bool(self.app.vehicles))
         if self.app.vehicles:
             self.list.setCurrentRow(max(0, min(selected, len(self.app.vehicles)-1)))
         elif self.app.active_vehicle:
@@ -641,7 +644,14 @@ class VehiclesPage(QWidget):
         self.delete_btn.setEnabled(bool(items))
         self.edit_btn.setEnabled(bool(items))
         if not items: return
-        v=self.app.vehicles[items[0].data(Qt.UserRole)]; self.show_vehicle(v)
+        index = items[0].data(Qt.UserRole)
+        if not isinstance(index, int) or not 0 <= index < len(self.app.vehicles):
+            self.delete_btn.setEnabled(False)
+            self.edit_btn.setEnabled(False)
+            self.details.clear()
+            self.model_artwork.clear()
+            return
+        self.show_vehicle(self.app.vehicles[index])
     def show_vehicle(self,v:Vehicle):
         load_backend_portrait(self.model_artwork, self.app.api.base_url, v.make, v.model, v.chassis, 340, 175)
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
@@ -958,10 +968,11 @@ class DevicesPage(QWidget):
         self.info_box=QPlainTextEdit(); self.info_box.setReadOnly(True); self.info_box.setMaximumHeight(180)
         self.host=QLineEdit(); self.host.setPlaceholderText("192.168.0.10")
         self.port=QSpinBox(); self.port.setRange(1,65535); self.port.setValue(35000)
+        self.serial_port = QLineEdit(); self.serial_port.setPlaceholderText("COM3 / /dev/ttyUSB0")
         self.baud=QSpinBox(); self.baud.setRange(1200,4000000); self.baud.setValue(115200)
         self.tx_uuid=QLineEdit(); self.tx_uuid.setPlaceholderText("BLE TX characteristic UUID")
         self.rx_uuid=QLineEdit(); self.rx_uuid.setPlaceholderText("BLE RX characteristic UUID")
-        form.addRow("Selected device", self.info_box); form.addRow("Wi-Fi host", self.host); form.addRow("Wi-Fi port", self.port); form.addRow("USB baudrate", self.baud); form.addRow("BLE TX UUID", self.tx_uuid); form.addRow("BLE RX UUID", self.rx_uuid)
+        form.addRow("Selected device", self.info_box); form.addRow("Wi-Fi host", self.host); form.addRow("Wi-Fi port", self.port); form.addRow("USB serial port", self.serial_port); form.addRow("USB baudrate", self.baud); form.addRow("BLE TX UUID", self.tx_uuid); form.addRow("BLE RX UUID", self.rx_uuid)
         buttons=QHBoxLayout()
         connect=QPushButton("Connect"); disconnect=QPushButton("Disconnect"); reconnect=QPushButton("Reconnect")
         connect.clicked.connect(self.app.connect_selected_device); disconnect.clicked.connect(self.app.disconnect_selected_device); reconnect.clicked.connect(self.app.reconnect_selected_device)
@@ -994,10 +1005,21 @@ class DevicesPage(QWidget):
             f"Capabilities: {d.get('capabilities',{})}\n"
             f"Metadata: {meta}"
         )
-        if d.get("connection_type") == "Wi-Fi":
-            self.host.setText(str(meta.get("host") or "")); self.port.setValue(int(meta.get("port") or 35000))
-        if d.get("connection_type") == "USB":
-            self.host.clear(); self.port.setValue(int(meta.get("port") or 35000))
+        kind = str(d.get("connection_type", "")).upper().replace("-", "")
+        self.host.setEnabled(kind == "WIFI")
+        self.port.setEnabled(kind == "WIFI")
+        self.serial_port.setEnabled(kind == "USB")
+        self.baud.setEnabled(kind == "USB")
+        self.serial_port.setText(str(meta.get("port") or "") if kind == "USB" else "")
+        if kind == "WIFI":
+            self.host.setText(str(meta.get("host") or ""))
+            try:
+                port = int(meta.get("port") or 35000)
+            except (TypeError, ValueError):
+                port = 35000
+            self.port.setValue(port if 1 <= port <= 65535 else 35000)
+        elif kind == "USB":
+            self.host.clear()
 
     def refresh(self):
         self.list.clear()
@@ -1012,6 +1034,9 @@ class DevicesPage(QWidget):
                     self.list.setCurrentRow(i); break
 
     def config(self) -> dict[str, Any]:
+        device = self.current() or {}
+        if str(device.get("connection_type", "")).upper() == "USB":
+            return {"port": self.serial_port.text().strip(), "baudrate": self.baud.value()}
         return {"host":self.host.text().strip(),"port":self.port.value(),"baudrate":self.baud.value(),"tx_uuid":self.tx_uuid.text().strip(),"rx_uuid":self.rx_uuid.text().strip()}
 
 class NetworkPage(QWidget):

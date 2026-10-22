@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Real USB OBD connection selection
+
+- Keep USB serial names (COM3, COM4, /dev/ttyUSB0) separate from numeric Wi-Fi
+  ports, and send the selected serial name to the backend when connecting.
+- Ignore stale vehicle selection indices and suppress selection callbacks while
+  rebuilding the vehicle list.
+
 ## Unreleased — Live simulator controls and measurement units
 
 - Added live RPM, coolant temperature, speed and throttle controls, validated by

@@ -1926,3 +1926,34 @@ def test_channel_order_does_not_shift_when_record_window_rotates(window_factory)
     grid.set_records(records[1:] + records[:1])
     assert [s.currentData() for s in grid.selectors] == before
     assert len(set(before)) == 4
+
+
+@pytest.mark.parametrize("port", ["COM3", "COM4", "/dev/ttyUSB0"])
+def test_usb_selection_and_connect_send_serial_port_not_wifi_number(window_factory, monkeypatch, fake_api, port):
+    window = window_factory()
+    window.devices = [{"device_id": "usb-real", "connection_type": "USB", "metadata": {"port": port}}]
+    window.selected_device_id = "usb-real"
+    page = window.pages[2]
+    page.refresh()
+    assert page.serial_port.text() == port
+    assert not page.port.isEnabled()
+    assert page.config() == {"port": port, "baudrate": 115200}
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append(work))
+    window.connect_selected_device()
+    jobs[0]()
+    fake_api.connect_device.assert_called_once_with("usb-real", {"port": port, "baudrate": 115200})
+
+
+def test_vehicle_selection_during_list_replacement_ignores_stale_index(window_factory):
+    window = window_factory()
+    page = window.pages[1]
+    page.refresh()
+    item = page.list.item(0)
+    item.setData(Qt.UserRole, 999)
+    page.show_selected()
+    assert not page.edit_btn.isEnabled()
+    window.vehicles = []
+    page.refresh()
+    assert page.list.count() == 0
+    assert not page.delete_btn.isEnabled()

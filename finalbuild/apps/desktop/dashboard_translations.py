@@ -287,3 +287,6 @@ MESSAGES['ru'].update({
     'Units': 'Единицы измерения',
     'Apply simulator values': 'Применить значения симулятора',
 })
+
+MESSAGES["hy"]["USB serial port"] = "USB սերիական պորտ"
+MESSAGES["ru"]["USB serial port"] = "Последовательный порт USB"

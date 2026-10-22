@@ -410,3 +410,28 @@ def parse_adapter_protocol(payload: AdapterProtocolObservation):
         "observation_provenance": "caller_supplied_not_backend_hardware_attested",
         "note": "ATDPN shows the adapter-reported link, not VIN fitment or OEM ECU access.",
     }
+
+
+@router.get("/runtime-capabilities")
+def vehicle_diagnostic_runtime_capabilities():
+    """Current executable behavior, deliberately separate from standards catalog."""
+    from api.state import vci_manager
+    return {
+        "generic_obd_ii_library": "read_only_elm327_transport_library",
+        "uds_can_library": "read_only_isotp_client_requires_hardware",
+        "server_vci_manager": (
+            "simulator_only"
+            if vci_manager.__class__.__name__ == "VCIConnectionManager"
+            else "custom_driver_inspect_runtime"
+        ),
+        "physical_usb_ble_wifi_on_backend": False,
+        "doip": "not_implemented",
+        "j1939": "not_implemented",
+        "wwh_obd": "not_implemented",
+        "obdonuds": "not_implemented",
+        "automatic_vehicle_protocol_verification": False,
+        "notes": [
+            "Protocol registry is not proof of tested physical ECU communications.",
+            "Remote FastAPI cannot open client-device Bluetooth/USB without native transport bridge.",
+        ],
+    }

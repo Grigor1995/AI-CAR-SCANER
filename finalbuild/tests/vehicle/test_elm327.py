@@ -15,7 +15,7 @@ def test_no_data():
     "410C0BB8",
     "41 0C 0B B8",
     "7E8 04 41 0C 0B B8",
-    "010C\\r410C0BB8\\r>",
+    "010C\r410C0BB8\r>",
     "18DAF110 04 41 0C 0B B8",
 ])
 def test_real_elm327_ats0_compact_pid_and_can_header(frame):

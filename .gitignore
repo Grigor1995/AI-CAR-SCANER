@@ -7,3 +7,12 @@
 /artifacts/
 /finalbuild/apps/mobile-ios/AICarScanner.xcodeproj/
 /finalbuild/apps/mobile-ios/AICarScanner.xcworkspace/
+
+# Python tools invoked from the repository root
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/

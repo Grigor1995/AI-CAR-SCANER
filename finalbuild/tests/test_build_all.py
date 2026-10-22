@@ -188,3 +188,25 @@ def test_android_java_version_outside_gradle_support_is_rejected(monkeypatch, tm
     monkeypatch.setattr(build, "java_executable", lambda: "java")
     monkeypatch.setattr(build.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout='', stderr='openjdk version "26.0.0"'))
     assert any("JDK 17" in reason for reason in build.preflight("android"))
+
+
+def test_cancelled_build_records_pending_targets_and_returns_130(monkeypatch, tmp_path):
+    monkeypatch.setattr(build, "REPO", tmp_path)
+    monkeypatch.setattr(build, "preflight", lambda target: [])
+    def interrupted(*args):
+        raise KeyboardInterrupt
+    monkeypatch.setattr(build, "BUILDERS", {"desktop": interrupted, "android": fake_package})
+    assert build.execute(arguments(tmp_path, targets=["desktop", "android"])) == 130
+    report = summary(tmp_path)
+    assert report["status"] == "CANCELLED"
+    assert report["targets"]["desktop"]["status"] == "CANCELLED"
+    assert report["targets"]["android"]["status"] == "NOT_RUN"
+
+
+def test_runner_timeout_stops_command_and_keeps_output(tmp_path, capsys):
+    import sys
+    runner = build.Runner(tmp_path / "build.log")
+    with pytest.raises(build.BuildError, match="timed out"):
+        runner.run([sys.executable, "-u", "-c", "import time; print('working'); time.sleep(30)"], cwd=tmp_path, timeout=0.3)
+    assert "working" in runner.log.read_text()
+    assert "working" in capsys.readouterr().out

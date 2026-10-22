@@ -93,6 +93,7 @@ def test_appdata_and_backend_log_helpers_create_directory(monkeypatch, tmp_path)
 
 def test_run_handles_local_llm_start_error_then_runs_ui_and_cleanup(monkeypatch, capsys):
     calls = []
+    monkeypatch.setenv("DIAGNOSTIC_LLM_PROVIDER", "llama-server")
     monkeypatch.setattr(main, "LOCAL_BACKEND", True)
     monkeypatch.setattr(main, "start_llama_server", Mock(side_effect=RuntimeError("LLM spawn failed")))
     monkeypatch.setattr(main, "start_backend", lambda: calls.append("backend-start"))

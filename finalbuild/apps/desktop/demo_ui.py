@@ -9,7 +9,7 @@ import json
 from collections import defaultdict
 
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument
+from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
@@ -398,6 +398,10 @@ class ReportsPage(QWidget):
                 printer.setOutputFormat(QPrinter.PdfFormat)
                 printer.setOutputFileName(filename)
                 document = QTextDocument()
+                # Native system fonts can have only a pixel size on Windows.
+                # Give the printer an explicit printable font and ink color.
+                document.setDefaultFont(QFont("Arial", 10))
+                document.setDefaultStyleSheet("body, pre { color: #000000; background: #ffffff; }")
                 document.setHtml(content)
                 document.print_(printer)
             else:

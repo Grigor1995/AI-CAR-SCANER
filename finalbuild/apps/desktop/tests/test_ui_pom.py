@@ -1528,10 +1528,20 @@ def test_report_export_escapes_session_content(window_factory, monkeypatch, tmp_
     assert '<script>' not in contents
 
 
-def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(window_factory, monkeypatch, tmp_path):
+@pytest.mark.parametrize("pixel_font", [False, True])
+def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(window_factory, monkeypatch, tmp_path, pixel_font):
     from apps.desktop import demo_ui
     from pypdf import PdfReader
     window = window_factory()
+    if pixel_font:
+        from PySide6.QtGui import QFont
+        class PixelFontDocument(demo_ui.QTextDocument):
+            def __init__(self):
+                super().__init__()
+                font = QFont()
+                font.setPixelSize(16)
+                self.setDefaultFont(font)
+        monkeypatch.setattr(demo_ui, 'QTextDocument', PixelFontDocument)
     window.session_json = {'session_id': 'pdf-session-123', 'dtcs': [{'code': 'P0302'}]}
     destination = tmp_path / 'report.pdf'
     monkeypatch.setattr(demo_ui.QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'PDF'))

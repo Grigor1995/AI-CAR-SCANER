@@ -113,8 +113,8 @@ def run_group(name: str, arguments: tuple[str, ...], reports: Path, env: dict[st
     return {
         "name": name, "status": state, "returncode": code,
         "duration_seconds": duration, "cases": cases,
-        "log": str(log.relative_to(ROOT)),
-        "junit_xml": str(junit.relative_to(ROOT)),
+        "log": str(log.resolve()),
+        "junit_xml": str(junit.resolve()),
     }
 
 

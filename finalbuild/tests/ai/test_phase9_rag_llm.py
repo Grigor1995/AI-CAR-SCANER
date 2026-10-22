@@ -48,7 +48,7 @@ def test_grounding_gate_flags_missing_terms():
     ],
 )
 def test_golden_case_evaluator_blocks_forbidden_claim(generated_text):
-    case = GoldenCase.load(Path("datasets/golden-cases/LPG_MISFIRE_001.yaml"))
+    case = GoldenCase.load((Path(__file__).resolve().parents[2] / "datasets/golden-cases/LPG_MISFIRE_001.yaml"))
     categories = {
         "LPG fuel delivery / mixture",
         "ignition / combustion",

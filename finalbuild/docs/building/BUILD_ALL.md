@@ -197,3 +197,14 @@ cannot certify those builds before the workflow is run.
 - The workflow was not dispatched from this cloud because an authenticated
   GitHub Actions session was unavailable. Windows packaging and iOS native
   execution must be confirmed by the first corresponding workflow run.
+
+### Build progress and interruption
+
+Commands stream their output to the terminal and retain the complete UTF-8
+`<run>/<target>/build.log`. Desktop test logs, JUnit and coverage reports are
+kept in `<run>/desktop/test-reports/`, including failed tests.
+
+Ctrl+C stops the builder-owned command tree, writes `CANCELLED` to
+`build-summary.json`, marks remaining targets `NOT_RUN`, and exits with code
+130. Previously completed artifacts remain available. An interrupted Android
+build is not evidence of a compilation failure.

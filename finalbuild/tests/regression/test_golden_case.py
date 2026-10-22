@@ -15,7 +15,7 @@ from diagnostic.rules import DiagnosticReasoningEngine
 
 def test_golden_case():
     case = yaml.safe_load(
-        Path("datasets/golden-cases/LPG_MISFIRE_001.yaml").read_text(encoding="utf-8")
+        (Path(__file__).resolve().parents[2] / "datasets/golden-cases/LPG_MISFIRE_001.yaml").read_text(encoding="utf-8")
     )
     session = DiagnosticSession(vehicle=Vehicle(**case["vehicle"]))
     for symptom in case["symptoms"]:

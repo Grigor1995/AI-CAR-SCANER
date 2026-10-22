@@ -20,6 +20,8 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import signal
+import threading
 import subprocess
 import sys
 import venv
@@ -114,16 +116,50 @@ class Runner:
 
     def run(self, command: list[str], *, cwd: Path = PROJECT, env: dict | None = None, timeout: int = 1800) -> None:
         command = [str(item) for item in command]
+        env = dict(os.environ if env is None else env)
+        env["PYTHONUNBUFFERED"] = "1"
         print(f"[BUILD] {command[0]} {' '.join(command[1:3])} ...", flush=True)
         with self.log.open("a", encoding="utf-8") as log:
             log.write("\nCOMMAND: " + subprocess.list2cmdline(command) + "\n")
             log.flush()
+            # Keep the complete log and show live output while long tools run.
+            offset = log.tell()
+            done = threading.Event()
+            def stream():
+                with self.log.open(encoding="utf-8", errors="replace") as source:
+                    source.seek(offset)
+                    while True:
+                        chunk = source.read()
+                        if chunk:
+                            print(chunk, end="", flush=True)
+                        if done.wait(0.2):
+                            print(source.read(), end="", flush=True)
+                            return
+            watcher = threading.Thread(target=stream, daemon=True)
+            watcher.start()
+            options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+            process = None
             try:
-                result = subprocess.run(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
-            except subprocess.TimeoutExpired as error:
+                process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT, **options)
+                process.wait(timeout=timeout)
+            except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
+                if process is not None:
+                    if os.name == "nt":
+                        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+                    else:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    process.wait(timeout=15)
+                if isinstance(error, KeyboardInterrupt):
+                    raise
                 raise BuildError(f"Command timed out after {timeout}s; see {self.log}") from error
-        if result.returncode:
-            raise BuildError(f"Command failed (exit {result.returncode}); see {self.log}")
+            finally:
+                done.set()
+                watcher.join(timeout=5)
+        if process.returncode:
+            raise BuildError(f"Command failed (exit {process.returncode}); see {self.log}")
 
 
 def require_file(path: Path) -> Path:
@@ -152,7 +188,8 @@ def build_desktop(args, runner: Runner, work: Path, output: Path, tools: Path) -
     env = os.environ.copy()
     env.update({"AI_CAR_DISABLE_LLM_AUTOSTART": "1", "QT_QPA_PLATFORM": "offscreen"})
     if args.with_tests:
-        runner.run([str(python), "scripts/run_desktop_tests.py", "--min-core-coverage", "90"], env=env)
+        runner.run([str(python), "scripts/run_desktop_tests.py", "--min-core-coverage", "90",
+                    "--reports-dir", str(output / "test-reports")], env=env)
     icons = work / "icons"
     source = PROJECT / "assets/AI-Car-Scanner-master.png"
     # Honor edited local artwork; never regenerate tracked assets in-place.
@@ -270,6 +307,14 @@ def execute(args) -> int:
                 raise BuildError("No artifacts produced")
             records = [artifact_record(require_file(path), run) for path in artifacts]
             entry = {"status": "PASS", "artifacts": records}
+        except KeyboardInterrupt:
+            summary["targets"][target] = {"status": "CANCELLED", "artifacts": [], "log": str(runner.log.relative_to(run))}
+            for pending in args.targets:
+                summary["targets"].setdefault(pending, {"status": "NOT_RUN", "artifacts": []})
+            summary["status"] = "CANCELLED"
+            save()
+            print(f"\n[SUMMARY] CANCELLED — {report}", flush=True)
+            return 130
         except Exception as error:
             entry = {"status": "FAIL", "error": str(error), "artifacts": []}
         entry["log"] = str(runner.log.relative_to(run))
@@ -317,6 +362,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         return execute(args)
+    except KeyboardInterrupt:
+        print("Build cancelled.", file=sys.stderr)
+        return 130
     except (OSError, subprocess.SubprocessError) as error:
         print(f"Build setup failed: {error}", file=sys.stderr)
         return 1

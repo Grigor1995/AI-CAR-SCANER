@@ -90,14 +90,15 @@ internal fun DashboardToolbar(
     onSettings:()->Unit,
     onNewSession:()->Unit,
     onSymptoms:()->Unit,
-    onAnalyze:()->Unit
+    onAnalyze:()->Unit,
+    showSettings:Boolean=true
 ) {
     val text=com.aicarscaner.mobile.settings.strings(LocalDashboardLanguage.current)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         if(showBack) TextButton(onClick=onHome,contentPadding=PaddingValues(4.dp)) {Text("‹",style=MaterialTheme.typography.headlineMedium)}
         else DashboardIcon(6,Modifier.size(28.dp))
         Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
-        TextButton(onClick=onSettings,contentPadding=PaddingValues(4.dp)) {Text("⚙",modifier=Modifier.semantics{contentDescription=text.settings})}
+        if(showSettings) TextButton(onClick=onSettings,contentPadding=PaddingValues(4.dp)) {Text("⚙",modifier=Modifier.semantics{contentDescription=text.settings})}
         if(hasSession) TextButton(onClick=onNewSession,contentPadding=PaddingValues(4.dp)) {Text("+",modifier=Modifier.semantics{contentDescription=text.newSession},style=MaterialTheme.typography.titleLarge)}
     }
     if(hasSession) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {

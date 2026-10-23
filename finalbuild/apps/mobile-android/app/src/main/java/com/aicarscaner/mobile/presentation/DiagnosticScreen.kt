@@ -506,7 +506,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     DashboardToolbar(
                         title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),
-                        hasSession=state.session!=null,
+                        hasSession=state.session!=null && selectedTab!=14,
+                        showSettings=selectedTab!=14,
                         showBack=state.session!=null && selectedTab!=6,
                         loading=state.loading,
                         onHome={selectedTab=6},
@@ -714,13 +715,6 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
                             }
 
-                            OutlinedButton(onClick={selectedTab=14},modifier=Modifier.fillMaxWidth()) {
-                                Text(dashboardLabel("Diagnostics"))
-                            }
-                        }
-
-                        14 -> {
-                            Text(dashboardLabel("Diagnostics"),style=MaterialTheme.typography.titleLarge)
                             Text(text.dtc, style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
                                 value = dtc,
@@ -828,6 +822,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text(text.reviewAnalysis) }
                         }
+
+                        14 -> { /* Reserved for the next diagnostic workflow. */ }
 
                         1 -> {
                             Row(

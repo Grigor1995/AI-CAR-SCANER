@@ -18,6 +18,7 @@ from apps.desktop.ui import (
     DashboardPage,
     DevicesPage,
     DiagnosticPage,
+    SymptomsPage,
     LiveDataPage,
     MainWindow,
     MetricCard,
@@ -246,7 +247,7 @@ def test_vehicles_page_renders_and_selects_local_vehicles(qapp):
 
 def test_diagnostic_page_formats_summary_and_refreshes_session(qapp):
     app = FakeApp()
-    page = DiagnosticPage(app)
+    page = SymptomsPage(app)
     assert page.lbl.text() == "No active session"
     page.refresh()
     assert "LPG delivery" in page.summary.toPlainText()
@@ -389,7 +390,7 @@ def test_live_data_poll_ignores_absent_session_and_reports_backend_error(qapp):
 
 
 def test_diagnostic_summary_empty_hypotheses_are_explicit():
-    summary = DiagnosticPage._summary_text({"state": "COLLECTING_EVIDENCE"}, [])
+    summary = SymptomsPage._summary_text({"state": "COLLECTING_EVIDENCE"}, [])
     assert "No diagnostic hypotheses generated yet." in summary
     assert "not confirmed component failures" in summary
 

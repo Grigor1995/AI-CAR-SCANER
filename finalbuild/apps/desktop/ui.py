@@ -657,7 +657,7 @@ class VehiclesPage(QWidget):
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
 class SymptomsPage(QWidget):
-    """Symptom/evidence entry is separate from diagnostic results."""
+    """Symptom entry, evidence and analysis share this workflow."""
     def __init__(self, app: "MainWindow") -> None:
         super().__init__()
         self.app = app
@@ -665,16 +665,10 @@ class SymptomsPage(QWidget):
         title = QLabel("Symptoms")
         title.setObjectName("title")
         lay.addWidget(title)
+        head=QHBoxLayout(); self.lbl=QLabel("No active session"); self.lbl.setObjectName("muted"); head.addWidget(self.lbl); head.addStretch(); new=QPushButton("New session"); new.clicked.connect(app.new_session); head.addWidget(new); lay.addLayout(head)
         form=QGridLayout(); self.symptom=QPlainTextEdit(); self.symptom.setPlaceholderText("Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal."); self.symptom.setFixedHeight(120)
         self.dtc=QLineEdit(); self.dtc.setPlaceholderText("P0302"); submit=QPushButton("Add evidence + Analyze"); submit.clicked.connect(app.analyze_input)
         form.addWidget(QLabel("Symptoms / observations"),0,0); form.addWidget(self.symptom,1,0,1,2); form.addWidget(QLabel("DTC"),2,0); form.addWidget(self.dtc,2,1); form.addWidget(submit,3,0,1,2); lay.addLayout(form)
-        lay.addStretch()
-
-
-class DiagnosticPage(QWidget):
-    def __init__(self, app: "MainWindow") -> None:
-        super().__init__(); self.app=app
-        lay=QVBoxLayout(self); head=QHBoxLayout(); self.lbl=QLabel("No active session"); self.lbl.setObjectName("muted"); head.addWidget(self.lbl); head.addStretch(); new=QPushButton("New session"); new.clicked.connect(app.new_session); head.addWidget(new); lay.addLayout(head)
         out=QTabWidget(); self.summary=QPlainTextEdit(); self.summary.setReadOnly(True); out.addTab(self.summary,"Analysis"); self.evidence=QPlainTextEdit(); self.evidence.setReadOnly(True); self.hypotheses=QPlainTextEdit(); self.hypotheses.setReadOnly(True); self.questions=QPlainTextEdit(); self.questions.setReadOnly(True); out.addTab(self.evidence,"Evidence"); out.addTab(self.hypotheses,"Hypotheses"); out.addTab(self.questions,"Missing info"); lay.addWidget(out)
     def refresh(self):
         if not self.app.session: self.lbl.setText("No active session"); return
@@ -696,6 +690,15 @@ class DiagnosticPage(QWidget):
             lines.append("• No diagnostic hypotheses generated yet.")
         lines += ["", "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence."]
         return "\n".join(lines)
+
+class DiagnosticPage(QWidget):
+    """Reserved for the next diagnostic workflow."""
+    def __init__(self, app: "MainWindow") -> None:
+        super().__init__()
+
+    def refresh(self):
+        pass
+
 
 class LiveDataPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
@@ -1232,12 +1235,12 @@ class MainWindow(QMainWindow):
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
-        for title, target in [("⚙  Diagnostics",3),("✎  Symptoms",11),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
+        for title, target in [("Diagnostics",3),("✎  Symptoms",11),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
             button=QPushButton(title); button.setObjectName("topNav"); button.clicked.connect(lambda _=False, index=target:self.nav.setCurrentRow(index)); header_buttons.addWidget(button)
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
         self.nav=nav
         for text,_cls in entries: nav.addItem(text)
         root.addWidget(nav)
@@ -1245,6 +1248,7 @@ class MainWindow(QMainWindow):
         for _text, cls in entries:
             page=cls(self); self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(content.setCurrentIndex)
+        nav.currentRowChanged.connect(lambda index: settings.setVisible(index != 3))
         nav.currentRowChanged.connect(lambda index: self.pages[4].request_refresh() if index == 4 else None)
         nav.currentRowChanged.connect(lambda index: self.pages[9].load() if index == 9 and self.online else None)
         nav.setCurrentRow(0)
@@ -1531,7 +1535,7 @@ class MainWindow(QMainWindow):
         if not self.online: self.show_error("Backend is offline. Start the FastAPI backend first."); return
         self.run_worker(lambda:self.api.create_session(self.active_vehicle.to_json()),self._session_created)
     def _session_created(self,data):
-        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
+        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
     def analyze_input(self):
         if not self.session: self.new_session(); return
         text=self.pages[11].symptom.toPlainText().strip(); dtc=self.pages[11].dtc.text().strip()
@@ -1542,7 +1546,7 @@ class MainWindow(QMainWindow):
             return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)
     def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id, language=self.language),self._decision_done)
-    def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
+    def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
     def start_bound_acquisition(self):
         if not self.session: return
         self.run_worker(lambda:self.api.start_bound_acquisition(self.session.session_id), lambda _d:self._sim_changed("Connected adapter acquisition started"))

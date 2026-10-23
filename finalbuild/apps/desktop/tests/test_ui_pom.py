@@ -73,7 +73,7 @@ class VehiclesPO:
 class DiagnosticPO:
     def __init__(self, window):
         self.window = window
-        self.page = window.pages[3]
+        self.page = window.pages[11]
 
     def enter_symptom(self, text):
         self.window.pages[11].symptom.setPlainText(text)
@@ -320,7 +320,10 @@ def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
     symptoms.symptom.setPlainText("Engine shakes at idle")
     window.nav.setCurrentRow(3)
     assert not diagnostic.isAncestorOf(symptoms.symptom)
-    assert all(editor.isReadOnly() for editor in diagnostic.findChildren(QPlainTextEdit))
+    assert not diagnostic.findChildren(QWidget)
+    assert symptoms.hypotheses.isReadOnly()
+    settings = next(button for button in window.findChildren(QPushButton) if button.accessibleName() == "Settings")
+    assert settings.isHidden()
     window.nav.setCurrentRow(11)
     assert symptoms.symptom.toPlainText() == "Engine shakes at idle"
 
@@ -420,7 +423,7 @@ def test_diagnostic_page_object_renders_evidence_hypotheses_and_questions(window
 
 
 def test_diagnostic_empty_hypotheses_are_explicit():
-    summary = ui.DiagnosticPage._summary_text({"state": "COLLECTING_EVIDENCE"}, [])
+    summary = ui.SymptomsPage._summary_text({"state": "COLLECTING_EVIDENCE"}, [])
     assert "No diagnostic hypotheses generated yet." in summary
     assert "not confirmed component failures" in summary
 
@@ -1054,7 +1057,7 @@ def test_session_created_resets_analysis_state_and_opens_diagnostic_page(window_
     assert window.telemetry == {}
     assert window.network == {}
     assert window.active_network == {}
-    assert window.nav.currentRow() == 3
+    assert window.nav.currentRow() == 11
     refresh.assert_called_once()
     assert window.statusBar().currentMessage() == "Diagnostic session created"
 
@@ -1731,10 +1734,10 @@ def test_session_id_stays_internal_in_dashboard_diagnostics_and_history(window_f
     secret = "private-session-abcdef"
     window.session = Session(secret, "TESTING", window.active_vehicle)
     window.pages[0].refresh()
-    window.pages[3].refresh()
+    window.pages[11].refresh()
     window.pages[9].loaded([{"session_id": secret, "state": "TESTING", "dtcs": [], "test_results": []}])
     assert secret not in window.pages[0].session.value.text()
-    assert secret not in window.pages[3].lbl.text()
+    assert secret not in window.pages[11].lbl.text()
     item = window.pages[9].history.item(0)
     assert secret not in item.text()
     assert item.data(Qt.UserRole) == secret

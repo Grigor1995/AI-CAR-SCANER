@@ -1,6 +1,7 @@
 package com.aicarscaner.mobile.presentation
 
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsEnabled
@@ -49,7 +50,7 @@ class DiagnosticScreenInstrumentedTest {
             .clear()
             .commit()
 
-        val viewModel = DiagnosticViewModel(DiagnosticRepository(fakeApi))
+        val viewModel = DiagnosticViewModel(DiagnosticRepository(fakeApi, composeRule.activity.applicationContext))
         composeRule.setContent { DiagnosticScreen(viewModel) }
         composeRule.waitForIdle()
     }
@@ -62,6 +63,27 @@ class DiagnosticScreenInstrumentedTest {
             composeRule.onAllNodesWithText("Diagnose (0)")
                 .fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    @Test
+    fun defaultSelectedModelShowsPortraitWithoutReSelectingModel() {
+        launchScreen()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithContentDescription("Mercedes-Benz E-Class W211")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun settingsPersistUsUnitsAndLineDisplay() {
+        launchScreen()
+        composeRule.onNodeWithContentDescription("Settings").performClick()
+        composeRule.onNodeWithText("Widget display").performScrollTo().assertExists()
+        composeRule.onNodeWithText("Line chart").performScrollTo().performClick()
+        composeRule.onNodeWithText("USA • mph • °F").performScrollTo().performClick()
+        val prefs=composeRule.activity.getSharedPreferences("ai_car_scaner_settings", android.content.Context.MODE_PRIVATE)
+        assertTrue(prefs.getBoolean("us_units",false))
+        assertTrue(!prefs.getBoolean("analog_display",true))
     }
 
     @Test

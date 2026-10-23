@@ -29,4 +29,20 @@ class SharedVehicleCatalogTest {
         assertEquals(194.0,displayChannel(temperature,true).values.single(),.00001)
         assertEquals(-40.0 to 320.0,gaugeRange("°F",194.0))
     }
+    @Test fun backendSamplesShareGaugeAndUnitPipelineWithoutMixingChannels() {
+        val raw=listOf(
+            com.aicarscaner.mobile.data.api.BackendLiveRecordDto(channel="0x05",display_name="Coolant temperature",numeric_value=90.0,unit="C"),
+            com.aicarscaner.mobile.data.api.BackendLiveRecordDto(channel="0x0D",numeric_value=100.0,unit="km/h"),
+            com.aicarscaner.mobile.data.api.BackendLiveRecordDto(channel="0x05",display_name="Coolant temperature",numeric_value=100.0,unit="C"),
+            com.aicarscaner.mobile.data.api.BackendLiveRecordDto(channel="absent",numeric_value=null))
+        val channels=backendChannels(raw)
+        assertEquals(2,channels.size)
+        assertEquals(listOf(90.0,100.0),channels[0].values)
+        assertEquals(listOf(194.0,212.0),displayChannel(channels[0],true).values)
+        assertEquals("°C",displayChannel(channels[0],false).unit)
+        assertEquals("mph",displayChannel(channels[1],true).unit)
+        assertEquals(100.0,raw[1].numeric_value!!,0.0)
+        assertEquals("C",raw[0].unit)
+    }
+
 }

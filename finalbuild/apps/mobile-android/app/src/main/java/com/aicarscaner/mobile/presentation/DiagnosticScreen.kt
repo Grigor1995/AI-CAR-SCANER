@@ -372,7 +372,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     MaterialTheme(
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
-        CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language, LocalDashboardUsUnits provides appSettings.usUnits) {
+        CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language, LocalDashboardUsUnits provides appSettings.usUnits, LocalDashboardAnalog provides appSettings.analogDisplay) {
         if (settingsOpen) {
             SettingsDialog(
                 settings = appSettings,
@@ -1189,17 +1189,11 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 if (!state.backendLiveLoading && state.backendLiveRecords.isEmpty()) {
                                     Text(demo("No server samples", "Нет записей сервера", "Սերվերի չափումներ չկան"))
                                 }
-                                state.backendLiveRecords.take(100).forEach { record ->
-                                    val label = record.display_name ?: record.channel ?: record.pid ?: "—"
-                                    val value = record.numeric_value?.toString() ?: "—"
-                                    val provenance = if (record.metadata?.get("adapter") == "simulator")
-                                        "Simulator / synthetic" else (record.source_type ?: "Unknown source")
-                                    Text("$label: $value ${record.unit.orEmpty()} • $provenance")
-                                }
+                                DemoBackendLiveCharts(state.backendLiveRecords)
                             }
                             OutlinedButton(onClick={selectedTab=12},modifier=Modifier.fillMaxWidth()) {Text(dashboardLabel("Custom dashboard")+" ›")}
 
-                            DemoLiveCharts(channelHistory)
+                            if (channelHistory.isNotEmpty() || state.backendLiveRecords.isEmpty()) DemoLiveCharts(channelHistory)
                             liveDataError?.let {
                                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
@@ -1511,9 +1505,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
                         }
 
-                        6 -> { DemoHome(session, tabs) { selectedTab = it }; DemoPanel(dashboardLabel("Live Data / Custom dashboard")) { DemoLiveCharts(channelHistory, dashboard=true) } }
+                        6 -> { DemoHome(session, tabs) { selectedTab = it }; DemoPanel(dashboardLabel("Live Data / Custom dashboard")) { if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory, dashboard=true) } }
                         11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
-                        12 -> DemoLiveCharts(channelHistory,dashboard=true)
+                        12 -> if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory,dashboard=true)
                         13 -> DemoProgress(session) {selectedTab=8}
                         7 -> DemoDtcList(session, "DTC")
                         8 -> DemoGuidedTests(session, tabs[8]) { id, title ->
@@ -1623,16 +1617,11 @@ internal fun VehicleFields(
     val engines = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull())
     val ecus = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull())
 
-    var previewModel by remember(make) { mutableStateOf<String?>(null) }
-    // A default catalog value is not an explicit selection by the user.
-    if (previewModel == model) {
+    if (model in models && chassis in chassisOptions) {
         VehicleModelArtwork(make, model, chassis)
     }
     VehicleSelectionField(text.make, make, makes, onMake)
-    VehicleSelectionField(text.model, model, models) { selected ->
-        onModel(selected)
-        previewModel = selected
-    }
+    VehicleSelectionField(text.model, model, models, onModel)
     VehicleSelectionField(text.chassis, chassis, chassisOptions, onChassis)
     VehicleSelectionField(text.year, year, years, onYear)
     VehicleSelectionField(text.engine, engine, engines, onEngine)
@@ -1733,8 +1722,14 @@ private fun SettingsDialog(
                             androidx.compose.material3.Switch(checked=settings.darkTheme,onCheckedChange={onSettingsChanged(settings.copy(darkTheme=it))})
                         }
                     }
+                    DemoPanel(dashboardLabel("Widget display")) {
+                        Column {
+                            FilterChip(selected=settings.analogDisplay,onClick={onSettingsChanged(settings.copy(analogDisplay=true))},label={Text(dashboardLabel("Analog gauge"))})
+                            FilterChip(selected=!settings.analogDisplay,onClick={onSettingsChanged(settings.copy(analogDisplay=false))},label={Text(dashboardLabel("Line chart"))})
+                        }
+                    }
                     DemoPanel(dashboardLabel("Units")) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected=!settings.usUnits,onClick={onSettingsChanged(settings.copy(usUnits=false))},label={Text("EU • km/h • °C")})
                             FilterChip(selected=settings.usUnits,onClick={onSettingsChanged(settings.copy(usUnits=true))},label={Text("USA • mph • °F")})
                         }

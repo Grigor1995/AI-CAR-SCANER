@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased — Android default portrait and Live Data settings
+
+- Show the portrait for the currently selected default model/generation without
+  requiring another model selection; keep exact-key image invalidation.
+- Move Android analog/line display choice into Settings beside EU/USA units.
+  Apply both settings to local OBD charts and backend acquisition widgets; keep
+  raw measurements unchanged and preserve source/provenance labels.
+- Remove repeated per-widget display chips and avoid empty local widgets when
+  backend samples are available. Local validation only; CI/CD is skipped.
+
 ## Unreleased — Correct fuel names in vehicle selection
 
 - Normalize shared-catalog fuel strings and backend fuel lists before display,

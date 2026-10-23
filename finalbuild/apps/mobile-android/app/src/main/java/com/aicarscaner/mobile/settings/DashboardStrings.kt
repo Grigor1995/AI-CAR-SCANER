@@ -2,6 +2,8 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Widget display" to Pair("Վիջեթի տեսք", "Вид виджета"),
+    "Stored backend samples" to Pair("Սերվերում պահպանված չափումներ", "Сохранённые измерения сервера"),
     "Engine speed" to Pair("Շարժիչի պտույտներ", "Обороты двигателя"),
     "Coolant temperature" to Pair("Հովացուցիչ հեղուկի ջերմաստիճան", "Температура охлаждающей жидкости"),
     "Vehicle speed" to Pair("Մեքենայի արագություն", "Скорость автомобиля"),

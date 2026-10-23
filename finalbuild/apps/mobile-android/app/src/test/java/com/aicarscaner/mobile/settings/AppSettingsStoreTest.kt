@@ -15,6 +15,7 @@ class AppSettingsStoreTest {
 
     private fun store(): AppSettingsStore {
         every { preferences.getBoolean("us_units", false) } returns true
+        every { preferences.getBoolean("analog_display", true) } returns true
         every {
             context.getSharedPreferences("ai_car_scaner_settings", Context.MODE_PRIVATE)
         } returns preferences
@@ -60,14 +61,24 @@ class AppSettingsStoreTest {
         every { editor.putString("language", "HY") } returns editor
         every { editor.putBoolean("dark_theme", false) } returns editor
         every { editor.putBoolean("us_units", false) } returns editor
+        every { editor.putBoolean("analog_display", false) } returns editor
         every { editor.apply() } returns Unit
 
-        store().save(AppSettings(language = AppLanguage.HY, darkTheme = false))
+        store().save(AppSettings(language = AppLanguage.HY, darkTheme = false, analogDisplay = false))
 
         verify(exactly = 1) { preferences.edit() }
         verify(exactly = 1) { editor.putString("language", "HY") }
         verify(exactly = 1) { editor.putBoolean("dark_theme", false) }
         verify(exactly = 1) { editor.putBoolean("us_units", false) }
+        verify(exactly = 1) { editor.putBoolean("analog_display", false) }
         verify(exactly = 1) { editor.apply() }
     }
+    @Test fun loadRestoresLineDisplayPreference() {
+        val store=store()
+        every { preferences.getString("language", "EN") } returns "EN"
+        every { preferences.getBoolean("dark_theme", true) } returns true
+        every { preferences.getBoolean("analog_display", true) } returns false
+        assertEquals(false,store.load().analogDisplay)
+    }
+
 }

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aicarscaner.mobile.data.api.BackendLiveRecordDto
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.obd.LiveDataSnapshot
 
@@ -227,11 +228,15 @@ internal fun channelTitle(key: String) = when(key) {
 }
 
 internal val LocalDashboardUsUnits = staticCompositionLocalOf { false }
+internal val LocalDashboardAnalog = staticCompositionLocalOf { true }
 
-internal fun displayChannel(channel: ChartChannel, us: Boolean): ChartChannel = when {
-    us && channel.unit == "km/h" -> channel.copy(unit="mph", values=channel.values.map { it/1.609344 })
-    us && channel.unit == "°C" -> channel.copy(unit="°F", values=channel.values.map { it*1.8+32 })
-    else -> channel
+internal fun displayChannel(channel: ChartChannel, us: Boolean): ChartChannel {
+    val normalized = if (channel.unit == "C") channel.copy(unit="°C") else channel
+    return when {
+        us && normalized.unit == "km/h" -> normalized.copy(unit="mph", values=normalized.values.map { it/1.609344 })
+        us && normalized.unit == "°C" -> normalized.copy(unit="°F", values=normalized.values.map { it*1.8+32 })
+        else -> normalized
+    }
 }
 
 internal fun gaugeRange(unit: String, value: Double?) = when(unit) {
@@ -272,16 +277,33 @@ private fun ChannelGauge(channel: ChartChannel) {
 
 @Composable
 private fun ChannelWidget(channel: ChartChannel) {
-    val context=LocalContext.current
-    val prefs=remember { context.getSharedPreferences("dashboard_widgets",android.content.Context.MODE_PRIVATE) }
-    var analog by remember(channel.key) { mutableStateOf(prefs.getBoolean("analog_${channel.key}",true)) }
+    val analog=LocalDashboardAnalog.current
     DemoPanel(dashboardLabel(channelTitle(channel.key))) {
         Text(channel.values.lastOrNull()?.let { "%.1f ${channel.unit}".format(it) } ?: "—",style=MaterialTheme.typography.titleLarge,color=channel.color,fontWeight=FontWeight.Bold)
-        Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            FilterChip(selected=analog,onClick={analog=true;prefs.edit().putBoolean("analog_${channel.key}",true).apply()},label={Text(dashboardLabel("Analog gauge"),style=MaterialTheme.typography.labelSmall)})
-            FilterChip(selected=!analog,onClick={analog=false;prefs.edit().putBoolean("analog_${channel.key}",false).apply()},label={Text(dashboardLabel("Line chart"),style=MaterialTheme.typography.labelSmall)})
-        }
         if(analog) ChannelGauge(channel) else ChannelTrace(channel)
+    }
+}
+
+internal fun backendChannels(records: List<BackendLiveRecordDto>): List<ChartChannel> =
+    records.filter { it.numeric_value != null }.groupBy { it.channel ?: it.pid ?: "Unknown channel" }.map { (id,rows) ->
+        val last=rows.last()
+        val key=last.display_name ?: when(id.uppercase()) {
+            "0X0C" -> "RPM"; "0X05" -> "Coolant"; "0X0D" -> "Speed"; "0X11" -> "Throttle"
+            else -> id
+        }
+        ChartChannel(key,last.unit.orEmpty(),Color(0xFF20B9FF),rows.takeLast(90).mapNotNull { it.numeric_value })
+    }
+
+@Composable
+internal fun DemoBackendLiveCharts(records: List<BackendLiveRecordDto>) {
+    val us=LocalDashboardUsUnits.current
+    val groups=records.filter { it.numeric_value != null }.groupBy { it.channel ?: it.pid ?: "Unknown channel" }.values.toList()
+    backendChannels(records).forEachIndexed { index,channel ->
+        val last=groups[index].last()
+        val source=if (last.metadata?.get("adapter") == "simulator" || last.source_type == "SIMULATOR")
+            dashboardLabel("Simulator / synthetic data") else dashboardLabel("Stored backend samples")
+        Text(source,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        ChannelWidget(displayChannel(channel,us))
     }
 }
 

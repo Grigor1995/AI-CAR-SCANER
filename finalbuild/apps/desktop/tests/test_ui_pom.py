@@ -1974,10 +1974,11 @@ def test_added_widget_populates_names_and_renders_analog_values(window_factory, 
     assert card.gauge.value == 90
     assert card.gauge.scale() == (-40, 160)
     assert not card.gauge.grab().isNull()
-    card.mode.setCurrentIndex(card.mode.findData('chart'))
+    grid.settings.setValue('telemetry_display_mode', 'chart')
+    grid.apply_display_mode()
     assert card.gauge.isHidden()
     assert not card.trace.isHidden()
-    assert grid.settings.value('live_mode_4') == 'chart'
+    assert grid.settings.value('telemetry_display_mode') == 'chart'
     grid.set_records(records)
     assert card.title() == 'Coolant temperature'
 
@@ -2038,13 +2039,13 @@ def test_analog_widgets_fit_inside_cards_in_short_live_data_window(window_factor
     qapp.processEvents()
     live = window.pages[4]
     for card in live.signals.cards:
-        card.mode.setCurrentIndex(card.mode.findData('analog'))
+        card.set_display_mode('analog')
     qapp.processEvents()
     for card in live.signals.cards:
         assert card.height() >= 360
         assert card.gauge.height() >= 160
         assert card.gauge.geometry().bottom() < card.contentsRect().bottom()
-        assert card.mode.height() >= 34
+        assert len(card.findChildren(ui.QComboBox)) == 1
     assert live.signals.height() >= sum(live.signals.cards[i].height() for i in (0, 2))
     assert live.signals.cards[0].gauge.scale() == (0, 8000)
 
@@ -2082,3 +2083,28 @@ def test_border_drag_grows_and_shrinks_card_and_restores_without_controls(window
     drag(-5000,-5000)
     assert card.height() >= card.minimumSizeHint().height()
     assert card.width() >= 280
+
+
+def test_settings_selects_display_for_all_widgets_and_preserves_size(window_factory, monkeypatch, qapp):
+    window = window_factory()
+    live = window.pages[4].signals
+    live.cards[0].restore_size([540,480])
+    before = live.cards[0].size()
+    def choose_chart(dialog):
+        mode = next(combo for combo in dialog.findChildren(ui.QComboBox) if combo.findData('chart') >= 0)
+        mode.setCurrentIndex(mode.findData('chart'))
+        return ui.QDialog.Accepted
+    monkeypatch.setattr(ui.QDialog,'exec',choose_chart)
+    window._open_settings()
+    assert window.settings_store.value('telemetry_display_mode') == 'chart'
+    for grid in (window.pages[0].signals, live):
+        for card in grid.cards:
+            assert card.display_mode == 'chart'
+            assert card.gauge.isHidden()
+            assert not card.trace.isHidden()
+            assert len(card.findChildren(ui.QComboBox)) == 1
+    assert live.cards[0].size() == before
+    from apps.desktop.demo_ui import SignalGrid
+    restored = SignalGrid(window.settings_store, 'live')
+    assert restored.cards[0].display_mode == 'chart'
+    restored.deleteLater()

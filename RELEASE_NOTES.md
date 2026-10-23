@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Telemetry display mode in Settings
+
+- Move the analog/line chart choice into Application settings > Widget display.
+  Apply the saved choice to all Home and Live Data widgets, including newly
+  created widgets. Remove the repeated display-mode dropdown inside each card.
+- Preserve border resizing and saved widget dimensions. Local validation only;
+  CI/CD is skipped.
+
 ## Unreleased — Readable analog widgets with border resizing
 
 - Prevent telemetry cards from shrinking below the height needed for their

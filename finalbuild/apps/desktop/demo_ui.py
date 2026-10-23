@@ -146,22 +146,20 @@ class SignalCard(EdgeResizablePanel):
         self.default_unit = {"RPM": "rpm", "Coolant temperature": "C", "MAP pressure": "kPa", "O2 sensor": "V"}.get(name, "")
         self.value = label("—", "signalValue")
         self.body.addWidget(self.value)
-        self.mode = QComboBox()
-        self.mode.setAccessibleName("Widget display")
-        self.mode.setMinimumHeight(34)
-        self.mode.addItem("Analog gauge", "analog")
-        self.mode.addItem("Line chart", "chart")
-        self.body.addWidget(self.mode)
         self.gauge = AnalogGauge(color)
         self.gauge.unit = self.default_unit
         self.body.addWidget(self.gauge)
         self.trace = Trace(color)
         self.body.addWidget(self.trace)
-        self.mode.currentIndexChanged.connect(self._mode_changed)
-        self._mode_changed()
+        self.display_mode = None
+        self.set_display_mode("analog")
 
-    def _mode_changed(self):
-        analog = self.mode.currentData() == "analog"
+    def set_display_mode(self, mode):
+        mode = mode if mode in {"analog", "chart"} else "analog"
+        if mode == self.display_mode:
+            return
+        self.display_mode = mode
+        analog = mode == "analog"
         self.gauge.setVisible(analog)
         self.trace.setVisible(not analog)
         self.ensure_readable_size()
@@ -200,10 +198,7 @@ class SignalGrid(QWidget):
         selector.setAccessibleName("Telemetry channel")
         selector.setMinimumHeight(34)
         card.body.insertWidget(0, selector)
-        if self.settings:
-            mode = self.settings.value(f"{self.prefix}_mode_{index}", "analog")
-            card.mode.setCurrentIndex(max(0, card.mode.findData(mode)))
-            card.mode.currentIndexChanged.connect(lambda _value, c=card, i=index: self.settings.setValue(f"{self.prefix}_mode_{i}", c.mode.currentData()))
+        card.set_display_mode(self.settings.value("telemetry_display_mode", "analog") if self.settings else "analog")
         card.ensure_readable_size()
         if self.settings:
             card.restore_size(self.settings.value(f"{self.prefix}_edge_size_{index}"))
@@ -213,7 +208,13 @@ class SignalGrid(QWidget):
         self.selectors.append(selector)
         self.grid.addWidget(card, index // 2, index % 2)
 
+    def apply_display_mode(self):
+        mode = self.settings.value("telemetry_display_mode", "analog") if self.settings else "analog"
+        for card in self.cards:
+            card.set_display_mode(mode)
+
     def set_records(self, records):
+        self.apply_display_mode()
         groups = defaultdict(list)
         for record in records:
             if record.get("numeric_value") is not None:

@@ -1127,6 +1127,11 @@ class MainWindow(QMainWindow):
         units.addItem("USA • mph • °F", "us")
         units.setCurrentIndex(max(0, units.findData(self.settings_store.value("unit_system", "metric"))))
         form.addRow(self.tr_text("Units"), units)
+        display_mode = QComboBox(dialog)
+        display_mode.addItem(self.tr_text("Analog gauge"), "analog")
+        display_mode.addItem(self.tr_text("Line chart"), "chart")
+        display_mode.setCurrentIndex(max(0, display_mode.findData(self.settings_store.value("telemetry_display_mode", "analog"))))
+        form.addRow(self.tr_text("Widget display"), display_mode)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=dialog)
         buttons.button(QDialogButtonBox.Save).setText(self.tr_text("Save"))
         buttons.button(QDialogButtonBox.Cancel).setText(self.tr_text("Cancel"))
@@ -1136,6 +1141,7 @@ class MainWindow(QMainWindow):
         if dialog.exec() != QDialog.Accepted:
             dialog.deleteLater()
             return
+        self.settings_store.setValue("telemetry_display_mode", display_mode.currentData())
         self.settings_store.setValue("unit_system", units.currentData())
         self.refresh_pages()
         old_language, old_theme = self.language, self.dark_theme

@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
     QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
-    QTabWidget, QVBoxLayout, QWidget, QSplitter
+    QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy
 )
 from .measurement_units import convert, display_records
 from .api_client import DiagnosticApiClient
@@ -691,19 +691,53 @@ class SymptomsPage(QWidget):
         lines += ["", "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence."]
         return "\n".join(lines)
 
-def _navigation_icon(symbol, connector=False):
-    image = QImage(24, 24, QImage.Format_ARGB32_Premultiplied)
+def _navigation_icon(symbol, connector=False, adapter=False, large=False):
+    image = QImage(96, 96, QImage.Format_ARGB32_Premultiplied)
     image.fill(Qt.transparent)
     painter = QPainter(image)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.scale(4, 4)
+    painter.setFont(QFont("Segoe UI Symbol", 18 if large else 10))
     painter.setPen(QPen(QColor("#42AAFF"), 2))
-    if connector:
+    if adapter:
+        painter.drawRoundedRect(6, 7, 12, 14, 3, 3)
+        painter.drawRect(9, 2, 6, 5)
+        painter.drawLine(10, 12, 14, 12)
+        painter.drawPoint(12, 17)
+    elif connector:
         painter.drawRoundedRect(2, 5, 20, 14, 3, 3)
         for x in (6, 10, 14, 18):
             for y in (10, 14): painter.drawPoint(x, y)
     else:
-        painter.drawText(image.rect(), Qt.AlignCenter, symbol)
+        painter.drawText(0, 0, 24, 24, Qt.AlignCenter, symbol)
     painter.end()
     return QIcon(QPixmap.fromImage(image))
+
+
+class LauncherPage(QWidget):
+    """Large menu tiles keep every workflow visible on launch."""
+    def __init__(self, app: "MainWindow"):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        title = QLabel("Main menu"); title.setObjectName("title"); layout.addWidget(title)
+        grid = QGridLayout(); grid.setSpacing(18); layout.addLayout(grid)
+        sections = [("Symptoms", 11, "✎"), ("Diagnostics", 3, ""), ("VCI / Devices", 2, ""),
+                    ("Vehicles", 1, "▣"), ("Live Data", 4, "▥"), ("Guided Tests", 6, "✓"),
+                    ("AI Analysis", 8, "◈"), ("DTC", 7, "⚠"), ("Reports", 9, "▤"),
+                    ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
+        for index, (text, page_id, symbol) in enumerate(sections):
+            tile = QToolButton(); tile.setText(text)
+            tile.setIcon(_navigation_icon(symbol, page_id == 3, page_id == 2, True))
+            tile.setIconSize(QSize(72, 72)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            tile.setMinimumSize(185, 145)
+            tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            tile.setStyleSheet("QToolButton { border: 1px solid #2864AC; border-radius: 18px; padding: 20px; font-weight: 600; } QToolButton:hover { border-color: #19B9FF; }")
+            tile.clicked.connect(lambda _=False, target=page_id: app.navigate_page(target))
+            grid.addWidget(tile, index // 3, index % 3)
+        layout.addStretch()
+
+    def refresh(self):
+        pass
 
 
 class DiagnosticPage(QWidget):
@@ -1246,7 +1280,7 @@ class MainWindow(QMainWindow):
                 if widget.objectName() != "vehicleMetricValue" and widget.text():
                     translated = self.tr_text(widget.text())
                     if translated != widget.text(): widget.setText(translated)
-            elif isinstance(widget, QPushButton):
+            elif isinstance(widget, (QPushButton, QToolButton)):
                 translated = self.tr_text(widget.text())
                 if translated != widget.text(): widget.setText(translated)
             elif isinstance(widget, QGroupBox):
@@ -1303,11 +1337,11 @@ class MainWindow(QMainWindow):
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
         self.nav=nav
-        for page_id in [0, 11, *range(1, 11)]:
+        for page_id in [12, 0, 11, *range(1, 11)]:
             symbol, text = entries[page_id][0].split("  ", 1)
-            item = QListWidgetItem(text); item.setIcon(_navigation_icon(symbol, page_id in {2, 3})); item.setData(Qt.UserRole, page_id); nav.addItem(item)
+            item = QListWidgetItem(text); item.setIcon(_navigation_icon(symbol, page_id == 3, page_id == 2)); item.setData(Qt.UserRole, page_id); nav.addItem(item)
         root.addWidget(nav)
         content=QStackedWidget(); root.addWidget(content,1)
         for _text, cls in entries:

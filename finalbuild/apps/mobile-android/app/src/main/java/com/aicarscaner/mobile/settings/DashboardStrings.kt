@@ -2,6 +2,7 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Main menu" to Pair("Գլխավոր մենյու", "Главное меню"),
     "Connect OBD and identify vehicle" to Pair("Միացնել OBD-ն և ճանաչել մեքենան", "Подключить OBD и определить автомобиль"),
     "VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown." to Pair("VIN-ը նույնականացվում է NHTSA առցանց ծառայությամբ։ Ցուցադրվում են միայն պատասխանած ընդհանուր OBD բլոկները։", "VIN определяется онлайн через NHTSA. Показаны только ответившие стандартные блоки OBD."),
     "Reading VIN and identifying vehicle…" to Pair("VIN-ի ընթերցում և մեքենայի նույնականացում…", "Чтение VIN и определение автомобиля…"),

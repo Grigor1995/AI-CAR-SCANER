@@ -320,3 +320,6 @@ MESSAGES["hy"]['No responding OBD ECUs detected'] = 'Պատասխանող OBD բ
 MESSAGES["ru"]['No responding OBD ECUs detected'] = 'Ответившие блоки OBD не обнаружены'
 MESSAGES["hy"]['Stop live data before discovery'] = 'Մինչ նույնականացումը կանգնեցրեք ընթացիկ տվյալների ընթերցումը'
 MESSAGES["ru"]['Stop live data before discovery'] = 'Остановите чтение текущих данных перед определением автомобиля'
+
+MESSAGES["hy"]["Main menu"] = "Գլխավոր մենյու"
+MESSAGES["ru"]["Main menu"] = "Главное меню"

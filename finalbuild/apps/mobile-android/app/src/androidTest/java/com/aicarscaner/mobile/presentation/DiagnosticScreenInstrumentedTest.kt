@@ -42,7 +42,7 @@ class DiagnosticScreenInstrumentedTest {
 
     private val fakeApi = FakeDiagnosticApi()
 
-    private fun launchScreen() {
+    private fun launchScreen(openVehicleSelection: Boolean = true) {
         // Keep UI assertions deterministic regardless of preferences left on the emulator.
         composeRule.activity
             .getSharedPreferences("ai_car_scaner_settings", android.content.Context.MODE_PRIVATE)
@@ -53,6 +53,7 @@ class DiagnosticScreenInstrumentedTest {
         val viewModel = DiagnosticViewModel(DiagnosticRepository(fakeApi, composeRule.activity.applicationContext))
         composeRule.setContent { DiagnosticScreen(viewModel) }
         composeRule.waitForIdle()
+        if(openVehicleSelection) composeRule.onNodeWithText("Vehicles").performScrollTo().performClick()
     }
 
     private fun createSession() {

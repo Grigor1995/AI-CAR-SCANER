@@ -304,12 +304,12 @@ def window_factory(monkeypatch, qapp, fake_api, vehicle):
 def test_main_window_builds_reference_navigation_pages(window_factory):
     window = window_factory()
     assert window.windowTitle() == "AI Auto Diagnostic Workstation"
-    assert window.nav.count() == 12
-    assert len(window.pages) == 12
+    assert window.nav.count() == 13
+    assert len(window.pages) == 13
     assert window.stack.count() == 1
-    assert window.page_index() == 0
+    assert window.page_index() == 12
     assert [window.nav.item(i).text().split()[-1] for i in range(window.nav.count())] == [
-        "Dashboard", "Symptoms", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
+        "menu", "Dashboard", "Symptoms", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
     ]
 
 
@@ -525,7 +525,7 @@ def test_language_switch_translates_window_and_navigation(window_factory):
     window.language = "hy"
     window._apply_language()
     assert window.windowTitle() == ui._translate_ui_text("AI Auto Diagnostic Workstation", "hy")
-    assert window.nav.item(0).text().endswith(ui._translate_ui_text("Dashboard", "hy"))
+    assert window.nav.item(0).text().endswith(ui._translate_ui_text("Main menu", "hy"))
 
 
 def test_analyze_input_rejects_empty_evidence_and_dtc(window_factory, monkeypatch):
@@ -2169,3 +2169,17 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     page.identify_vehicle(); work, done = jobs.pop(); done(work())
     assert "failed" in page.identity.toPlainText()
     assert page.connect.isEnabled()
+
+
+def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
+    from PySide6.QtWidgets import QToolButton
+    window = window_factory()
+    assert window.page_index() == 12
+    tiles = window.pages[12].findChildren(QToolButton)
+    assert len(tiles) == 12
+    vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
+    diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
+    assert vci.iconSize().width() == 72
+    assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
+    vci.click()
+    assert window.page_index() == 2

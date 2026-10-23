@@ -35,6 +35,12 @@ internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Colo
                 drawLine(color,Offset(w*.67f,h*.2f),Offset(w*.78f,h*.4f),stroke.width)
                 drawCircle(color,w*.07f,Offset(w*.28f,h*.78f)); drawCircle(color,w*.07f,Offset(w*.72f,h*.78f))
             }
+            2 -> { // VCI adapter, distinct from the diagnostic connector
+                drawRoundRect(color,Offset(w*.25f,h*.3f),Size(w*.5f,h*.6f),androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),style=stroke)
+                drawRect(color,Offset(w*.38f,h*.08f),Size(w*.24f,h*.22f),style=stroke)
+                drawLine(color,Offset(w*.4f,h*.5f),Offset(w*.6f,h*.5f),stroke.width)
+                drawCircle(color,w*.04f,Offset(w*.5f,h*.72f))
+            }
             14 -> { // diagnostic connector
                 drawRoundRect(color,Offset(w*.12f,h*.25f),Size(w*.76f,h*.5f),style=stroke)
                 for(i in 0..3) for(y in listOf(.4f,.6f)) drawCircle(color,w*.025f,Offset(w*(.28f+i*.15f),h*y))
@@ -68,15 +74,19 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
         7 to "DTC", 4 to "AI Analysis", 9 to "Reports", 10 to "Teach AI",
         13 to "Testing progress", 12 to "Custom dashboard", 5 to "Activity"
     )
-    sections.forEachIndexed { index,(id,title) ->
-        Card(onClick={navigate(id)},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),
-            colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {
-            Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-                DashboardIcon(id)
-                Text(dashboardLabel(title),Modifier.weight(1f),fontWeight=FontWeight.Medium)
-                Text("${index+1}",color=MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("›",color=MaterialTheme.colorScheme.primary)
+    Text(dashboardLabel("Main menu"),style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+    sections.chunked(2).forEach { pair ->
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+            pair.forEach { (id,title) ->
+                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=145.dp),shape=RoundedCornerShape(18.dp),
+                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
+                        DashboardIcon(id,Modifier.size(52.dp))
+                        Text(dashboardLabel(title),fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
             }
+            if(pair.size==1) Spacer(Modifier.weight(1f))
         }
     }
     Button(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }

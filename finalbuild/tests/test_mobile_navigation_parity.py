@@ -11,7 +11,7 @@ ORDER = ["Dashboard", "Vehicles", "VCI / Devices", "Diagnostic", "Live Data",
 
 def test_android_dashboard_sections_follow_desktop_order():
     source = ANDROID.read_text(encoding="utf-8")
-    section = source.split("val sections=listOf(", 1)[1].split("sections.forEachIndexed", 1)[0]
+    section = source.split("val sections=listOf(", 1)[1].split("sections.chunked", 1)[0]
     positions = [section.index('"' + label + '"') for label in ORDER]
     assert positions == sorted(positions)
     assert section.index('"Symptoms"') < section.index('"Vehicles"')

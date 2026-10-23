@@ -161,7 +161,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     var editingSymptomId by remember { mutableStateOf<String?>(null) }
     var dtc by remember { mutableStateOf("") }
     var editingDtcId by remember { mutableStateOf<String?>(null) }
-    var selectedTab by remember { mutableIntStateOf(6) }
+    var selectedTab by remember { mutableIntStateOf(11) }
     var editingVehicle by remember { mutableStateOf(false) }
     var obdDevices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
     var usbDevices by remember { mutableStateOf<List<UsbDevice>>(emptyList()) }
@@ -761,12 +761,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     DashboardToolbar(
-                        title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),
+                        title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";11->"Main menu";else->"More"}),
                         hasSession=state.session!=null && selectedTab!=14,
                         showSettings=selectedTab !in listOf(0,14),
-                        showBack=selectedTab !in listOf(6,9),
+                        showBack=selectedTab !in listOf(6,9,11),
                         loading=state.loading,
-                        onHome={selectedTab=6},
+                        onHome={selectedTab=11},
                         onSettings={settingsOpen=true},
                         onNewSession={newSessionConfirmOpen=true},
                         onSymptoms={selectedTab=0},
@@ -787,7 +787,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if(selectedTab==14) {
+                if(selectedTab==11) {
+                    DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
+                } else if(selectedTab==14) {
                     diagnosticPanel()
                 } else if(state.session==null && selectedTab==2) {
                     adapterPanel()

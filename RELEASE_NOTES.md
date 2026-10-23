@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Large launch menu
+
+- Open Desktop and Android on a large icon tile menu, with direct navigation to
+  Symptoms, Diagnostics, VCI and the other workflows. Preserve Dashboard as its
+  own section and localize menu labels in Armenian, Russian and English.
+- Give VCI a separate USB adapter icon, distinct from the diagnostic connector.
+  Render Desktop icons at higher resolution for large tiles. CI/CD skipped.
+
 ## Unreleased — VIN-first OBD diagnostics
 
 - Raise Symptoms in Desktop and Android navigation and hide its Settings button.

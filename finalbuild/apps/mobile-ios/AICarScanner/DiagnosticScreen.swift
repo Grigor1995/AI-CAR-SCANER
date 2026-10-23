@@ -42,7 +42,7 @@ struct DiagnosticScreen: View {
                 VStack(alignment:.leading,spacing:12) {
                     HStack {
                         Image(systemName:"car.side.fill")
-                            .font(.system(size:28,weight:.bold))
+                            .font(.system(size:19,weight:.bold))
                             .foregroundStyle(AutomotivePalette.cyan)
                             .accessibilityHidden(true)
                         VStack(alignment:.leading,spacing:3) {
@@ -56,7 +56,7 @@ struct DiagnosticScreen: View {
 
                         }
                         Spacer()
-                        Button("⚙"){settingsOpen=true}
+                        
                         if viewModel.session != nil { Button("＋"){newSessionOpen=true} }
                     }
                     ScrollView(.horizontal, showsIndicators:false) {
@@ -72,17 +72,18 @@ struct DiagnosticScreen: View {
                                 (2, t.tr("AI Analysis", "ИИ-анализ", "AI վերլուծություն"), "brain.head.profile"),
                                 (9, t.tr("Reports", "Отчёты", "Հաշվետվություններ"), "doc.text"),
                                 (10, t.tr("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին"), "graduationcap"),
-                                (4, t.tr("Activity", "История", "Պատմություն"), "clock.arrow.circlepath")
+                                (4, t.tr("Activity", "История", "Պատմություն"), "clock.arrow.circlepath"),
+                                (11, t.settings, "slider.horizontal.3")
                             ], id: \.0) { item in
                                 let index = item.0
                                 Button {
-                                    tab = index
+                                    if index == 11 { settingsOpen = true } else { tab = index }
                                 } label: {
                                     Label(item.1, systemImage:item.2)
-                                        .font(.subheadline.weight(.semibold))
+                                        .font(.system(size:12,weight:.semibold))
                                         .lineLimit(1)
-                                        .padding(.horizontal,13)
-                                        .padding(.vertical,11)
+                                        .padding(.horizontal,10)
+                                        .padding(.vertical,8)
                                         .foregroundStyle(tab == index ? Color.white :
                                             (viewModel.settings.darkTheme ? Color.white.opacity(0.82) :
                                              AutomotivePalette.navy))

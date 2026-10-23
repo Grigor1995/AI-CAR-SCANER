@@ -78,10 +78,10 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
     sections.chunked(2).forEach { pair ->
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             pair.forEach { (id,title) ->
-                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=145.dp),shape=RoundedCornerShape(18.dp),
+                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=112.dp),shape=RoundedCornerShape(18.dp),
                     colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
-                        DashboardIcon(id,Modifier.size(52.dp))
+                    Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        DashboardIcon(id,Modifier.size(28.dp))
                         Text(dashboardLabel(title),fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
@@ -89,7 +89,7 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
             if(pair.size==1) Spacer(Modifier.weight(1f))
         }
     }
-    Button(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
+    OutlinedButton(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
 }
 
 /** Persistent actions stay reachable when the page below scrolls. */
@@ -111,7 +111,7 @@ internal fun DashboardToolbar(
         if(showBack) TextButton(onClick=onHome,contentPadding=PaddingValues(4.dp)) {Text("‹",style=MaterialTheme.typography.headlineMedium)}
         else DashboardIcon(6,Modifier.size(28.dp))
         Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
-        if(showSettings) TextButton(onClick=onSettings,contentPadding=PaddingValues(4.dp)) {Text("⚙",modifier=Modifier.semantics{contentDescription=text.settings})}
+        
         if(hasSession) TextButton(onClick=onNewSession,contentPadding=PaddingValues(4.dp)) {Text("+",modifier=Modifier.semantics{contentDescription=text.newSession},style=MaterialTheme.typography.titleLarge)}
     }
     if(hasSession) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {

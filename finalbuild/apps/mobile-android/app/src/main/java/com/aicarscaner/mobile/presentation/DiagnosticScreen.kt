@@ -763,7 +763,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     DashboardToolbar(
                         title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";11->"Main menu";else->"More"}),
                         hasSession=state.session!=null && selectedTab!=14,
-                        showSettings=selectedTab !in listOf(0,14),
+                        showSettings=false,
                         showBack=selectedTab !in listOf(6,9,11),
                         loading=state.loading,
                         onHome={selectedTab=11},

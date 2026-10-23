@@ -1429,11 +1429,11 @@ class MainWindow(QMainWindow):
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
         for title, target in [("Symptoms",11),("Diagnostics",3),("AI Analysis",8),("Live Data",4),("Guided Tests",6),("Reports",9),("Teach AI",10)]:
-            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_page_icon(target)); button.setIconSize(QSize(30,30)); button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
+            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_page_icon(target)); button.setIconSize(QSize(20,20)); button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3); self.header_navigation = header_scroll
-        settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
+        shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(32,32)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(20,20)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
         self.nav=nav
         for page_id in [12, 0, 11, *range(1, 11)]:
             symbol, text = entries[page_id][0].split("  ", 1)
@@ -1445,7 +1445,7 @@ class MainWindow(QMainWindow):
             if page_id != 12: self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
             self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11, 12}) if row >= 0 else None)
+        
         nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: header_scroll.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
@@ -1456,7 +1456,7 @@ class MainWindow(QMainWindow):
         layout = page.layout()
         hero = QWidget(); hero.setObjectName("sectionHero")
         row = QHBoxLayout(hero); row.setContentsMargins(18, 8, 18, 8)
-        image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(72,72)); image.setFixedSize(76,76)
+        image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(48,48)); image.setFixedSize(54,54)
         row.addWidget(image)
         title = next((layout.itemAt(i).widget() for i in range(layout.count())
                       if isinstance(layout.itemAt(i).widget(), QLabel) and layout.itemAt(i).widget().objectName() == "title"), None)

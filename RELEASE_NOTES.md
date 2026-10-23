@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Mobile icon and consistent neon portraits
+
+- Replace Android density/adaptive launcher icons and the iOS app icon with generated neon-blue abstract vehicle artwork. Android themed icons use a separate monochrome silhouette.
+- Prefer the exact bundled generation portrait on Android/iOS so older backend artwork cannot replace the Desktop-matching neon image. Use remote artwork only when a generation has no bundled portrait.
+- Keep all 72 model-generation images byte-identical across Desktop, Android and iOS.
+
 ## Unreleased — Native mobile neon presentation
 
 - Reuse Desktop 3D icons, abstract vehicle branding, and background on Android and iOS.

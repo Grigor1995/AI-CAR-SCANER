@@ -32,7 +32,9 @@ struct VehicleModelArtwork: View {
     }
 
     var body: some View {
-        if let remoteURL {
+        if portrait != nil {
+            bundledArtwork
+        } else if let remoteURL {
             AsyncImage(url: remoteURL) { phase in
                 if let image = phase.image {
                     VStack {

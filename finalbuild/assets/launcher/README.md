@@ -17,3 +17,7 @@ labels are native, translated text. SVG files remain an offline fallback.
 vehicle illustrations, without an identifiable real production model. The
 Vehicles icon explicitly uses `brand-car.png`, not the unused sedan cell in the
 3D sprite atlas. No manufacturer photograph is used for menu branding.
+
+`mobile-app-icon.png` is generated neon-blue abstract vehicle app branding. Native
+Android density/adaptive assets and the opaque iOS 1024 icon derive from this
+master. Android themed icons use a separate monochrome vehicle vector.

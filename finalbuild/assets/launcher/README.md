@@ -12,3 +12,8 @@ network requests for its artwork.
 in the approved 3D Automotive style. Row-major IDs are
 `11, 3, 2, 1, 4, 6, 8, 7, 9, 10, 0, 5`. The launcher extracts cells in memory;
 labels are native, translated text. SVG files remain an offline fallback.
+
+`brand-car.png` and the current `background.png` are generated abstract neon-blue
+vehicle illustrations, without an identifiable real production model. The
+Vehicles icon explicitly uses `brand-car.png`, not the unused sedan cell in the
+3D sprite atlas. No manufacturer photograph is used for menu branding.

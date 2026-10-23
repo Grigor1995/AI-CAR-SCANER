@@ -1,5 +1,23 @@
 # Release notes
 
+## Unreleased — Compact neon-blue Desktop presentation
+
+- Remove Settings toolbar buttons; preferences remain available from the
+  Application menu. Give top navigation a full-width compact row with wrapped
+  labels, and fit all sidebar links to the available height without navigation
+  scrollbars in the supported 800×600 and larger test layouts. Reduce menu,
+  sidebar and section-header icon sizes.
+- Replace the menu car and background with generated abstract neon-blue vehicles,
+  without a real manufacturer model. Individually regenerate all 72 catalog
+  generation portraits in neon-blue 3D style, record their provenance and hashes,
+  and synchronize the exact files into Android/iOS bundles. Preserve exact model
+  selection and transparency; do not use a runtime color filter.
+- Wrap Live Data actions, simulator inputs and narrow signal grids instead of
+  introducing horizontal scrolling.
+- Add illuminated depth to analog gauges and line charts. Preserve measurements,
+  scales and reference bands; no simulated depth changes the plotted values.
+- Local Desktop checks; CI/CD skipped.
+
 ## Unreleased — Responsive 3D Desktop workspace
 
 - Fit all twelve launch tiles to the available window by adapting columns, image

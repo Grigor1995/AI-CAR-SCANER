@@ -10,7 +10,7 @@ import math
 from collections import defaultdict
 
 from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont
+from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont, QBrush, QLinearGradient, QRadialGradient
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
@@ -73,6 +73,9 @@ class Trace(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         r = self.rect().adjusted(3, 6, -3, -6)
+        surface = QLinearGradient(r.topLeft(),r.bottomRight())
+        surface.setColorAt(0,QColor("#16304B")); surface.setColorAt(1,QColor("#040C19"))
+        p.setBrush(QBrush(surface)); p.setPen(QPen(QColor("#345D7B"),1)); p.drawRoundedRect(r,7,7)
         p.setPen(QPen(QColor("#1B4660"), 1))
         for i in range(1, 4):
             y = r.top() + r.height() * i / 4
@@ -92,7 +95,9 @@ class Trace(QWidget):
             x2 = r.left() + r.width() * i / (len(self.values) - 1)
             y1 = r.bottom() - (self.values[i - 1] - low) / span * r.height()
             y2 = r.bottom() - (self.values[i] - low) / span * r.height()
-            p.drawLine(int(x1), int(y1), int(x2), int(y2))
+            for thickness, alpha in [(7,30),(4,65),(2,255)]:
+                color=QColor(self.color); color.setAlpha(alpha)
+                p.setPen(QPen(color,thickness)); p.drawLine(int(x1),int(y1),int(x2),int(y2))
 
 
 class AnalogGauge(QWidget):
@@ -139,6 +144,11 @@ class AnalogGauge(QWidget):
         center = QPointF(self.width() / 2, self.height() / 2)
         radius = max(10, size / 2)
         rect = QRectF(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
+        dial = QRadialGradient(center, radius+10)
+        dial.setColorAt(0,QColor("#1B3652")); dial.setColorAt(.78,QColor("#07121E")); dial.setColorAt(.9,QColor("#304B66")); dial.setColorAt(1,QColor("#07111E"))
+        p.setBrush(QBrush(dial)); p.setPen(QPen(QColor("#559CC6"),2))
+        p.drawEllipse(center,radius+9,radius+9)
+        p.setBrush(Qt.NoBrush)
         p.setPen(QPen(QColor("#294563"), 9))
         p.drawArc(rect, -45 * 16, 270 * 16)
         low, high = self.scale()
@@ -163,8 +173,8 @@ class AnalogGauge(QWidget):
         angle = math.radians(225 - fraction * 270)
         p.setPen(QPen(QColor(self.value_color()), 4))
         p.drawLine(center, QPointF(center.x() + (radius-20)*math.cos(angle), center.y()-(radius-20)*math.sin(angle)))
-        p.setBrush(QColor(self.value_color()))
-        p.drawEllipse(center, 5, 5)
+        hub = QRadialGradient(center,7); hub.setColorAt(0,QColor("#ECFAFF")); hub.setColorAt(.4,QColor(self.value_color())); hub.setColorAt(1,QColor("#091523"))
+        p.setBrush(QBrush(hub)); p.setPen(QPen(QColor("#78C9EF"),1)); p.drawEllipse(center,7,7)
 
 
 class SignalCard(EdgeResizablePanel):
@@ -216,11 +226,26 @@ class SignalGrid(QWidget):
         self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setSizeConstraint(QLayout.SetMinimumSize)
         self.cards, self.selectors = [], []
+        self._columns = 0
         self.add_button = action("+ Add widget", self.add_widget)
         for name in ["RPM", "Coolant temperature", "MAP pressure", "O2 sensor"]:
             self._new_card(name)
         self.grid.addWidget(self.add_button, 2, 0, 1, 2)
         self.add_button.setEnabled(False)
+        self._arrange_cards()
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event); self._arrange_cards()
+
+    def _arrange_cards(self,force=False):
+        columns=1 if self.width()<640 else 2
+        if columns==self._columns and not force: return
+        self._columns=columns
+        for card in self.cards: self.grid.removeWidget(card)
+        self.grid.removeWidget(self.add_button)
+        self.grid.setColumnStretch(0,1); self.grid.setColumnStretch(1,int(columns==2))
+        for index,card in enumerate(self.cards): self.grid.addWidget(card,index//columns,index%columns)
+        self.grid.addWidget(self.add_button,(len(self.cards)+columns-1)//columns,0,1,columns)
 
     def _new_card(self, name):
         index = len(self.cards)
@@ -298,7 +323,7 @@ class SignalGrid(QWidget):
         self._new_card(available)
         self.set_records(records)
         self.selectors[-1].setCurrentIndex(self.selectors[-1].findData(available))
-        self.grid.addWidget(self.add_button, (len(self.cards) + 1) // 2, 0, 1, 2)
+        self._arrange_cards(force=True)
 
 
 class DemoDashboard(QWidget):

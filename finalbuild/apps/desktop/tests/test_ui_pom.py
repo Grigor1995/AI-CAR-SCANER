@@ -323,11 +323,10 @@ def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
     assert diagnostic.identity.isReadOnly()
     assert not diagnostic.findChildren(QPlainTextEdit)[0].isAncestorOf(symptoms.symptom)
     assert symptoms.hypotheses.isReadOnly()
-    settings = next(button for button in window.findChildren(QPushButton) if button.accessibleName() == "Settings")
-    assert settings.isHidden()
+    assert not any(button.accessibleName() == "Settings" for button in window.findChildren(QPushButton))
     window.navigate_page(11)
     assert symptoms.symptom.toPlainText() == "Engine shakes at idle"
-    assert settings.isHidden()
+    assert not any(button.accessibleName() == "Settings" for button in window.findChildren(QPushButton))
 
 
 def test_navigation_selects_pages_and_live_data_request_is_guarded(window_factory, fake_api):
@@ -2213,3 +2212,32 @@ def test_every_workflow_has_3d_section_header(window_factory):
         assert hero is not None
         from PySide6.QtWidgets import QLabel
         assert any(not label.pixmap().isNull() for label in hero.findChildren(QLabel))
+
+
+def test_navigation_has_no_settings_buttons_or_scrollbars_in_all_languages(window_factory, qapp):
+    from PySide6.QtWidgets import QToolButton
+    window = window_factory()
+    window.navigate_page(3)
+    assert not any(button.accessibleName() == "Settings" for button in window.findChildren(QPushButton)+window.findChildren(QToolButton))
+    for language in ["en","ru","hy"]:
+        window.language = language; window._apply_language()
+        for width,height in [(800,600),(1280,720)]:
+            window.resize(width,height); qapp.processEvents(); qapp.processEvents()
+            assert window.header_navigation.horizontalScrollBar().maximum() == 0
+            assert window.header_navigation.verticalScrollBar().maximum() == 0
+            assert window.nav.horizontalScrollBar().maximum() == 0
+            assert window.nav.verticalScrollBar().maximum() == 0
+            assert window.nav.visualItemRect(window.nav.item(window.nav.count()-1)).bottom() < window.nav.viewport().height()
+
+
+def test_live_controls_wrap_without_horizontal_scroll(window_factory,qapp):
+    window=window_factory(); window.navigate_page(4)
+    page=window.pages[4]
+    for language in ["en","ru","hy"]:
+        window.language=language; window._apply_language()
+        for width,height in [(800,600),(1280,720)]:
+            window.resize(width,height); qapp.processEvents(); qapp.processEvents()
+            scroll=page.parentWidget().parentWidget()
+            assert scroll.horizontalScrollBar().maximum()==0
+            assert all(page.action_panel.rect().contains(widget.geometry()) for widget in page.action_panel.widgets)
+            assert all(page.simulator_panel.rect().contains(widget.geometry()) for widget in page.simulator_panel.widgets)

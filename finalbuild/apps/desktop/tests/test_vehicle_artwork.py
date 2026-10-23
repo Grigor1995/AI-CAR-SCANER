@@ -169,3 +169,16 @@ def test_real_qt_network_reply_loads_portrait_and_attribution(monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_catalog_neon_manifest_covers_all_generations_and_replaced_originals():
+    root = Path(__file__).resolve().parents[3]
+    manifest = json.loads((root / "assets/vehicle_models/neon-manifest.json").read_text())
+    catalog = json.loads((root / "shared/vehicle_catalog.json").read_text())["vehicles"]
+    expected = {(v["make"],v["model"],v["chassis"]) for v in catalog}
+    actual = {(v["make"],v["model"],v["chassis"]) for v in manifest["vehicles"]}
+    assert actual == expected
+    assert manifest["style"] == "neon-blue-3d"
+    for row in manifest["vehicles"]:
+        assert row["sha256"] != row["original_sha256"]
+        assert hashlib.sha256((root / "assets/vehicle_models" / row["name"]).read_bytes()).hexdigest() == row["sha256"]

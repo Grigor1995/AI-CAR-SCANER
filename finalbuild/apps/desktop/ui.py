@@ -9,7 +9,7 @@ from functools import lru_cache
 import time
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap, QRadialGradient, QLinearGradient
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -379,7 +379,8 @@ class Sparkline(QWidget):
     def paintEvent(self, _event) -> None:
         p = QPainter(self); p.setRenderHint(QPainter.Antialiasing)
         r = self.rect().adjusted(8, 8, -8, -8)
-        p.fillRect(r, QBrush(QColor("#0f141c")))
+        gradient = QLinearGradient(r.topLeft(),r.bottomRight()); gradient.setColorAt(0,QColor("#18344D")); gradient.setColorAt(1,QColor("#040C19"))
+        p.fillRect(r,QBrush(gradient)); p.setPen(QPen(QColor("#345D7B"),1)); p.drawRoundedRect(r,8,8)
         if len(self.values) < 2: return
         lo, hi = min(self.values), max(self.values)
         padding = max((hi - lo) * .1, abs(hi) * .01, 1.0)
@@ -391,7 +392,9 @@ class Sparkline(QWidget):
             x = r.left() + (r.width() * i / (len(self.values)-1))
             y = r.bottom() - r.height() * ((value-lo)/(hi-lo))
             points.append((x,y))
-        for a,b in zip(points, points[1:]): p.drawLine(a[0],a[1],b[0],b[1])
+        for width, alpha in [(7,35),(4,75),(2,255)]:
+            p.setPen(QPen(QColor(70,182,255,alpha),width))
+            for a,b in zip(points, points[1:]): p.drawLine(a[0],a[1],b[0],b[1])
 
 class MetricCard(QGroupBox):
     def __init__(self, title: str, value: str = "—") -> None:
@@ -724,6 +727,9 @@ def _menu_atlas():
 @lru_cache(maxsize=13)
 def _page_icon(page_id):
     atlas = _menu_atlas()
+    if page_id == 1:
+        root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+        return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))
     if page_id == 12:
         image = QPixmap(128, 128); image.fill(Qt.transparent)
         painter = QPainter(image)
@@ -743,11 +749,29 @@ def _page_icon(page_id):
     return QIcon(atlas.copy(left, top, right-left, bottom-top))
 
 
+class CompactNavigation(QListWidget):
+    """Fit workflow links to the available sidebar height without scroll controls."""
+    def __init__(self):
+        super().__init__()
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setStyleSheet("QListWidget::item { padding:1px 6px; margin:0px; border-radius:7px; }")
+        font=self.font(); font.setPointSize(9); self.setFont(font)
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if not self.count(): return
+        height=max(20,min(40,self.viewport().height()//self.count()))
+        self.setIconSize(QSize(min(20,height-4),min(20,height-4)))
+        for index in range(self.count()):
+            self.item(index).setSizeHint(QSize(max(1,self.viewport().width()-2),height))
+
+
 class AdaptiveMenuTile(QToolButton):
     """Native focus/click behavior with a responsive image and wrapped label."""
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        side = max(24, min(180, self.width()-28, self.height()-52))
+        side = max(20, min(128, self.width()-28, self.height()-52))
         self.setIconSize(QSize(side, side))
 
     def paintEvent(self, event):
@@ -758,10 +782,11 @@ class AdaptiveMenuTile(QToolButton):
         painter.drawComplexControl(QStyle.CC_ToolButton, option)
         rect = self.rect().adjusted(10, 6, -10, -6)
         text_height = min(max(self.fontMetrics().height()*2, 30), max(20, rect.height()//3))
-        side = min(self.iconSize().width(), rect.width(), max(20, rect.height()-text_height-4))
+        if self.objectName() == "topNav": text_height = min(rect.height()-12, self.fontMetrics().height()*2)
+        side = min(self.iconSize().width(), rect.width(), max(12, rect.height()-text_height-4))
         image = self.icon().pixmap(side, side)
         painter.drawPixmap((self.width()-image.width())//2, rect.top()+(rect.height()-text_height-image.height())//2, image)
-        painter.setPen(QColor("#EAF4FF"))
+        painter.setPen(self.palette().buttonText().color())
         painter.drawText(rect.adjusted(0, rect.height()-text_height, 0, 0), Qt.AlignCenter | Qt.TextWordWrap, self.text())
 
 
@@ -891,16 +916,61 @@ class DiagnosticPage(QWidget):
         if not self.modules.count(): self.modules.addItem(self.app.tr_text("No responding OBD ECUs detected"))
 
 
+class ResponsiveControls(QWidget):
+    """Wrap complete controls to new rows instead of clipping their labels."""
+    def __init__(self, widgets, max_columns=5):
+        super().__init__()
+        self.widgets, self.max_columns = widgets, max_columns
+        self.grid = QGridLayout(self); self.grid.setContentsMargins(0,0,0,0); self.grid.setSpacing(6)
+        self.grid.setSizeConstraint(QLayout.SetNoConstraint)
+        self._columns=0; self._arranging=False
+        self._arrange()
+
+    def minimumSizeHint(self):
+        return QSize(180,self.minimumHeight())
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event); self._arrange()
+
+    def event(self,event):
+        result=super().event(event)
+        if event.type()==QEvent.LayoutRequest and hasattr(self,"_arranging"): self._arrange()
+        return result
+
+    def _arrange(self):
+        if self._arranging: return
+        self._arranging=True
+        try:
+            needed=max(180,max(widget.minimumSizeHint().width() for widget in self.widgets))
+            available=max(1,min(self.max_columns,(self.width()+6)//(needed+6)))
+            rows=math.ceil(len(self.widgets)/available); columns=math.ceil(len(self.widgets)/rows)
+            if columns!=self._columns:
+                old=self._columns; self._columns=columns
+                for widget in self.widgets: self.grid.removeWidget(widget)
+                for column in range(max(old,columns)): self.grid.setColumnStretch(column,int(column<columns))
+                for index,widget in enumerate(self.widgets): self.grid.addWidget(widget,index//columns,index%columns)
+            cell_width=max(1,(self.width()-6*(columns-1))//columns)
+            height=max(max(32,widget.heightForWidth(cell_width) if widget.hasHeightForWidth() else widget.sizeHint().height()) for widget in self.widgets)
+            desired=rows*height+6*(rows-1)
+            if self.height()!=desired: self.setFixedHeight(desired)
+        finally: self._arranging=False
+
+
 class LiveDataPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
         self.real_start.clicked.connect(app.start_bound_acquisition)
         self.start.clicked.connect(app.start_simulator); self.stop.clicked.connect(app.stop_simulator); self.analyze.clicked.connect(app.analyze_telemetry); self.ai_analyze.clicked.connect(app.ai_analyze_live_data)
-        bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.real_start); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
+        self.ai_status.setWordWrap(True); self.ai_status.setSizePolicy(QSizePolicy.Ignored,QSizePolicy.Preferred)
+        bar.addWidget(self.status); bar.addWidget(self.ai_status,1); lay.addLayout(bar)
+        actions=[self.real_start,self.start,self.stop,self.analyze,self.ai_analyze]
+        for button in actions:
+            font=button.font(); font.setPointSize(9); button.setFont(font)
+        self.action_panel=ResponsiveControls(actions); lay.addWidget(self.action_panel)
         self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setParent(self); self.chart.hide(); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
-        controls = QHBoxLayout()
+        controls = []
         self.sim_inputs = {}
         for key, title, low, high, value, suffix in (
             ("rpm", "Engine speed", 0, 16383, 750, " rpm"),
@@ -908,15 +978,16 @@ class LiveDataPage(QWidget):
             ("speed_kmh", "Vehicle speed", 0, 255, 40, " km/h"),
             ("throttle_percent", "Throttle position", 0, 100, 32, " %"),
         ):
-            column = QVBoxLayout()
-            column.addWidget(QLabel(title))
+            field=QWidget(); column=QVBoxLayout(field); column.setContentsMargins(0,0,0,0)
+            title_label=QLabel(title); title_label.setWordWrap(True); title_label.setSizePolicy(QSizePolicy.Ignored,QSizePolicy.Preferred)
+            column.addWidget(title_label)
             spin = QDoubleSpinBox(); spin.setRange(low, high); spin.setValue(value); spin.setSuffix(suffix)
             self.sim_inputs[key] = spin
-            column.addWidget(spin); controls.addLayout(column)
+            column.addWidget(spin); controls.append(field)
         self.apply_sim = QPushButton("Apply simulator values")
         self.apply_sim.clicked.connect(self._apply_simulator_values)
-        controls.addWidget(self.apply_sim)
-        lay.insertLayout(1, controls)
+        self.simulator_panel=ResponsiveControls(controls,max_columns=4)
+        lay.insertWidget(2,self.simulator_panel); lay.insertWidget(3,self.apply_sim)
         self.table.setMinimumHeight(140)
         self.table.setMaximumHeight(180)
         self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
@@ -1393,7 +1464,7 @@ class MainWindow(QMainWindow):
                 if widget is self.nav or widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
                     for index in range(widget.count()):
                         item = widget.item(index)
-                        item.setText(self.tr_text(item.text()))
+                        item.setText(self.tr_text(item.text())); item.setToolTip(item.text())
             elif isinstance(widget, QComboBox):
                 for index in range(widget.count()):
                     text = self.tr_text(widget.itemText(index))
@@ -1426,14 +1497,22 @@ class MainWindow(QMainWindow):
     def _build_pages(self):
         container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
-        subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
-        header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
+        subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,1)
+        header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0); header_buttons.setSpacing(6); header_buttons.setSizeConstraint(QLayout.SetNoConstraint)
         for title, target in [("Symptoms",11),("Diagnostics",3),("AI Analysis",8),("Live Data",4),("Guided Tests",6),("Reports",9),("Teach AI",10)]:
-            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_page_icon(target)); button.setIconSize(QSize(30,30)); button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
-        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3); self.header_navigation = header_scroll
-        settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
+            button=AdaptiveMenuTile(); button.setText(title); button.setObjectName("topNav")
+            button.setIcon(_page_icon(target)); button.setMinimumSize(42,56)
+            font=button.font(); font.setPointSize(9); button.setFont(font)
+            button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+            button.setStyleSheet("QToolButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #214464,stop:1 #0A2037); color:#EAF4FF; border:1px solid #2C608B; border-radius:10px; padding:2px; } QToolButton:hover,QToolButton:focus { border:1px solid #5DD7FF; }")
+            button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
+        shell.addLayout(header)
+        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True)
+        header_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        header_scroll.setFixedHeight(66); header_scroll.setWidget(header_nav); shell.addWidget(header_scroll)
+        self.header_navigation = header_scroll
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(32,32)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
+        nav=CompactNavigation(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
         self.nav=nav
         for page_id in [12, 0, 11, *range(1, 11)]:
             symbol, text = entries[page_id][0].split("  ", 1)
@@ -1445,7 +1524,6 @@ class MainWindow(QMainWindow):
             if page_id != 12: self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
             self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11, 12}) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: header_scroll.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
@@ -1456,7 +1534,7 @@ class MainWindow(QMainWindow):
         layout = page.layout()
         hero = QWidget(); hero.setObjectName("sectionHero")
         row = QHBoxLayout(hero); row.setContentsMargins(18, 8, 18, 8)
-        image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(72,72)); image.setFixedSize(76,76)
+        image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(48,48)); image.setFixedSize(52,52)
         row.addWidget(image)
         title = next((layout.itemAt(i).widget() for i in range(layout.count())
                       if isinstance(layout.itemAt(i).widget(), QLabel) and layout.itemAt(i).widget().objectName() == "title"), None)

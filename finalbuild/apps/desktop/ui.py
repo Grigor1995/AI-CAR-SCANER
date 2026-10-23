@@ -688,14 +688,11 @@ class DiagnosticPage(QWidget):
 class LiveDataPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
-        outer = QVBoxLayout(self)
-        scroll = QScrollArea(); scroll.setWidgetResizable(True)
-        content = QWidget(); scroll.setWidget(content); outer.addWidget(scroll)
-        lay=QVBoxLayout(content); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
+        lay=QVBoxLayout(self); bar=QHBoxLayout(); self.status=QLabel("Stopped"); self.ai_status=QLabel("AI: checking..."); self.ai_status.setObjectName("muted"); self.start=QPushButton("Start simulator"); self.real_start=QPushButton("Start connected adapter"); self.stop=QPushButton("Stop"); self.analyze=QPushButton("Analyze telemetry"); self.ai_analyze=QPushButton("AI Analyze Live Data"); self.ai_analyze.setObjectName("primary")
         self.real_start.clicked.connect(app.start_bound_acquisition)
         self.start.clicked.connect(app.start_simulator); self.stop.clicked.connect(app.stop_simulator); self.analyze.clicked.connect(app.analyze_telemetry); self.ai_analyze.clicked.connect(app.ai_analyze_live_data)
         bar.addWidget(self.status); bar.addWidget(self.ai_status); bar.addStretch(); bar.addWidget(self.real_start); bar.addWidget(self.start); bar.addWidget(self.stop); bar.addWidget(self.analyze); bar.addWidget(self.ai_analyze); lay.addLayout(bar)
-        self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setMaximumHeight(110); lay.addWidget(self.chart); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
+        self.cards=QGridLayout(); lay.addLayout(self.cards); self.table=QTableWidget(0,6); self.table.setHorizontalHeaderLabels(["PID / Channel","Count","Min","Max","Mean","Events"]); self.table.horizontalHeader().setStretchLastSection(True); lay.addWidget(self.table); self.chart=Sparkline(); self.chart.setParent(self); self.chart.hide(); self.signals=SignalGrid(app.settings_store,prefix="live"); lay.addWidget(self.signals)
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         controls = QHBoxLayout()
         self.sim_inputs = {}
@@ -715,7 +712,7 @@ class LiveDataPage(QWidget):
         controls.addWidget(self.apply_sim)
         lay.insertLayout(1, controls)
         self.table.setMinimumHeight(140)
-        self.signals.setMinimumHeight(440)
+        self.table.setMaximumHeight(180)
         self.timer=QTimer(self); self.timer.setInterval(2500); self.timer.timeout.connect(self._poll)
         self._poll_in_flight = False
         self._details_in_flight = False
@@ -854,6 +851,7 @@ class LiveDataPage(QWidget):
             self.status.setText("STOPPED")
             self.table.setRowCount(0)
             self.chart.set_values([])
+            self.chart.hide()
             self.signals.set_records([])
             return
         if self._status_data.get("_error"):
@@ -879,6 +877,7 @@ class LiveDataPage(QWidget):
         summary = self.app.telemetry
         stats = summary.get("signals") or summary.get("stats") or []
         self.table.setRowCount(0)
+        self.table.setVisible(bool(stats))
         for st in stats:
             row = self.table.rowCount()
             self.table.insertRow(row)
@@ -893,6 +892,7 @@ class LiveDataPage(QWidget):
         first_pid = next(((r.get("pid") or r.get("channel")) for r in self._records_data if r.get("numeric_value") is not None), None)
         values = [float(r["numeric_value"]) for r in self._records_data if r.get("numeric_value") is not None and (r.get("pid") or r.get("channel")) == first_pid]
         self.chart.set_values(values)
+        self.chart.hide()  # Each channel already owns its analog/line display.
         self.signals.set_records(display_records(self._records_data, self.app.settings_store.value("unit_system", "metric") == "us"))
 
 class TestsPage(QWidget):

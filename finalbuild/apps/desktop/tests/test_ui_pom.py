@@ -2029,3 +2029,56 @@ def test_window_closes_promptly_during_blocked_session_request(window_factory, m
         while window._workers and time.monotonic() < deadline:
             qapp.processEvents()
             time.sleep(.005)
+
+
+def test_analog_widgets_fit_inside_cards_in_short_live_data_window(window_factory, qapp):
+    window = window_factory()
+    window.resize(1100, 650)
+    window.nav.setCurrentRow(4)
+    qapp.processEvents()
+    live = window.pages[4]
+    for card in live.signals.cards:
+        card.mode.setCurrentIndex(card.mode.findData('analog'))
+    qapp.processEvents()
+    for card in live.signals.cards:
+        assert card.height() >= 360
+        assert card.gauge.height() >= 160
+        assert card.gauge.geometry().bottom() < card.contentsRect().bottom()
+        assert card.mode.height() >= 34
+    assert live.signals.height() >= sum(live.signals.cards[i].height() for i in (0, 2))
+    assert live.signals.cards[0].gauge.scale() == (0, 8000)
+
+
+def test_border_drag_grows_and_shrinks_card_and_restores_without_controls(window_factory, qapp):
+    from PySide6.QtCore import QPointF, QEvent
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QApplication, QSlider
+    from apps.desktop.demo_ui import SignalGrid
+    window = window_factory()
+    window.nav.setCurrentRow(4)
+    qapp.processEvents()
+    grid = window.pages[4].signals
+    card = grid.cards[0]
+    def drag(dx, dy):
+        local = QPointF(card.width()-2, card.height()-2)
+        position = QPointF(card.mapToGlobal(local.toPoint()))
+        QApplication.sendEvent(card, QMouseEvent(QEvent.MouseButtonPress, local, position, Qt.LeftButton, Qt.LeftButton, Qt.NoModifier))
+        QApplication.sendEvent(card, QMouseEvent(QEvent.MouseMove, local+QPointF(dx,dy), position+QPointF(dx,dy), Qt.NoButton, Qt.LeftButton, Qt.NoModifier))
+        QApplication.sendEvent(card, QMouseEvent(QEvent.MouseButtonRelease, local+QPointF(dx,dy), position+QPointF(dx,dy), Qt.LeftButton, Qt.NoButton, Qt.NoModifier))
+        qapp.processEvents()
+    before = card.size()
+    drag(80, 100)
+    assert card.width() == before.width()+80
+    assert card.height() == before.height()+100
+    drag(-30, -40)
+    assert card.width() == before.width()+50
+    assert card.height() == before.height()+60
+    assert not grid.findChildren(QSlider)
+    assert not card.findChildren(QPushButton)
+    saved = window.settings_store.value('live_edge_size_0')
+    restored = SignalGrid(window.settings_store, prefix='live')
+    assert [restored.cards[0].width(),restored.cards[0].height()] == saved
+    restored.deleteLater()
+    drag(-5000,-5000)
+    assert card.height() >= card.minimumSizeHint().height()
+    assert card.width() >= 280

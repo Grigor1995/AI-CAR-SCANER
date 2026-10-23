@@ -1,5 +1,18 @@
 # Release notes
 
+## Unreleased — Readable analog widgets with border resizing
+
+- Prevent telemetry cards from shrinking below the height needed for their
+  selectors and complete analog dial. Live Data scrolls at the page level.
+- Resize each Home/Live Data telemetry card by dragging its right edge, bottom
+  edge or bottom-right corner. Save the resulting size per widget without any
+  resize buttons, slider controls or extra wrapper panels.
+- Keep gauges readable when shrinking and show the correct default RPM scale
+  even before samples arrive. Hide empty statistics and the redundant aggregate
+  plot to prioritize the per-channel widgets.
+- Validated with local geometry, mouse-drag, persistence and Desktop regressions;
+  CI/CD is skipped.
+
 ## Unreleased — Incoming mobile changes reviewed and integrated
 
 - Preserve the incoming shared-catalog, navigation and backend Live Data changes.

@@ -15,9 +15,10 @@ from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QGroupBox, QProgressBar, QListWidget, QListWidgetItem, QPlainTextEdit,
-    QLineEdit, QFileDialog, QComboBox,
+    QLineEdit, QFileDialog, QComboBox, QLayout,
 )
 
+from .edge_resize import EdgeResizablePanel
 from .channel_labels import CHANNEL_LABELS
 from .models import Session, Vehicle, user_report_data
 from .vehicle_artwork import load_backend_portrait
@@ -111,8 +112,8 @@ class AnalogGauge(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        size = min(self.width() - 48, self.height() - 34)
-        center = QPointF(self.width() / 2, self.height() / 2 + 5)
+        size = min(self.width() - 72, self.height() - 52)
+        center = QPointF(self.width() / 2, self.height() / 2)
         radius = max(10, size / 2)
         rect = QRectF(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
         p.setPen(QPen(QColor("#294563"), 9))
@@ -136,17 +137,23 @@ class AnalogGauge(QWidget):
         p.drawEllipse(center, 5, 5)
 
 
-class SignalCard(Panel):
+class SignalCard(EdgeResizablePanel):
     def __init__(self, name, color):
         super().__init__(name)
+        self.body = QVBoxLayout(self)
+        self.body.setSpacing(12)
+        self.body.setContentsMargins(18, 22, 18, 16)
+        self.default_unit = {"RPM": "rpm", "Coolant temperature": "C", "MAP pressure": "kPa", "O2 sensor": "V"}.get(name, "")
         self.value = label("—", "signalValue")
         self.body.addWidget(self.value)
         self.mode = QComboBox()
         self.mode.setAccessibleName("Widget display")
+        self.mode.setMinimumHeight(34)
         self.mode.addItem("Analog gauge", "analog")
         self.mode.addItem("Line chart", "chart")
         self.body.addWidget(self.mode)
         self.gauge = AnalogGauge(color)
+        self.gauge.unit = self.default_unit
         self.body.addWidget(self.gauge)
         self.trace = Trace(color)
         self.body.addWidget(self.trace)
@@ -157,10 +164,11 @@ class SignalCard(Panel):
         analog = self.mode.currentData() == "analog"
         self.gauge.setVisible(analog)
         self.trace.setVisible(not analog)
+        self.ensure_readable_size()
 
     def set_samples(self, rows):
         values = [float(row["numeric_value"]) for row in rows if row.get("numeric_value") is not None]
-        unit = rows[-1].get("unit", "") if rows else ""
+        unit = (rows[-1].get("unit") or "") if rows else self.default_unit
         self.value.setText(f"{values[-1]:g} {unit}" if values else "—")
         self.gauge.value = values[-1] if values else None
         self.gauge.unit = unit
@@ -177,6 +185,7 @@ class SignalGrid(QWidget):
         self.groups = {}
         self.grid = QGridLayout(self)
         self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setSizeConstraint(QLayout.SetMinimumSize)
         self.cards, self.selectors = [], []
         self.add_button = action("+ Add widget", self.add_widget)
         for name in ["RPM", "Coolant temperature", "MAP pressure", "O2 sensor"]:
@@ -189,11 +198,16 @@ class SignalGrid(QWidget):
         card = SignalCard(name, ["#19B9FF", "#FF5D79", "#B67CFF", "#21D6A0"][index % 4])
         selector = QComboBox()
         selector.setAccessibleName("Telemetry channel")
+        selector.setMinimumHeight(34)
         card.body.insertWidget(0, selector)
         if self.settings:
             mode = self.settings.value(f"{self.prefix}_mode_{index}", "analog")
             card.mode.setCurrentIndex(max(0, card.mode.findData(mode)))
             card.mode.currentIndexChanged.connect(lambda _value, c=card, i=index: self.settings.setValue(f"{self.prefix}_mode_{i}", c.mode.currentData()))
+        card.ensure_readable_size()
+        if self.settings:
+            card.restore_size(self.settings.value(f"{self.prefix}_edge_size_{index}"))
+            card.size_saved.connect(lambda size, i=index: self.settings.setValue(f"{self.prefix}_edge_size_{i}", size))
         selector.currentIndexChanged.connect(self._update_cards)
         self.cards.append(card)
         self.selectors.append(selector)

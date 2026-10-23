@@ -405,7 +405,7 @@ class DTCPage(QWidget):
         layout.addWidget(label("Reported codes are evidence, not a confirmed component failure.", "muted", True))
         self.list = QListWidget()
         layout.addWidget(self.list)
-        layout.addWidget(action("Add symptoms / DTC  →", lambda: app.nav.setCurrentRow(3), True))
+        layout.addWidget(action("Add symptoms / DTC  →", lambda: app.nav.setCurrentRow(11), True))
 
     def refresh(self):
         self.list.clear()

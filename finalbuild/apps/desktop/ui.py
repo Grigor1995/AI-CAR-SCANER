@@ -656,13 +656,25 @@ class VehiclesPage(QWidget):
         load_backend_portrait(self.model_artwork, self.app.api.base_url, v.make, v.model, v.chassis, 340, 175)
         self.details.setPlainText(f"Make: {v.make}\nModel: {v.model}\nChassis: {v.chassis or '—'}\nYear: {v.year or '—'}\nEngine: {v.engine or '—'}\nFuel: {', '.join(v.fuel) or '—'}\nECU: {v.ecu or '—'}")
 
+class SymptomsPage(QWidget):
+    """Symptom/evidence entry is separate from diagnostic results."""
+    def __init__(self, app: "MainWindow") -> None:
+        super().__init__()
+        self.app = app
+        lay = QVBoxLayout(self)
+        title = QLabel("Symptoms")
+        title.setObjectName("title")
+        lay.addWidget(title)
+        form=QGridLayout(); self.symptom=QPlainTextEdit(); self.symptom.setPlaceholderText("Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal."); self.symptom.setFixedHeight(120)
+        self.dtc=QLineEdit(); self.dtc.setPlaceholderText("P0302"); submit=QPushButton("Add evidence + Analyze"); submit.clicked.connect(app.analyze_input)
+        form.addWidget(QLabel("Symptoms / observations"),0,0); form.addWidget(self.symptom,1,0,1,2); form.addWidget(QLabel("DTC"),2,0); form.addWidget(self.dtc,2,1); form.addWidget(submit,3,0,1,2); lay.addLayout(form)
+        lay.addStretch()
+
+
 class DiagnosticPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); head=QHBoxLayout(); self.lbl=QLabel("No active session"); self.lbl.setObjectName("muted"); head.addWidget(self.lbl); head.addStretch(); new=QPushButton("New session"); new.clicked.connect(app.new_session); head.addWidget(new); lay.addLayout(head)
-        form=QGridLayout(); self.symptom=QPlainTextEdit(); self.symptom.setPlaceholderText("Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal."); self.symptom.setFixedHeight(120)
-        self.dtc=QLineEdit(); self.dtc.setPlaceholderText("P0302"); submit=QPushButton("Add evidence + Analyze"); submit.clicked.connect(app.analyze_input)
-        form.addWidget(QLabel("Symptoms / observations"),0,0); form.addWidget(self.symptom,1,0,1,2); form.addWidget(QLabel("DTC"),2,0); form.addWidget(self.dtc,2,1); form.addWidget(submit,3,0,1,2); lay.addLayout(form)
         out=QTabWidget(); self.summary=QPlainTextEdit(); self.summary.setReadOnly(True); out.addTab(self.summary,"Analysis"); self.evidence=QPlainTextEdit(); self.evidence.setReadOnly(True); self.hypotheses=QPlainTextEdit(); self.hypotheses.setReadOnly(True); self.questions=QPlainTextEdit(); self.questions.setReadOnly(True); out.addTab(self.evidence,"Evidence"); out.addTab(self.hypotheses,"Hypotheses"); out.addTab(self.questions,"Missing info"); lay.addWidget(out)
     def refresh(self):
         if not self.app.session: self.lbl.setText("No active session"); return
@@ -1220,12 +1232,12 @@ class MainWindow(QMainWindow):
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
-        for title, target in [("⚙  Diagnostics",3),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
+        for title, target in [("⚙  Diagnostics",3),("✎  Symptoms",11),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
             button=QPushButton(title); button.setObjectName("topNav"); button.clicked.connect(lambda _=False, index=target:self.nav.setCurrentRow(index)); header_buttons.addWidget(button)
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⚙  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
         self.nav=nav
         for text,_cls in entries: nav.addItem(text)
         root.addWidget(nav)
@@ -1522,7 +1534,7 @@ class MainWindow(QMainWindow):
         self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(3); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
     def analyze_input(self):
         if not self.session: self.new_session(); return
-        text=self.pages[3].symptom.toPlainText().strip(); dtc=self.pages[3].dtc.text().strip()
+        text=self.pages[11].symptom.toPlainText().strip(); dtc=self.pages[11].dtc.text().strip()
         if not text and not dtc: self.show_error("Enter a symptom, observation or DTC."); return
         def work():
             if text: self.api.ingest_evidence(self.session.session_id,text)

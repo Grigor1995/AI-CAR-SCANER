@@ -76,13 +76,13 @@ class DiagnosticPO:
         self.page = window.pages[3]
 
     def enter_symptom(self, text):
-        self.page.symptom.setPlainText(text)
+        self.window.pages[11].symptom.setPlainText(text)
 
     def enter_dtc(self, code):
-        self.page.dtc.setText(code)
+        self.window.pages[11].dtc.setText(code)
 
     def submit(self):
-        for button in self.page.findChildren(QPushButton):
+        for button in self.window.pages[11].findChildren(QPushButton):
             if button.text() in ("Add evidence + Analyze", "Ավելացնել տվյալներ և վերլուծել"):
                 button.click()
                 return
@@ -304,13 +304,25 @@ def window_factory(monkeypatch, qapp, fake_api, vehicle):
 def test_main_window_builds_reference_navigation_pages(window_factory):
     window = window_factory()
     assert window.windowTitle() == "AI Auto Diagnostic Workstation"
-    assert window.nav.count() == 11
-    assert len(window.pages) == 11
+    assert window.nav.count() == 12
+    assert len(window.pages) == 12
     assert window.stack.count() == 1
     assert window.nav.currentRow() == 0
     assert [window.nav.item(i).text().split()[-1] for i in range(window.nav.count())] == [
-        "Dashboard", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
+        "Dashboard", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI", "Symptoms"
     ]
+
+
+def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
+    from PySide6.QtWidgets import QPlainTextEdit
+    window = window_factory()
+    symptoms, diagnostic = window.pages[11], window.pages[3]
+    symptoms.symptom.setPlainText("Engine shakes at idle")
+    window.nav.setCurrentRow(3)
+    assert not diagnostic.isAncestorOf(symptoms.symptom)
+    assert all(editor.isReadOnly() for editor in diagnostic.findChildren(QPlainTextEdit))
+    window.nav.setCurrentRow(11)
+    assert symptoms.symptom.toPlainText() == "Engine shakes at idle"
 
 
 def test_navigation_selects_pages_and_live_data_request_is_guarded(window_factory, fake_api):
@@ -1050,7 +1062,7 @@ def test_session_created_resets_analysis_state_and_opens_diagnostic_page(window_
 def test_analyze_input_supports_dtc_only_and_decision_callback(window_factory, monkeypatch, fake_api):
     window = window_factory()
     window.session = Session("s-dtc", "READY", window.active_vehicle)
-    window.pages[3].dtc.setText("P0302")
+    window.pages[11].dtc.setText("P0302")
     jobs = []
     monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
     fake_api.analyze.return_value = {"session_id": "s-dtc", "state": "ANALYZED"}

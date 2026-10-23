@@ -293,3 +293,6 @@ MESSAGES["ru"]["USB serial port"] = "Последовательный порт U
 
 MESSAGES['hy'].update({'Analog gauge': 'Անալոգային ցուցիչ', 'Line chart': 'Գծային գրաֆիկ', 'Widget display': 'Վիջեթի տեսք'})
 MESSAGES['ru'].update({'Analog gauge': 'Аналоговый индикатор', 'Line chart': 'Линейный график', 'Widget display': 'Вид виджета'})
+
+MESSAGES["hy"]["Symptoms"] = "Ախտանշաններ"
+MESSAGES["ru"]["Symptoms"] = "Симптомы"

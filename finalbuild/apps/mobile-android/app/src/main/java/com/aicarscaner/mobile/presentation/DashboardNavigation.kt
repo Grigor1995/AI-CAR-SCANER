@@ -61,7 +61,7 @@ internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
 internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
     val sections=listOf(
         6 to "Dashboard", 1 to "Vehicles", 2 to "VCI / Devices",
-        0 to "Diagnostic", 3 to "Live Data", 8 to "Tests",
+        14 to "Diagnostic", 0 to "Symptoms", 3 to "Live Data", 8 to "Tests",
         7 to "DTC", 4 to "AI Analysis", 9 to "Reports", 10 to "Teach AI",
         13 to "Testing progress", 12 to "Custom dashboard", 5 to "Activity"
     )

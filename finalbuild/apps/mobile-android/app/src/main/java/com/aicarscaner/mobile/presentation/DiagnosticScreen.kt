@@ -1866,6 +1866,15 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
             contentDescription = "$make $model $chassis",
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxWidth().height(height)
+                .padding(5.dp)
+                .background(
+                    Brush.horizontalGradient(listOf(Color(0xFF030304), Color(0xFF0A1622), Color(0xFF030304))),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(
+                    BorderStroke(1.dp, Color(0xFF00AEEF).copy(alpha=0.58f)),
+                    RoundedCornerShape(16.dp)
+                )
         )
         photoCredit?.takeIf { it.first.isNotBlank() }?.let { credit ->
             TextButton(onClick = {

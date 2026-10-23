@@ -31,6 +31,7 @@ class NeonShell(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("desktopShell")
+        self.dark_theme = True
         self._image = QPixmap(str(_asset_root() / "assets" / "launcher" / "background.png"))
         self._cached_size = QSize()
         self._scaled = QPixmap()
@@ -39,6 +40,10 @@ class NeonShell(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         rect = self.rect()
+        if not self.dark_theme:
+            painter.fillRect(rect, QColor("#F0F6FC"))
+            painter.end()
+            return
         painter.fillRect(rect, NEON_NAVY)
         if not self._image.isNull():
             if rect.size() != self._cached_size:
@@ -46,7 +51,7 @@ class NeonShell(QWidget):
                 self._scaled = self._image.scaled(
                     rect.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
                 )
-            painter.setOpacity(0.24)
+            painter.setOpacity(0.38)
             painter.drawPixmap(
                 (rect.width() - self._scaled.width()) // 2,
                 (rect.height() - self._scaled.height()) // 2,
@@ -54,9 +59,9 @@ class NeonShell(QWidget):
             )
             painter.setOpacity(1.0)
         overlay = QLinearGradient(0, 0, rect.width(), rect.height())
-        overlay.setColorAt(0, QColor(3, 3, 4, 242))
-        overlay.setColorAt(0.52, QColor(5, 15, 27, 218))
-        overlay.setColorAt(1, QColor(0, 18, 32, 232))
+        overlay.setColorAt(0, QColor(3, 3, 4, 182))
+        overlay.setColorAt(0.52, QColor(5, 15, 27, 147))
+        overlay.setColorAt(1, QColor(0, 18, 32, 181))
         painter.fillRect(rect, overlay)
         painter.setPen(QPen(QColor(0, 174, 239, 28), 1))
         for x in range(0, rect.width(), 92):

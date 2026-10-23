@@ -751,7 +751,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             modifier = Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     colors = if (appSettings.darkTheme) listOf(
-                        Color(0xFF051329), Color(0xFF061121), Color(0xFF07172D)
+                        Color(0xFF030304), Color(0xFF07111A), Color(0xFF0A1622)
                     ) else listOf(Color(0xFFF0F6FC), Color(0xFFEAF4FF))
                 )
             ),

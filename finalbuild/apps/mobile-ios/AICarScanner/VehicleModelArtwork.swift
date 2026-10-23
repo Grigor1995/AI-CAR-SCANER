@@ -44,6 +44,7 @@ struct VehicleModelArtwork: View {
                 }
                 else { bundledArtwork }
             }.id(remoteURL)
+                .modifier(NeonVehicleFrame())
         } else { bundledArtwork }
     }
 
@@ -63,6 +64,26 @@ struct VehicleModelArtwork: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 165)
+        .modifier(NeonVehicleFrame())
         .accessibilityLabel("\(make) \(model) \(chassis) illustration")
+    }
+}
+
+private struct NeonVehicleFrame: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(LinearGradient(
+                        colors: [AutomotivePalette.navy, AutomotivePalette.panel, AutomotivePalette.navy],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(AutomotivePalette.electricBlue.opacity(0.65), lineWidth: 1)
+            )
+            .shadow(color: AutomotivePalette.cyan.opacity(0.28), radius: 14, y: 5)
     }
 }

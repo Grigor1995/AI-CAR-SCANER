@@ -102,7 +102,8 @@ data class HypothesisDto(
     val statement: String,
     val supporting_evidence_ids: List<String> = emptyList(),
     val contradicting_evidence_ids: List<String> = emptyList(),
-    val status: String
+    val status: String,
+    val confidence_score: Double? = null
 )
 
 data class RecommendationDto(

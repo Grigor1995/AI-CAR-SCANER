@@ -144,6 +144,8 @@ def test_analysis_compat_path_merges_rule_tests_and_enriches_missing_fields(monk
             return current
 
     class FakeIntelligence:
+        def _apply_test_history(self, current):
+            pass
         def _annotate_scores(self, current):
             current.audit_log.append({"event": "SCORES_ANNOTATED"})
         def _add_missing_questions(self, current):
@@ -225,6 +227,8 @@ def test_analysis_enrichment_covers_unmatched_targets_and_default_risk_cost(monk
             return current
 
     class FakeIntelligence:
+        def _apply_test_history(self, current):
+            pass
         def _annotate_scores(self, _current):
             pass
         def _add_missing_questions(self, _current):

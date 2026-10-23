@@ -368,7 +368,7 @@ internal fun DemoHypotheses(session:DiagnosticSessionDto) {
                     Text(if(expanded) "⌄" else "›",color=color)
                 }
                 Text(hypothesis.statement,style=MaterialTheme.typography.bodySmall,maxLines=if(expanded) Int.MAX_VALUE else 2,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                val score=hypothesis.status.substringAfterLast(":", "").toDoubleOrNull()?.takeIf {it in 0.0..1.0}
+                val score=hypothesis.confidence_score ?: hypothesis.status.substringAfterLast(":", "").toDoubleOrNull()?.takeIf {it in 0.0..1.0}
                 if(score!=null){
                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(dashboardLabel("Evidence score"),style=MaterialTheme.typography.labelSmall);Text("${(score*100).roundToInt()}%",color=color,style=MaterialTheme.typography.labelSmall)}
                     LinearProgressIndicator(progress={score.toFloat()},color=color,modifier=Modifier.fillMaxWidth())

@@ -56,7 +56,7 @@ internal fun AnalysisDiagram(session: DiagnosticSessionDto) {
             }
         } else {
             val scores = session.hypotheses.mapNotNull { hypothesis ->
-                diagramEvidenceScore(hypothesis.status)?.let { hypothesis to it }
+                (hypothesis.confidence_score ?: diagramEvidenceScore(hypothesis.status))?.let { hypothesis to it }
             }
             if (scores.isEmpty()) {
                 Text(dashboardLabel("Analyze the session to get scored hypotheses."), color = MaterialTheme.colorScheme.onSurfaceVariant)

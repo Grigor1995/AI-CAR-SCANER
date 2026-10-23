@@ -1351,7 +1351,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 session.hypotheses.forEachIndexed { index, hypothesis ->
                                     val supporting = hypothesis.supporting_evidence_ids.mapNotNull { evidenceById[it] }
                                     val contradicting = hypothesis.contradicting_evidence_ids.mapNotNull { evidenceById[it] }
-                                    val confidence = hypothesis.status.substringAfter(":", "").toDoubleOrNull()
+                                    val confidence = hypothesis.confidence_score ?: hypothesis.status.substringAfter(":", "").toDoubleOrNull()
 
                                     Card(
                                         Modifier.fillMaxWidth(),

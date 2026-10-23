@@ -448,7 +448,7 @@ struct DiagnosticScreen: View {
                 StatusCard(title:t.state,value:t.protocolLabel(s.state))
                 AnalysisDiagram(session: s, language: viewModel.settings.language)
                 SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(t.protocolLabel(x.status)) • \(t.protocolLabel(x.source))").font(.subheadline)}}
-                SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary)}}}
+                SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary);if let score=x.evidenceScore {Text("\(Int((score*100).rounded()))%").font(.caption.bold())}}}}
                 SectionCard("\(t.nextTests) (\(s.recommendations.count))"){ForEach(s.recommendations){x in
                     VStack(alignment:.leading,spacing:5){Text(x.name).bold();Text(x.purpose);Text("\(t.tr("Information gain", "Информационная ценность", "Տեղեկատվական արժեք")): \(x.expected_information_gain,specifier:"%.2f") • \(t.tr("Cost", "Стоимость", "Արժեք")): \(x.estimated_cost,specifier:"%.2f")").font(.caption).foregroundStyle(.secondary)
                     Button(t.record){testResult="INCOMPLETE";testNotes="";test=x}.buttonStyle(.bordered)}

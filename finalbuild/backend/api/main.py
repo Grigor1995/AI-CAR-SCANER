@@ -210,6 +210,7 @@ def _analyze_session(session_id: str, language: str = 'en') -> DiagnosticSession
     # Add evidence-linked confidence and missing-question context used by the
     # detailed mobile Analysis screen without changing the deterministic rules.
     intelligence_engine._annotate_scores(s)
+    intelligence_engine._apply_test_history(s)
     intelligence_engine._add_missing_questions(s)
     rule_recommendations = list(s.recommendations)
     decision_engine.refresh_recommendations(s)

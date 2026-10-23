@@ -34,6 +34,7 @@ class DTC(BaseModel):
 class Evidence(BaseModel):
     id: UUID=Field(default_factory=uuid4); fact: str; source: EvidenceSource; status: EvidenceStatus; confidence: float | None=Field(default=None, ge=0, le=1); source_ref: str | None=None; metadata: dict=Field(default_factory=dict); created_at: datetime=Field(default_factory=lambda: datetime.now(timezone.utc))
 class Hypothesis(BaseModel):
+    confidence_score: float | None = Field(default=None, ge=0, le=1)
     id: UUID=Field(default_factory=uuid4); category: str; statement: str; supporting_evidence_ids: list[UUID]=Field(default_factory=list); contradicting_evidence_ids: list[UUID]=Field(default_factory=list); status: str="possible"
 class DiagnosticTest(BaseModel):
     id: UUID=Field(default_factory=uuid4)
@@ -48,6 +49,7 @@ class DiagnosticTest(BaseModel):
     prerequisites: list[str]=Field(default_factory=list)
     target_hypotheses: list[str]=Field(default_factory=list)
 class TestResult(BaseModel):
+    target_hypotheses: list[str] = Field(default_factory=list)
     result_label: str | None = None
     __test__ = False
     test_id: UUID; result: str; measurements: dict=Field(default_factory=dict); notes: str | None=None; test_name: str | None=None

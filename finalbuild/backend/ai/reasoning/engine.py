@@ -36,6 +36,7 @@ class DiagnosticIntelligenceEngine:
         self.normalize_existing(session)
         self.rules.analyze(session)
         self._annotate_scores(session)
+        self._apply_test_history(session)
         self._add_missing_questions(session)
         session.state = SessionState.QUESTIONS_PENDING if session.audit_log and session.audit_log[-1].get("event") == "QUESTIONS_IDENTIFIED" else SessionState.INITIAL_ANALYSIS
         rule_recommendations = list(session.recommendations)
@@ -61,8 +62,13 @@ class DiagnosticIntelligenceEngine:
             (x for x in session.recommendations if str(x.id) == str(test_id)),
             None,
         )
+        if selected_test is None:
+            previous = next((x for x in reversed(session.test_results) if str(x.test_id) == str(test_id)), None)
+            if previous is not None:
+                selected_test = DiagnosticTest(id=test_id, name=previous.test_name or str(test_id), purpose="", target_hypotheses=previous.target_hypotheses)
         session.test_results.append(TestResult(
             test_id=test_id,
+            target_hypotheses=list(selected_test.target_hypotheses) if selected_test else [],
             result=normalized_result,
             measurements=measurements,
             notes=notes,
@@ -83,22 +89,10 @@ class DiagnosticIntelligenceEngine:
             source=EvidenceSource.TECHNICIAN_OBSERVED,
             status=EvidenceStatus.MEASURED,
             confidence=0.95,
-            metadata={"test_id": str(test_id), "test_name": selected_test.name if selected_test else None, "result": normalized_result, "measurements": measurements, "notes": notes},
+            metadata={"test_id": str(test_id), "target_hypotheses": list(selected_test.target_hypotheses) if selected_test else [], "test_name": selected_test.name if selected_test else None, "result": normalized_result, "measurements": measurements, "notes": notes},
         ))
-        # Free-form technician notes are part of the result evidence. This lets
-        # entries such as "pressure drops" or "no leak, stable" affect the
-        # targeted hypotheses even when the UI outcome is left inconclusive.
-        interpretation_text = " ".join(x for x in (normalized_result, notes or "") if x)
-        self.decision.update_hypotheses_from_result(session, selected_test, interpretation_text)
         analyzed = self.analyze(session)
-        # Re-apply the test interpretation after rules regenerate the hypothesis
-        # objects, then rebuild the plan once more so remaining-test priorities
-        # reflect the latest PASS/FAIL evidence instead of stale pre-result scores.
-        supported = self.decision.update_hypotheses_from_result(analyzed, selected_test, interpretation_text)
-        previous_remaining = list(analyzed.recommendations)
-        self.decision.refresh_recommendations(analyzed)
-        if not analyzed.recommendations and previous_remaining:
-            analyzed.recommendations = self._fallback_recommendations(analyzed, previous_remaining)
+        supported = [h.category for h in analyzed.hypotheses if h.status == "supported_by_test"]
         analyzed.audit_log.append({"event": "TEST_RESULT_INTERPRETED", "test_id": str(test_id), "supported_hypotheses": supported})
         analyzed.state = SessionState.HYPOTHESIS_VALIDATION
         return analyzed
@@ -136,7 +130,7 @@ class DiagnosticIntelligenceEngine:
         return session.recommendations[0] if session.recommendations else None
 
     def _annotate_scores(self, session: DiagnosticSession) -> None:
-        text = " ".join(e.fact.lower() for e in session.evidence)
+        text = " ".join(e.fact.lower() for e in session.evidence if not e.metadata.get("test_id"))
         for h in session.hypotheses:
             score = 0.25
             category = h.category.lower()
@@ -160,7 +154,66 @@ class DiagnosticIntelligenceEngine:
                 score += 0.25
             if category == "vehicle network communication" and any(x in text for x in ("u0100", "u0121", "can", "communication")):
                 score += 0.25
-            h.status = f"possible:{min(score, 0.95):.2f}"
+            h.confidence_score = round(min(score, 0.95), 4)
+            h.status = f"possible:{h.confidence_score:.2f}"
+
+    def _apply_test_history(self, session: DiagnosticSession) -> None:
+        """Replay latest outcomes from baseline; refreshes never compound scores.
+
+        These bounded evidence scores are heuristic rankings, not calibrated
+        failure probabilities. PASS weakens a targeted fault; FAIL supports it;
+        INCOMPLETE withdraws a previous conclusion for the same test.
+        """
+        from diagnostic.decision import CATALOG
+        aliases = {
+            "LPG injection": "LPG fuel delivery / mixture",
+            "LPG fuel delivery": "LPG fuel delivery / mixture",
+            "LPG calibration": "LPG fuel delivery / mixture",
+            "ignition": "ignition / combustion",
+            "ignition under LPG load": "ignition / combustion",
+            "intake": "air-fuel / intake",
+        }
+        latest = {}
+        for result in session.test_results:
+            key = self.decision._recommendation_key(result.test_name) if result.test_name else str(result.test_id)
+            latest[key] = result
+        for result in latest.values():
+            targets = list(result.target_hypotheses)
+            if not targets:
+                # Older persisted sessions may carry the targets in evidence or
+                # still have the test in the canonical catalog/recommendations.
+                for evidence in reversed(session.evidence):
+                    if evidence.metadata.get("test_id") == str(result.test_id):
+                        targets = evidence.metadata.get("target_hypotheses", [])
+                        if targets:
+                            break
+                if not targets:
+                    candidates = list(CATALOG) + list(session.recommendations)
+                    match = next((x for x in candidates if result.test_name and self.decision._recommendation_key(x.name) == self.decision._recommendation_key(result.test_name)), None)
+                    targets = list(match.target_hypotheses) if match else []
+            target_groups = {aliases.get(x, x) for x in targets}
+            for h in session.hypotheses:
+                if aliases.get(h.category, h.category) not in target_groups:
+                    continue
+                probe = h.model_copy(deep=True)
+                probe.status = "possible"
+                probe_session = DiagnosticSession(hypotheses=[probe])
+                self.decision.update_hypotheses_from_result(
+                    probe_session, DiagnosticTest(name="result", purpose="", target_hypotheses=[h.category]),
+                    " ".join(x for x in (result.result, result.notes or "") if x),
+                )
+                multiplier = {"supported_by_test": 2.0, "disfavored_by_test": 0.4}.get(probe.status)
+                if multiplier is None:
+                    continue
+                score = h.confidence_score if h.confidence_score is not None else 0.25
+                odds = score / max(1.0 - score, 0.0001) * multiplier
+                h.confidence_score = round(min(max(odds / (1.0 + odds), 0.01), 0.95), 4)
+                h.status = probe.status
+                evidence_ids = [e.id for e in session.evidence if e.metadata.get("test_id") == str(result.test_id) and e.metadata.get("result") == result.result]
+                links = h.supporting_evidence_ids if multiplier > 1 else h.contradicting_evidence_ids
+                if evidence_ids and evidence_ids[-1] not in links:
+                    links.append(evidence_ids[-1])
+        session.hypotheses.sort(key=lambda h: -(h.confidence_score or 0))
 
     def _add_missing_questions(self, session: DiagnosticSession) -> None:
         text = " ".join(e.fact.lower() for e in session.evidence)

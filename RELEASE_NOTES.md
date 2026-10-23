@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Recalculate hypotheses after every test
+
+- Rebuild evidence scores and hypothesis ranking from the latest outcome of each test on every analysis. PASS weakens targeted fault hypotheses, FAIL supports them, and INCOMPLETE withdraws the previous result for that test without inventing evidence.
+- Persist test targets, replay earlier results after reopening a session, and replace corrected outcomes without double-counting repeated submissions or refreshes. Refresh remaining-test priorities from the resulting hypothesis statuses.
+- Expose a numeric confidence_score independently of translated status labels; Desktop, Android and iOS use it for scores and diagrams. Scores remain heuristic evidence rankings, not calibrated failure probabilities.
+
 ## Unreleased — Mobile icon and consistent neon portraits
 
 - Replace Android density/adaptive launcher icons and the iOS app icon with generated neon-blue abstract vehicle artwork. Android themed icons use a separate monochrome silhouette.

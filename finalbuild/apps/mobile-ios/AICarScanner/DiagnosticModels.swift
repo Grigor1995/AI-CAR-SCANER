@@ -79,6 +79,7 @@ struct Evidence: Codable, Identifiable {
     let confidence: Double?
 }
 struct Hypothesis: Codable, Identifiable {
+    var confidence_score: Double? = nil
     let id: String
     let category: String
     let statement: String
@@ -88,6 +89,7 @@ struct Hypothesis: Codable, Identifiable {
 }
 extension Hypothesis {
     var evidenceScore: Double? {
+        if let score=confidence_score, score.isFinite, (0...1).contains(score) { return score }
         let parts = status.split(separator: ":", omittingEmptySubsequences: false)
         guard parts.count == 2, let score = Double(parts[1]), score.isFinite,
               (0...1).contains(score) else { return nil }

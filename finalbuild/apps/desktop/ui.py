@@ -681,7 +681,7 @@ class SymptomsPage(QWidget):
         ev=data.get("evidence",[]); hp=data.get("hypotheses",[])
         self.summary.setPlainText(self._summary_text(data, hp))
         self.evidence.setPlainText("\n".join(f"[{x.get('status','')}] {x.get('fact','')} — {x.get('source','')}" for x in ev) or "No evidence yet.")
-        self.hypotheses.setPlainText("\n".join(f"• {x.get('category','Unknown')}: {x.get('statement','')} [{x.get('status','possible')}]" for x in hp) or "No hypotheses yet.")
+        self.hypotheses.setPlainText("\n".join(f"• {x.get('category','Unknown')}: {x.get('statement','')} [{x.get('status','possible')}]{(' • ' + format(x['confidence_score'], '.0%')) if isinstance(x.get('confidence_score'), (int, float)) else ''}" for x in hp) or "No hypotheses yet.")
         missing=self.app.decision.get("missing_questions",[])+self.app.decision.get("questions",[]); self.questions.setPlainText("\n".join(f"• {x if isinstance(x,str) else x.get('question',x)}" for x in missing) or "No high-value missing information identified.")
 
     @staticmethod

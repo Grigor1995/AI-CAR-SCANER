@@ -79,7 +79,9 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             pair.forEach { (id,title) ->
                 Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=112.dp),shape=RoundedCornerShape(18.dp),
-                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=MaterialTheme.colorScheme.surface)) {
+                    elevation=CardDefaults.cardElevation(defaultElevation=7.dp, pressedElevation=3.dp),
+                    border=androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00AEEF).copy(alpha=.55f)),
+                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color(0xFF0A1622))) {
                     Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
                         DashboardIcon(id,Modifier.size(28.dp))
                         Text(dashboardLabel(title),fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
@@ -89,7 +91,15 @@ internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
             if(pair.size==1) Spacer(Modifier.weight(1f))
         }
     }
-    OutlinedButton(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
+    Card(onClick=settings, modifier=Modifier.fillMaxWidth(), shape=RoundedCornerShape(14.dp),
+        border=androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00AEEF).copy(alpha=.45f)),
+        colors=CardDefaults.cardColors(containerColor=Color(0xFF0A1622))) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment=Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+            DashboardIcon(11, Modifier.size(20.dp), Color(0xFF00AEEF))
+            Text(dashboardLabel("Settings"), color=MaterialTheme.colorScheme.onSurface)
+        }
+    }
 }
 
 /** Persistent actions stay reachable when the page below scrolls. */

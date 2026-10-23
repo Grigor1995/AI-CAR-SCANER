@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QRectF, QSize
 from PySide6.QtGui import (
-    QColor, QPainter, QPen, QLinearGradient, QRadialGradient,
+    QColor, QPainter, QPen, QBrush, QLinearGradient, QRadialGradient,
     QPainterPath, QPixmap,
 )
 from PySide6.QtWidgets import QWidget, QLabel
@@ -62,7 +62,7 @@ class NeonShell(QWidget):
         overlay.setColorAt(0, QColor(3, 3, 4, 182))
         overlay.setColorAt(0.52, QColor(5, 15, 27, 147))
         overlay.setColorAt(1, QColor(0, 18, 32, 181))
-        painter.fillRect(rect, overlay)
+        painter.fillRect(rect, QBrush(overlay))
         painter.setPen(QPen(QColor(0, 174, 239, 28), 1))
         for x in range(0, rect.width(), 92):
             painter.drawLine(x, 0, x, rect.height())
@@ -94,11 +94,11 @@ class NeonVehiclePreview(QLabel):
         background.setColorAt(0, QColor("#030304"))
         background.setColorAt(0.5, QColor("#0B2A43"))
         background.setColorAt(1, QColor("#04101B"))
-        painter.fillPath(path, background)
+        painter.fillPath(path, QBrush(background))
         highlight = QRadialGradient(outer.center().x(), outer.bottom() + 40, max(90.0, outer.width() * 0.7))
         highlight.setColorAt(0, QColor(0, 174, 239, 85))
         highlight.setColorAt(1, QColor(0, 174, 239, 0))
-        painter.fillRect(outer, highlight)
+        painter.fillRect(outer, QBrush(highlight))
         painter.setPen(QPen(QColor(25, 147, 200, 24), 1))
         for index in range(1, 7):
             y = outer.top() + index * outer.height() / 7

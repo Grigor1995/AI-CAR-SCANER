@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="54%" r="70%"><stop stop-color="#0b2742"/><stop offset=".56" stop-color="#061421"/><stop offset="1" stop-color="#030304"/></radialGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#71edff"/><stop offset=".34" stop-color="#00aeef"/><stop offset="1" stop-color="#0053a3"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#12385b"/><stop offset="1" stop-color="#030c18"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="17"/></filter>
+    <filter id="fine"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect width="1024" height="1024" rx="204" fill="url(#bg)"/>
+  <circle cx="512" cy="505" r="368" fill="none" stroke="#00aeef" stroke-width="18" opacity=".33" filter="url(#glow)"/>
+  <circle cx="512" cy="505" r="354" fill="none" stroke="#00aeef" stroke-width="5" opacity=".8"/>
+  <ellipse cx="512" cy="748" rx="335" ry="35" fill="#00aeef" opacity=".25" filter="url(#glow)"/>
+  <path d="M174 603 L219 554 L286 537 L369 418 Q389 384 446 379 L618 375 Q669 379 705 416 L778 531 L830 551 Q854 563 857 599 L845 689 L792 704 L234 707 L179 684Z" fill="url(#glass)" stroke="#79e3ff" stroke-width="17" stroke-linejoin="round" filter="url(#glow)" opacity=".72"/>
+  <path d="M174 603 L219 554 L286 537 L369 418 Q389 384 446 379 L618 375 Q669 379 705 416 L778 531 L830 551 Q854 563 857 599 L845 689 L792 704 L234 707 L179 684Z" fill="#061727" stroke="url(#body)" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M356 525 L404 428 Q415 408 447 407 L613 404 Q639 406 661 429 L728 524Z" fill="url(#glass)" stroke="#38caff" stroke-width="9"/>
+  <path d="M541 406 L551 525" stroke="#00aeef" stroke-width="7" opacity=".9"/>
+  <path d="M224 583 L307 572 L333 619 L219 631Z M798 580 L721 572 L696 619 L816 632Z" fill="#79e3ff" filter="url(#fine)"/>
+  <path d="M224 583 L307 572 L333 619 L219 631Z M798 580 L721 572 L696 619 L816 632Z" fill="#b5f7ff" stroke="#00aeef" stroke-width="4"/>
+  <path d="M351 603 Q510 628 676 602 M384 675 Q512 701 642 676" fill="none" stroke="#00aeef" stroke-width="9"/>
+  <rect x="439" y="619" width="146" height="41" rx="10" fill="#061121" stroke="#79e3ff" stroke-width="4"/>
+  <path d="M231 711 Q512 753 793 711" stroke="#00aeef" stroke-width="7" fill="none" opacity=".64"/>
+</svg>

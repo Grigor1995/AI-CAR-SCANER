@@ -2082,6 +2082,28 @@ def _trace_shutdown(stage: str) -> None:
 _WINDOWS_TASKBAR_ICONS: list[int] = []
 
 
+def _neon_window_icon() -> QIcon:
+    """Use the same generic neon car artwork in source and packaged Qt windows."""
+    source = _resource_path("assets/design-preview/ai-scanner-neon-car-icon.svg")
+    if not source.is_file():
+        return QIcon()
+    try:
+        from PySide6.QtSvg import QSvgRenderer
+        renderer = QSvgRenderer(str(source))
+        if not renderer.isValid():
+            return QIcon()
+        image = QImage(512, 512, QImage.Format_ARGB32_Premultiplied)
+        image.fill(Qt.transparent)
+        painter = QPainter(image)
+        try:
+            renderer.render(painter)
+        finally:
+            painter.end()
+        return QIcon(QPixmap.fromImage(image))
+    except (OSError, RuntimeError, ImportError, ValueError):
+        return QIcon()
+
+
 def run() -> None:
     if sys.platform == "win32":
         try:
@@ -2103,7 +2125,9 @@ def run() -> None:
         _resource_path("assets/AI-Car-Scanner.ico"),
     )
     icon_path = next((candidate for candidate in icon_candidates if candidate.is_file()), None)
-    app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
+    app_icon = _neon_window_icon()
+    if app_icon.isNull():
+        app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)
     win = MainWindow()

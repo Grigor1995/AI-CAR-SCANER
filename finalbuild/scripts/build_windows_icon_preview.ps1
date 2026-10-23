@@ -48,10 +48,19 @@ try {
         Assert-LastExit 'Desktop icon unit tests'
     }
 
-    # The canonical source is assets/AI-Car-Scanner-master.png.
-    # prepare_windows_icon.py regenerates PNG, WEBP and ICO from that master.
-    & $python apps/desktop/prepare_windows_icon.py
-    Assert-LastExit 'Regenerating Desktop icons'
+    # Never overwrite tracked icon assets while building a preview.
+    $iconSource = Join-Path $root 'assets/AI-Car-Scanner-master.png'
+    $iconSvg = Join-Path $root 'assets/design-preview/ai-scanner-neon-car-icon.svg'
+    if (Test-Path $iconSvg) {
+        $iconSource = Join-Path $buildBase 'neon-icon-master.png'
+        & $python apps/desktop/neon_icon_build.py --svg $iconSvg --output $iconSource
+        Assert-LastExit 'Rendering neon icon master'
+    }
+    $stagedIcons = Join-Path $buildBase 'neon-icon-staged'
+    & $python apps/desktop/stage_windows_icons.py --source $iconSource --output-dir $stagedIcons
+    Assert-LastExit 'Staging Desktop icons'
+    $env:AI_CAR_ICON_STAGE_DIR = $stagedIcons
+    $env:AI_CAR_VERIFY_ASSET_DIR = $stagedIcons
 
     if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
     if (Test-Path $work) { Remove-Item $work -Recurse -Force }
@@ -73,7 +82,7 @@ try {
     $iconFolder = Join-Path $dist 'icons'
     New-Item -ItemType Directory -Path $iconFolder -Force | Out-Null
     foreach ($icon in @('AI-Car-Scanner-master.png', 'AI-Car-Scanner-mobile.png', 'AI-Car-Scanner.webp', 'AI-Car-Scanner.ico')) {
-        Copy-Item (Join-Path $root "assets\$icon") (Join-Path $iconFolder $icon) -Force
+        Copy-Item (Join-Path $stagedIcons $icon) (Join-Path $iconFolder $icon) -Force
     }
 
     # In source mode this checks Pillow/Qt artwork parity and, on Windows,

@@ -70,6 +70,12 @@ echo "[4/8] Stage consistent icon formats without modifying tracked artwork"
 # Keep the committed master for ordinary builds. If the Desktop PNG was edited
 # locally, use that artwork instead of silently discarding it.
 ICON_SOURCE="assets/AI-Car-Scanner-master.png"
+if [[ -f assets/design-preview/ai-scanner-neon-car-icon.svg ]]; then
+  "$PY" apps/desktop/neon_icon_build.py \
+    --svg assets/design-preview/ai-scanner-neon-car-icon.svg \
+    --output build-release/neon-icon-master.png
+  ICON_SOURCE="build-release/neon-icon-master.png"
+fi
 if ! git diff --quiet HEAD -- assets/AI-Car-Scanner-mobile.png; then
   ICON_SOURCE="assets/AI-Car-Scanner-mobile.png"
   echo "[ICON] Locally edited Desktop PNG detected; using it as build source."

@@ -17,7 +17,7 @@ enum AutomotivePalette {
     static func background(dark: Bool) -> LinearGradient {
         LinearGradient(
             colors: dark
-                ? [navy, midnight, navy]
+                ? [navy, Color(red: 0.02, green: 0.08, blue: 0.13), midnight, navy]
                 : [Color(red: 0.94, green: 0.97, blue: 1.0), .white],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -51,9 +51,9 @@ struct AutomotiveCardStyle: ViewModifier {
                 )
             )
             .shadow(
-                color: isDark ? AutomotivePalette.electricBlue.opacity(0.09) : .clear,
-                radius: compact ? 8 : 15,
-                y: 3
+                color: isDark ? AutomotivePalette.electricBlue.opacity(0.20) : .clear,
+                radius: compact ? 9 : 18,
+                y: 5
             )
     }
 }

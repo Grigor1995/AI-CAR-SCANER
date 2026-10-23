@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 from .measurement_units import convert, display_records
 from .api_client import DiagnosticApiClient
-from .models import Vehicle, Session, TestCandidate
+from .models import Vehicle, Session, TestCandidate, fuel_values
 from .storage import VehicleStore
 from .vehicle_artwork import vehicle_pixmap, load_backend_portrait
 from .dashboard_translations import MESSAGES
@@ -567,7 +567,7 @@ class VehicleDialog(QDialog):
         )
         if rows and hasattr(self, "fuel") and not getattr(self, "_prefilling", False):
             if rows[0].get("fuel"):
-                self.fuel.setText(",".join(rows[0]["fuel"]))
+                self.fuel.setText(", ".join(fuel_values(rows[0]["fuel"])))
         ecus = sorted({row["ecu"] for row in rows if row.get("ecu")})
         self._set_combo(self.ecu, ecus, "ME9.7" if "ME9.7" in ecus else (ecus[0] if ecus else None))
 
@@ -597,7 +597,7 @@ class VehicleDialog(QDialog):
             self.chassis.currentText().strip(),
             int(self.year.currentText()) if self.year.currentText().isdigit() and int(self.year.currentText()) > 0 else None,
             self.engine.currentText().strip(),
-            [x.strip() for x in self.fuel.text().split(",") if x.strip()],
+            fuel_values(self.fuel.text()),
             self.ecu.currentText().strip(),
         )
 

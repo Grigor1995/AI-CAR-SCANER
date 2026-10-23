@@ -1,6 +1,23 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict, field
 from typing import Any
+import re
+
+
+def fuel_values(value) -> list[str]:
+    """Accept catalog strings and API lists, repairing old letter-split profiles."""
+    if isinstance(value, str):
+        values = re.split(r"[,+/]", value)
+    elif isinstance(value, (list, tuple)):
+        values = value
+    else:
+        return []
+    values = [str(item).strip() for item in values if str(item).strip()]
+    if len(values) > 1 and all(len(item) == 1 for item in values):
+        word = "".join(values)
+        if word.casefold() in {"diesel", "petrol", "gasoline", "lpg", "cng", "hybrid", "electric", "phev", "hev"}:
+            return [word]
+    return values
 
 @dataclass
 class Vehicle:
@@ -23,7 +40,7 @@ class Vehicle:
             chassis=str(data.get("chassis", "")),
             year=int(data["year"]) if data.get("year") not in (None, "") else None,
             engine=str(data.get("engine", "")),
-            fuel=[str(x) for x in data.get("fuel", [])],
+            fuel=fuel_values(data.get("fuel", [])),
             ecu=str(data.get("ecu", "")),
         )
 

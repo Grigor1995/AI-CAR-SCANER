@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Correct fuel names in vehicle selection
+
+- Normalize shared-catalog fuel strings and backend fuel lists before display,
+  avoiding Diesel being rendered as D,i,e,s,e,l. Repair known fuel names in
+  previously saved letter-split profiles when loading them.
+- Preserve multiple fuels such as Petrol + LPG. Local tests only; CI/CD skipped.
+
 ## Unreleased — Telemetry display mode in Settings
 
 - Move the analog/line chart choice into Application settings > Widget display.

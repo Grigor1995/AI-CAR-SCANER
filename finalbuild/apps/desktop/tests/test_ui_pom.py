@@ -2108,3 +2108,20 @@ def test_settings_selects_display_for_all_widgets_and_preserves_size(window_fact
     restored = SignalGrid(window.settings_store, 'live')
     assert restored.cards[0].display_mode == 'chart'
     restored.deleteLater()
+
+
+def test_ford_diesel_selection_does_not_split_fuel_into_letters(window_factory):
+    window = window_factory()
+    dialog = ui.VehicleDialog(window)
+    for combo, value in ((dialog.make,'Ford'), (dialog.model,'Mondeo'), (dialog.chassis,'Mk4'), (dialog.year,'2011'), (dialog.engine,'2.0 TDCi')):
+        combo.setCurrentText(value)
+    assert dialog.fuel.text().lower() == 'diesel'
+    assert dialog.vehicle().fuel == ['Diesel']
+    dialog.deleteLater()
+
+
+@pytest.mark.parametrize('fuel', ['Diesel', ['Diesel'], list('Diesel'), 'D,i,e,s,e,l'])
+def test_saved_diesel_profiles_load_as_one_fuel(fuel):
+    vehicle = Vehicle.from_json({'make':'Ford','model':'Mondeo','fuel':fuel})
+    assert vehicle.fuel == ['Diesel']
+    assert vehicle.to_json()['fuel'] == ['Diesel']

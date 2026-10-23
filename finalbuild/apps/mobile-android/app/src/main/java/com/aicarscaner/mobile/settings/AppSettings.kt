@@ -10,7 +10,8 @@ enum class AppLanguage(val code: String) {
 
 data class AppSettings(
     val language: AppLanguage = AppLanguage.EN,
-    val darkTheme: Boolean = true
+    val darkTheme: Boolean = true,
+    val usUnits: Boolean = false
 )
 
 class AppSettingsStore(context: Context) {
@@ -20,13 +21,15 @@ class AppSettingsStore(context: Context) {
         language = runCatching {
             AppLanguage.valueOf(prefs.getString("language", AppLanguage.EN.name) ?: AppLanguage.EN.name)
         }.getOrDefault(AppLanguage.EN),
-        darkTheme = prefs.getBoolean("dark_theme", true)
+        darkTheme = prefs.getBoolean("dark_theme", true),
+        usUnits = prefs.getBoolean("us_units", false)
     )
 
     fun save(settings: AppSettings) {
         prefs.edit()
             .putString("language", settings.language.name)
             .putBoolean("dark_theme", settings.darkTheme)
+            .putBoolean("us_units", settings.usUnits)
             .apply()
     }
 }

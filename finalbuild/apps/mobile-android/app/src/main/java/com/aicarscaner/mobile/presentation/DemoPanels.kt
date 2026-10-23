@@ -52,7 +52,7 @@ internal fun DemoHome(session: DiagnosticSessionDto, titles: List<String>, navig
         Text(session.vehicle?.let { "${it.chassis.orEmpty()} • ${it.year ?: "—"} • ${it.engine.orEmpty()}" } ?: "—", modifier=Modifier.fillMaxWidth(), textAlign=TextAlign.Center, color=MaterialTheme.colorScheme.onSurfaceVariant)
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             DemoMetric("DTC",session.dtcs.size,Color(0xFFFF5D79),Modifier.weight(1f))
-            DemoMetric(dashboardLabel("Completed"),completed.first,Color(0xFF21D6A0),Modifier.weight(1f))
+            DemoMetric(dashboardLabel("Recorded tests"),session.test_results.size,Color(0xFF21D6A0),Modifier.weight(1f))
             DemoMetric(dashboardLabel("AI hypotheses"),session.hypotheses.size,Color(0xFFB67CFF),Modifier.weight(1f))
         }
     }
@@ -82,8 +82,8 @@ internal fun DemoHome(session: DiagnosticSessionDto, titles: List<String>, navig
 
 internal fun latestTestProgress(session: DiagnosticSessionDto): Pair<Int,Int> {
     val latest=session.test_results.associateBy { it.test_id }
-    val completed=latest.values.count { it.result=="PASS" || it.result=="FAIL" }
-    val all=session.recommendations.map { it.id }.toSet()+latest.keys
+    val all=session.recommendations.map { it.id }.toSet()
+    val completed=latest.values.count { it.test_id in all && (it.result=="PASS" || it.result=="FAIL") }
     return completed to all.size
 }
 
@@ -183,8 +183,8 @@ internal fun DemoGuidedTests(session: DiagnosticSessionDto, title: String, recor
     }
 }
 
-private data class ChartChannel(val key:String,val unit:String,val color:Color,val values:List<Double>)
-private fun channels(history:List<LiveDataSnapshot>)=listOf(
+internal data class ChartChannel(val key:String,val unit:String,val color:Color,val values:List<Double>)
+internal fun channels(history:List<LiveDataSnapshot>)=listOf(
     ChartChannel("RPM","rpm",Color(0xFF20B9FF),history.mapNotNull{it.rpm}),
     ChartChannel("Coolant","°C",Color(0xFFFF5D79),history.mapNotNull{it.coolantC}),
     ChartChannel("MAP pressure","kPa",Color(0xFFB67CFF),history.mapNotNull{it.mapKpa}),
@@ -201,8 +201,11 @@ private fun ChannelTrace(channel:ChartChannel,modifier:Modifier=Modifier) {
         for(line in 1..3) drawLine(grid,Offset(0f,size.height*line/4),Offset(size.width,size.height*line/4))
         val values=channel.values
         if(values.size>=2){
-            val min=values.minOrNull() ?: 0.0
-            val span=((values.maxOrNull() ?: 0.0)-min).coerceAtLeast(.00001)
+            val low=values.minOrNull() ?: 0.0
+            val high=values.maxOrNull() ?: low
+            val padding=maxOf((high-low)*.1,kotlin.math.abs(high)*.01,1.0)
+            val min=low-padding
+            val span=high-low+2*padding
             val path=Path()
             values.forEachIndexed { index,value ->
                 val x=size.width*index/(values.size-1)
@@ -214,42 +217,91 @@ private fun ChannelTrace(channel:ChartChannel,modifier:Modifier=Modifier) {
     }
 }
 
+internal fun channelTitle(key: String) = when(key) {
+    "RPM" -> "Engine speed"
+    "Coolant" -> "Coolant temperature"
+    "Speed" -> "Vehicle speed"
+    "Throttle" -> "Throttle position"
+    "Intake air" -> "Intake air temperature"
+    else -> key
+}
+
+internal val LocalDashboardUsUnits = staticCompositionLocalOf { false }
+
+internal fun displayChannel(channel: ChartChannel, us: Boolean): ChartChannel = when {
+    us && channel.unit == "km/h" -> channel.copy(unit="mph", values=channel.values.map { it/1.609344 })
+    us && channel.unit == "°C" -> channel.copy(unit="°F", values=channel.values.map { it*1.8+32 })
+    else -> channel
+}
+
+internal fun gaugeRange(unit: String, value: Double?) = when(unit) {
+    "rpm" -> 0.0 to 8000.0
+    "°C" -> -40.0 to 160.0
+    "°F" -> -40.0 to 320.0
+    "km/h" -> 0.0 to 260.0
+    "mph" -> 0.0 to 160.0
+    "%" -> 0.0 to 100.0
+    else -> 0.0 to maxOf(100.0, (value ?: 0.0)*1.2)
+}
+
+@Composable
+private fun ChannelGauge(channel: ChartChannel) {
+    val track=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.25f)
+    val (low,high)=gaugeRange(channel.unit,channel.values.lastOrNull())
+    Canvas(Modifier.fillMaxWidth().height(140.dp).semantics { contentDescription="${channel.key} ${channel.values.lastOrNull() ?: "—"} ${channel.unit}" }) {
+        val radius=minOf(size.width/2-10.dp.toPx(),size.height/2-8.dp.toPx())
+        val center=Offset(size.width/2,size.height/2)
+        drawArc(track,135f,270f,false,topLeft=center-Offset(radius,radius),size=androidx.compose.ui.geometry.Size(radius*2,radius*2),style=Stroke(8.dp.toPx()))
+        for(index in 0..8) {
+            val angle=Math.toRadians(135.0+270.0*index/8)
+            fun point(r:Float)=center+Offset((r*kotlin.math.cos(angle)).toFloat(),(r*kotlin.math.sin(angle)).toFloat())
+            drawLine(track,point(radius-6.dp.toPx()),point(radius-13.dp.toPx()),2.dp.toPx())
+        }
+        channel.values.lastOrNull()?.let { value ->
+            val angle=Math.toRadians(135+270*((value-low)/(high-low)).coerceIn(0.0,1.0))
+            drawLine(channel.color,center,center+Offset(((radius-18.dp.toPx())*kotlin.math.cos(angle)).toFloat(),((radius-18.dp.toPx())*kotlin.math.sin(angle)).toFloat()),3.dp.toPx())
+            drawCircle(channel.color,5.dp.toPx(),center)
+        }
+    }
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+        Text("${low.toInt()}",style=MaterialTheme.typography.labelSmall)
+        Text(channel.unit,style=MaterialTheme.typography.labelSmall)
+        Text("${high.toInt()}",style=MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun ChannelWidget(channel: ChartChannel) {
+    val context=LocalContext.current
+    val prefs=remember { context.getSharedPreferences("dashboard_widgets",android.content.Context.MODE_PRIVATE) }
+    var analog by remember(channel.key) { mutableStateOf(prefs.getBoolean("analog_${channel.key}",true)) }
+    DemoPanel(dashboardLabel(channelTitle(channel.key))) {
+        Text(channel.values.lastOrNull()?.let { "%.1f ${channel.unit}".format(it) } ?: "—",style=MaterialTheme.typography.titleLarge,color=channel.color,fontWeight=FontWeight.Bold)
+        Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+            FilterChip(selected=analog,onClick={analog=true;prefs.edit().putBoolean("analog_${channel.key}",true).apply()},label={Text(dashboardLabel("Analog gauge"),style=MaterialTheme.typography.labelSmall)})
+            FilterChip(selected=!analog,onClick={analog=false;prefs.edit().putBoolean("analog_${channel.key}",false).apply()},label={Text(dashboardLabel("Line chart"),style=MaterialTheme.typography.labelSmall)})
+        }
+        if(analog) ChannelGauge(channel) else ChannelTrace(channel)
+    }
+}
+
 @Composable
 internal fun DemoLiveCharts(history:List<LiveDataSnapshot>,dashboard:Boolean=false) {
-    val all=channels(history)
-    val removeLabel=dashboardLabel("Remove widget")
-    var visible by remember { mutableStateOf(setOf("RPM","Coolant","MAP pressure","Speed")) }
+    val us=LocalDashboardUsUnits.current
+    val all=channels(history).map { displayChannel(it,us) }
+    val context=LocalContext.current
+    val prefs=remember { context.getSharedPreferences("dashboard_widgets",android.content.Context.MODE_PRIVATE) }
+    var visible by remember { mutableStateOf(prefs.getStringSet("channels",setOf("RPM","Coolant","Speed","Throttle"))!!.toSet()) }
     var adding by remember { mutableStateOf(false) }
     if(history.isEmpty()) Text(dashboardLabel("Connect an adapter and start live data to see measured values."),color=MaterialTheme.colorScheme.onSurfaceVariant)
-    val shown=all.filter { it.key in visible }
-    if(dashboard){
-        shown.chunked(2).forEach { row ->
-            Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                row.forEach { channel ->
-                    Box(Modifier.weight(1f)) { DemoPanel("") {
-                        Row(verticalAlignment=Alignment.CenterVertically) {
-                            Text(dashboardLabel(channel.key),Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
-                            TextButton(onClick={visible=visible-channel.key},modifier=Modifier.size(32.dp),contentPadding=PaddingValues(0.dp)) { Text("×",modifier=Modifier.semantics{contentDescription=removeLabel}) }
-                        }
-                        Text(channel.values.lastOrNull()?.let{"%.1f".format(it)} ?: "—",style=MaterialTheme.typography.headlineMedium,color=channel.color,fontWeight=FontWeight.Bold)
-                        Text(channel.unit,style=MaterialTheme.typography.labelSmall)
-                        ChannelTrace(channel)
-                    } }
-                }
-                if(row.size==1) Spacer(Modifier.weight(1f))
-            }
+    // Full-width cards keep translated controls readable on narrow phones.
+    all.filter { it.key in visible }.forEach { ChannelWidget(it) }
+    OutlinedButton(onClick={adding=true},enabled=visible.size<all.size,modifier=Modifier.fillMaxWidth()) { Text("+ "+dashboardLabel("Add widget")) }
+    if(adding) AlertDialog(onDismissRequest={adding=false},title={Text(dashboardLabel("Add widget"))},text={Column{
+        all.filter{it.key !in visible}.forEach { channel ->
+            TextButton(onClick={visible=visible+channel.key;prefs.edit().putStringSet("channels",visible).apply();adding=false}) {Text(dashboardLabel(channelTitle(channel.key)))}
         }
-        OutlinedButton(onClick={adding=true},enabled=visible.size<all.size,modifier=Modifier.fillMaxWidth()) { Text("+ "+dashboardLabel("Add widget")) }
-        if(adding) AlertDialog(onDismissRequest={adding=false},title={Text(dashboardLabel("Add widget"))},text={Column{all.filter{it.key !in visible}.forEach{channel->TextButton(onClick={visible=visible+channel.key;adding=false}){Text(dashboardLabel(channel.key))}}}},confirmButton={TextButton(onClick={adding=false}){Text(strings(LocalDashboardLanguage.current).cancel)}})
-    }else{
-        shown.forEach { channel -> DemoPanel(dashboardLabel(channel.key)) {
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                Text(channel.values.lastOrNull()?.let{"%.1f ${channel.unit}".format(it)} ?: "—",style=MaterialTheme.typography.titleLarge,color=channel.color,fontWeight=FontWeight.Bold)
-                Text(dashboardLabel("Last measured value"),style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            ChannelTrace(channel)
-        } }
-    }
+    }},confirmButton={TextButton(onClick={adding=false}){Text(strings(LocalDashboardLanguage.current).cancel)}})
 }
 
 @Composable

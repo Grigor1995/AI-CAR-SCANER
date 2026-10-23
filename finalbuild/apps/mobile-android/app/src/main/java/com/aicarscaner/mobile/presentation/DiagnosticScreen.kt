@@ -28,6 +28,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -99,8 +100,8 @@ internal val AutomotiveDarkColors = darkColorScheme(
     onSecondary = Color.White,
     tertiary = Color(0xFF28D5FF),
     background = Color(0xFF061121),
-    surface = Color(0xFF082536),
-    surfaceVariant = Color(0xFF10354B),
+    surface = Color(0xFF0C1C35),
+    surfaceVariant = Color(0xFF102640),
     onBackground = Color(0xFFEAF4FF),
     primaryContainer = Color(0xFF103E63),
     onPrimaryContainer = Color(0xFFEAF4FF),
@@ -135,6 +136,7 @@ internal val AutomotiveLightColors = lightColorScheme(
 fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val catalog = state.vehicleCatalog
     val scope = rememberCoroutineScope()
     val settingsStore = remember { AppSettingsStore(context) }
     var appSettings by remember { mutableStateOf(settingsStore.load()) }
@@ -289,40 +291,41 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
 
     fun applyRemoteMake(value: String): Boolean {
-        val remoteModels = modelOptionsFor(state.vehicleCatalog, value)
+        val remoteModels = modelOptionsFor(catalog, value)
         if (remoteModels.isEmpty()) return false
         make = value
         model = remoteModels.first()
-        chassis = chassisOptionsFor(state.vehicleCatalog, make, model).firstOrNull().orEmpty()
-        year = yearOptionsFor(state.vehicleCatalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
-        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
-        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        chassis = chassisOptionsFor(catalog, make, model).firstOrNull().orEmpty()
+        year = yearOptionsFor(catalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
+        engine = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
         return true
     }
 
     fun applyRemoteModel(value: String): Boolean {
-        val remoteChassis = chassisOptionsFor(state.vehicleCatalog, make, value)
+        val remoteChassis = chassisOptionsFor(catalog, make, value)
         if (remoteChassis.isEmpty()) return false
         model = value
         chassis = remoteChassis.first()
-        year = yearOptionsFor(state.vehicleCatalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
-        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
-        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        year = yearOptionsFor(catalog, make, model, chassis).firstOrNull()?.toString().orEmpty()
+        engine = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
         return true
     }
 
     fun applyRemoteChassis(value: String): Boolean {
-        val years = yearOptionsFor(state.vehicleCatalog, make, model, value)
+        val years = yearOptionsFor(catalog, make, model, value)
         if (years.isEmpty()) return false
         chassis = value
         year = years.first().toString()
-        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
-        ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
+        engine = engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull()).firstOrNull().orEmpty()
+        ecu = ecuOptionsFor(catalog, make, model, chassis, engine, year.toIntOrNull()).firstOrNull().orEmpty()
         return true
     }
 
     fun applyRemoteEngine(value: String): Boolean {
-        val ecus = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, value, year.toIntOrNull())
+        val ecus = ecuOptionsFor(catalog, make, model, chassis, value, year.toIntOrNull())
+        if (value !in engineOptionsFor(catalog, make, model, chassis, year.toIntOrNull())) return false
         engine = value
         ecu = ecus.firstOrNull().orEmpty()
         return true
@@ -369,7 +372,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     MaterialTheme(
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
-        CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language) {
+        CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language, LocalDashboardUsUnits provides appSettings.usUnits) {
         if (settingsOpen) {
             SettingsDialog(
                 settings = appSettings,
@@ -557,7 +560,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     }
                     VehicleFields(
                         text = text,
-                        catalog = state.vehicleCatalog,
+                        catalog = catalog,
                         make = make,
                         onMake = { value ->
                             applyRemoteMake(value)
@@ -573,8 +576,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         year = year,
                         onYear = { value ->
                             year = value
-                            engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, value.toIntOrNull()).firstOrNull().orEmpty()
-                             ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull().orEmpty()
+                            engine = engineOptionsFor(catalog, make, model, chassis, value.toIntOrNull()).firstOrNull().orEmpty()
+                            ecu = ecuOptionsFor(catalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull().orEmpty()
                         },
                         engine = engine,
                         onEngine = {
@@ -591,7 +594,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     Button(
                         onClick = {
                             viewModel.createSession(
-                                VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(state.vehicleCatalog, make, model, chassis, engine, petrol, lpg), ecu)
+                                VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(catalog, make, model, chassis, engine, petrol, lpg), ecu)
                             )
                         },
                         enabled = !state.loading,
@@ -844,7 +847,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
                                 VehicleFields(
                                     text = text,
-                                    catalog = state.vehicleCatalog,
+                                    catalog = catalog,
                                     make = make,
                                     onMake = { value ->
                                         applyRemoteMake(value)
@@ -860,8 +863,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     year = year,
                                     onYear = { value ->
                                         year = value
-                                        engine = engineOptionsFor(state.vehicleCatalog, make, model, chassis, value.toIntOrNull()).firstOrNull().orEmpty()
-                             ecu = ecuOptionsFor(state.vehicleCatalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull().orEmpty()
+                                        engine = engineOptionsFor(catalog, make, model, chassis, value.toIntOrNull()).firstOrNull().orEmpty()
+                                        ecu = ecuOptionsFor(catalog, make, model, chassis, engine, value.toIntOrNull()).firstOrNull().orEmpty()
                                     },
                                     engine = engine,
                                     onEngine = {
@@ -878,7 +881,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 Button(
                                     onClick = {
                                         viewModel.updateVehicle(
-                                            VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(state.vehicleCatalog, make, model, chassis, engine, petrol, lpg), ecu)
+                                            VehicleDto(make, model, chassis, year.toIntOrNull(), engine, formFuel(catalog, make, model, chassis, engine, petrol, lpg), ecu)
                                         )
                                         editingVehicle = false
                                     },
@@ -1508,7 +1511,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
                         }
 
-                        6 -> DemoHome(session, tabs) { selectedTab = it }
+                        6 -> { DemoHome(session, tabs) { selectedTab = it }; DemoPanel(dashboardLabel("Live Data / Custom dashboard")) { DemoLiveCharts(channelHistory, dashboard=true) } }
                         11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
                         12 -> DemoLiveCharts(channelHistory,dashboard=true)
                         13 -> DemoProgress(session) {selectedTab=8}
@@ -1641,6 +1644,7 @@ internal fun VehicleFields(
         Text(serverFuel.joinToString(" + ") { code -> when(code.lowercase()) {
             "diesel" -> when(language) { AppLanguage.RU -> "Дизель"; AppLanguage.HY -> "Դիզել"; else -> "Diesel" }
             "hybrid" -> when(language) { AppLanguage.RU -> "Гибрид"; AppLanguage.HY -> "Հիբրիդ"; else -> "Hybrid" }
+            "electric" -> when(language) { AppLanguage.RU -> "Электрический"; AppLanguage.HY -> "Էլեկտրական"; else -> "Electric" }
             else -> code
         } })
     } else {
@@ -1727,6 +1731,12 @@ private fun SettingsDialog(
                                 Text(if(settings.darkTheme) text.dark else text.light,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             androidx.compose.material3.Switch(checked=settings.darkTheme,onCheckedChange={onSettingsChanged(settings.copy(darkTheme=it))})
+                        }
+                    }
+                    DemoPanel(dashboardLabel("Units")) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected=!settings.usUnits,onClick={onSettingsChanged(settings.copy(usUnits=false))},label={Text("EU • km/h • °C")})
+                            FilterChip(selected=settings.usUnits,onClick={onSettingsChanged(settings.copy(usUnits=true))},label={Text("USA • mph • °F")})
                         }
                     }
                     DemoPanel(text.language) {

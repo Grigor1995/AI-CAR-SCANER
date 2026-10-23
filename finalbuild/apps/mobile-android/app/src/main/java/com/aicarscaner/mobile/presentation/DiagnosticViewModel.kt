@@ -2,6 +2,7 @@ package com.aicarscaner.mobile.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aicarscaner.mobile.data.mergeVehicleCatalog
 import com.aicarscaner.mobile.data.api.DiagnosticSessionDto
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
@@ -80,19 +81,6 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         }
     }
 
-
-    /** Server entries override matching snapshot rows, matching Desktop VehicleDialog. */
-    private fun mergeVehicleCatalog(
-        server: List<VehicleCatalogEntryDto>,
-        offline: List<VehicleCatalogEntryDto>
-    ): List<VehicleCatalogEntryDto> {
-        val entries = linkedMapOf<String, VehicleCatalogEntryDto>()
-        for (row in server + offline) {
-            val key = listOf(row.make, row.model, row.chassis.orEmpty(), row.year.toString(), row.engine, row.ecu.orEmpty()).joinToString("|")
-            entries.putIfAbsent(key, row)
-        }
-        return entries.values.toList()
-    }
 
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }
 

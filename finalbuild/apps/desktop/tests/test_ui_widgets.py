@@ -172,8 +172,8 @@ def test_metric_card_updates_displayed_value(qapp):
 
 def test_vehicle_dialog_fallback_and_vehicle_conversion(qapp):
     dialog = VehicleDialog()
-    # The bundled offline catalog should expose all eight supported makes.
-    assert dialog.make.count() == 8
+    # The shared backend snapshot now exposes twenty makes on both clients.
+    assert dialog.make.count() == 20
     assert dialog.make.currentText() == "Mercedes-Benz"
     assert dialog.model.currentText() == "E-Class"
     assert dialog.chassis.currentText() == "W211"

@@ -1,6 +1,7 @@
 package com.aicarscaner.mobile.data.repository
 
 import com.aicarscaner.mobile.data.api.*
+import com.aicarscaner.mobile.data.parseSharedVehicleCatalog
 
 class DiagnosticRepository(private val api: DiagnosticApi, private val context: android.content.Context? = null) {
 
@@ -9,18 +10,7 @@ class DiagnosticRepository(private val api: DiagnosticApi, private val context: 
         val appContext = context ?: return emptyList()
         return try {
             val json = appContext.assets.open("vehicle_catalog.json").bufferedReader().use { it.readText() }
-            val root = com.google.gson.JsonParser.parseString(json).asJsonObject
-            root.getAsJsonArray("vehicles").map { item ->
-                val row = item.asJsonObject
-                fun value(name: String): String = row.get(name)?.takeUnless { it.isJsonNull }?.asString.orEmpty()
-                val fuel = value("fuel").split("+", "/", ",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
-                VehicleCatalogEntryDto(
-                    make = value("make"), model = value("model"), chassis = value("chassis"),
-                    year = row.get("year").asInt, engine = value("engine"),
-                    ecu = value("ecu"), fuel = fuel,
-                    source = "shared-offline-snapshot", scope = "offline-reference-not-vin-fitment"
-                )
-            }
+            parseSharedVehicleCatalog(json)
         } catch (_: Exception) { emptyList() }
     }
 

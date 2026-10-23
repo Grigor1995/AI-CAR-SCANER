@@ -2,6 +2,16 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Engine speed" to Pair("Շարժիչի պտույտներ", "Обороты двигателя"),
+    "Coolant temperature" to Pair("Հովացուցիչ հեղուկի ջերմաստիճան", "Температура охлаждающей жидкости"),
+    "Vehicle speed" to Pair("Մեքենայի արագություն", "Скорость автомобиля"),
+    "Throttle position" to Pair("Շնչափողի դիրք", "Положение дросселя"),
+    "Intake air temperature" to Pair("Ներմուծվող օդի ջերմաստիճան", "Температура впускного воздуха"),
+    "Analog gauge" to Pair("Անալոգային ցուցիչ", "Аналоговый индикатор"),
+    "Line chart" to Pair("Գծային գրաֆիկ", "Линейный график"),
+    "Units" to Pair("Չափման միավորներ", "Единицы измерения"),
+    "Recorded tests" to Pair("Գրանցված թեստեր", "Записанные тесты"),
+    "Live Data / Custom dashboard" to Pair("Ուղիղ տվյալներ / Վահանակ", "Текущие данные / Панель приборов"),
     "Diagram" to Pair("Դիագրամ", "Диаграмма"),
     "Analyze the session to get scored hypotheses." to Pair("Վարկածների գնահատականները ստանալու համար վերլուծեք սեսիան։", "Выполните анализ для получения оценок гипотез."),
     "Results" to Pair("Արդյունքներ", "Результаты"),

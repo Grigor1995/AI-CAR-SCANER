@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased — Android/Desktop catalog and display alignment
+
+- Package the same backend-generated offline snapshot on Desktop and Android,
+  with 20 makes and 72 generation identifiers; backend rows retain priority.
+- Include all snapshot generation portraits in native mobile bundles.
+- Add Android analog/line widgets and EU/USA display units, matching Desktop
+  channel names and current-plan test progress. Handle unknown ECUs safely.
+- Review and limitations: docs/reviews/android-desktop-parity-2026-10-23.md.
+- Local tests/builds only; CI/CD is skipped.
+
 ## Unreleased — Android test APK build
 
 - Updated the instrumented UI test API fixture for backend vehicle registry,

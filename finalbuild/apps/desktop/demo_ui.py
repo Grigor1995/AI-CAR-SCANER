@@ -10,7 +10,7 @@ import math
 from collections import defaultdict
 
 from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont, QPainterPath, QLinearGradient, QRadialGradient
+from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont, QBrush, QPainterPath, QLinearGradient, QRadialGradient
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
@@ -79,7 +79,7 @@ class Trace(QWidget):
         backing = QLinearGradient(r.topLeft(), r.bottomRight())
         backing.setColorAt(0, QColor("#061726"))
         backing.setColorAt(1, QColor("#030A12"))
-        p.fillRect(r, backing)
+        p.fillRect(r, QBrush(backing))
         p.setPen(QPen(QColor(0, 174, 239, 28), 1))
         for i in range(1, 5):
             y = r.top() + r.height() * i / 5
@@ -114,7 +114,7 @@ class Trace(QWidget):
         bottom.setAlpha(0)
         fill.setColorAt(0, top)
         fill.setColorAt(1, bottom)
-        p.fillPath(area, fill)
+        p.fillPath(area, QBrush(fill))
         # Blur-free layered strokes give a blue neon halo without expensive effects.
         glow = QColor(self.color)
         glow.setAlpha(32)
@@ -178,7 +178,7 @@ class AnalogGauge(QWidget):
         aura.setColorAt(0.72, QColor(0, 174, 239, 0))
         aura.setColorAt(0.85, QColor(0, 174, 239, 34))
         aura.setColorAt(1.0, QColor(0, 174, 239, 0))
-        p.fillRect(QRectF(self.rect()), aura)
+        p.fillRect(QRectF(self.rect()), QBrush(aura))
         p.setPen(QPen(QColor(0, 174, 239, 35), 17))
         p.drawArc(rect, -45 * 16, 270 * 16)
         p.setPen(QPen(QColor("#15324A"), 9))

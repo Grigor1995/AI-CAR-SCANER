@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
-    QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
+    QScrollArea, QDoubleSpinBox, QSpinBox, QSlider, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy, QLayout, QStylePainter, QStyleOptionToolButton, QStyle
 )
 from .measurement_units import convert, display_records
@@ -22,6 +22,7 @@ from .api_client import DiagnosticApiClient
 from .models import Vehicle, Session, TestCandidate, fuel_values
 from .storage import VehicleStore
 from .vehicle_artwork import vehicle_pixmap, load_backend_portrait
+from .neon_style import NeonShell, NeonVehiclePreview
 from .dashboard_translations import MESSAGES
 from .demo_ui import DemoDashboard, DTCPage, HypothesesPage, ReportsPage, TeachPage, SignalGrid
 
@@ -76,6 +77,47 @@ QScrollBar::handle:vertical { background: #2789DE; border-radius: 4px; min-heigh
 QScrollBar::handle:horizontal { background: #2789DE; border-radius: 4px; min-width: 28px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+"""
+
+NEON_DESKTOP_QSS = """
+/* Dark neon automotive presentation. Light mode retains its legible palette. */
+QWidget#desktopShell { background: transparent; }
+QGroupBox {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #0E3047, stop:0.15 #0C233A, stop:0.7 #071421, stop:1 #030A12);
+    border: 1px solid #135A82; border-top: 1px solid #36C8FF;
+    border-radius: 17px; margin-top: 15px; padding: 14px 12px 12px;
+}
+QGroupBox::title { color: #79E3FF; }
+QWidget#sectionHero {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #0D3449, stop:0.45 #091D30, stop:1 #06111C);
+    border: 1px solid #136997; border-top: 1px solid #59DAFF; border-radius: 16px;
+}
+QPushButton {
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #125279, stop:0.12 #0C3C60, stop:1 #07192E);
+    color: #EAF6FF; border: 1px solid #156B9D;
+    border-top: 1px solid #36C8FF; border-radius: 10px; padding: 9px 13px;
+}
+QPushButton:hover { background: #10486B; border-color: #79E3FF; }
+QPushButton#primary {
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #3BD7FF, stop:0.18 #0096E6, stop:1 #054B9C);
+    border: 1px solid #79E3FF; color: white;
+}
+QPushButton#topNav { min-height: 30px; padding: 6px 10px; }
+QListWidget#sideNav {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #07192B,stop:1 #04101A);
+    border: 1px solid #175578; border-radius: 14px;
+}
+QListWidget::item:selected { background: #06446D; border: 1px solid #35C8FF; }
+QProgressBar { background: #041221; border: 1px solid #156C94; }
+QProgressBar::chunk { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #0066BC,stop:1 #35C8FF); }
+QSlider::groove:horizontal { height: 6px; background: #07233D; border: 1px solid #18759C; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: #00AEEF; border-radius: 3px; }
+QSlider::handle:horizontal { background: #A4F2FF; border: 2px solid #00AEEF; width: 14px; margin: -7px 0; border-radius: 8px; }
+QLabel#heroSubtitle { color: #79E3FF; }
 """
 
 APP_QSS_LIGHT = """
@@ -609,8 +651,7 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); self.edit_btn=QPushButton("Edit vehicle"); self.edit_btn.clicked.connect(lambda: app.edit_selected_vehicle()); self.edit_btn.setEnabled(False); bar.addWidget(self.edit_btn); bar.addStretch(); lay.addLayout(bar)
-        self.model_artwork = QLabel()
-        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork = NeonVehiclePreview()
         self.model_artwork.setMaximumHeight(185)
         lay.addWidget(self.model_artwork)
         split=QSplitter(); self.list=QListWidget(); self.list.setIconSize(QSize(112,56)); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
@@ -747,7 +788,7 @@ class AdaptiveMenuTile(QToolButton):
     """Native focus/click behavior with a responsive image and wrapped label."""
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        side = max(24, min(180, self.width()-28, self.height()-52))
+        side = max(24, min(100, self.width()-28, self.height()-48))
         self.setIconSize(QSize(side, side))
 
     def paintEvent(self, event):
@@ -902,6 +943,7 @@ class LiveDataPage(QWidget):
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         controls = QHBoxLayout()
         self.sim_inputs = {}
+        self.sim_sliders = {}
         for key, title, low, high, value, suffix in (
             ("rpm", "Engine speed", 0, 16383, 750, " rpm"),
             ("coolant_c", "Coolant temperature", -40, 215, 90, " °C"),
@@ -912,7 +954,21 @@ class LiveDataPage(QWidget):
             column.addWidget(QLabel(title))
             spin = QDoubleSpinBox(); spin.setRange(low, high); spin.setValue(value); spin.setSuffix(suffix)
             self.sim_inputs[key] = spin
-            column.addWidget(spin); controls.addLayout(column)
+            slider = QSlider(Qt.Horizontal)
+            slider.setObjectName("neonSimulatorSlider")
+            slider.setRange(low, high)
+            slider.setValue(value)
+            slider.setAccessibleName(title + " slider")
+            slider.valueChanged.connect(spin.setValue)
+            def update_slider(current, target=slider):
+                target.blockSignals(True)
+                target.setValue(round(current))
+                target.blockSignals(False)
+            spin.valueChanged.connect(update_slider)
+            self.sim_sliders[key] = slider
+            column.addWidget(spin)
+            column.addWidget(slider)
+            controls.addLayout(column)
         self.apply_sim = QPushButton("Apply simulator values")
         self.apply_sim.clicked.connect(self._apply_simulator_values)
         controls.addWidget(self.apply_sim)
@@ -1048,7 +1104,7 @@ class LiveDataPage(QWidget):
                 unit = "km/h" if key == "speed_kmh" else "C"
                 low, new_unit = convert(metric_range[0], unit, us)
                 high, _ = convert(metric_range[1], unit, us)
-                spin.setRange(low, high); spin.setSuffix(" " + new_unit if us else suffix)
+                spin.setRange(low, high); self.sim_sliders[key].setRange(round(low), round(high)); spin.setSuffix(" " + new_unit if us else suffix)
                 spin.setValue(convert(value, unit, us)[0])
             self._us_inputs = us
         self.apply_sim.setEnabled(self._status_data.get("adapter") == "simulator")
@@ -1309,7 +1365,7 @@ class MainWindow(QMainWindow):
         try:
             surfaces = ("QWidget#sectionHero, QGroupBox { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1B3653,stop:1 #0B192C); border:1px solid #345976; border-top-color:#6385A1; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #24486C,stop:1 #102744); }" if self.dark_theme else
                         "QWidget#sectionHero, QGroupBox { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #DCE9F5); border:1px solid #A3BED5; border-top-color:#FFFFFF; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #CADFF1); }")
-            self.setStyleSheet((APP_QSS if self.dark_theme else APP_QSS_LIGHT) + surfaces)
+            self.setStyleSheet((APP_QSS if self.dark_theme else APP_QSS_LIGHT) + surfaces + (NEON_DESKTOP_QSS if self.dark_theme else ""))
             self._rendered_theme = self.dark_theme
         finally:
             self.setUpdatesEnabled(True)
@@ -1424,7 +1480,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(self.tr_text(self.statusBar().currentMessage()))
 
     def _build_pages(self):
-        container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
+        container=NeonShell(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
@@ -1457,6 +1513,7 @@ class MainWindow(QMainWindow):
         hero = QWidget(); hero.setObjectName("sectionHero")
         row = QHBoxLayout(hero); row.setContentsMargins(18, 8, 18, 8)
         image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(48,48)); image.setFixedSize(54,54)
+        image.setToolTip(text)
         row.addWidget(image)
         title = next((layout.itemAt(i).widget() for i in range(layout.count())
                       if isinstance(layout.itemAt(i).widget(), QLabel) and layout.itemAt(i).widget().objectName() == "title"), None)

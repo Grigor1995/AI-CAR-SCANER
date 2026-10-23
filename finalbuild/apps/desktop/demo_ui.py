@@ -10,7 +10,7 @@ import math
 from collections import defaultdict
 
 from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont
+from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont, QPainterPath, QLinearGradient, QRadialGradient
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
@@ -73,27 +73,60 @@ class Trace(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        r = self.rect().adjusted(3, 6, -3, -6)
-        p.setPen(QPen(QColor("#1B4660"), 1))
-        for i in range(1, 4):
-            y = r.top() + r.height() * i / 4
-            p.drawLine(r.left(), int(y), r.right(), int(y))
+        r = QRectF(self.rect()).adjusted(5, 5, -5, -5)
+        if r.width() <= 0 or r.height() <= 0:
+            return
+        backing = QLinearGradient(r.topLeft(), r.bottomRight())
+        backing.setColorAt(0, QColor("#061726"))
+        backing.setColorAt(1, QColor("#030A12"))
+        p.fillRect(r, backing)
+        p.setPen(QPen(QColor(0, 174, 239, 28), 1))
+        for i in range(1, 5):
+            y = r.top() + r.height() * i / 5
+            p.drawLine(QPointF(r.left(), y), QPointF(r.right(), y))
+        for i in range(1, 9):
+            x = r.left() + r.width() * i / 9
+            p.drawLine(QPointF(x, r.top()), QPointF(x, r.bottom()))
         if len(self.values) < 2:
             p.setPen(QColor("#839EB3"))
             p.drawText(r, Qt.AlignCenter, self.empty_text)
             return
         low, high = min(self.values), max(self.values)
-        padding = max((high - low) * 0.1, abs(high) * 0.01, 1.0)
+        padding = max((high - low) * .1, abs(high) * .01, 1.0)
         low -= padding
         high += padding
-        span = high - low
-        p.setPen(QPen(QColor(self.color), 2))
-        for i in range(1, len(self.values)):
-            x1 = r.left() + r.width() * (i - 1) / (len(self.values) - 1)
-            x2 = r.left() + r.width() * i / (len(self.values) - 1)
-            y1 = r.bottom() - (self.values[i - 1] - low) / span * r.height()
-            y2 = r.bottom() - (self.values[i] - low) / span * r.height()
-            p.drawLine(int(x1), int(y1), int(x2), int(y2))
+        line = QPainterPath()
+        for i, value in enumerate(self.values):
+            x = r.left() + r.width() * i / (len(self.values) - 1)
+            y = r.bottom() - (value - low) / (high - low) * r.height()
+            if i == 0:
+                line.moveTo(x, y)
+            else:
+                line.lineTo(x, y)
+        area = QPainterPath(line)
+        area.lineTo(r.right(), r.bottom())
+        area.lineTo(r.left(), r.bottom())
+        area.closeSubpath()
+        fill = QLinearGradient(0, r.top(), 0, r.bottom())
+        top = QColor(self.color)
+        top.setAlpha(95)
+        bottom = QColor(self.color)
+        bottom.setAlpha(0)
+        fill.setColorAt(0, top)
+        fill.setColorAt(1, bottom)
+        p.fillPath(area, fill)
+        # Blur-free layered strokes give a blue neon halo without expensive effects.
+        glow = QColor(self.color)
+        glow.setAlpha(32)
+        p.setPen(QPen(glow, 9, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.drawPath(line)
+        glow.setAlpha(85)
+        p.setPen(QPen(glow, 5, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.drawPath(line)
+        p.setPen(QPen(QColor(self.color), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.drawPath(line)
+        p.setPen(QPen(QColor("#79E3FF"), 1))
+        p.drawRoundedRect(r, 8, 8)
 
 
 class AnalogGauge(QWidget):
@@ -140,7 +173,15 @@ class AnalogGauge(QWidget):
         center = QPointF(self.width() / 2, self.height() / 2)
         radius = max(10, size / 2)
         rect = QRectF(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
-        p.setPen(QPen(QColor("#294563"), 9))
+        p.setBrush(Qt.NoBrush)
+        aura = QRadialGradient(center, radius + 15)
+        aura.setColorAt(0.72, QColor(0, 174, 239, 0))
+        aura.setColorAt(0.85, QColor(0, 174, 239, 34))
+        aura.setColorAt(1.0, QColor(0, 174, 239, 0))
+        p.fillRect(QRectF(self.rect()), aura)
+        p.setPen(QPen(QColor(0, 174, 239, 35), 17))
+        p.drawArc(rect, -45 * 16, 270 * 16)
+        p.setPen(QPen(QColor("#15324A"), 9))
         p.drawArc(rect, -45 * 16, 270 * 16)
         low, high = self.scale()
         for start, end, color in self.bands():
@@ -164,8 +205,18 @@ class AnalogGauge(QWidget):
         angle = math.radians(225 - fraction * 270)
         p.setPen(QPen(QColor(self.value_color()), 4))
         p.drawLine(center, QPointF(center.x() + (radius-20)*math.cos(angle), center.y()-(radius-20)*math.sin(angle)))
+        p.setPen(QPen(QColor(0, 174, 239, 54), 11))
+        p.drawEllipse(center, 7, 7)
         p.setBrush(QColor(self.value_color()))
+        p.setPen(Qt.NoPen)
         p.drawEllipse(center, 5, 5)
+        p.setPen(QColor("#EAF6FF"))
+        font = p.font()
+        font.setPixelSize(max(11, min(21, int(radius * .32))))
+        font.setBold(True)
+        p.setFont(font)
+        p.drawText(QRectF(center.x() - 55, center.y() + 17, 110, 27),
+                   Qt.AlignCenter, f"{self.value:g}")
 
 
 class SignalCard(EdgeResizablePanel):

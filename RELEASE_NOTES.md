@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — Native mobile neon presentation
+
+- Reuse Desktop 3D icons, abstract vehicle branding, and background on Android and iOS.
+- Add responsive launcher tiles, dimensional section headers and gradient cards.
+- Hide workflow navigation on the launcher; retain home navigation on other pages.
+- Move preferences into the application overflow menu and retain language/theme controls.
+- Add a recessed bezel to Android live gauges without changing readings or reference bands.
+- Android: local debug APK, JVM and lint checks. iOS requires Xcode validation on macOS; no CI/CD used.
+
 ## Unreleased — Compact neon-blue Desktop presentation
 
 - Remove Settings toolbar buttons; preferences remain available from the

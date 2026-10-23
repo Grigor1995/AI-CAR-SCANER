@@ -13,10 +13,14 @@ targets:
         excludes:
           - VehicleModels/**
           - VehicleCatalog/**
+          - Launcher/**
       - path: AICarScanner/VehicleModels
         type: folder
         buildPhase: resources
       - path: AICarScanner/VehicleCatalog
+        type: folder
+        buildPhase: resources
+      - path: AICarScanner/Launcher
         type: folder
         buildPhase: resources
     settings:

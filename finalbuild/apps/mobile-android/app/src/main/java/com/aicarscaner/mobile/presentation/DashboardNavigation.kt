@@ -1,6 +1,15 @@
 package com.aicarscaner.mobile.presentation
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import com.aicarscaner.mobile.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -21,40 +30,43 @@ import com.aicarscaner.mobile.settings.dashboardText
 internal val LocalDashboardLanguage = staticCompositionLocalOf { AppLanguage.EN }
 @Composable internal fun dashboardLabel(english: String) = dashboardText(LocalDashboardLanguage.current, english)
 
-// Stroke icons stay crisp on small screens and do not depend on emoji fonts.
+// Reuse cropped artwork across all pages rather than decoding the large atlas per icon.
+private object DesktopIconCache {
+    private val images=mutableMapOf<Int,androidx.compose.ui.graphics.ImageBitmap>()
+    private var atlas:Bitmap?=null
+    @Synchronized fun image(resources:android.content.res.Resources,kind:Int):androidx.compose.ui.graphics.ImageBitmap =
+        images.getOrPut(kind) {
+            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.launcher_car)
+            else {
+                val sheet=atlas ?: BitmapFactory.decodeResource(resources,R.drawable.launcher_icons).also {atlas=it}
+                val index=when(kind) {0->0;14->1;2->2;3,12->4;8,13->5;4->6;7->7;9->8;10->9;6->10;else->11}
+                val width=sheet.width/4;val height=sheet.height/3
+                Bitmap.createBitmap(sheet,index%4*width,index/4*height,(width*.96f).toInt(),height)
+            }.asImageBitmap()
+        }
+}
 @Composable
 internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
-    Canvas(modifier.size(24.dp)) {
-        val stroke = Stroke(width = 2.dp.toPx())
-        val w = size.width; val h = size.height
-        when (kind) {
-            1, 6 -> { // vehicle / home
-                drawRoundRect(color, Offset(w*.12f,h*.4f), Size(w*.76f,h*.35f), androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()), style=stroke)
-                drawLine(color,Offset(w*.23f,h*.4f),Offset(w*.34f,h*.2f),stroke.width)
-                drawLine(color,Offset(w*.34f,h*.2f),Offset(w*.67f,h*.2f),stroke.width)
-                drawLine(color,Offset(w*.67f,h*.2f),Offset(w*.78f,h*.4f),stroke.width)
-                drawCircle(color,w*.07f,Offset(w*.28f,h*.78f)); drawCircle(color,w*.07f,Offset(w*.72f,h*.78f))
-            }
-            2 -> { // VCI adapter, distinct from the diagnostic connector
-                drawRoundRect(color,Offset(w*.25f,h*.3f),Size(w*.5f,h*.6f),androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),style=stroke)
-                drawRect(color,Offset(w*.38f,h*.08f),Size(w*.24f,h*.22f),style=stroke)
-                drawLine(color,Offset(w*.4f,h*.5f),Offset(w*.6f,h*.5f),stroke.width)
-                drawCircle(color,w*.04f,Offset(w*.5f,h*.72f))
-            }
-            14 -> { // diagnostic connector
-                drawRoundRect(color,Offset(w*.12f,h*.25f),Size(w*.76f,h*.5f),style=stroke)
-                for(i in 0..3) for(y in listOf(.4f,.6f)) drawCircle(color,w*.025f,Offset(w*(.28f+i*.15f),h*y))
-            }
-            3, 12 -> { for (i in 0..3) drawLine(color,Offset(w*(.2f+i*.2f),h*.8f),Offset(w*(.2f+i*.2f),h*(.6f-i*.13f)),4.dp.toPx()) }
-            8, 13 -> { drawCircle(color,w*.38f,style=stroke);drawLine(color,Offset(w*.28f,h*.5f),Offset(w*.44f,h*.66f),stroke.width);drawLine(color,Offset(w*.44f,h*.66f),Offset(w*.74f,h*.32f),stroke.width) }
-            4, 10 -> { drawCircle(color,w*.34f,Offset(w*.5f,h*.43f),style=stroke);drawLine(color,Offset(w*.4f,h*.78f),Offset(w*.6f,h*.78f),stroke.width);drawLine(color,Offset(w*.5f,h*.1f),Offset(w*.5f,h*.68f),stroke.width);drawCircle(color,w*.1f,Offset(w*.5f,h*.43f),style=stroke) }
-            11 -> { for(x in listOf(.3f,.7f)) for(y in listOf(.3f,.7f)) drawRoundRect(color,Offset(w*(x-.12f),h*(y-.12f)),Size(w*.24f,h*.24f),style=stroke) }
-            else -> { drawRoundRect(color,Offset(w*.2f,h*.1f),Size(w*.6f,h*.8f),androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),style=stroke);for(i in 0..2) drawLine(color,Offset(w*.34f,h*(.32f+i*.18f)),Offset(w*.66f,h*(.32f+i*.18f)),stroke.width) }
-        }
-    }
+    val resources=LocalContext.current.resources
+    val icon=remember(kind,resources) {DesktopIconCache.image(resources,kind)}
+    Image(bitmap=icon,contentDescription=null,modifier=modifier.size(24.dp))
 }
 
-internal val dashboardDestinations = listOf(6 to "Home", 2 to "Adapter", 3 to "Data", 9 to "Reports", 11 to "More")
+@Composable
+internal fun desktopPanelBrush(): Brush = Brush.verticalGradient(listOf(
+    MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surface,
+    MaterialTheme.colorScheme.background))
+
+@Composable
+internal fun DesktopBackground(modifier: Modifier = Modifier) {
+    Image(painter=androidx.compose.ui.res.painterResource(R.drawable.launcher_background),
+        contentDescription=null,contentScale=androidx.compose.ui.layout.ContentScale.Crop,
+        alpha=if(MaterialTheme.colorScheme.background.luminanceForNeon()) .22f else .07f,
+        modifier=modifier.fillMaxSize())
+}
+private fun Color.luminanceForNeon() = red + green + blue < 1f
+
+internal val dashboardDestinations = listOf(11 to "Main menu", 2 to "Adapter", 3 to "Data", 9 to "Reports", 0 to "Symptoms")
 
 @Composable
 internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
@@ -68,28 +80,32 @@ internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
 }
 
 @Composable
-internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
+internal fun DashboardSections(navigate: (Int) -> Unit) {
     val sections=listOf(
-        6 to "Dashboard", 0 to "Symptoms", 1 to "Vehicles", 2 to "VCI / Devices", 14 to "Diagnostic", 3 to "Live Data", 8 to "Tests",
-        7 to "DTC", 4 to "AI Analysis", 9 to "Reports", 10 to "Teach AI",
-        13 to "Testing progress", 12 to "Custom dashboard", 5 to "Activity"
+        0 to "Symptoms", 14 to "Diagnostic", 2 to "VCI / Devices", 1 to "Vehicles", 3 to "Live Data", 8 to "Tests",
+        4 to "AI Analysis", 7 to "DTC", 9 to "Reports", 10 to "Teach AI",
+        6 to "Dashboard", 5 to "Activity", 13 to "Testing progress", 12 to "Custom dashboard"
     )
     Text(dashboardLabel("Main menu"),style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
-    sections.chunked(2).forEach { pair ->
+    BoxWithConstraints {
+    val columns=if(maxWidth >= 600.dp) 3 else 2
+    Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    sections.chunked(columns).forEach { pair ->
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             pair.forEach { (id,title) ->
-                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=145.dp),shape=RoundedCornerShape(18.dp),
-                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
-                        DashboardIcon(id,Modifier.size(52.dp))
+                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=124.dp),shape=RoundedCornerShape(18.dp),
+                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color.Transparent),border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.65f)),elevation=CardDefaults.cardElevation(5.dp)) {
+                    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(14.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
+                        DashboardIcon(id,Modifier.size(64.dp))
                         Text(dashboardLabel(title),fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
             }
-            if(pair.size==1) Spacer(Modifier.weight(1f))
+            repeat(columns-pair.size) { Spacer(Modifier.weight(1f)) }
         }
     }
-    Button(onClick=settings,modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Settings")) }
+    }
+    }
 }
 
 /** Persistent actions stay reachable when the page below scrolls. */
@@ -103,15 +119,20 @@ internal fun DashboardToolbar(
     onSettings:()->Unit,
     onNewSession:()->Unit,
     onSymptoms:()->Unit,
-    onAnalyze:()->Unit,
-    showSettings:Boolean=true
+    onAnalyze:()->Unit
 ) {
     val text=com.aicarscaner.mobile.settings.strings(LocalDashboardLanguage.current)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         if(showBack) TextButton(onClick=onHome,contentPadding=PaddingValues(4.dp)) {Text("‹",style=MaterialTheme.typography.headlineMedium)}
-        else DashboardIcon(6,Modifier.size(28.dp))
+        else DashboardIcon(11,Modifier.size(36.dp))
         Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
-        if(showSettings) TextButton(onClick=onSettings,contentPadding=PaddingValues(4.dp)) {Text("⚙",modifier=Modifier.semantics{contentDescription=text.settings})}
+        var menuOpen by remember { mutableStateOf(false) }
+        Box {
+            TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription=text.settings}) }
+            DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}) {
+                DropdownMenuItem(text={Text(text.settings)},onClick={menuOpen=false;onSettings()})
+            }
+        }
         if(hasSession) TextButton(onClick=onNewSession,contentPadding=PaddingValues(4.dp)) {Text("+",modifier=Modifier.semantics{contentDescription=text.newSession},style=MaterialTheme.typography.titleLarge)}
     }
     if(hasSession) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {

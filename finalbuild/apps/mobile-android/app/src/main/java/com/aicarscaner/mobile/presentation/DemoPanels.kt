@@ -2,6 +2,8 @@ package com.aicarscaner.mobile.presentation
 
 import android.content.Intent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
@@ -34,9 +36,9 @@ internal fun DemoPanel(title: String, content: @Composable ColumnScope.() -> Uni
         modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .45f)),
-        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor = Color.Transparent)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (title.isNotEmpty()) Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()
         }
@@ -142,7 +144,7 @@ internal fun DemoDtcList(session: DiagnosticSessionDto, title: String) {
         var expanded by remember(code.code) { mutableStateOf(false) }
         val color=MaterialTheme.colorScheme.error
         Card(onClick={expanded=!expanded},modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,color.copy(alpha=.35f)),colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface, containerColor=MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     Text("!",color=color,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Black)
                     Column(Modifier.weight(1f)) {
@@ -272,6 +274,8 @@ private fun ChannelGauge(channel: ChartChannel) {
     Canvas(Modifier.fillMaxWidth().height(140.dp).semantics { contentDescription="${channel.key} ${channel.values.lastOrNull() ?: "—"} ${channel.unit}" }) {
         val radius=minOf(size.width/2-10.dp.toPx(),size.height/2-8.dp.toPx())
         val center=Offset(size.width/2,size.height/2)
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF244762),Color(0xFF071322))),radius+5.dp.toPx(),center)
+        drawCircle(track,radius+4.dp.toPx(),center,style=Stroke(2.dp.toPx()))
         drawArc(track,135f,270f,false,topLeft=center-Offset(radius,radius),size=androidx.compose.ui.geometry.Size(radius*2,radius*2),style=Stroke(8.dp.toPx()))
         bands.forEach { (start,end,color) ->
             drawArc(color,(135+270*(start-low)/(high-low)).toFloat(),(270*(end-start)/(high-low)).toFloat(),false,

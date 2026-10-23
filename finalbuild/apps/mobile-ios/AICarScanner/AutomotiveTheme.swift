@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // Shared visual language for the native automotive diagnostics screens.
 // The reference mockup is a design guide; actual telemetry and AI confidence
@@ -42,7 +43,7 @@ struct AutomotiveCardStyle: ViewModifier {
         let radius: CGFloat = compact ? 12 : 18
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         content
-            .background(shape.fill(isDark ? AutomotivePalette.panel : .white))
+            .background(shape.fill(LinearGradient(colors: isDark ? [AutomotivePalette.midnight, AutomotivePalette.panel, AutomotivePalette.navy] : [.white, Color(red:0.90,green:0.95,blue:1)], startPoint:.topLeading,endPoint:.bottomTrailing)))
             .overlay(
                 shape.strokeBorder(
                     isDark ? AutomotivePalette.electricBlue.opacity(0.50)
@@ -55,5 +56,37 @@ struct AutomotiveCardStyle: ViewModifier {
                 radius: compact ? 4 : 10,
                 y: 3
             )
+    }
+}
+
+// Desktop artwork is packaged as an explicit resource folder on both platforms.
+enum DesktopArtwork {
+    static let car: UIImage? = load("launcher_car")
+    static let background: UIImage? = load("launcher_background")
+    private static func load(_ name:String) -> UIImage? {
+        guard let url=Bundle.main.url(forResource:name,withExtension:"png",subdirectory:"Launcher") else {return nil}
+        return UIImage(contentsOfFile:url.path)
+    }
+    private static let atlas: UIImage? = load("launcher_icons")
+    static let icons: [Int:UIImage] = {
+        guard let cg=atlas?.cgImage else { return [:] }
+        let w=cg.width/4, h=cg.height/3
+        let slots=[11:0, 1:1, 3:2, 8:4, 7:5, 2:6, 6:7, 9:8, 10:9, 5:10, 4:11]
+        var result:[Int:UIImage]=[:]
+        for (id,slot) in slots {
+            if let cell=cg.cropping(to:CGRect(x:CGFloat(slot%4*w),y:CGFloat(slot/4*h),width:CGFloat(w)*0.96,height:CGFloat(h))) {
+                result[id]=UIImage(cgImage:cell)
+            }
+        }
+        result[0]=car;result[12]=car
+        return result
+    }()
+}
+struct DesktopIcon: View {
+    let page:Int
+    var body: some View {
+        if let image=DesktopArtwork.icons[page] {
+            Image(uiImage:image).resizable().scaledToFit().accessibilityHidden(true)
+        } else { Image(systemName:"square.grid.2x2").foregroundStyle(AutomotivePalette.cyan) }
     }
 }

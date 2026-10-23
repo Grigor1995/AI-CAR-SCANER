@@ -58,6 +58,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -762,8 +763,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     DashboardToolbar(
                         title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";11->"Main menu";else->"More"}),
-                        hasSession=state.session!=null && selectedTab!=14,
-                        showSettings=selectedTab !in listOf(0,14),
+                        hasSession=state.session!=null && selectedTab !in listOf(11,14),
                         showBack=selectedTab !in listOf(6,9,11),
                         loading=state.loading,
                         onHome={selectedTab=11},
@@ -774,12 +774,13 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     )
                 }
             }, bottomBar = {
-                if (state.session != null) DashboardBottomBar(selectedTab) { destination ->
+                if (selectedTab != 11) DashboardBottomBar(selectedTab) { destination ->
                     selectedTab = destination
                     if (destination == 2) refreshUsbDevices()
                     if (destination == 9) viewModel.loadHistory()
                 }
             }) { insets ->
+            DesktopBackground()
             Column(
                 modifier = Modifier
                     .fillMaxSize().padding(insets)
@@ -787,8 +788,20 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                if(selectedTab!=11) {
+                    DemoPanel("") {
+                        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            DashboardIcon(selectedTab,Modifier.size(48.dp))
+                            Text(dashboardLabel(when(selectedTab) {
+                                0->"Symptoms";1->"Vehicles";2->"VCI / Devices";14->"Diagnostic";3->"Live Data"
+                                8->"Tests";7->"DTC";4->"AI Analysis";9->"Reports";10->"Teach AI"
+                                12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"Dashboard"
+                            }),style=MaterialTheme.typography.titleLarge,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
+                        }
+                    }
+                }
                 if(selectedTab==11) {
-                    DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
+                    DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
                 } else if(selectedTab==14) {
                     diagnosticPanel()
                 } else if(state.session==null && selectedTab==2) {
@@ -1572,7 +1585,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         6 -> { DemoHome(session, tabs) { selectedTab = it }; DemoPanel(dashboardLabel("Live Data / Custom dashboard")) { if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory, dashboard=true) } }
-                        11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()},settings={settingsOpen=true})
+                        11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
                         12 -> if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory,dashboard=true)
                         13 -> DemoProgress(session) {selectedTab=8}
                         7 -> DemoDtcList(session, "DTC")

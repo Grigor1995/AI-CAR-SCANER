@@ -6,7 +6,7 @@ struct DiagnosticScreen: View {
     @StateObject private var obd = OBDService()
     @State private var obdHost = ""
     @State private var obdPort = "35000"
-    @State private var tab = 5
+    @State private var tab = 12
     @AppStorage("repairTitle") private var repairTitle = ""
     @AppStorage("repairDraft") private var repairDraft = ""
     @State private var make = "Mercedes-Benz"
@@ -31,7 +31,7 @@ struct DiagnosticScreen: View {
 
     private var t:T { T(language:viewModel.settings.language) }
 
-    init(viewModel: DiagnosticViewModel, initialTab: Int = 5) {
+    init(viewModel: DiagnosticViewModel, initialTab: Int = 12) {
         self.viewModel = viewModel
         self._tab = State(initialValue: initialTab)
     }
@@ -41,8 +41,8 @@ struct DiagnosticScreen: View {
             ScrollView {
                 VStack(alignment:.leading,spacing:12) {
                     HStack {
-                        Image(systemName:"car.side.fill")
-                            .font(.system(size:28,weight:.bold))
+                        DesktopIcon(page:0)
+                            .frame(width:44,height:36)
                             .foregroundStyle(AutomotivePalette.cyan)
                             .accessibilityHidden(true)
                         VStack(alignment:.leading,spacing:3) {
@@ -56,55 +56,26 @@ struct DiagnosticScreen: View {
 
                         }
                         Spacer()
-                        Button("⚙"){settingsOpen=true}
-                        if viewModel.session != nil { Button("＋"){newSessionOpen=true} }
+                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") }
+                        if viewModel.session != nil && tab != 12 { Button("＋"){newSessionOpen=true} }
                     }
-                    ScrollView(.horizontal, showsIndicators:false) {
-                        HStack(spacing:8) {
-                            ForEach([
-                                (5, t.tr("Dashboard", "Обзор", "Գլխավոր"), "house.fill"),
-                                (0, t.tr("Vehicles", "Автомобили", "Մեքենաներ"), "car.side.fill"),
-                                (3, t.tr("VCI / Devices", "Устройства", "Սարքեր"), "cable.connector"),
-                                (1, t.tr("Diagnostic", "Диагностика", "Ախտորոշում"), "stethoscope"),
-                                (8, t.tr("Live Data", "Данные", "Ուղիղ տվյալներ"), "chart.xyaxis.line"),
-                                (7, t.tr("Tests", "Тесты", "Թեստեր"), "checklist"),
-                                (6, "DTC", "exclamationmark.triangle"),
-                                (2, t.tr("AI Analysis", "ИИ-анализ", "AI վերլուծություն"), "brain.head.profile"),
-                                (9, t.tr("Reports", "Отчёты", "Հաշվետվություններ"), "doc.text"),
-                                (10, t.tr("Teach AI", "Обучить ИИ", "Սովորեցնել AI-ին"), "graduationcap"),
-                                (4, t.tr("Activity", "История", "Պատմություն"), "clock.arrow.circlepath")
-                            ], id: \.0) { item in
-                                let index = item.0
-                                Button {
-                                    tab = index
-                                } label: {
-                                    Label(item.1, systemImage:item.2)
-                                        .font(.subheadline.weight(.semibold))
-                                        .lineLimit(1)
-                                        .padding(.horizontal,13)
-                                        .padding(.vertical,11)
-                                        .foregroundStyle(tab == index ? Color.white :
-                                            (viewModel.settings.darkTheme ? Color.white.opacity(0.82) :
-                                             AutomotivePalette.navy))
-                                        .background(
-                                            RoundedRectangle(cornerRadius:12)
-                                                .fill(tab == index ? AutomotivePalette.electricBlue :
-                                                      (viewModel.settings.darkTheme ?
-                                                       AutomotivePalette.panel : Color.white))
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius:12)
-                                                .strokeBorder(AutomotivePalette.electricBlue.opacity(tab == index ? 0.95 : 0.38))
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
+                    if tab != 12 {
+                        Button { tab=12 } label: {
+                            Label(pageTitle(12),systemImage:"square.grid.2x2")
+                        }.buttonStyle(.bordered)
                     }
-
+                    if tab != 12 {
+                        HStack {
+                            DesktopIcon(page:tab).frame(width:48,height:48)
+                            Text(pageTitle(tab)).font(.title2.bold())
+                            Spacer()
+                        }.padding(16).modifier(AutomotiveCardStyle())
+                    }
                     switch tab {
+                    case 12: desktopMenu
+                    case 11: inputsView
                     case 0: vehicleView
-                    case 1: inputsView
+                    case 1: obdView
                     case 2: analysisView
                     case 3: obdView
                     case 4: activityView
@@ -118,16 +89,25 @@ struct DiagnosticScreen: View {
                 }.padding(16)
             }
             .safeAreaInset(edge: .bottom) {
+                if tab != 12 {
                 HStack {
-                    ForEach(Array(zip([5, 0, 8, 7, 9], ["house.fill", "car.side.fill", "chart.xyaxis.line", "checklist", "doc.text"])), id: \.0) { item in
+                    ForEach(Array(zip([12, 0, 8, 7, 9], ["house.fill", "car.side.fill", "chart.xyaxis.line", "checklist", "doc.text"])), id: \.0) { item in
                         Button { tab = item.0 } label: {
-                            Image(systemName: item.1).frame(maxWidth: .infinity).padding(.vertical, 14)
+                            DesktopIcon(page:item.0).frame(width:28,height:28).frame(maxWidth:.infinity).padding(.vertical,12)
                         }.foregroundStyle(tab == item.0 ? AutomotivePalette.cyan : Color.secondary)
-                        .accessibilityLabel([5:t.tr("Home", "Обзор", "Գլխավոր"), 0:t.vehicle, 8:t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ"), 7:t.nextTests, 9:t.tr("Reports", "Отчёты", "Հաշվետվություններ")][item.0] ?? "")
+                        .accessibilityLabel([12:t.tr("Main menu", "Главное меню", "Գլխավոր մենյու"), 0:t.vehicle, 8:t.tr("Live Data", "Текущие данные", "Ուղիղ տվյալներ"), 7:t.nextTests, 9:t.tr("Reports", "Отчёты", "Հաշվետվություններ")][item.0] ?? "")
                     }
                 }.background(viewModel.settings.darkTheme ? AutomotivePalette.panel : .white)
             }
-            .background(AutomotivePalette.background(dark:viewModel.settings.darkTheme).ignoresSafeArea())
+                }
+            .background {
+                AutomotivePalette.background(dark:viewModel.settings.darkTheme).ignoresSafeArea()
+                if let image=DesktopArtwork.background {
+                    GeometryReader { geometry in
+                        Image(uiImage:image).resizable().scaledToFill().frame(width:geometry.size.width,height:geometry.size.height).clipped().opacity(viewModel.settings.darkTheme ? 0.22 : 0.07)
+                    }.ignoresSafeArea()
+                }
+            }
             .tint(AutomotivePalette.electricBlue)
             .overlay{if viewModel.loading{ProgressView().scaleEffect(1.3)}}
             .alert(t.newSession,isPresented:$newSessionOpen){
@@ -165,6 +145,39 @@ struct DiagnosticScreen: View {
                 lpg = vehicle.fuel.contains { $0.lowercased() == "lpg" }
             }
             .preferredColorScheme(viewModel.settings.darkTheme ? .dark:.light)
+        }
+    }
+
+    private func pageTitle(_ id:Int) -> String {
+        switch id {
+        case 0:return t.tr("Vehicles","Автомобили","Մեքենաներ")
+        case 1:return t.tr("Diagnostic","Диагностика","Ախտորոշում")
+        case 11:return t.tr("Symptoms","Симптомы","Ախտանիշներ")
+        case 2:return t.tr("AI Analysis","ИИ-анализ","AI վերլուծություն")
+        case 3:return t.tr("VCI / Devices","VCI / Устройства","VCI / Սարքեր")
+        case 4:return t.tr("Activity","История","Պատմություն")
+        case 5:return t.tr("Dashboard","Обзор","Ընդհանուր պատկեր")
+        case 6:return "DTC"
+        case 7:return t.tr("Guided Tests","Пошаговые тесты","Քայլային թեստեր")
+        case 8:return t.tr("Live Data","Текущие данные","Ուղիղ տվյալներ")
+        case 9:return t.tr("Reports","Отчёты","Հաշվետվություններ")
+        case 10:return t.tr("Teach AI","Обучить ИИ","Սովորեցնել AI-ին")
+        default:return t.tr("Main menu","Главное меню","Գլխավոր մենյու")
+        }
+    }
+    private var desktopMenu: some View {
+        VStack(alignment:.leading,spacing:16) {
+            Text(pageTitle(12)).font(.title2.bold())
+            LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12) {
+                ForEach([11,1,3,0,8,7,2,6,9,10,5,4],id:\.self) { id in
+                    Button { tab=id } label: {
+                        VStack(spacing:10) {
+                            DesktopIcon(page:id).frame(height:64)
+                            Text(pageTitle(id)).font(.subheadline.weight(.semibold)).multilineTextAlignment(.center).frame(minHeight:38)
+                        }.frame(maxWidth:.infinity).padding(14).modifier(AutomotiveCardStyle())
+                    }.buttonStyle(.plain)
+                }
+            }
         }
     }
 
@@ -220,7 +233,7 @@ struct DiagnosticScreen: View {
 
     private func demoMetric(_ title: String, _ value: Int, _ symbol: String, _ color: Color) -> some View {
         VStack(spacing: 9) {
-            Image(systemName: symbol).font(.title2).foregroundStyle(color)
+            DesktopIcon(page:symbol.contains("brain") ? 2 : symbol.contains("checkmark") ? 7 : 6).frame(width:36,height:36)
             Text(String(value)).font(.title2.bold())
             Text(title).font(.caption2).lineLimit(2)
         }.frame(maxWidth: .infinity, minHeight: 110).modifier(AutomotiveCardStyle(compact: true))
@@ -228,7 +241,10 @@ struct DiagnosticScreen: View {
 
     private func demoShortcut(_ title: String, _ symbol: String, _ destination: Int) -> some View {
         Button { tab = destination } label: {
-            Label(title, systemImage: symbol).font(.subheadline.weight(.semibold))
+            HStack(spacing:8) {
+                DesktopIcon(page:destination).frame(width:32,height:32)
+                Text(title).font(.subheadline.weight(.semibold))
+            }
                 .frame(maxWidth: .infinity, minHeight: 62)
                 .modifier(AutomotiveCardStyle(compact: true))
         }.buttonStyle(.plain)

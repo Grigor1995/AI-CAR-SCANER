@@ -2177,9 +2177,14 @@ def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
     assert window.page_index() == 12
     tiles = window.pages[12].findChildren(QToolButton)
     assert len(tiles) == 12
+    assert not window.pages[12].background.isNull()
+    assert window.nav.isHidden()
+    assert window.header_navigation.isHidden()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
-    assert vci.iconSize().width() == 72
+    assert vci.iconSize().width() == 96
     assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
     vci.click()
     assert window.page_index() == 2
+    assert not window.nav.isHidden()
+    assert not window.header_navigation.isHidden()

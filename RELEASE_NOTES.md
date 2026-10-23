@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — Focused Desktop launch artwork
+
+- Hide sidebar navigation and top section buttons on Main menu; restore them
+  when entering a workflow. Keep branding visible.
+- Add a generated dark automotive background and twelve distinct neon SVG menu
+  images. Cache background scaling, preserve aspect ratio, maintain readable
+  labels in both themes, and bundle the artwork in Desktop releases.
+- Desktop-only presentation update. Local checks; CI/CD skipped.
+
 ## Unreleased — Large launch menu
 
 - Open Desktop and Android on a large icon tile menu, with direct navigation to

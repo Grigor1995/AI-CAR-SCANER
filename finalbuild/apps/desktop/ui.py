@@ -718,8 +718,14 @@ class LauncherPage(QWidget):
     """Large menu tiles keep every workflow visible on launch."""
     def __init__(self, app: "MainWindow"):
         super().__init__()
+        root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+        self.art_root = root / "assets" / "launcher"
+        self.background = QPixmap(str(self.art_root / "background.png"))
+        self._scaled_background = QPixmap()
+        self._background_target = QSize()
         layout = QVBoxLayout(self)
-        title = QLabel("Main menu"); title.setObjectName("title"); layout.addWidget(title)
+        layout.setContentsMargins(28, 24, 28, 28)
+        title = QLabel("Main menu"); title.setObjectName("title"); title.setStyleSheet("color: #EAF4FF;"); layout.addWidget(title)
         grid = QGridLayout(); grid.setSpacing(18); layout.addLayout(grid)
         sections = [("Symptoms", 11, "✎"), ("Diagnostics", 3, ""), ("VCI / Devices", 2, ""),
                     ("Vehicles", 1, "▣"), ("Live Data", 4, "▥"), ("Guided Tests", 6, "✓"),
@@ -727,14 +733,25 @@ class LauncherPage(QWidget):
                     ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
         for index, (text, page_id, symbol) in enumerate(sections):
             tile = QToolButton(); tile.setText(text)
-            tile.setIcon(_navigation_icon(symbol, page_id == 3, page_id == 2, True))
-            tile.setIconSize(QSize(72, 72)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            tile.setMinimumSize(185, 145)
+            tile.setIcon(QIcon(str(self.art_root / f"{page_id}.svg")))
+            tile.setIconSize(QSize(96, 96)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            tile.setMinimumSize(185, 165)
             tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            tile.setStyleSheet("QToolButton { border: 1px solid #2864AC; border-radius: 18px; padding: 20px; font-weight: 600; } QToolButton:hover { border-color: #19B9FF; }")
+            tile.setStyleSheet("QToolButton { background: rgba(7, 24, 46, 205); color: #EAF4FF; border: 1px solid #2864AC; border-radius: 18px; padding: 20px; font-weight: 600; } QToolButton:hover { background: rgba(13, 48, 80, 225); border-color: #43D5FF; }")
             tile.clicked.connect(lambda _=False, target=page_id: app.navigate_page(target))
             grid.addWidget(tile, index // 3, index % 3)
         layout.addStretch()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        if not self.background.isNull():
+            if self._background_target != self.size():
+                self._background_target = self.size()
+                self._scaled_background = self.background.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            painter.drawPixmap((self.width()-self._scaled_background.width())//2, (self.height()-self._scaled_background.height())//2, self._scaled_background)
+        else:
+            painter.fillRect(self.rect(), QColor("#061121"))
+        painter.fillRect(self.rect(), QColor(2, 10, 24, 70))
 
     def refresh(self):
         pass
@@ -1334,7 +1351,7 @@ class MainWindow(QMainWindow):
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
         for title, target in [("✎  Symptoms",11),("Diagnostics",3),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
             button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_navigation_icon("", True)) if target == 3 else None; button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
-        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
+        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3); self.header_navigation = header_scroll
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
         nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
@@ -1347,7 +1364,9 @@ class MainWindow(QMainWindow):
         for _text, cls in entries:
             page=cls(self); self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11}) if row >= 0 else None)
+        nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11, 12}) if row >= 0 else None)
+        nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
+        nav.currentRowChanged.connect(lambda row: header_scroll.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
         nav.currentRowChanged.connect(lambda row: self.pages[9].load() if row >= 0 and nav.item(row).data(Qt.UserRole) == 9 and self.online else None)
         nav.setCurrentRow(0)

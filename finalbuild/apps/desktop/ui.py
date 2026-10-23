@@ -721,6 +721,7 @@ class LauncherPage(QWidget):
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
         self.art_root = root / "assets" / "launcher"
         self.background = QPixmap(str(self.art_root / "background.png"))
+        self.icon_atlas = QPixmap(str(self.art_root / "icons-3d.png"))
         self._scaled_background = QPixmap()
         self._background_target = QSize()
         layout = QVBoxLayout(self)
@@ -733,9 +734,18 @@ class LauncherPage(QWidget):
                     ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
         for index, (text, page_id, symbol) in enumerate(sections):
             tile = QToolButton(); tile.setText(text)
-            tile.setIcon(QIcon(str(self.art_root / f"{page_id}.svg")))
-            tile.setIconSize(QSize(96, 96)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            tile.setMinimumSize(185, 165)
+            if self.icon_atlas.isNull():
+                tile.setIcon(QIcon(str(self.art_root / f"{page_id}.svg")))
+            else:
+                # Row-major atlas: four columns, three rows; labels remain native/localized.
+                column, row = index % 4, index // 4
+                left, right = column*self.icon_atlas.width()//4, (column+1)*self.icon_atlas.width()//4
+                top, bottom = row*self.icon_atlas.height()//3, (row+1)*self.icon_atlas.height()//3
+                if column < 3:
+                    right -= (right-left)//25  # Exclude neighboring glow in the transparent gutter.
+                tile.setIcon(QIcon(self.icon_atlas.copy(left, top, right-left, bottom-top)))
+            tile.setIconSize(QSize(120, 120)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            tile.setMinimumSize(185, 180)
             tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             tile.setStyleSheet("QToolButton { background: rgba(7, 24, 46, 205); color: #EAF4FF; border: 1px solid #2864AC; border-radius: 18px; padding: 20px; font-weight: 600; } QToolButton:hover { background: rgba(13, 48, 80, 225); border-color: #43D5FF; }")
             tile.clicked.connect(lambda _=False, target=page_id: app.navigate_page(target))

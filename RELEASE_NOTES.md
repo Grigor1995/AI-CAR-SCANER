@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — 3D Automotive menu icons
+
+- Replace the twelve primary Desktop launcher symbols with generated transparent
+  3D automotive images: distinct OBD socket and VCI adapter, vehicle, gauges,
+  inspection sheets, AI brain and ECU network. Keep native localized labels and
+  the existing automotive background. Package the local sprite atlas in releases;
+  retain SVG fallbacks. CI/CD skipped.
+
 ## Unreleased — Focused Desktop launch artwork
 
 - Hide sidebar navigation and top section buttons on Main menu; restore them

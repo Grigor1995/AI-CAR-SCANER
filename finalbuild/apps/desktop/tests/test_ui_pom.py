@@ -307,9 +307,9 @@ def test_main_window_builds_reference_navigation_pages(window_factory):
     assert window.nav.count() == 12
     assert len(window.pages) == 12
     assert window.stack.count() == 1
-    assert window.nav.currentRow() == 0
+    assert window.page_index() == 0
     assert [window.nav.item(i).text().split()[-1] for i in range(window.nav.count())] == [
-        "Dashboard", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI", "Symptoms"
+        "Dashboard", "Symptoms", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
     ]
 
 
@@ -318,20 +318,22 @@ def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
     window = window_factory()
     symptoms, diagnostic = window.pages[11], window.pages[3]
     symptoms.symptom.setPlainText("Engine shakes at idle")
-    window.nav.setCurrentRow(3)
+    window.navigate_page(3)
     assert not diagnostic.isAncestorOf(symptoms.symptom)
-    assert not diagnostic.findChildren(QWidget)
+    assert diagnostic.identity.isReadOnly()
+    assert not diagnostic.findChildren(QPlainTextEdit)[0].isAncestorOf(symptoms.symptom)
     assert symptoms.hypotheses.isReadOnly()
     settings = next(button for button in window.findChildren(QPushButton) if button.accessibleName() == "Settings")
     assert settings.isHidden()
-    window.nav.setCurrentRow(11)
+    window.navigate_page(11)
     assert symptoms.symptom.toPlainText() == "Engine shakes at idle"
+    assert settings.isHidden()
 
 
 def test_navigation_selects_pages_and_live_data_request_is_guarded(window_factory, fake_api):
     window = window_factory()
-    window.nav.setCurrentRow(4)
-    assert window.nav.currentRow() == 4
+    window.navigate_page(4)
+    assert window.page_index() == 4
     # No active session means the Live Data page must not issue requests.
     assert window.pages[4]._details_in_flight is False
     fake_api.acquisition_status.assert_not_called()
@@ -1057,7 +1059,7 @@ def test_session_created_resets_analysis_state_and_opens_diagnostic_page(window_
     assert window.telemetry == {}
     assert window.network == {}
     assert window.active_network == {}
-    assert window.nav.currentRow() == 11
+    assert window.page_index() == 11
     refresh.assert_called_once()
     assert window.statusBar().currentMessage() == "Diagnostic session created"
 
@@ -1509,7 +1511,7 @@ def test_demo_dashboard_quick_actions_open_real_diagnostic_pages(window_factory)
     dashboard = window.pages[0]
     button = next(b for b in dashboard.findChildren(QPushButton) if 'DTC list' in b.text())
     button.click()
-    assert window.nav.currentRow() == 7
+    assert window.page_index() == 7
     window.session_json = {'dtcs': [{'code': 'P0302', 'description': 'Cylinder 2', 'source': 'USER_REPORTED'}]}
     window.pages[7].refresh()
     assert 'P0302' in window.pages[7].list.item(0).text()
@@ -1576,7 +1578,7 @@ def test_history_open_clears_previous_vehicle_telemetry(window_factory):
     assert window.pages[4]._records_data == []
     assert window.telemetry == {}
     assert window.network == {}
-    assert window.nav.currentRow() == 8
+    assert window.page_index() == 8
 
 
 def test_live_details_from_previous_session_cannot_overwrite_current_session(window_factory, monkeypatch):
@@ -1830,7 +1832,7 @@ def test_fastapi_health_timer_reconnects_without_modal_failures(
 def test_backend_recovery_refreshes_provider_on_actual_live_data_navigation(window_factory, monkeypatch, fake_api):
     window = window_factory()
     window.session = Session("private-session", "TESTING", window.active_vehicle)
-    window.nav.setCurrentRow(4)
+    window.navigate_page(4)
     assert window.stack.currentIndex() == 0
     monkeypatch.setattr(window, "refresh_pages", Mock())
     request_refresh = Mock()
@@ -2050,7 +2052,7 @@ def test_window_closes_promptly_during_blocked_session_request(window_factory, m
 def test_analog_widgets_fit_inside_cards_in_short_live_data_window(window_factory, qapp):
     window = window_factory()
     window.resize(1100, 650)
-    window.nav.setCurrentRow(4)
+    window.navigate_page(4)
     qapp.processEvents()
     live = window.pages[4]
     for card in live.signals.cards:
@@ -2071,7 +2073,7 @@ def test_border_drag_grows_and_shrinks_card_and_restores_without_controls(window
     from PySide6.QtWidgets import QApplication, QSlider
     from apps.desktop.demo_ui import SignalGrid
     window = window_factory()
-    window.nav.setCurrentRow(4)
+    window.navigate_page(4)
     qapp.processEvents()
     grid = window.pages[4].signals
     card = grid.cards[0]
@@ -2140,3 +2142,30 @@ def test_saved_diesel_profiles_load_as_one_fuel(fuel):
     vehicle = Vehicle.from_json({'make':'Ford','model':'Mondeo','fuel':fuel})
     assert vehicle.fuel == ['Diesel']
     assert vehicle.to_json()['fuel'] == ['Diesel']
+
+
+def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(window_factory, monkeypatch, fake_api):
+    window = window_factory()
+    page = window.pages[3]
+    window.devices = [{"device_id": "usb:test", "model": "ELM327"}]
+    page.refresh()
+    jobs = []
+    monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
+    fake_api.diagnostic_discovery.return_value = {
+        "vin": "WDD2110801A123456", "identification_status": "identified",
+        "vehicle": {"make": "Mercedes-Benz", "model": "E-Class", "model_year": "2006"},
+        "modules": [{"name": "OBD ECU", "address": "7E8", "observed": True}],
+    }
+    page.identify_vehicle()
+    assert not page.connect.isEnabled()
+    work, done = jobs.pop(); done(work())
+    fake_api.diagnostic_discovery.assert_called_once_with("usb:test", {})
+    assert "E-Class" in page.identity.toPlainText()
+    assert "7E8" in page.modules.item(0).text()
+    assert page.connect.isEnabled()
+    page._identified({"identification_status": "vin_unavailable", "modules": []})
+    assert page.modules.count() == 1
+    fake_api.diagnostic_discovery.side_effect = RuntimeError("offline")
+    page.identify_vehicle(); work, done = jobs.pop(); done(work())
+    assert "failed" in page.identity.toPlainText()
+    assert page.connect.isEnabled()

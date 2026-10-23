@@ -296,3 +296,27 @@ MESSAGES['ru'].update({'Analog gauge': 'Аналоговый индикатор'
 
 MESSAGES["hy"]["Symptoms"] = "Ախտանշաններ"
 MESSAGES["ru"]["Symptoms"] = "Симптомы"
+
+# VIN-first connection workflow.
+MESSAGES["hy"]['Connect OBD and identify vehicle'] = 'Միացնել OBD-ն և ճանաչել մեքենան'
+MESSAGES["ru"]['Connect OBD and identify vehicle'] = 'Подключить OBD и определить автомобиль'
+MESSAGES["hy"]['VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown.'] = 'VIN-ը նույնականացվում է NHTSA առցանց ծառայությամբ։ Ցուցադրվում են միայն պատասխանած ընդհանուր OBD բլոկները։'
+MESSAGES["ru"]['VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown.'] = 'VIN определяется онлайн через NHTSA. Показаны только ответившие стандартные блоки OBD.'
+MESSAGES["hy"]['Reading VIN and identifying vehicle…'] = 'VIN-ի ընթերցում և մեքենայի նույնականացում…'
+MESSAGES["ru"]['Reading VIN and identifying vehicle…'] = 'Чтение VIN и определение автомобиля…'
+MESSAGES["hy"]['OBD connection failed. Check adapter and ignition.'] = 'OBD կապը չհաջողվեց։ Ստուգեք ադապտերն ու միացված բոցավառումը։'
+MESSAGES["ru"]['OBD connection failed. Check adapter and ignition.'] = 'Не удалось подключиться к OBD. Проверьте адаптер и зажигание.'
+MESSAGES["hy"]['Vehicle identified'] = 'Մեքենան նույնականացված է'
+MESSAGES["ru"]['Vehicle identified'] = 'Автомобиль определён'
+MESSAGES["hy"]['Vehicle identification incomplete'] = 'Մեքենայի նույնականացումը մասնակի է'
+MESSAGES["ru"]['Vehicle identification incomplete'] = 'Автомобиль определён частично'
+MESSAGES["hy"]['VIN lookup unavailable'] = 'VIN-ի նույնականացման ծառայությունը հասանելի չէ'
+MESSAGES["ru"]['VIN lookup unavailable'] = 'Сервис определения VIN недоступен'
+MESSAGES["hy"]['VIN unavailable'] = 'VIN-ը չի ընթերցվել'
+MESSAGES["ru"]['VIN unavailable'] = 'VIN не прочитан'
+MESSAGES["hy"]['OBD ECU'] = 'OBD կառավարման բլոկ'
+MESSAGES["ru"]['OBD ECU'] = 'Блок управления OBD'
+MESSAGES["hy"]['No responding OBD ECUs detected'] = 'Պատասխանող OBD բլոկներ չեն հայտնաբերվել'
+MESSAGES["ru"]['No responding OBD ECUs detected'] = 'Ответившие блоки OBD не обнаружены'
+MESSAGES["hy"]['Stop live data before discovery'] = 'Մինչ նույնականացումը կանգնեցրեք ընթացիկ տվյալների ընթերցումը'
+MESSAGES["ru"]['Stop live data before discovery'] = 'Остановите чтение текущих данных перед определением автомобиля'

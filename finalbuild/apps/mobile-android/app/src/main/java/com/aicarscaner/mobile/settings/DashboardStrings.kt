@@ -2,6 +2,17 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Connect OBD and identify vehicle" to Pair("Միացնել OBD-ն և ճանաչել մեքենան", "Подключить OBD и определить автомобиль"),
+    "VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown." to Pair("VIN-ը նույնականացվում է NHTSA առցանց ծառայությամբ։ Ցուցադրվում են միայն պատասխանած ընդհանուր OBD բլոկները։", "VIN определяется онлайн через NHTSA. Показаны только ответившие стандартные блоки OBD."),
+    "Reading VIN and identifying vehicle…" to Pair("VIN-ի ընթերցում և մեքենայի նույնականացում…", "Чтение VIN и определение автомобиля…"),
+    "OBD connection failed. Check adapter and ignition." to Pair("OBD կապը չհաջողվեց։ Ստուգեք ադապտերն ու միացված բոցավառումը։", "Не удалось подключиться к OBD. Проверьте адаптер и зажигание."),
+    "Vehicle identified" to Pair("Մեքենան նույնականացված է", "Автомобиль определён"),
+    "Vehicle identification incomplete" to Pair("Մեքենայի նույնականացումը մասնակի է", "Автомобиль определён частично"),
+    "VIN lookup unavailable" to Pair("VIN-ի նույնականացման ծառայությունը հասանելի չէ", "Сервис определения VIN недоступен"),
+    "VIN unavailable" to Pair("VIN-ը չի ընթերցվել", "VIN не прочитан"),
+    "OBD ECU" to Pair("OBD կառավարման բլոկ", "Блок управления OBD"),
+    "No responding OBD ECUs detected" to Pair("Պատասխանող OBD բլոկներ չեն հայտնաբերվել", "Ответившие блоки OBD не обнаружены"),
+    "Stop live data before discovery" to Pair("Մինչ նույնականացումը կանգնեցրեք ընթացիկ տվյալների ընթերցումը", "Остановите чтение текущих данных перед определением автомобиля"),
     "Widget display" to Pair("Վիջեթի տեսք", "Вид виджета"),
     "Stored backend samples" to Pair("Սերվերում պահպանված չափումներ", "Сохранённые измерения сервера"),
     "Engine speed" to Pair("Շարժիչի պտույտներ", "Обороты двигателя"),

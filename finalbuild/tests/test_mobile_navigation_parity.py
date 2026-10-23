@@ -14,6 +14,7 @@ def test_android_dashboard_sections_follow_desktop_order():
     section = source.split("val sections=listOf(", 1)[1].split("sections.forEachIndexed", 1)[0]
     positions = [section.index('"' + label + '"') for label in ORDER]
     assert positions == sorted(positions)
+    assert section.index('"Symptoms"') < section.index('"Vehicles"')
 
 
 def test_ios_navigation_has_stable_tab_ids_and_desktop_labels():

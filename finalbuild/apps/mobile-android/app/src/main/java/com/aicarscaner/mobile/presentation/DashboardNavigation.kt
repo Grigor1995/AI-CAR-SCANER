@@ -35,6 +35,10 @@ internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Colo
                 drawLine(color,Offset(w*.67f,h*.2f),Offset(w*.78f,h*.4f),stroke.width)
                 drawCircle(color,w*.07f,Offset(w*.28f,h*.78f)); drawCircle(color,w*.07f,Offset(w*.72f,h*.78f))
             }
+            14 -> { // diagnostic connector
+                drawRoundRect(color,Offset(w*.12f,h*.25f),Size(w*.76f,h*.5f),style=stroke)
+                for(i in 0..3) for(y in listOf(.4f,.6f)) drawCircle(color,w*.025f,Offset(w*(.28f+i*.15f),h*y))
+            }
             3, 12 -> { for (i in 0..3) drawLine(color,Offset(w*(.2f+i*.2f),h*.8f),Offset(w*(.2f+i*.2f),h*(.6f-i*.13f)),4.dp.toPx()) }
             8, 13 -> { drawCircle(color,w*.38f,style=stroke);drawLine(color,Offset(w*.28f,h*.5f),Offset(w*.44f,h*.66f),stroke.width);drawLine(color,Offset(w*.44f,h*.66f),Offset(w*.74f,h*.32f),stroke.width) }
             4, 10 -> { drawCircle(color,w*.34f,Offset(w*.5f,h*.43f),style=stroke);drawLine(color,Offset(w*.4f,h*.78f),Offset(w*.6f,h*.78f),stroke.width);drawLine(color,Offset(w*.5f,h*.1f),Offset(w*.5f,h*.68f),stroke.width);drawCircle(color,w*.1f,Offset(w*.5f,h*.43f),style=stroke) }
@@ -60,8 +64,7 @@ internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
 @Composable
 internal fun DashboardSections(navigate: (Int) -> Unit, settings: () -> Unit) {
     val sections=listOf(
-        6 to "Dashboard", 1 to "Vehicles", 2 to "VCI / Devices",
-        14 to "Diagnostic", 0 to "Symptoms", 3 to "Live Data", 8 to "Tests",
+        6 to "Dashboard", 0 to "Symptoms", 1 to "Vehicles", 2 to "VCI / Devices", 14 to "Diagnostic", 3 to "Live Data", 8 to "Tests",
         7 to "DTC", 4 to "AI Analysis", 9 to "Reports", 10 to "Teach AI",
         13 to "Testing progress", 12 to "Custom dashboard", 5 to "Activity"
     )

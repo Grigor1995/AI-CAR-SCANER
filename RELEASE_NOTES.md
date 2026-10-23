@@ -1,5 +1,23 @@
 # Release notes
 
+## Unreleased — VIN-first OBD diagnostics
+
+- Raise Symptoms in Desktop and Android navigation and hide its Settings button.
+  Keep symptom entry, hypotheses and analysis together. Align Desktop sidebar
+  icons and VCI labels; add a diagnostic connector icon.
+- Add Diagnostics > Connect OBD and identify vehicle. Desktop uses the selected
+  backend adapter; Android uses its native Bluetooth/Wi-Fi/USB bridge, including
+  connection before creating a vehicle session. Read VIN first, then display
+  responding generic OBD ECUs. Shared backend code validates all responses.
+- Disclose online NHTSA VIN lookup before connection. Keep the measured VIN and
+  responding modules when lookup is unavailable or incomplete; never infer ABS,
+  airbag or other manufacturer blocks from a vehicle name. Simulators do not
+  perform online VIN lookup or claim real modules. Restore adapter headers after
+  discovery. No DTC clearing, coding, flashing or actuator requests are issued.
+- Validated with mocked protocol replies and local Desktop/Android checks.
+  Physical vehicle discovery and emulator UI have not been verified here. CI/CD
+  is skipped.
+
 ## Unreleased — Android default portrait and Live Data settings
 
 - Show the portrait for the currently selected default model/generation without

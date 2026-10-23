@@ -334,8 +334,264 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val obdConnected =
         bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected
 
-    LaunchedEffect(liveDataRunning, obdTransport, obdConnected) {
-        if (!liveDataRunning || !obdConnected) {
+    var discoveryPending by remember { mutableStateOf(false) }
+    var discoveryResult by remember { mutableStateOf<com.aicarscaner.mobile.data.api.DiscoveryResultDto?>(null) }
+    var discoveryError by remember { mutableStateOf(false) }
+    val adapterPanel: @Composable () -> Unit = {
+                            DemoAdapterHeader(obdConnected,localizedConnectionStatus(appSettings.language,obdStatus))
+                            Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
+                            Text(extra.obdAdapters)
+                            Text("${text.obdConnection}: ${localizedConnectionStatus(appSettings.language,obdStatus)}", fontWeight = FontWeight.Medium)
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TransportButton(obdTransport == "bluetooth", { obdTransport = "bluetooth" }, text.bluetooth)
+                                TransportButton(obdTransport == "wifi", { obdTransport = "wifi" }, text.wifi)
+                                TransportButton(obdTransport == "usb", { obdTransport = "usb" }, text.usb)
+                            }
+
+                            when (obdTransport) {
+                                "bluetooth" -> {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Button(onClick = { refreshBluetoothDevices() }) { Text(text.refresh) }
+                                        Button(onClick = {
+                                            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                                        }) { Text(text.bluetoothSettings) }
+                                    }
+                                    if (obdDevices.isEmpty()) {
+                                        Text(text.noPairedDevices)
+                                    } else {
+                                        obdDevices.forEach { device ->
+                                            Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    Text(device.name ?: text.bluetooth, style = MaterialTheme.typography.titleMedium)
+                                                    Text(device.address, style = MaterialTheme.typography.bodySmall)
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                closeAllObd()
+                                                                obdTransport = "bluetooth"
+                                                                obdStatus = extra.connectingBluetooth
+                                                                bluetoothClient.connect(device)
+                                                                    .onSuccess { obdStatus = it }
+                                                                    .onFailure { obdStatus = "${extra.bluetoothError}: ${it.message ?: extra.unknownError}" }
+                                                            }
+                                                        },
+                                                        enabled = !bluetoothClient.isConnected
+                                                    ) { Text(text.connect) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                "wifi" -> {
+                                    OutlinedTextField(
+                                        wifiHost,
+                                        { wifiHost = it },
+                                        Modifier.fillMaxWidth(),
+                                        label = { Text(text.host) },
+                                        placeholder = { Text("192.168.0.10") }
+                                    )
+                                    OutlinedTextField(
+                                        wifiPort,
+                                        { wifiPort = it.filter { ch -> ch.isDigit() }.take(5) },
+                                        Modifier.fillMaxWidth(),
+                                        label = { Text(text.port) },
+                                        placeholder = { Text("35000") }
+                                    )
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                closeAllObd()
+                                                obdTransport = "wifi"
+                                                val port = wifiPort.toIntOrNull() ?: 35000
+                                                if (wifiHost.isBlank()) {
+                                                    obdStatus = extra.enterWifiHost
+                                                } else {
+                                                    obdStatus = extra.connectingWifi
+                                                    wifiClient.connect(wifiHost, port)
+                                                        .onSuccess { obdStatus = it }
+                                                        .onFailure { obdStatus = "${extra.wifiError}: ${it.message ?: extra.unknownError}" }
+                                                }
+                                            }
+                                        },
+                                        enabled = wifiHost.isNotBlank() && !wifiClient.isConnected,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text(text.connectWifi) }
+                                }
+
+                                "usb" -> {
+                                    Button(onClick = { refreshUsbDevices() }) { Text(text.refresh) }
+                                    if (usbDevices.isEmpty()) {
+                                        Text(text.noUsbDevices)
+                                    } else {
+                                        usbDevices.forEach { device ->
+                                            Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    Text(
+                                                        device.productName ?: device.deviceName,
+                                                        style = MaterialTheme.typography.titleMedium
+                                                    )
+                                                    Text(
+                                                        "VID ${device.vendorId} / PID ${device.productId}",
+                                                        style = MaterialTheme.typography.bodySmall
+                                                    )
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                        Button(onClick = {
+                                                            val manager = context.getSystemService(UsbManager::class.java)
+                                                            if (manager != null) {
+                                                                val pending = PendingIntent.getBroadcast(
+                                                                    context,
+                                                                    device.deviceId,
+                                                                    Intent("com.aicarscaner.mobile.USB_PERMISSION"),
+                                                                    PendingIntent.FLAG_IMMUTABLE
+                                                                )
+                                                                manager.requestPermission(device, pending)
+                                                                obdStatus = extra.usbPermissionRequested
+                                                            }
+                                                        }) { Text(text.requestUsbAccess) }
+                                                        Button(
+                                                            onClick = {
+                                                                scope.launch {
+                                                                    val manager = context.getSystemService(UsbManager::class.java)
+                                                                    if (manager == null) {
+                                                                        obdStatus = extra.usbManagerUnavailable
+                                                                    } else {
+                                                                        closeAllObd()
+                                                                        obdTransport = "usb"
+                                                                        obdStatus = extra.connectingUsb
+                                                                        usbClient.connect(manager, device)
+                                                                            .onSuccess { obdStatus = it }
+                                                                            .onFailure { obdStatus = "${extra.usbError}: ${it.message ?: extra.unknownError}" }
+                                                                    }
+                                                                }
+                                                            },
+                                                            enabled = !usbClient.isConnected
+                                                        ) { Text(text.connect) }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Button(onClick = {
+                                        scope.launch {
+                                            when (obdTransport) {
+                                                "bluetooth" -> bluetoothClient.command("010C")
+                                                "wifi" -> wifiClient.readRpm()
+                                                else -> usbClient.readRpm()
+                                            }.onSuccess { obdResponse = "${extra.rpmValue}: ${it}" }
+                                                .onFailure { obdResponse = "${extra.rpmReadFailed}: ${it.message ?: extra.unknownError}" }
+                                        }
+                                    }) { Text(text.readRpm) }
+                                    Button(onClick = {
+                                        scope.launch {
+                                            when (obdTransport) {
+                                                "bluetooth" -> bluetoothClient.command("03")
+                                                "wifi" -> wifiClient.readDtcs()
+                                                else -> usbClient.readDtcs()
+                                            }.onSuccess { obdResponse = "${extra.dtcValue}: ${it}" }
+                                                .onFailure { obdResponse = "${extra.dtcReadFailed}: ${it.message ?: extra.unknownError}" }
+                                        }
+                                    }) { Text(text.readDtcs) }
+                                    Button(onClick = { closeAllObd() }) { Text(text.disconnect) }
+                                }
+                            }
+
+                            if (obdResponse.isNotBlank()) {
+                                Card(
+                                        Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(
+                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                                        ),
+                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                                        )
+                                    ) {
+                                    Column(Modifier.padding(12.dp)) {
+                                        Text(text.adapterResponse, style = MaterialTheme.typography.labelLarge)
+                                        Text(obdResponse)
+                                    }
+                                }
+                            }
+    }
+    var identifyAfterConnect by remember { mutableStateOf(false) }
+    fun discoverConnectedVehicle() {
+            val discoveryTransport=obdTransport
+            discoveryPending=true;discoveryResult=null;discoveryError=false
+            scope.launch {
+                suspend fun command(step:String):String = when(discoveryTransport) {
+                    "bluetooth" -> bluetoothClient.command(step,35000)
+                    "wifi" -> wifiClient.command(step,35000)
+                    else -> usbClient.command(step,35000)
+                }.getOrThrow()
+                try {
+                    discoveryResult=com.aicarscaner.mobile.data.obd.DiscoveryReader.read { command(it) }
+                } catch(cancelled:kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch(error:Exception) { discoveryError=true }
+                finally { discoveryPending=false }
+            }
+    }
+    LaunchedEffect(obdConnected,identifyAfterConnect) {
+        if(obdConnected && identifyAfterConnect) {
+            identifyAfterConnect=false
+            selectedTab=14
+            discoverConnectedVehicle()
+        }
+    }
+    val diagnosticPanel: @Composable () -> Unit = {
+        Text(dashboardLabel("Diagnostics"),style=MaterialTheme.typography.titleLarge)
+        Text(dashboardLabel("VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown."))
+        OutlinedButton(onClick={selectedTab=2;refreshUsbDevices()},enabled=!discoveryPending,modifier=Modifier.fillMaxWidth()) {
+            Text(dashboardLabel("VCI / Devices"))
+        }
+        Button(enabled=!discoveryPending && !liveDataRunning,onClick={
+            if(obdConnected) discoverConnectedVehicle()
+            else { identifyAfterConnect=true;selectedTab=2;refreshUsbDevices() }
+        },modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Connect OBD and identify vehicle")) }
+        if(liveDataRunning) Text(dashboardLabel("Stop live data before discovery"))
+        if(discoveryPending) { CircularProgressIndicator(); Text(dashboardLabel("Reading VIN and identifying vehicle…")) }
+        if(discoveryError) Text(dashboardLabel("OBD connection failed. Check adapter and ignition."))
+        discoveryResult?.let { result ->
+            val status=when(result.identification_status) {
+                "identified" -> "Vehicle identified"; "incomplete" -> "Vehicle identification incomplete"
+                "lookup_unavailable" -> "VIN lookup unavailable"; "simulated" -> "Simulator / synthetic data"
+                else -> "VIN unavailable"
+            }
+            DemoPanel(dashboardLabel(status)) {
+                Text("VIN: "+(result.vin ?: "—"))
+                result.vehicle?.let { vehicle -> Text(listOfNotNull(vehicle.make,vehicle.model,vehicle.model_year,vehicle.engine_model).joinToString(" · ")) }
+            }
+            result.modules.forEach { module -> DemoPanel(dashboardLabel("OBD ECU")) { Text(module.address ?: "—") } }
+            if(result.modules.isEmpty()) Text(dashboardLabel("No responding OBD ECUs detected"))
+        }
+    }
+
+    LaunchedEffect(liveDataRunning, obdTransport, obdConnected, discoveryPending) {
+        if (!liveDataRunning || !obdConnected || discoveryPending) {
             return@LaunchedEffect
         }
 
@@ -507,8 +763,8 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     DashboardToolbar(
                         title=if(state.session==null || selectedTab==6) "AI CAR SCANNER" else dashboardLabel(when(selectedTab){1->"Vehicles";2->"VCI / Devices";0->"Symptoms";14->"Diagnostic";7->"DTC";4->"AI Analysis";8->"Tests";3->"Live Data";9->"Reports";10->"Teach AI";12->"Custom dashboard";13->"Testing progress";5->"Activity";else->"More"}),
                         hasSession=state.session!=null && selectedTab!=14,
-                        showSettings=selectedTab!=14,
-                        showBack=state.session!=null && selectedTab!=6,
+                        showSettings=selectedTab !in listOf(0,14),
+                        showBack=selectedTab !in listOf(6,9),
                         loading=state.loading,
                         onHome={selectedTab=6},
                         onSettings={settingsOpen=true},
@@ -531,7 +787,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if (state.session == null) {
+                if(selectedTab==14) {
+                    diagnosticPanel()
+                } else if(state.session==null && selectedTab==2) {
+                    adapterPanel()
+                } else if (state.session == null) {
+                    OutlinedButton(onClick={selectedTab=14},modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Connect OBD and identify vehicle")) }
                     OutlinedButton(onClick = { selectedTab = 9; viewModel.loadHistory() }, modifier = Modifier.fillMaxWidth()) {
                         Text(demo("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն"))
                     }
@@ -823,7 +1084,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) { Text(text.reviewAnalysis) }
                         }
 
-                        14 -> { /* Reserved for the next diagnostic workflow. */ }
+                        14 -> diagnosticPanel()
 
                         1 -> {
                             Row(
@@ -921,207 +1182,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) { Text(text.startNewSession) }
                         }
 
-                        2 -> {
-                            DemoAdapterHeader(obdConnected,localizedConnectionStatus(appSettings.language,obdStatus))
-                            Text(text.obdConnection, style = MaterialTheme.typography.titleLarge)
-                            Text(extra.obdAdapters)
-                            Text("${text.obdConnection}: ${localizedConnectionStatus(appSettings.language,obdStatus)}", fontWeight = FontWeight.Medium)
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                TransportButton(obdTransport == "bluetooth", { obdTransport = "bluetooth" }, text.bluetooth)
-                                TransportButton(obdTransport == "wifi", { obdTransport = "wifi" }, text.wifi)
-                                TransportButton(obdTransport == "usb", { obdTransport = "usb" }, text.usb)
-                            }
-
-                            when (obdTransport) {
-                                "bluetooth" -> {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Button(onClick = { refreshBluetoothDevices() }) { Text(text.refresh) }
-                                        Button(onClick = {
-                                            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                                        }) { Text(text.bluetoothSettings) }
-                                    }
-                                    if (obdDevices.isEmpty()) {
-                                        Text(text.noPairedDevices)
-                                    } else {
-                                        obdDevices.forEach { device ->
-                                            Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                                        ),
-                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                    Text(device.name ?: text.bluetooth, style = MaterialTheme.typography.titleMedium)
-                                                    Text(device.address, style = MaterialTheme.typography.bodySmall)
-                                                    Button(
-                                                        onClick = {
-                                                            scope.launch {
-                                                                closeAllObd()
-                                                                obdTransport = "bluetooth"
-                                                                obdStatus = extra.connectingBluetooth
-                                                                bluetoothClient.connect(device)
-                                                                    .onSuccess { obdStatus = it }
-                                                                    .onFailure { obdStatus = "${extra.bluetoothError}: ${it.message ?: extra.unknownError}" }
-                                                            }
-                                                        },
-                                                        enabled = !bluetoothClient.isConnected
-                                                    ) { Text(text.connect) }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                "wifi" -> {
-                                    OutlinedTextField(
-                                        wifiHost,
-                                        { wifiHost = it },
-                                        Modifier.fillMaxWidth(),
-                                        label = { Text(text.host) },
-                                        placeholder = { Text("192.168.0.10") }
-                                    )
-                                    OutlinedTextField(
-                                        wifiPort,
-                                        { wifiPort = it.filter { ch -> ch.isDigit() }.take(5) },
-                                        Modifier.fillMaxWidth(),
-                                        label = { Text(text.port) },
-                                        placeholder = { Text("35000") }
-                                    )
-                                    Button(
-                                        onClick = {
-                                            scope.launch {
-                                                closeAllObd()
-                                                obdTransport = "wifi"
-                                                val port = wifiPort.toIntOrNull() ?: 35000
-                                                if (wifiHost.isBlank()) {
-                                                    obdStatus = extra.enterWifiHost
-                                                } else {
-                                                    obdStatus = extra.connectingWifi
-                                                    wifiClient.connect(wifiHost, port)
-                                                        .onSuccess { obdStatus = it }
-                                                        .onFailure { obdStatus = "${extra.wifiError}: ${it.message ?: extra.unknownError}" }
-                                                }
-                                            }
-                                        },
-                                        enabled = wifiHost.isNotBlank() && !wifiClient.isConnected,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) { Text(text.connectWifi) }
-                                }
-
-                                "usb" -> {
-                                    Button(onClick = { refreshUsbDevices() }) { Text(text.refresh) }
-                                    if (usbDevices.isEmpty()) {
-                                        Text(text.noUsbDevices)
-                                    } else {
-                                        usbDevices.forEach { device ->
-                                            Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                                        ),
-                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                    Text(
-                                                        device.productName ?: device.deviceName,
-                                                        style = MaterialTheme.typography.titleMedium
-                                                    )
-                                                    Text(
-                                                        "VID ${device.vendorId} / PID ${device.productId}",
-                                                        style = MaterialTheme.typography.bodySmall
-                                                    )
-                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                        Button(onClick = {
-                                                            val manager = context.getSystemService(UsbManager::class.java)
-                                                            if (manager != null) {
-                                                                val pending = PendingIntent.getBroadcast(
-                                                                    context,
-                                                                    device.deviceId,
-                                                                    Intent("com.aicarscaner.mobile.USB_PERMISSION"),
-                                                                    PendingIntent.FLAG_IMMUTABLE
-                                                                )
-                                                                manager.requestPermission(device, pending)
-                                                                obdStatus = extra.usbPermissionRequested
-                                                            }
-                                                        }) { Text(text.requestUsbAccess) }
-                                                        Button(
-                                                            onClick = {
-                                                                scope.launch {
-                                                                    val manager = context.getSystemService(UsbManager::class.java)
-                                                                    if (manager == null) {
-                                                                        obdStatus = extra.usbManagerUnavailable
-                                                                    } else {
-                                                                        closeAllObd()
-                                                                        obdTransport = "usb"
-                                                                        obdStatus = extra.connectingUsb
-                                                                        usbClient.connect(manager, device)
-                                                                            .onSuccess { obdStatus = it }
-                                                                            .onFailure { obdStatus = "${extra.usbError}: ${it.message ?: extra.unknownError}" }
-                                                                    }
-                                                                }
-                                                            },
-                                                            enabled = !usbClient.isConnected
-                                                        ) { Text(text.connect) }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Button(onClick = {
-                                        scope.launch {
-                                            when (obdTransport) {
-                                                "bluetooth" -> bluetoothClient.command("010C")
-                                                "wifi" -> wifiClient.readRpm()
-                                                else -> usbClient.readRpm()
-                                            }.onSuccess { obdResponse = "${extra.rpmValue}: ${it}" }
-                                                .onFailure { obdResponse = "${extra.rpmReadFailed}: ${it.message ?: extra.unknownError}" }
-                                        }
-                                    }) { Text(text.readRpm) }
-                                    Button(onClick = {
-                                        scope.launch {
-                                            when (obdTransport) {
-                                                "bluetooth" -> bluetoothClient.command("03")
-                                                "wifi" -> wifiClient.readDtcs()
-                                                else -> usbClient.readDtcs()
-                                            }.onSuccess { obdResponse = "${extra.dtcValue}: ${it}" }
-                                                .onFailure { obdResponse = "${extra.dtcReadFailed}: ${it.message ?: extra.unknownError}" }
-                                        }
-                                    }) { Text(text.readDtcs) }
-                                    Button(onClick = { closeAllObd() }) { Text(text.disconnect) }
-                                }
-                            }
-
-                            if (obdResponse.isNotBlank()) {
-                                Card(
-                                        Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(
-                                            1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                                        ),
-                                        colors = CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                                        )
-                                    ) {
-                                    Column(Modifier.padding(12.dp)) {
-                                        Text(text.adapterResponse, style = MaterialTheme.typography.labelLarge)
-                                        Text(obdResponse)
-                                    }
-                                }
-                            }
-                        }
+                        2 -> adapterPanel()
 
                         3 -> {
                             Row(

@@ -249,3 +249,6 @@ class DiagnosticApiClient:
             "title": title, "text": text,
             "metadata": {"source": "user-reported-repair", "document_type": "repair_note"},
         })
+
+    def diagnostic_discovery(self, device_id: str, config: dict | None = None) -> dict[str, Any]:
+        return self._request("POST", f"/api/v1/devices/{device_id}/diagnostic-discovery", json={"config": config or {}}, timeout=120)

@@ -8,7 +8,7 @@ from functools import lru_cache
 import time
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont
+from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -691,13 +691,76 @@ class SymptomsPage(QWidget):
         lines += ["", "Important: hypotheses are not confirmed component failures. Confirmation requires measured or test evidence."]
         return "\n".join(lines)
 
+def _navigation_icon(symbol, connector=False):
+    image = QImage(24, 24, QImage.Format_ARGB32_Premultiplied)
+    image.fill(Qt.transparent)
+    painter = QPainter(image)
+    painter.setPen(QPen(QColor("#42AAFF"), 2))
+    if connector:
+        painter.drawRoundedRect(2, 5, 20, 14, 3, 3)
+        for x in (6, 10, 14, 18):
+            for y in (10, 14): painter.drawPoint(x, y)
+    else:
+        painter.drawText(image.rect(), Qt.AlignCenter, symbol)
+    painter.end()
+    return QIcon(QPixmap.fromImage(image))
+
+
 class DiagnosticPage(QWidget):
-    """Reserved for the next diagnostic workflow."""
+    """VIN-first OBD connection; only measured responders are displayed."""
     def __init__(self, app: "MainWindow") -> None:
         super().__init__()
+        self.app = app
+        lay = QVBoxLayout(self)
+        title = QLabel("Diagnostics"); title.setObjectName("title"); lay.addWidget(title)
+        self.adapters = QComboBox(); self.adapters.setAccessibleName("Selected device")
+        lay.addWidget(self.adapters)
+        self.connect = QPushButton("Connect OBD and identify vehicle")
+        self.connect.clicked.connect(self.identify_vehicle); lay.addWidget(self.connect)
+        configure = QPushButton("VCI / Devices")
+        configure.clicked.connect(lambda: app.navigate_page(2)); lay.addWidget(configure)
+        note = QLabel("VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown.")
+        note.setWordWrap(True); lay.addWidget(note)
+        self.identity = QPlainTextEdit(); self.identity.setReadOnly(True); lay.addWidget(self.identity)
+        self.modules = QListWidget(); lay.addWidget(self.modules)
+        self._pending = False
 
     def refresh(self):
-        pass
+        selected = self.adapters.currentData() or self.app.selected_device_id
+        devices = [(d.get("model") or d["device_id"], d["device_id"]) for d in self.app.devices]
+        if devices != [(self.adapters.itemText(i), self.adapters.itemData(i)) for i in range(self.adapters.count())]:
+            self.adapters.clear()
+            for name, device_id in devices:
+                self.adapters.addItem(name, device_id)
+            index = self.adapters.findData(selected)
+            if index >= 0: self.adapters.setCurrentIndex(index)
+        self.connect.setEnabled(bool(devices) and not self._pending)
+
+    def identify_vehicle(self):
+        device_id = self.adapters.currentData()
+        if not device_id or self._pending: return
+        self._pending = True; self.connect.setEnabled(False)
+        self.identity.setPlainText(self.app.tr_text("Reading VIN and identifying vehicle…")); self.modules.clear()
+        config = self.app.pages[2].config() if device_id == self.app.selected_device_id else {}
+        def work():
+            try: return self.app.api.diagnostic_discovery(device_id, config)
+            except Exception: return {"error": True}
+        self.app.run_worker(work, self._identified)
+
+    def _identified(self, data):
+        self._pending = False; self.refresh()
+        if data.get("error"):
+            self.identity.setPlainText(self.app.tr_text("OBD connection failed. Check adapter and ignition.")); return
+        vehicle = data.get("vehicle") or {}
+        status = {"identified": "Vehicle identified", "incomplete": "Vehicle identification incomplete",
+                  "lookup_unavailable": "VIN lookup unavailable", "vin_unavailable": "VIN unavailable",
+                  "simulated": "Simulator / synthetic data"}.get(data.get("identification_status"), "VIN unavailable")
+        lines = [self.app.tr_text(status), "VIN: " + (data.get("vin") or "—")]
+        lines += [str(vehicle[key]) for key in ("make", "model", "model_year", "engine_model") if vehicle.get(key)]
+        self.identity.setPlainText("\n".join(lines))
+        for module in data.get("modules", []):
+            self.modules.addItem(self.app.tr_text("OBD ECU") + " · " + (module.get("address") or "—"))
+        if not self.modules.count(): self.modules.addItem(self.app.tr_text("No responding OBD ECUs detected"))
 
 
 class LiveDataPage(QWidget):
@@ -970,7 +1033,7 @@ class DevicesPage(QWidget):
         super().__init__(); self.app=app
         lay=QVBoxLayout(self)
         title=QLabel("VCI / Adapter Connection"); title.setObjectName("title"); lay.addWidget(title)
-        info=QLabel("Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here."); info.setObjectName("muted"); lay.addWidget(info)
+        info=QLabel("Discover USB/BLE adapters or connect to a Wi-Fi OBD endpoint. Physical writes/programming are not exposed here."); info.setObjectName("muted"); info.setWordWrap(True); lay.addWidget(info)
 
         scan=QHBoxLayout()
         usb=QPushButton("Scan USB"); ble=QPushButton("Scan BLE"); sim=QPushButton("Add Simulator"); wifi=QPushButton("Probe Wi-Fi")
@@ -998,7 +1061,7 @@ class DevicesPage(QWidget):
         for b in (vin,dtc,live): read.addWidget(b)
         form.addRow(read)
         self.result=QPlainTextEdit(); self.result.setReadOnly(True); form.addRow("Device result", self.result)
-        split.addWidget(detail); split.setSizes([460,900]); lay.addWidget(split,1)
+        split.addWidget(detail); self.list.setMinimumWidth(180); detail.setMinimumWidth(300); split.setSizes([300,700]); lay.addWidget(split,1)
 
     def current(self) -> dict[str, Any] | None:
         item=self.list.currentItem()
@@ -1235,24 +1298,36 @@ class MainWindow(QMainWindow):
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
-        for title, target in [("Diagnostics",3),("✎  Symptoms",11),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
-            button=QPushButton(title); button.setObjectName("topNav"); button.clicked.connect(lambda _=False, index=target:self.nav.setCurrentRow(index)); header_buttons.addWidget(button)
+        for title, target in [("✎  Symptoms",11),("Diagnostics",3),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
+            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_navigation_icon("", True)) if target == 3 else None; button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3)
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage)]
         self.nav=nav
-        for text,_cls in entries: nav.addItem(text)
+        for page_id in [0, 11, *range(1, 11)]:
+            symbol, text = entries[page_id][0].split("  ", 1)
+            item = QListWidgetItem(text); item.setIcon(_navigation_icon(symbol, page_id in {2, 3})); item.setData(Qt.UserRole, page_id); nav.addItem(item)
         root.addWidget(nav)
         content=QStackedWidget(); root.addWidget(content,1)
         for _text, cls in entries:
             page=cls(self); self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
-        nav.currentRowChanged.connect(content.setCurrentIndex)
-        nav.currentRowChanged.connect(lambda index: settings.setVisible(index != 3))
-        nav.currentRowChanged.connect(lambda index: self.pages[4].request_refresh() if index == 4 else None)
-        nav.currentRowChanged.connect(lambda index: self.pages[9].load() if index == 9 and self.online else None)
+        nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
+        nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11}) if row >= 0 else None)
+        nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
+        nav.currentRowChanged.connect(lambda row: self.pages[9].load() if row >= 0 and nav.item(row).data(Qt.UserRole) == 9 and self.online else None)
         nav.setCurrentRow(0)
         self.stack.addWidget(container)
+    def navigate_page(self, page_id):
+        for row in range(self.nav.count()):
+            if self.nav.item(row).data(Qt.UserRole) == page_id:
+                self.nav.setCurrentRow(row)
+                return
+
+    def page_index(self):
+        item = self.nav.currentItem()
+        return item.data(Qt.UserRole) if item else None
+
     def _build_menu(self):
         menu = self.menuBar().addMenu("Application")
         settings_action = QAction("Settings…", self)
@@ -1356,7 +1431,7 @@ class MainWindow(QMainWindow):
             self.refresh_pages()
             # Re-query the AI model and acquisition endpoints after FastAPI
             # recovery; a cached provider result may still say AI: OFFLINE.
-            if self.online and self.session and self.nav.currentRow() == 4:
+            if self.online and self.session and self.page_index() == 4:
                 self.pages[4].request_refresh()
 
         self.run_worker(work, done)
@@ -1535,7 +1610,7 @@ class MainWindow(QMainWindow):
         if not self.online: self.show_error("Backend is offline. Start the FastAPI backend first."); return
         self.run_worker(lambda:self.api.create_session(self.active_vehicle.to_json()),self._session_created)
     def _session_created(self,data):
-        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.nav.setCurrentRow(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
+        self.session=Session(str(data.get("session_id")),str(data.get("state","CREATED")),self.active_vehicle); self.session_json=data; self.decision={}; self.telemetry={}; self.network={}; self.active_network={}; self.navigate_page(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic session created"))
     def analyze_input(self):
         if not self.session: self.new_session(); return
         text=self.pages[11].symptom.toPlainText().strip(); dtc=self.pages[11].dtc.text().strip()
@@ -1546,7 +1621,7 @@ class MainWindow(QMainWindow):
             return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)
     def _analysis_done(self,data): self.session_json=data; self.session=Session(str(data.get("session_id")),str(data.get("state","")),self.active_vehicle); self.run_worker(lambda:self.api.decision_plan(self.session.session_id, language=self.language),self._decision_done)
-    def _decision_done(self,data): self.decision=data; self.nav.setCurrentRow(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
+    def _decision_done(self,data): self.decision=data; self.navigate_page(11); self.refresh_pages(); self.statusBar().showMessage(self.tr_text("Diagnostic reasoning updated"))
     def start_bound_acquisition(self):
         if not self.session: return
         self.run_worker(lambda:self.api.start_bound_acquisition(self.session.session_id), lambda _d:self._sim_changed("Connected adapter acquisition started"))

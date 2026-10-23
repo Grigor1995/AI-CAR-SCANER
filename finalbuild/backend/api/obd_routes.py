@@ -66,3 +66,15 @@ def detected(raw: str):
         return detected_protocol(raw)
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
+
+
+@router.get("/discovery/plan")
+def discovery_plan():
+    from vehicle.diagnostic_discovery import PLAN
+    return PLAN
+
+
+@router.post("/discovery/decode")
+async def discovery_decode(request: RawSnapshot):
+    from vehicle.diagnostic_discovery import identify
+    return await identify(request.responses)

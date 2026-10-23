@@ -180,6 +180,12 @@ interface DiagnosticApi {
         @Query("limit") limit: Int = 100
     ): BackendLiveRecordsDto
 
+    @GET("api/v1/obd/discovery/plan")
+    suspend fun discoveryPlan(): DiscoveryPlanDto
+
+    @POST("api/v1/obd/discovery/decode")
+    suspend fun decodeDiscovery(@Body frames: ObdRawSnapshotDto): DiscoveryResultDto
+
     @GET("api/v1/obd/plan")
     suspend fun obdPlan(): ObdPlanDto
 
@@ -278,3 +284,9 @@ interface DiagnosticApi {
 data class ObdPlanDto(val initialization: List<String>, val commands: List<String>)
 data class ObdRawSnapshotDto(val responses: Map<String, String>, val session_id: String? = null)
 data class ObdDecodedSnapshotDto(val values: com.aicarscaner.mobile.data.obd.LiveDataSnapshot)
+
+data class DiscoveryPlanDto(val commands: List<String>, val restore: List<String>)
+data class DiscoveredVehicleDto(val make:String?, val model:String?, val model_year:String?, val engine_model:String?)
+data class DiscoveredModuleDto(val address:String?, val name:String, val observed:Boolean)
+data class DiscoveryResultDto(val vin:String?, val vehicle:DiscoveredVehicleDto?, val identification_status:String,
+    val modules:List<DiscoveredModuleDto>, val simulated:Boolean)

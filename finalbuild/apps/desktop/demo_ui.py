@@ -321,7 +321,7 @@ class DemoDashboard(QWidget):
         self.vehicle_info = label("—", "muted", True)
         hero.body.addWidget(self.vehicle_name)
         hero.body.addWidget(self.vehicle_info)
-        hero.body.addWidget(action("Select vehicle  →", lambda: app.nav.setCurrentRow(1)))
+        hero.body.addWidget(action("Select vehicle  →", lambda: app.navigate_page(1)))
         left.addWidget(hero)
         counts = QHBoxLayout()
         self.dtcs = CountCard("DTC", "0", "red")
@@ -336,7 +336,7 @@ class DemoDashboard(QWidget):
             ("⚠  DTC list & details", 7), ("▥  Live Data", 4),
             ("✓  Guided Tests", 6), ("◈  AI Analysis", 8),
         ]):
-            buttons.addWidget(action(name, lambda _=False, p=page: app.nav.setCurrentRow(p)), i // 2, i % 2)
+            buttons.addWidget(action(name, lambda _=False, p=page: app.navigate_page(p)), i // 2, i % 2)
         quick.body.addLayout(buttons)
         left.addWidget(quick)
         live = Panel("Live Data / Custom dashboard")
@@ -344,7 +344,7 @@ class DemoDashboard(QWidget):
         live.body.addWidget(self.signals)
         self.source = label("No acquisition running", "muted", True)
         live.body.addWidget(self.source)
-        live.body.addWidget(action("Open live channels  →", lambda: app.nav.setCurrentRow(4)))
+        live.body.addWidget(action("Open live channels  →", lambda: app.navigate_page(4)))
         right.addWidget(live)
         progress = Panel("Testing progress")
         self.progress = QProgressBar()
@@ -405,7 +405,7 @@ class DTCPage(QWidget):
         layout.addWidget(label("Reported codes are evidence, not a confirmed component failure.", "muted", True))
         self.list = QListWidget()
         layout.addWidget(self.list)
-        layout.addWidget(action("Add symptoms / DTC  →", lambda: app.nav.setCurrentRow(11), True))
+        layout.addWidget(action("Add symptoms / DTC  →", lambda: app.navigate_page(11), True))
 
     def refresh(self):
         self.list.clear()
@@ -428,7 +428,7 @@ class HypothesesPage(QWidget):
         self.missing.setReadOnly(True)
         self.missing.setMaximumHeight(140)
         layout.addWidget(self.missing)
-        layout.addWidget(action("Recommended tests  →", lambda: app.nav.setCurrentRow(6), True))
+        layout.addWidget(action("Recommended tests  →", lambda: app.navigate_page(6), True))
 
     def refresh(self):
         self.list.clear()
@@ -502,7 +502,7 @@ class ReportsPage(QWidget):
         live._status_data = {}
         self.app.decision = {"candidates": data.get("recommendations", [])}
         self.app.refresh_pages()
-        self.app.nav.setCurrentRow(8)
+        self.app.navigate_page(8)
 
     def export(self):
         data = self.app.session_json

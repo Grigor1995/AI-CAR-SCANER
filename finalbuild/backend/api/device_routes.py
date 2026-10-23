@@ -143,3 +143,24 @@ async def read_device_obd_protocol(device_id: str):
     except Exception as error:
         raise HTTPException(409, str(error)) from error
     return {"device_id": device_id, "simulated": False, **result}
+
+
+@router.post("/{device_id:path}/diagnostic-discovery")
+async def diagnostic_discovery(device_id: str, request: DeviceConnectRequest = DeviceConnectRequest()):
+    """Connect, read VIN first, then show measured generic OBD responders."""
+    from vehicle.diagnostic_discovery import collect, identify
+    try:
+        descriptor = manager.status(device_id)
+        if descriptor.status.value != "connected":
+            descriptor = await manager.connect(device_id, request.config)
+        simulated = descriptor.connection_type.lower() == "simulator"
+        if simulated:
+            return {"vin": None, "vehicle": None, "modules": [], "simulated": True,
+                    "identification_status": "simulated", "scope": "generic_obd_responders_only"}
+        physical = manager if hasattr(manager, "connected_obd") else manager._physical()
+        client = physical.connected_obd(device_id)
+        async with client._lock:
+            responses = await collect(client._command_unlocked)
+        return await identify(responses)
+    except Exception as exc:
+        raise HTTPException(409, "OBD identification failed; check adapter connection and ignition") from exc

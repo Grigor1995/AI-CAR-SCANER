@@ -257,3 +257,35 @@ async def test_protocol_connection_failure_is_public_conflict(monkeypatch):
     with pytest.raises(HTTPException) as error:
         await routes.read_device_obd_protocol('usb:COM9')
     assert error.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_discovery_simulator_is_explicit_and_never_returns_fake_ecus(monkeypatch):
+    manager = FakeManager()
+    monkeypatch.setattr(routes, 'manager', manager)
+    result = await routes.diagnostic_discovery('vci-1', routes.DeviceConnectRequest())
+    assert result['simulated'] is True
+    assert result['vin'] is None
+    assert result['modules'] == []
+    assert manager.calls[-1][0] == 'connect'
+
+
+@pytest.mark.asyncio
+async def test_discovery_real_device_collects_readonly_replies_under_client_lock(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    manager = FakeManager()
+    manager.result.connection_type = 'USB'
+    calls = []
+    async def command(step):
+        assert client._lock.locked()
+        calls.append(step)
+        return '7E8 06 41 00 BE 3E B8 13' if step == '0100' else 'NO DATA'
+    client = SimpleNamespace(_lock=asyncio.Lock(), _command_unlocked=command)
+    manager.connected_obd = lambda device_id: client
+    monkeypatch.setattr(routes, 'manager', manager)
+    result = await routes.diagnostic_discovery('vci-1', routes.DeviceConnectRequest())
+    assert calls == ['0902','ATH1','0100','ATDPN','ATH0']
+    assert result['modules'][0]['address'] == '7E8'
+    assert result['identification_status'] == 'vin_unavailable'
+    assert not client._lock.locked()

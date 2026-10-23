@@ -1366,6 +1366,10 @@ class MainWindow(QMainWindow):
             surfaces = ("QWidget#sectionHero, QGroupBox { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1B3653,stop:1 #0B192C); border:1px solid #345976; border-top-color:#6385A1; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #24486C,stop:1 #102744); }" if self.dark_theme else
                         "QWidget#sectionHero, QGroupBox { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #DCE9F5); border:1px solid #A3BED5; border-top-color:#FFFFFF; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #CADFF1); }")
             self.setStyleSheet((APP_QSS if self.dark_theme else APP_QSS_LIGHT) + surfaces + (NEON_DESKTOP_QSS if self.dark_theme else ""))
+            shell = getattr(self, "_neon_shell", None)
+            if shell is not None:
+                shell.dark_theme = self.dark_theme
+                shell.update()
             self._rendered_theme = self.dark_theme
         finally:
             self.setUpdatesEnabled(True)
@@ -1480,7 +1484,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(self.tr_text(self.statusBar().currentMessage()))
 
     def _build_pages(self):
-        container=NeonShell(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
+        container=NeonShell(); container.dark_theme = self.dark_theme; self._neon_shell = container; shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)

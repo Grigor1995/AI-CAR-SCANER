@@ -195,14 +195,14 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     LaunchedEffect(selectedTab, state.testResultRevision) {
         pageScrollState.scrollTo(0)
     }
-    LaunchedEffect(state.testResultRevision, state.testResultCompletion, state.loading, state.error) {
+    LaunchedEffect(state.testResultRevision, state.testResultCompletion, state.testResultSaving, state.testResultError) {
         val submittedAt = pendingTestRevision
-        if (submittedAt != null && !state.loading) {
+        if (submittedAt != null && !state.testResultSaving) {
             if (state.testResultRevision > submittedAt) {
                 pendingTestRevision = null
                 testResultDialogOpen = false
                 selectedTab = 4
-            } else if (state.error != null) {
+            } else if (state.testResultError != null) {
                 pendingTestRevision = null
             }
         }
@@ -675,12 +675,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 onDismissRequest = { if (pendingTestRevision == null) testResultDialogOpen = false },
                 title = { Text(selectedTestTitle) },
                 text = {
-                    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val resultScroll = rememberScrollState()
+                    LaunchedEffect(state.testResultError) {
+                        if (state.testResultError != null) resultScroll.scrollTo(0)
+                    }
+                    Column(Modifier.verticalScroll(resultScroll), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (pendingTestRevision != null) {
                             CircularProgressIndicator()
                             Text(dashboardLabel("Updating diagnosis…"))
                         }
-                        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        state.testResultError?.let { Text(dashboardLabel(it), color = MaterialTheme.colorScheme.error) }
                         Text(extra.nextDiagnostic, style = MaterialTheme.typography.labelLarge)
                         Text(extra.nextDiagnosticResult, style = MaterialTheme.typography.labelLarge)
                         Column(
@@ -695,6 +699,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 if (testOutcome == value) {
                                     Button(
                                         onClick = { testOutcome = value },
+                                        enabled = !state.testResultSaving,
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = when (value) {
@@ -707,6 +712,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 } else {
                                     OutlinedButton(
                                         onClick = { testOutcome = value },
+                                        enabled = !state.testResultSaving,
                                         modifier = Modifier.fillMaxWidth()
                                     ) { Text(label) }
                                 }
@@ -715,6 +721,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         OutlinedTextField(
                             value = testNotes,
                             onValueChange = { testNotes = it },
+                            enabled = !state.testResultSaving,
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
                             maxLines = 6,
@@ -737,7 +744,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 )
                             }
                         },
-                        enabled = selectedTestId != null && testOutcome.isNotBlank() && !state.loading && pendingTestRevision == null
+                        enabled = selectedTestId != null && testOutcome.isNotBlank() && !state.testResultSaving && pendingTestRevision == null
                     ) { Text(extra.recordResult) }
                 },
                 dismissButton = {

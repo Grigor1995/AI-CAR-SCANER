@@ -1,5 +1,10 @@
 # Release notes
 
+## Unreleased — Android result submission
+
+- Remove a silent click guard that ignored Record result while another request was loading. Opening the result editor no longer depends on unrelated requests.
+- Track test submission and errors independently, prevent duplicate taps, surface failed saves in the dialog, and unlock retries after a timeout. Ignore older analysis responses that would replace a newly recorded diagnosis.
+
 ## Unreleased — Recalculate hypotheses after every test
 
 - Rebuild evidence scores and hypothesis ranking from the latest outcome of each test on every analysis. PASS weakens targeted fault hypotheses, FAIL supports them, and INCOMPLETE withdraws the previous result for that test without inventing evidence.

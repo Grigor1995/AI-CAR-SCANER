@@ -26,6 +26,8 @@ data class DiagnosticUiState(
     val catalogOnline: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
+    val testResultSaving: Boolean = false,
+    val testResultError: String? = null,
     val testResultRevision: Int = 0,
     val testResultCompletion: Int = 0
 )
@@ -150,17 +152,30 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
         result: String,
         notes: String?,
         language: String = "en"
-    ) = execute(resultRecorded = true) {
-        val id = _uiState.value.session?.session_id ?: error("Create a session first")
-        repository.recordTestResult(id, testId, result, notes, language)
+    ) {
+        if (_uiState.value.testResultSaving) return
+        // Set synchronously so two taps in one frame cannot submit twice.
+        _uiState.value = _uiState.value.copy(testResultSaving = true, testResultError = null)
+        execute(resultRecorded = true) {
+            val id = _uiState.value.session?.session_id ?: error("Create a session first")
+            kotlinx.coroutines.withTimeout(60_000) {
+                repository.recordTestResult(id, testId, result, notes, language)
+            }
+        }
     }
 
     private fun execute(resultRecorded: Boolean = false, block: suspend () -> DiagnosticSessionDto) {
+        val requestRevision = _uiState.value.testResultRevision
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 val result = block()
                 val previous = _uiState.value
+                if (!resultRecorded && previous.session?.session_id == result.session_id &&
+                    previous.testResultRevision != requestRevision) {
+                    _uiState.value = previous.copy(loading = false)
+                    return@launch
+                }
                 if (previous.session?.session_id != result.session_id) {
                     liveRefreshRevision++
                     liveRefreshSession = null
@@ -176,15 +191,28 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
                     backendLiveError = if (previous.session?.session_id == result.session_id) previous.backendLiveError else null,
                     loading = false,
                     error = null,
+                    testResultSaving = if (resultRecorded) false else previous.testResultSaving,
+                    testResultError = if (resultRecorded) null else previous.testResultError,
                     testResultRevision = revision + if (resultRecorded) 1 else 0,
                     testResultCompletion = previous.testResultCompletion + if (resultRecorded) 1 else 0
                 )
+            } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false, error = "Request timed out. Check the backend connection and retry.",
+                    testResultSaving = if (resultRecorded) false else _uiState.value.testResultSaving,
+                    testResultError = if (resultRecorded) "Request timed out. Check the backend connection and retry." else _uiState.value.testResultError,
+                    testResultCompletion = _uiState.value.testResultCompletion + if (resultRecorded) 1 else 0
+                )
             } catch (cancelled: CancellationException) {
+                if (resultRecorded) _uiState.value = _uiState.value.copy(loading = false, testResultSaving = false)
                 throw cancelled
             } catch (error: Throwable) {
+                val message = friendlyError(error)
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = friendlyError(error),
+                    error = message,
+                    testResultSaving = if (resultRecorded) false else _uiState.value.testResultSaving,
+                    testResultError = if (resultRecorded) message else _uiState.value.testResultError,
                     testResultCompletion = _uiState.value.testResultCompletion + if (resultRecorded) 1 else 0
                 )
             }

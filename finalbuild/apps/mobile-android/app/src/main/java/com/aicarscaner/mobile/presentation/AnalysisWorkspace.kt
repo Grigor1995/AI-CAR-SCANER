@@ -51,7 +51,7 @@ internal fun AnalysisWorkspace(
             AnalysisDiagram(session)
             DemoHypotheses(session)
         }
-        1 -> DemoGuidedTests(session,dashboardLabel("Guided tests")) {id,title -> if(!loading) onRecord(id,title)}
+        1 -> DemoGuidedTests(session,dashboardLabel("Guided tests")) {id,title -> onRecord(id,title)}
         2 -> DemoProgress(session) {section=1}
     }
 }

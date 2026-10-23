@@ -35,7 +35,7 @@ class AnalysisWorkspaceInstrumentedTest {
             MaterialTheme(colorScheme=AutomotiveDarkColors) {
                 Surface {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        AnalysisWorkspace(session,false,revision,onAnalyze={},onRecord={id,_ ->
+                        AnalysisWorkspace(session,true,revision,onAnalyze={},onRecord={id,_ ->
                             recordedId=id
                             session=recalculated
                             revision++

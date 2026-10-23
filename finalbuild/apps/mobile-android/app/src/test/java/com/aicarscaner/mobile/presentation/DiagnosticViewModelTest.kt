@@ -322,6 +322,52 @@ class DiagnosticViewModelTest {
     }
 
     @Test
+    fun saveIsIndependentOfOtherRequestsAndDuplicateTapsAreIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel=DiagnosticViewModel(repository)
+        coEvery {repository.createSession(vehicle)} returns session
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+        val analysis=CompletableDeferred<DiagnosticSessionDto>()
+        val saved=CompletableDeferred<DiagnosticSessionDto>()
+        coEvery {repository.analyze("session-1", "en")} coAnswers {analysis.await()}
+        coEvery {repository.recordTestResult("session-1", "test-1", "PASS", null, "en")} coAnswers {saved.await()}
+        viewModel.analyze()
+        runCurrent()
+        viewModel.recordTestResult("test-1", "PASS", null)
+        viewModel.recordTestResult("test-1", "PASS", null)
+        assertTrue(viewModel.uiState.value.testResultSaving)
+        runCurrent()
+        val updated=session.copy(state="HYPOTHESIS_VALIDATION",test_results=listOf(TestResultDto("test-1", "PASS")))
+        saved.complete(updated)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.testResultSaving)
+        assertEquals(updated,viewModel.uiState.value.session)
+        analysis.complete(session)
+        advanceUntilIdle()
+        assertEquals(updated,viewModel.uiState.value.session)
+        coVerify(exactly=1) {repository.recordTestResult("session-1", "test-1", "PASS", null, "en")}
+    }
+
+    @Test
+    fun timedOutSaveUnlocksRetryWithoutLosingTheDiagnosis() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel=DiagnosticViewModel(repository)
+        coEvery {repository.createSession(vehicle)} returns session
+        viewModel.createSession(vehicle)
+        advanceUntilIdle()
+        coEvery {repository.recordTestResult("session-1", "test-1", "FAIL", null, "en")} coAnswers {CompletableDeferred<DiagnosticSessionDto>().await()}
+        viewModel.recordTestResult("test-1", "FAIL", null)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.testResultSaving)
+        assertTrue(viewModel.uiState.value.testResultError!!.contains("timed out"))
+        assertEquals(session,viewModel.uiState.value.session)
+        coEvery {repository.recordTestResult("session-1", "test-1", "FAIL", null, "en")} returns session
+        viewModel.recordTestResult("test-1", "FAIL", null)
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.testResultError)
+        assertEquals(1,viewModel.uiState.value.testResultRevision)
+    }
+
+    @Test
     fun openingAnotherSessionClearsThePreviousTestUpdateNotice() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel=DiagnosticViewModel(repository)
         coEvery {repository.createSession(vehicle)} returns session

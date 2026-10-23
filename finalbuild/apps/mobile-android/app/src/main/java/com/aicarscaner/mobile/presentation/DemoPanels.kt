@@ -249,14 +249,34 @@ internal fun gaugeRange(unit: String, value: Double?) = when(unit) {
     else -> 0.0 to maxOf(100.0, (value ?: 0.0)*1.2)
 }
 
+// Presentation bands only: speed colors are not speed limits or RPM redlines.
+internal fun gaugeBands(channel: ChartChannel): List<Triple<Double, Double, Color>> {
+    val (low, high) = gaugeRange(channel.unit, channel.values.lastOrNull())
+    val coolant = channel.key.lowercase() in setOf("coolant", "coolant temperature", "coolant_temp", "0x05", "0105")
+    val boundaries = if (coolant && channel.unit in setOf("C", "°C", "°F")) {
+        listOf(60.0, 92.0, 102.0, 110.0).map { if (channel.unit == "°F") it*1.8+32 else it }
+    } else listOf(.25, .45, .7, .85).map { low+(high-low)*it }
+    val edges = listOf(low)+boundaries+listOf(high)
+    val colors = listOf(Color(0xFF249BFF), Color(0xFF29CED3), Color(0xFF35CF87), Color(0xFFFFBD45), Color(0xFFFF5367))
+    return colors.mapIndexed { index, color -> Triple(edges[index], edges[index+1], color) }
+}
+
 @Composable
 private fun ChannelGauge(channel: ChartChannel) {
     val track=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.25f)
     val (low,high)=gaugeRange(channel.unit,channel.values.lastOrNull())
+    val bands=gaugeBands(channel)
+    val value=channel.values.lastOrNull() ?: low
+    val needle=if(value in bands[2].first..bands[2].second) bands[2].third
+        else bands.firstOrNull { value < it.second }?.third ?: bands.last().third
     Canvas(Modifier.fillMaxWidth().height(140.dp).semantics { contentDescription="${channel.key} ${channel.values.lastOrNull() ?: "—"} ${channel.unit}" }) {
         val radius=minOf(size.width/2-10.dp.toPx(),size.height/2-8.dp.toPx())
         val center=Offset(size.width/2,size.height/2)
         drawArc(track,135f,270f,false,topLeft=center-Offset(radius,radius),size=androidx.compose.ui.geometry.Size(radius*2,radius*2),style=Stroke(8.dp.toPx()))
+        bands.forEach { (start,end,color) ->
+            drawArc(color,(135+270*(start-low)/(high-low)).toFloat(),(270*(end-start)/(high-low)).toFloat(),false,
+                topLeft=center-Offset(radius,radius),size=androidx.compose.ui.geometry.Size(radius*2,radius*2),style=Stroke(8.dp.toPx()))
+        }
         for(index in 0..8) {
             val angle=Math.toRadians(135.0+270.0*index/8)
             fun point(r:Float)=center+Offset((r*kotlin.math.cos(angle)).toFloat(),(r*kotlin.math.sin(angle)).toFloat())
@@ -264,13 +284,15 @@ private fun ChannelGauge(channel: ChartChannel) {
         }
         channel.values.lastOrNull()?.let { value ->
             val angle=Math.toRadians(135+270*((value-low)/(high-low)).coerceIn(0.0,1.0))
-            drawLine(channel.color,center,center+Offset(((radius-18.dp.toPx())*kotlin.math.cos(angle)).toFloat(),((radius-18.dp.toPx())*kotlin.math.sin(angle)).toFloat()),3.dp.toPx())
-            drawCircle(channel.color,5.dp.toPx(),center)
+            drawLine(needle,center,center+Offset(((radius-18.dp.toPx())*kotlin.math.cos(angle)).toFloat(),((radius-18.dp.toPx())*kotlin.math.sin(angle)).toFloat()),3.dp.toPx())
+            drawCircle(needle,5.dp.toPx(),center)
         }
     }
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
         Text("${low.toInt()}",style=MaterialTheme.typography.labelSmall)
-        Text(channel.unit,style=MaterialTheme.typography.labelSmall)
+        val coolant=channel.key.lowercase() in setOf("coolant", "coolant temperature", "coolant_temp", "0x05", "0105")
+        Text(if(coolant) { if(channel.unit=="°F") "197.6–215.6 °F" else "92–102 °C" } else channel.unit,
+            style=MaterialTheme.typography.labelSmall,color=if(coolant) Color(0xFF35CF87) else MaterialTheme.colorScheme.onSurfaceVariant)
         Text("${high.toInt()}",style=MaterialTheme.typography.labelSmall)
     }
 }

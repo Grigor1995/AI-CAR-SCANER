@@ -6,6 +6,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SharedVehicleCatalogTest {
+    @Test fun coolantReferenceConvertsWithoutApplyingToIntakeTemperature() {
+        val coolant=ChartChannel("Coolant temperature","°C",androidx.compose.ui.graphics.Color.Blue,listOf(97.0))
+        val band=gaugeBands(coolant)[2]
+        assertEquals(92.0,band.first,0.0001)
+        assertEquals(102.0,band.second,0.0001)
+        val fahrenheit=gaugeBands(displayChannel(coolant,true))[2]
+        assertEquals(197.6,fahrenheit.first,0.0001)
+        assertEquals(215.6,fahrenheit.second,0.0001)
+        assertNotEquals(92.0,gaugeBands(coolant.copy(key="Intake air temperature"))[2].first)
+        val bands=gaugeBands(coolant.copy(key="Speed",unit="km/h"))
+        assertEquals(0.0,bands.first().first,0.0001)
+        assertEquals(260.0,bands.last().second,0.0001)
+        assertTrue(bands.zipWithNext().all { (a,b) -> a.second==b.first })
+    }
+
     @Test fun sharedSnapshotParsingKeepsFuelAndUnknownEcu() {
         val offline = parseSharedVehicleCatalog("""{"vehicles":[{"make":"Toyota","model":"Corolla","chassis":"E210","year":2020,"engine":"Hybrid","ecu":null,"fuel":"Hybrid"}]}""")
         assertEquals(listOf("hybrid"), offline.single().fuel)

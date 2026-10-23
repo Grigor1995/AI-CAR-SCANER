@@ -102,12 +102,35 @@ class AnalogGauge(QWidget):
         self.color = color
         self.value = None
         self.unit = ""
+        self.channel = ""
         self.setMinimumHeight(160)
 
     def scale(self):
         return {"rpm": (0, 8000), "C": (-40, 160), "°C": (-40, 160),
                 "°F": (-40, 320), "km/h": (0, 260), "mph": (0, 160),
                 "%": (0, 100)}.get(self.unit, (0, max(100, (self.value or 0) * 1.2)))
+
+    def bands(self):
+        """Visual reference bands, not manufacturer diagnostic limits."""
+        low, high = self.scale()
+        coolant = self.channel.lower() in {"coolant", "coolant temperature", "coolant_temp", "0x05", "0105", "coolant_c", "coolant_temp_c"}
+        if coolant and self.unit in {"C", "°C", "°F"}:
+            boundaries = [60, 92, 102, 110]
+            if self.unit == "°F":
+                boundaries = [value * 1.8 + 32 for value in boundaries]
+        else:
+            boundaries = [low + (high-low)*fraction for fraction in (.25, .45, .7, .85)]
+        edges = [low, *boundaries, high]
+        return list(zip(edges, edges[1:], ["#249BFF", "#29CED3", "#35CF87", "#FFBD45", "#FF5367"]))
+
+    def value_color(self):
+        bands = self.bands()
+        if self.value is not None and bands[2][0] <= self.value <= bands[2][1]:
+            return bands[2][2]
+        for start, end, color in bands:
+            if self.value is not None and self.value < end:
+                return color
+        return self.bands()[-1][2]
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -119,6 +142,13 @@ class AnalogGauge(QWidget):
         p.setPen(QPen(QColor("#294563"), 9))
         p.drawArc(rect, -45 * 16, 270 * 16)
         low, high = self.scale()
+        for start, end, color in self.bands():
+            p.setPen(QPen(QColor(color), 9))
+            p.drawArc(rect, round((225-270*(end-low)/(high-low))*16), round(270*(end-start)/(high-low)*16))
+        if self.channel.lower() in {"coolant", "coolant temperature", "coolant_temp", "0x05", "0105", "coolant_c", "coolant_temp_c"}:
+            reference = "197.6–215.6 °F" if self.unit == "°F" else "92–102 °C"
+            p.setPen(QColor("#35CF87"))
+            p.drawText(QRectF(0, self.height()-22, self.width(), 20), Qt.AlignCenter, reference)
         for i in range(9):
             angle = math.radians(225 - 270 * i / 8)
             def point(r):
@@ -131,9 +161,9 @@ class AnalogGauge(QWidget):
             return
         fraction = max(0, min(1, (self.value-low)/(high-low)))
         angle = math.radians(225 - fraction * 270)
-        p.setPen(QPen(QColor(self.color), 4))
+        p.setPen(QPen(QColor(self.value_color()), 4))
         p.drawLine(center, QPointF(center.x() + (radius-20)*math.cos(angle), center.y()-(radius-20)*math.sin(angle)))
-        p.setBrush(QColor(self.color))
+        p.setBrush(QColor(self.value_color()))
         p.drawEllipse(center, 5, 5)
 
 
@@ -148,6 +178,7 @@ class SignalCard(EdgeResizablePanel):
         self.body.addWidget(self.value)
         self.gauge = AnalogGauge(color)
         self.gauge.unit = self.default_unit
+        self.gauge.channel = name
         self.body.addWidget(self.gauge)
         self.trace = Trace(color)
         self.body.addWidget(self.trace)
@@ -253,6 +284,7 @@ class SignalGrid(QWidget):
                 card.setTitle(self.channel_labels.get(channel, channel))
                 if self.settings and self.settings.value(f"{self.prefix}_channel_{i}", "") != channel:
                     self.settings.setValue(f"{self.prefix}_channel_{i}", channel)
+            card.gauge.channel = channel or ""
             card.set_samples(self.groups.get(channel, []))
         self.add_button.setEnabled(any(name not in selected for name in self.groups))
 

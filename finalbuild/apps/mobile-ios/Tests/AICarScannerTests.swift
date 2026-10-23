@@ -385,7 +385,11 @@ final class AICarScannerTests: XCTestCase {
         XCTAssertEqual(defaults.string(forKey: "language"), "hy")
         XCTAssertEqual(defaults.object(forKey: "darkTheme") as? Bool, true)
         XCTAssertEqual(defaults.string(forKey: "apiURL"), "https://saved.test")
+        viewModel.liveDataLoading = true
+        viewModel.liveDataError = "old telemetry error"
         viewModel.clearSession()
+        XCTAssertFalse(viewModel.liveDataLoading)
+        XCTAssertNil(viewModel.liveDataError)
         XCTAssertNil(viewModel.session)
     }
 
@@ -546,9 +550,10 @@ final class MockURLProtocol: URLProtocol {
 
 final class DemoTelemetryContractTests: XCTestCase {
     func testBackendAcquisitionChannelAndSimulatorSourceDecode() throws {
-        let json = #"{"records":[{"channel":"0x0C","numeric_value":750.0,"unit":"rpm","source_type":"OBD_ACQUISITION","metadata":{"adapter":"simulator","pid":12}}]}"#
+        let json = #"{"records":[{"channel":"0x0C","display_name":"Engine speed","numeric_value":750.0,"unit":"rpm","source_type":"OBD_ACQUISITION","metadata":{"adapter":"simulator","pid":12}}]}"#
         let data = try JSONDecoder().decode(LiveRecordResponse.self, from: Data(json.utf8))
         XCTAssertEqual(data.records.first?.pid, "0x0C")
+        XCTAssertEqual(data.records.first?.display_name, "Engine speed")
         XCTAssertEqual(data.records.first?.numeric_value, 750)
         XCTAssertEqual(data.records.first?.sourceLabel, "Simulator / synthetic data")
     }

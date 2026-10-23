@@ -92,7 +92,13 @@ internal val dashboardTranslations = mapOf(
 )
 
 fun dashboardText(language: AppLanguage, english: String): String {
-    val translated = dashboardTranslations[english] ?: return english
+    val canonical = mapOf(
+        "Vehicles" to "Vehicle selection", "VCI / Devices" to "Device connection",
+        "Diagnostic" to "Diagnostics", "Live Data" to "Live data",
+        "AI Analysis" to "AI analysis", "Guided Tests" to "Guided tests",
+        "ECU Network" to "ECU network", "Overview" to "Home"
+    )[english] ?: english
+    val translated = dashboardTranslations[canonical] ?: return english
     return when (language) {
         AppLanguage.HY -> translated.first
         AppLanguage.RU -> translated.second

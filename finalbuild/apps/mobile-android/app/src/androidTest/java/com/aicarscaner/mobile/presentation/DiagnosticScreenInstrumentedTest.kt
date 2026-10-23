@@ -507,6 +507,7 @@ class DiagnosticScreenInstrumentedTest {
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {
+    override suspend fun acquisitionRecords(sessionId: String, limit: Int) = com.aicarscaner.mobile.data.api.BackendLiveRecordsDto()
     override suspend fun vehicleRegistryMakes(): List<String> = listOf("Mercedes-Benz")
 
     override suspend fun vehicleRegistryModels(make: String, year: Int?): List<GlobalVehicleModelDto> =

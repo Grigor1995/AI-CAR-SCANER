@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — Incoming mobile changes reviewed and integrated
+
+- Preserve the incoming shared-catalog, navigation and backend Live Data changes.
+- Fix Android catalog connectivity state, coalesce live refreshes and discard
+  stale session responses. Update repository/API test fixtures.
+- Invalidate iOS telemetry requests on session changes and display backend
+  channel names. Xcode/device execution remains unverified in this environment.
+- Review: docs/reviews/android-desktop-parity-2026-10-23.md. Local validation only.
+
 ## Unreleased — Android/Desktop catalog and display alignment
 
 - Package the same backend-generated offline snapshot on Desktop and Android,

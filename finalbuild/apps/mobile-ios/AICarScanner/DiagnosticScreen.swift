@@ -284,7 +284,7 @@ struct DiagnosticScreen: View {
             }
             ForEach(Array(Dictionary(grouping: viewModel.liveRecords, by: \.pid).keys.sorted()), id: \.self) { pid in
                 let records = viewModel.liveRecords.filter { $0.pid == pid }
-                SectionCard(pid) {
+                SectionCard(records.last?.display_name ?? pid) {
                     if let last = records.last, let value = last.numeric_value {
                         Text("\(value, specifier: "%.2f") \(last.unit ?? "")").font(.title2.bold())
                     }

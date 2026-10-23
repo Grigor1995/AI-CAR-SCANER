@@ -8,6 +8,8 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var liveRecords: [LiveRecord] = []
     @Published var liveDataError: String?
     @Published var liveDataLoading = false
+    private var liveRequestID = UUID()
+    private var liveRequestSessionID: String?
     @Published var catalog: [VehicleCatalogEntry] = SharedVehicleCatalog.offline()
     @Published var catalogOnline = false
     @Published var obdValues: [String: Double?] = [:]
@@ -162,6 +164,7 @@ final class DiagnosticViewModel: ObservableObject {
     }
 
     func openSession(_ id: String) async {
+        invalidateLiveRequest()
         liveRecords = []
         liveDataError = nil
         await execute { try await self.api.getSession(id, language: self.settings.language) }
@@ -169,26 +172,37 @@ final class DiagnosticViewModel: ObservableObject {
 
     func refreshLiveData() async {
         guard let id = session?.session_id else {
+            invalidateLiveRequest()
             liveRecords = []
             liveDataError = nil
             return
         }
-        guard !liveDataLoading else { return }
+        if liveDataLoading && liveRequestSessionID == id { return }
+        let requestID = UUID()
+        liveRequestID = requestID
+        liveRequestSessionID = id
         liveDataLoading = true
-        defer { liveDataLoading = false }
+        defer { if liveRequestID == requestID { liveDataLoading = false } }
         do {
             let response = try await api.liveRecords(id)
-            if session?.session_id == id {
+            if liveRequestID == requestID && session?.session_id == id {
                 liveRecords = response.records
                 liveDataError = nil
             }
         } catch {
-            guard session?.session_id == id else { return }
+            guard liveRequestID == requestID && session?.session_id == id else { return }
             liveDataError = error.localizedDescription
         }
     }
 
+    private func invalidateLiveRequest() {
+        liveRequestID = UUID()
+        liveRequestSessionID = nil
+        liveDataLoading = false
+    }
+
     func clearSession() {
+        invalidateLiveRequest()
         liveDataError = nil
         liveRecords = []
         session = nil
@@ -202,7 +216,13 @@ final class DiagnosticViewModel: ObservableObject {
         error = nil
 
         do {
-            session = try await operation()
+            let result = try await operation()
+            if session?.session_id != result.session_id {
+                invalidateLiveRequest()
+                liveRecords = []
+                liveDataError = nil
+            }
+            session = result
         } catch {
             self.error = error.localizedDescription
         }

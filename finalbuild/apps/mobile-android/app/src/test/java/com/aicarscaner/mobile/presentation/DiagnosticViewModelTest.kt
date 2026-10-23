@@ -7,6 +7,7 @@ import com.aicarscaner.mobile.data.api.HypothesisDto
 import com.aicarscaner.mobile.data.api.RecommendationDto
 import com.aicarscaner.mobile.data.api.TestResultDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
+import io.mockk.every
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -38,7 +39,9 @@ class DiagnosticViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = mockk<DiagnosticRepository>()
+    private val repository = mockk<DiagnosticRepository> {
+        every { offlineVehicleCatalog() } returns emptyList()
+    }
     private val vehicle = VehicleDto(
         make = "Mercedes-Benz",
         model = "E350",
@@ -388,6 +391,35 @@ class DiagnosticViewModelTest {
         assertEquals("Create a session first", viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.loading)
     }
+    @Test fun repeatedLiveRefreshIsCoalescedAndSessionSwitchDropsOldResponse() = runTest(mainDispatcherRule.dispatcher) {
+        val vm = DiagnosticViewModel(repository)
+        coEvery { repository.getSession("session-1", "en") } returns session
+        coEvery { repository.getSession("session-2", "en") } returns session.copy(session_id="session-2")
+        val pending=CompletableDeferred<com.aicarscaner.mobile.data.api.BackendLiveRecordsDto>()
+        coEvery { repository.acquisitionRecords("session-1", any()) } coAnswers { pending.await() }
+        vm.openSession("session-1"); advanceUntilIdle()
+        vm.refreshBackendLiveRecords(); vm.refreshBackendLiveRecords(); runCurrent()
+        coVerify(exactly=1) { repository.acquisitionRecords("session-1", any()) }
+        assertTrue(vm.uiState.value.backendLiveLoading)
+        vm.openSession("session-2"); runCurrent()
+        pending.complete(com.aicarscaner.mobile.data.api.BackendLiveRecordsDto(listOf(com.aicarscaner.mobile.data.api.BackendLiveRecordDto(channel="old",numeric_value=750.0))))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.backendLiveRecords.isEmpty())
+        assertFalse(vm.uiState.value.backendLiveLoading)
+    }
+
+    @Test fun catalogFailureAfterSuccessMarksOfflineWithoutLosingSelectionRows() = runTest(mainDispatcherRule.dispatcher) {
+        val vm=DiagnosticViewModel(repository)
+        val row=VehicleCatalogEntryDto("Toyota","Corolla","E210",2020,"Hybrid")
+        coEvery { repository.vehicleCatalog() } returns listOf(row)
+        vm.loadVehicleCatalog(); advanceUntilIdle()
+        assertTrue(vm.uiState.value.catalogOnline)
+        coEvery { repository.vehicleCatalog() } throws IllegalStateException("offline")
+        vm.loadVehicleCatalog(); advanceUntilIdle()
+        assertFalse(vm.uiState.value.catalogOnline)
+        assertEquals(listOf(row),vm.uiState.value.vehicleCatalog)
+    }
+
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

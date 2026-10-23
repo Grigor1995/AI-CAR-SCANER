@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
@@ -36,14 +37,22 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
 
     fun openSession(id: String, language: String = "en") = execute { repository.getSession(id, language) }
 
+    private var liveRefreshJob: Job? = null
+    private var liveRefreshSession: String? = null
+    private var liveRefreshRevision = 0
+
     /** Reads persisted server samples; never labels them as the locally connected adapter. */
     fun refreshBackendLiveRecords() {
         val sessionId = _uiState.value.session?.session_id ?: return
-        viewModelScope.launch {
+        if (liveRefreshJob?.isActive == true && liveRefreshSession == sessionId) return
+        val revision = ++liveRefreshRevision
+        liveRefreshJob?.cancel()
+        liveRefreshSession = sessionId
+        liveRefreshJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(backendLiveLoading = true, backendLiveError = null)
             try {
                 val rows = repository.acquisitionRecords(sessionId).records
-                if (_uiState.value.session?.session_id == sessionId) {
+                if (revision == liveRefreshRevision && _uiState.value.session?.session_id == sessionId) {
                     _uiState.value = _uiState.value.copy(
                         backendLiveRecords = rows, backendLiveLoading = false
                     )
@@ -51,10 +60,14 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                if (_uiState.value.session?.session_id == sessionId) {
+                if (revision == liveRefreshRevision && _uiState.value.session?.session_id == sessionId) {
                     _uiState.value = _uiState.value.copy(
                         backendLiveLoading = false, backendLiveError = error.message
                     )
+                }
+            } finally {
+                if (revision == liveRefreshRevision && _uiState.value.session?.session_id == sessionId && liveRefreshSession == sessionId) {
+                    _uiState.value = _uiState.value.copy(backendLiveLoading = false)
                 }
             }
         }
@@ -70,14 +83,14 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
 
     fun loadVehicleCatalog() {
         viewModelScope.launch {
-            runCatching { repository.vehicleCatalog() }
-                .onSuccess { catalog ->
-                    _uiState.value = _uiState.value.copy(vehicleCatalog = mergeVehicleCatalog(catalog, offlineCatalog), catalogOnline = true, error = null)
-                }
-                .onFailure {
-                    // The screen keeps its local safety catalog as a fallback.
-                    // Catalog transport failures must not block session creation.
-                }
+            try {
+                val catalog = repository.vehicleCatalog()
+                _uiState.value = _uiState.value.copy(vehicleCatalog = mergeVehicleCatalog(catalog, offlineCatalog), catalogOnline = true)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(catalogOnline = false)
+            }
         }
     }
 
@@ -85,6 +98,9 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
     fun createSession(vehicle: VehicleDto) = execute { repository.createSession(vehicle) }
 
     fun clearSession() {
+        liveRefreshRevision++
+        liveRefreshSession = null
+        liveRefreshJob?.cancel()
         val catalog = _uiState.value.vehicleCatalog
         _uiState.value = DiagnosticUiState(vehicleCatalog = catalog, catalogOnline = _uiState.value.catalogOnline)
     }
@@ -145,14 +161,19 @@ class DiagnosticViewModel(private val repository: DiagnosticRepository) : ViewMo
             try {
                 val result = block()
                 val previous = _uiState.value
+                if (previous.session?.session_id != result.session_id) {
+                    liveRefreshRevision++
+                    liveRefreshSession = null
+                    liveRefreshJob?.cancel()
+                }
                 val revision = if (previous.session?.session_id == result.session_id) previous.testResultRevision else 0
                 // The result endpoint already recalculates the diagnostic session.
                 // Publish that complete response without a second analysis overwriting it.
                 _uiState.value = previous.copy(
                     session = result,
                     backendLiveRecords = if (previous.session?.session_id == result.session_id) previous.backendLiveRecords else emptyList(),
-                    backendLiveLoading = false,
-                    backendLiveError = null,
+                    backendLiveLoading = if (previous.session?.session_id == result.session_id) previous.backendLiveLoading else false,
+                    backendLiveError = if (previous.session?.session_id == result.session_id) previous.backendLiveError else null,
                     loading = false,
                     error = null,
                     testResultRevision = revision + if (resultRecorded) 1 else 0,

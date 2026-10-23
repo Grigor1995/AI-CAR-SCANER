@@ -3,12 +3,31 @@
 The new selection and display changes address real catalog drift. They do not
 establish pixel-for-pixel UI parity or replace device acceptance testing.
 
-## Findings and corrections
+## Reviewed incoming commits
+
+Reviewed the 17 incoming main commits from `d711501` through `8734ba9`, after
+fetching updates that were not in the initial local checkout. Their shared
+catalog loading, Desktop-aligned navigation, heterogeneous acquisition metadata
+and live-data error isolation are retained. The local parity changes were
+rebased onto these commits without rewriting main.
+
+### Additional integration findings
+
+| Priority | Finding | Correction / validation |
+|---|---|---|
+| High | The new ViewModel eagerly reads the offline catalog, but its repository mocks did not define that method. Eighteen Android JVM tests failed. The instrumented fake also needed the new acquisition endpoint. | Updated explicit fixtures; 93 JVM tests and instrumentation APK compilation pass after integration. |
+| Medium | Android permitted duplicate refresh jobs and lacked request ownership across session changes. A canceled request could also clear a newer loading indicator. | Coalesced requests per session, cancel/invalidate on session change, and check a request revision before publishing records, errors or loading state. Added asynchronous regression coverage. |
+| Medium | Catalog refresh failure left `catalogOnline` true after an earlier success; successful background catalog refresh cleared unrelated diagnostic errors. | Preserve the existing selection rows, mark offline on failure, and isolate catalog status from diagnostic errors. Cancellation propagates normally. |
+| Medium | iOS used one loading flag across sessions and did not invalidate pending Live Data responses when resetting. New session creation could retain old measurements. | Added request ownership and invalidation on reset/session change, clearing stale records. Swift syntax passed; XCTest execution still requires Xcode. |
+| Medium | New Desktop-style Android page titles bypassed existing translations; iOS ignored backend `display_name`. | Map page-title aliases to existing HY/RU labels and use optional backend display names without changing stable channel IDs. |
+| Medium | Independent snapshot copies can drift after expanding the shared selection list. Adding a second Android assets source would also duplicate the JSON filename. | Retained the incoming bundled-copy approach, synchronized all three copies, and extended the snapshot generator/check to maintain them together. |
+
+## Catalog and display findings
 
 | Priority | Finding | Result |
 |---|---|---|
 | High | Android's separate fallback list exposed only the old catalog when the API was unavailable; Desktop merged its offline snapshot. | Both consume `shared/vehicle_catalog.json`, merged after authoritative server rows. The snapshot contains 20 makes, 72 generation identifiers and 1,897 year/engine entries. |
-| High | New reference engines may have no known ECU. The selection handler dereferenced `ecus.first()` even for an empty list. | Uses `firstOrNull().orEmpty()`, retaining unknown ECU state rather than inventing a controller. Changing the year also chooses a valid engine. |
+| High | New reference engines may have no known ECU. The initial worktree selection handler dereferenced `ecus.first()` even for an empty list. | The upstream optional-ECU correction is retained: `firstOrNull().orEmpty()` keeps unknown ECU state rather than inventing a controller. Changing the year also chooses a valid engine. |
 | High | Only 22 generated portraits were packaged in native mobile resources. Desktop's image directory contained the extended collection. | Synchronized all 72 snapshot generation portraits into Android and iOS; native PNG checks compare canonical bytes and transparency. |
 | Medium | Historical PASS/FAIL results inflated progress when current recommendations were empty. | Progress counts only IDs in the displayed recommendation set, matching Desktop; historical result records remain intact. |
 | Medium | Analog/line display and unit controls introduced untranslated labels and new preferences without updated fixtures. | Added HY/RU strings and settings persistence checks; conversion is display-only and diagnostic inputs stay in SI. |
@@ -31,8 +50,8 @@ establish pixel-for-pixel UI parity or replace device acceptance testing.
 
 ## Validation
 
-- Backend/Python regression: 817 passed, 2 skipped.
-- Android JVM: 94 passed; lint has no errors. Existing lint warnings remain.
+- Backend/Python regression: 831 passed, 2 skipped.
+- Android JVM: 93 passed; lint has no errors. Existing lint warnings remain.
 - Android application and instrumentation APK compilation: checked locally.
 - Desktop: 416 passed, 1 skipped; source coverage 90.90%, core 91.80%.
   The obsolete eight-make assertion now checks the expanded twenty-make snapshot.

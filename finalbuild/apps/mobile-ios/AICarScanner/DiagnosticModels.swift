@@ -165,6 +165,7 @@ struct AppSettings {
 }
 struct LiveRecord: Decodable {
     let channel: String?
+    let display_name: String?
     private let recordedPID: String?
     let numeric_value: Double?
     let unit: String?
@@ -173,7 +174,7 @@ struct LiveRecord: Decodable {
     var pid: String { channel ?? recordedPID ?? "Unknown channel" }
     var sourceLabel: String { metadata?.adapter == "simulator" ? "Simulator / synthetic data" : source_type ?? "—" }
     enum CodingKeys: String, CodingKey {
-        case channel, numeric_value, unit, source_type, metadata
+        case channel, display_name, numeric_value, unit, source_type, metadata
         case recordedPID = "pid"
     }
 }

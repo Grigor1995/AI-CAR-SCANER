@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import json
+import math
 import os
 import re
 import sys
@@ -14,7 +15,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
     QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
-    QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy
+    QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy, QLayout, QStylePainter, QStyleOptionToolButton, QStyle
 )
 from .measurement_units import convert, display_records
 from .api_client import DiagnosticApiClient
@@ -714,6 +715,56 @@ def _navigation_icon(symbol, connector=False, adapter=False, large=False):
     return QIcon(QPixmap.fromImage(image))
 
 
+@lru_cache(maxsize=1)
+def _menu_atlas():
+    root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+    return QPixmap(str(root / "assets" / "launcher" / "icons-3d.png"))
+
+
+@lru_cache(maxsize=13)
+def _page_icon(page_id):
+    atlas = _menu_atlas()
+    if page_id == 12:
+        image = QPixmap(128, 128); image.fill(Qt.transparent)
+        painter = QPainter(image)
+        for index, target in enumerate((1, 2, 4, 8)):
+            painter.drawPixmap((index%2)*64, (index//2)*64, _page_icon(target).pixmap(62,62))
+        painter.end()
+        return QIcon(image)
+    order = [11, 3, 2, 1, 4, 6, 8, 7, 9, 10, 0, 5]
+    index = order.index(page_id)
+    if atlas.isNull():
+        return _navigation_icon("◉", page_id == 3, page_id == 2)
+    column, row = index % 4, index // 4
+    left, right = column*atlas.width()//4, (column+1)*atlas.width()//4
+    top, bottom = row*atlas.height()//3, (row+1)*atlas.height()//3
+    if column < 3:
+        right -= (right-left)//25
+    return QIcon(atlas.copy(left, top, right-left, bottom-top))
+
+
+class AdaptiveMenuTile(QToolButton):
+    """Native focus/click behavior with a responsive image and wrapped label."""
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        side = max(24, min(180, self.width()-28, self.height()-52))
+        self.setIconSize(QSize(side, side))
+
+    def paintEvent(self, event):
+        painter = QStylePainter(self)
+        option = QStyleOptionToolButton()
+        self.initStyleOption(option)
+        option.icon = QIcon(); option.text = ""
+        painter.drawComplexControl(QStyle.CC_ToolButton, option)
+        rect = self.rect().adjusted(10, 6, -10, -6)
+        text_height = min(max(self.fontMetrics().height()*2, 30), max(20, rect.height()//3))
+        side = min(self.iconSize().width(), rect.width(), max(20, rect.height()-text_height-4))
+        image = self.icon().pixmap(side, side)
+        painter.drawPixmap((self.width()-image.width())//2, rect.top()+(rect.height()-text_height-image.height())//2, image)
+        painter.setPen(QColor("#EAF4FF"))
+        painter.drawText(rect.adjusted(0, rect.height()-text_height, 0, 0), Qt.AlignCenter | Qt.TextWordWrap, self.text())
+
+
 class LauncherPage(QWidget):
     """Large menu tiles keep every workflow visible on launch."""
     def __init__(self, app: "MainWindow"):
@@ -721,36 +772,52 @@ class LauncherPage(QWidget):
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
         self.art_root = root / "assets" / "launcher"
         self.background = QPixmap(str(self.art_root / "background.png"))
-        self.icon_atlas = QPixmap(str(self.art_root / "icons-3d.png"))
+        self.icon_atlas = _menu_atlas()
         self._scaled_background = QPixmap()
         self._background_target = QSize()
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 24, 28, 28)
+        layout.setContentsMargins(20, 14, 20, 16)
+        layout.setSizeConstraint(QLayout.SetNoConstraint)
         title = QLabel("Main menu"); title.setObjectName("title"); title.setStyleSheet("color: #EAF4FF;"); layout.addWidget(title)
-        grid = QGridLayout(); grid.setSpacing(18); layout.addLayout(grid)
+        self.grid = QGridLayout(); self.grid.setSpacing(14); layout.addLayout(self.grid, 1)
+        self.tiles = []; self._columns = 0
         sections = [("Symptoms", 11, "✎"), ("Diagnostics", 3, ""), ("VCI / Devices", 2, ""),
                     ("Vehicles", 1, "▣"), ("Live Data", 4, "▥"), ("Guided Tests", 6, "✓"),
                     ("AI Analysis", 8, "◈"), ("DTC", 7, "⚠"), ("Reports", 9, "▤"),
                     ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
-        for index, (text, page_id, symbol) in enumerate(sections):
-            tile = QToolButton(); tile.setText(text)
-            if self.icon_atlas.isNull():
-                tile.setIcon(QIcon(str(self.art_root / f"{page_id}.svg")))
-            else:
-                # Row-major atlas: four columns, three rows; labels remain native/localized.
-                column, row = index % 4, index // 4
-                left, right = column*self.icon_atlas.width()//4, (column+1)*self.icon_atlas.width()//4
-                top, bottom = row*self.icon_atlas.height()//3, (row+1)*self.icon_atlas.height()//3
-                if column < 3:
-                    right -= (right-left)//25  # Exclude neighboring glow in the transparent gutter.
-                tile.setIcon(QIcon(self.icon_atlas.copy(left, top, right-left, bottom-top)))
-            tile.setIconSize(QSize(120, 120)); tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            tile.setMinimumSize(185, 180)
-            tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            tile.setStyleSheet("QToolButton { background: rgba(7, 24, 46, 205); color: #EAF4FF; border: 1px solid #2864AC; border-radius: 18px; padding: 20px; font-weight: 600; } QToolButton:hover { background: rgba(13, 48, 80, 225); border-color: #43D5FF; }")
+        for text, page_id, symbol in sections:
+            tile = AdaptiveMenuTile(); tile.setText(text)
+            tile.setIcon(_page_icon(page_id))
+            tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            tile.setMinimumSize(72, 64)
+            tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            tile.setStyleSheet("QToolButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 rgba(30,61,91,220),stop:0.5 rgba(9,27,48,215),stop:1 rgba(4,15,31,230)); color: #EAF4FF; border: 1px solid #35698F; border-top: 1px solid #6D96B6; border-radius: 18px; padding: 6px; font-weight: 600; } QToolButton:hover { border-color: #43D5FF; background: #123B5B; } QToolButton:focus { border: 2px solid #8CE8FF; }")
             tile.clicked.connect(lambda _=False, target=page_id: app.navigate_page(target))
-            grid.addWidget(tile, index // 3, index % 3)
-        layout.addStretch()
+            self.tiles.append(tile)
+        self._reflow()
+
+    def minimumSizeHint(self):
+        return QSize(240, 180)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._reflow()
+
+    def _reflow(self):
+        width, height = max(240, self.width()-40), max(120, self.height()-80)
+        def score(columns):
+            rows = math.ceil(len(self.tiles)/columns)
+            cell_w, cell_h = (width-14*(columns-1))/columns, (height-14*(rows-1))/rows
+            return abs(math.log(max(.1, cell_w/max(1,cell_h))/1.45)) + max(0, 115-cell_w)/35 + max(0, 90-cell_h)/25 + (rows*columns-len(self.tiles))*.12
+        columns = min(range(2, 7), key=score)
+        if columns == self._columns: return
+        old_columns = self._columns
+        self._columns = columns
+        for tile in self.tiles: self.grid.removeWidget(tile)
+        for column in range(max(old_columns, columns)):
+            self.grid.setColumnStretch(column, 1 if column < columns else 0)
+        for row in range(6): self.grid.setRowStretch(row, 1 if row < math.ceil(len(self.tiles)/columns) else 0)
+        for index, tile in enumerate(self.tiles): self.grid.addWidget(tile, index//columns, index%columns)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -1240,7 +1307,9 @@ class MainWindow(QMainWindow):
             return
         self.setUpdatesEnabled(False)
         try:
-            self.setStyleSheet(APP_QSS if self.dark_theme else APP_QSS_LIGHT)
+            surfaces = ("QWidget#sectionHero, QGroupBox { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1B3653,stop:1 #0B192C); border:1px solid #345976; border-top-color:#6385A1; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #24486C,stop:1 #102744); }" if self.dark_theme else
+                        "QWidget#sectionHero, QGroupBox { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #DCE9F5); border:1px solid #A3BED5; border-top-color:#FFFFFF; border-radius:14px; } QPushButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #FFFFFF,stop:1 #CADFF1); }")
+            self.setStyleSheet((APP_QSS if self.dark_theme else APP_QSS_LIGHT) + surfaces)
             self._rendered_theme = self.dark_theme
         finally:
             self.setUpdatesEnabled(True)
@@ -1359,20 +1428,22 @@ class MainWindow(QMainWindow):
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,2)
         header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0)
-        for title, target in [("✎  Symptoms",11),("Diagnostics",3),("◈  AI Analysis",8),("▥  Live Data",4),("✓  Guided Tests",6),("▤  Reports",9),("✧  Teach AI",10)]:
-            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_navigation_icon("", True)) if target == 3 else None; button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
+        for title, target in [("Symptoms",11),("Diagnostics",3),("AI Analysis",8),("Live Data",4),("Guided Tests",6),("Reports",9),("Teach AI",10)]:
+            button=QPushButton(title); button.setObjectName("topNav"); button.setIcon(_page_icon(target)); button.setIconSize(QSize(30,30)); button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
         header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setFixedHeight(82); header_scroll.setWidget(header_nav); header.addWidget(header_scroll,3); self.header_navigation = header_scroll
         settings=QPushButton("⚙"); settings.setAccessibleName("Settings"); settings.clicked.connect(self._open_settings); header.addWidget(settings); shell.addLayout(header)
         root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
+        nav=QListWidget(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(32,32)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
         self.nav=nav
         for page_id in [12, 0, 11, *range(1, 11)]:
             symbol, text = entries[page_id][0].split("  ", 1)
-            item = QListWidgetItem(text); item.setIcon(_navigation_icon(symbol, page_id == 3, page_id == 2)); item.setData(Qt.UserRole, page_id); nav.addItem(item)
+            item = QListWidgetItem(text); item.setIcon(_page_icon(page_id)); item.setData(Qt.UserRole, page_id); nav.addItem(item)
         root.addWidget(nav)
         content=QStackedWidget(); root.addWidget(content,1)
-        for _text, cls in entries:
-            page=cls(self); self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
+        for page_id, (_text, cls) in enumerate(entries):
+            page=cls(self)
+            if page_id != 12: self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
+            self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
         nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: settings.setVisible(nav.item(row).data(Qt.UserRole) not in {3, 11, 12}) if row >= 0 else None)
         nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
@@ -1381,6 +1452,21 @@ class MainWindow(QMainWindow):
         nav.currentRowChanged.connect(lambda row: self.pages[9].load() if row >= 0 and nav.item(row).data(Qt.UserRole) == 9 and self.online else None)
         nav.setCurrentRow(0)
         self.stack.addWidget(container)
+    def _decorate_page(self, page, page_id, text):
+        layout = page.layout()
+        hero = QWidget(); hero.setObjectName("sectionHero")
+        row = QHBoxLayout(hero); row.setContentsMargins(18, 8, 18, 8)
+        image = QLabel(); image.setPixmap(_page_icon(page_id).pixmap(72,72)); image.setFixedSize(76,76)
+        row.addWidget(image)
+        title = next((layout.itemAt(i).widget() for i in range(layout.count())
+                      if isinstance(layout.itemAt(i).widget(), QLabel) and layout.itemAt(i).widget().objectName() == "title"), None)
+        if title is None:
+            title = QLabel(text); title.setObjectName("title")
+        else:
+            layout.removeWidget(title)
+        row.addWidget(title, 1)
+        layout.insertWidget(0, hero)
+
     def navigate_page(self, page_id):
         for row in range(self.nav.count()):
             if self.nav.item(row).data(Qt.UserRole) == page_id:

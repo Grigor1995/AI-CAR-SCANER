@@ -1,5 +1,16 @@
 # Release notes
 
+## Unreleased — Responsive 3D Desktop workspace
+
+- Fit all twelve launch tiles to the available window by adapting columns, image
+  size and wrapped labels. Remove the fixed tile dimensions that forced menu
+  scrolling; no size sliders or extra controls are introduced.
+- Use the 3D artwork for all workflow headers, sidebar entries and top navigation.
+  Apply matching beveled/gradient surfaces to section banners, cards and buttons
+  in both themes. Reuse cached icons; keep existing diagnostic and telemetry flows.
+- Verify the launcher at 800×600, 960×720, 1380×780 and 1920×1080 without menu
+  scrollbars. Desktop-only presentation update; CI/CD skipped.
+
 ## Unreleased — 3D Automotive menu icons
 
 - Replace the twelve primary Desktop launcher symbols with generated transparent

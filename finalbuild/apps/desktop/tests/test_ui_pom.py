@@ -2183,9 +2183,33 @@ def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
     assert window.header_navigation.isHidden()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
-    assert vci.iconSize().width() == 120
+    assert vci.iconSize().width() >= 32
     assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
     vci.click()
     assert window.page_index() == 2
     assert not window.nav.isHidden()
     assert not window.header_navigation.isHidden()
+
+
+def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_factory, qapp):
+    window = window_factory()
+    page = window.pages[12]
+    icon_sizes = set()
+    for width, height in [(960,720),(1380,780),(1920,1080),(800,600)]:
+        window.resize(width,height)
+        qapp.processEvents(); qapp.processEvents()
+        scroll = page.parentWidget().parentWidget()
+        assert scroll.horizontalScrollBar().maximum() == 0
+        assert scroll.verticalScrollBar().maximum() == 0
+        assert all(page.rect().contains(tile.geometry()) for tile in page.tiles)
+        icon_sizes.add(page.tiles[0].iconSize().width())
+    assert len(icon_sizes) > 1
+
+
+def test_every_workflow_has_3d_section_header(window_factory):
+    window = window_factory()
+    for page in window.pages[:12]:
+        hero = page.findChild(QWidget,"sectionHero")
+        assert hero is not None
+        from PySide6.QtWidgets import QLabel
+        assert any(not label.pixmap().isNull() for label in hero.findChildren(QLabel))

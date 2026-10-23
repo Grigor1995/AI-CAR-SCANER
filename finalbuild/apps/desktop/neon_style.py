@@ -35,6 +35,24 @@ class NeonShell(QWidget):
         self._image = QPixmap(str(_asset_root() / "assets" / "launcher" / "background.png"))
         self._cached_size = QSize()
         self._scaled = QPixmap()
+        self._icon_overlay = QPixmap()
+        icon_svg = _asset_root() / "assets" / "design-preview" / "ai-scanner-neon-car-icon.svg"
+        if icon_svg.is_file():
+            try:
+                from PySide6.QtSvg import QSvgRenderer
+                renderer = QSvgRenderer(str(icon_svg))
+                if renderer.isValid():
+                    from PySide6.QtGui import QImage
+                    image = QImage(480, 480, QImage.Format_ARGB32_Premultiplied)
+                    image.fill(Qt.transparent)
+                    icon_painter = QPainter(image)
+                    try:
+                        renderer.render(icon_painter)
+                    finally:
+                        icon_painter.end()
+                    self._icon_overlay = QPixmap.fromImage(image)
+            except (OSError, RuntimeError, ImportError):
+                pass
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -63,6 +81,11 @@ class NeonShell(QWidget):
         overlay.setColorAt(0.52, QColor(5, 15, 27, 147))
         overlay.setColorAt(1, QColor(0, 18, 32, 181))
         painter.fillRect(rect, QBrush(overlay))
+        if not self._icon_overlay.isNull():
+            # Same original, logo-free sedan silhouette as the app icon.
+            painter.setOpacity(0.17)
+            painter.drawPixmap(max(0, rect.width() - 470), 35, self._icon_overlay)
+            painter.setOpacity(1.0)
         painter.setPen(QPen(QColor(0, 174, 239, 28), 1))
         for x in range(0, rect.width(), 92):
             painter.drawLine(x, 0, x, rect.height())

@@ -1,0 +1,57 @@
+name: Refresh Android screenshots in UI demo PDF
+on:
+  push:
+    branches:
+      - docs/mobile-ui-demo-screenshots-20261026
+    paths:
+      - .github/workflows/refresh-mobile-demo-pdf.yml
+      - finalbuild/docs/demo/build_mobile_ui_demo_pdf.py
+      - finalbuild/docs/demo/screenshots/android-*.png
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-mobile-demo-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PDF dependencies
+        run: python -m pip install "pypdf>=5,<7" "reportlab>=4,<5" "Pillow>=10,<13"
+      - name: Preserve Desktop pages and append Android screenshots
+        run: python finalbuild/docs/demo/build_mobile_ui_demo_pdf.py
+      - name: Assert PDF page count and content
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pypdf import PdfReader
+          f="finalbuild/docs/demo/AI-Car-Scanner-UI-Demo-2026-10-26.pdf"
+          r=PdfReader(f)
+          assert len(r.pages) == 10, f"Expected 5 Desktop + 5 Android pages, got {len(r.pages)}"
+          for page in r.pages[-5:]:
+              assert "ANDROID / NATIVE COMPOSE / PDF EXTENSION" in (page.extract_text() or "")
+          print("PDF verified:",len(r.pages),"pages")
+          PY
+      - name: Commit regenerated PDF to review branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add finalbuild/docs/demo/AI-Car-Scanner-UI-Demo-2026-10-26.pdf
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: append verified Android UI captures to desktop demo PDF [skip ci]"
+            git push origin HEAD:docs/mobile-ui-demo-screenshots-20261026
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AI-Car-Scanner-Desktop-Android-Demo-PDF
+          path: finalbuild/docs/demo/AI-Car-Scanner-UI-Demo-2026-10-26.pdf
+          if-no-files-found: error

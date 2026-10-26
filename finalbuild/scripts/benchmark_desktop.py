@@ -105,7 +105,7 @@ def benchmark_qt_source(iterations: int) -> dict:
         try:
             for cycle in range(iterations):
                 before = time.perf_counter()
-                window.nav.setCurrentRow(cycle % window.nav.count())
+                window.navigate_page(cycle % len(window.pages))
                 app.processEvents()
                 nav_samples.append((time.perf_counter() - before) * 1000)
 

@@ -14,14 +14,14 @@ from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
-    QScrollArea, QDoubleSpinBox, QSpinBox, QSlider, QStackedWidget, QTableWidget, QTableWidgetItem,
+    QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy, QLayout, QStylePainter, QStyleOptionToolButton, QStyle
 )
 from .measurement_units import convert, display_records
 from .api_client import DiagnosticApiClient
 from .models import Vehicle, Session, TestCandidate, fuel_values
 from .storage import VehicleStore
-from .vehicle_artwork import vehicle_pixmap, load_backend_portrait
+from .vehicle_artwork import vehicle_pixmap, load_backend_portrait, NeonVehiclePreview
 from .dashboard_translations import MESSAGES
 from .demo_ui import DemoDashboard, DTCPage, HypothesesPage, ReportsPage, TeachPage, SignalGrid
 
@@ -37,10 +37,10 @@ QScrollArea { border: none; }
 QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size:10pt; }
 QLabel { background: transparent; border: none; }
 QMainWindow { border: 1px solid #1C4B89; }
-QGroupBox { background: #0C1B35; border: 1px solid #24518F; border-radius: 14px; }
+QGroupBox { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #12364D,stop:0.35 #0B2541,stop:1 #061626); border: 1px solid #1E6E95; border-top: 1px solid #35C8FF; border-radius: 14px; }
 QGroupBox { margin-top: 15px; padding: 15px 12px 12px; font-weight: 650; }
 QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 7px; color: #A9CFFF; }
-QPushButton { background: #132D56; color: #EAF4FF; border: 1px solid #2864AC; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
+QPushButton { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #205477,stop:0.17 #0E355A,stop:1 #071B32); color: #EAF4FF; border: 1px solid #1973A4; border-top: 1px solid #35C8FF; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
 QPushButton:hover { background: #1A4F92; border: 1px solid #2998FF; }
 QPushButton:pressed { background: #0D366A; }
 QPushButton:disabled { color: #6983A5; background: #10213B; border: 1px solid #1B3556; }
@@ -58,7 +58,7 @@ QTabBar::tab:selected { background: #1666BE; color: white; border-color: #2898FF
 QHeaderView::section, QTableWidget { background: #0C1E3A; color: #DCEEFF; border: 1px solid #294E83; padding: 5px; }
 QTableWidget { gridline-color: #1F426D; }
 QProgressBar { background: #07172C; border: 1px solid #27558D; border-radius: 6px; height: 11px; text-align: center; }
-QProgressBar::chunk { background: #0B8DFF; border-radius: 6px; }
+QProgressBar::chunk { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #0066BC,stop:1 #35C8FF); border-radius: 6px; }
 QLabel#title { font-size:17pt; font-weight: 750; color: #F3FAFF; }
 QLabel#heroTitle { font-size:22pt; color: #F4FAFF; font-weight: 800; }
 QLabel#heroSubtitle { color: #72BEFF; font-size:9pt; letter-spacing: 2px; font-weight: 700; }
@@ -77,9 +77,6 @@ QScrollBar::handle:horizontal { background: #2789DE; border-radius: 4px; min-wid
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 
-QSlider#neonSimulatorSlider::groove:horizontal { height: 7px; background: #06233A; border: 1px solid #0D688E; border-radius: 3px; }
-QSlider#neonSimulatorSlider::sub-page:horizontal { background: #00AEEF; border-radius: 3px; }
-QSlider#neonSimulatorSlider::handle:horizontal { background: #79E3FF; border: 2px solid #00AEEF; width: 15px; margin: -6px 0; border-radius: 9px; }
 """
 
 APP_QSS_LIGHT = """
@@ -450,7 +447,7 @@ class VehicleDialog(QDialog):
         self._catalog = list(merged.values())
 
         form = QFormLayout(self)
-        self.artwork_preview = QLabel()
+        self.artwork_preview = NeonVehiclePreview()
         self.artwork_preview.setObjectName("vehicleArtworkPreview")
         self.artwork_preview.setMinimumHeight(140)
         self.artwork_preview.setAlignment(Qt.AlignCenter)
@@ -616,8 +613,7 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); self.edit_btn=QPushButton("Edit vehicle"); self.edit_btn.clicked.connect(lambda: app.edit_selected_vehicle()); self.edit_btn.setEnabled(False); bar.addWidget(self.edit_btn); bar.addStretch(); lay.addLayout(bar)
-        self.model_artwork = QLabel()
-        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork = NeonVehiclePreview()
         self.model_artwork.setMaximumHeight(185)
         lay.addWidget(self.model_artwork)
         split=QSplitter(); self.list=QListWidget(); self.list.setIconSize(QSize(112,56)); self.details=QPlainTextEdit(); self.details.setObjectName("vehicleDetails"); self.details.setReadOnly(True); split.addWidget(self.list); split.addWidget(self.details); split.setSizes([360,700]); lay.addWidget(split)
@@ -733,7 +729,7 @@ def _page_icon(page_id):
     atlas = _menu_atlas()
     if page_id == 1:
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
-        return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))
+        return QIcon(str(root / "assets" / "AI-Car-Scanner-mobile.png"))
     if page_id == 12:
         image = QPixmap(128, 128); image.fill(Qt.transparent)
         painter = QPainter(image)
@@ -1017,9 +1013,10 @@ class DiagnosticPage(QWidget):
 
 class ResponsiveControls(QWidget):
     """Wrap complete controls to new rows instead of clipping their labels."""
-    def __init__(self, widgets, max_columns=5):
+    def __init__(self, widgets, max_columns=5, min_cell_width=180):
         super().__init__()
         self.widgets, self.max_columns = widgets, max_columns
+        self.min_cell_width = min_cell_width
         self.grid = QGridLayout(self); self.grid.setContentsMargins(0,0,0,0); self.grid.setSpacing(6)
         self.grid.setSizeConstraint(QLayout.SetNoConstraint)
         self._columns=0; self._arranging=False
@@ -1040,7 +1037,7 @@ class ResponsiveControls(QWidget):
         if self._arranging: return
         self._arranging=True
         try:
-            needed=max(180,max(widget.minimumSizeHint().width() for widget in self.widgets))
+            needed=max(self.min_cell_width,max(widget.minimumSizeHint().width() for widget in self.widgets))
             available=max(1,min(self.max_columns,(self.width()+6)//(needed+6)))
             rows=math.ceil(len(self.widgets)/available); columns=math.ceil(len(self.widgets)/rows)
             if columns!=self._columns:
@@ -1071,7 +1068,6 @@ class LiveDataPage(QWidget):
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         controls = []
         self.sim_inputs = {}
-        self.sim_sliders = {}
         for key, title, low, high, value, suffix in (
             ("rpm", "Engine speed", 0, 16383, 750, " rpm"),
             ("coolant_c", "Coolant temperature", -40, 215, 90, " °C"),
@@ -1083,20 +1079,7 @@ class LiveDataPage(QWidget):
             column.addWidget(title_label)
             spin = QDoubleSpinBox(); spin.setRange(low, high); spin.setValue(value); spin.setSuffix(suffix)
             self.sim_inputs[key] = spin
-            slider = QSlider(Qt.Horizontal)
-            slider.setObjectName("neonSimulatorSlider")
-            slider.setAccessibleName(title + " slider")
-            slider.setRange(low, high)
-            slider.setValue(value)
-            slider.valueChanged.connect(spin.setValue)
-            def sync_slider(current, target=slider):
-                target.blockSignals(True)
-                target.setValue(round(current))
-                target.blockSignals(False)
-            spin.valueChanged.connect(sync_slider)
-            self.sim_sliders[key] = slider
             column.addWidget(spin)
-            column.addWidget(slider)
             controls.append(field)
         self.apply_sim = QPushButton("Apply simulator values")
         self.apply_sim.clicked.connect(self._apply_simulator_values)
@@ -1233,7 +1216,7 @@ class LiveDataPage(QWidget):
                 unit = "km/h" if key == "speed_kmh" else "C"
                 low, new_unit = convert(metric_range[0], unit, us)
                 high, _ = convert(metric_range[1], unit, us)
-                spin.setRange(low, high); self.sim_sliders[key].setRange(round(low), round(high)); spin.setSuffix(" " + new_unit if us else suffix)
+                spin.setRange(low, high); spin.setSuffix(" " + new_unit if us else suffix)
                 spin.setValue(convert(value, unit, us)[0])
             self._us_inputs = us
         self.apply_sim.setEnabled(self._status_data.get("adapter") == "simulator")
@@ -1575,7 +1558,7 @@ class MainWindow(QMainWindow):
                     if translated != widget.toPlainText(): widget.setPlainText(translated)
             elif isinstance(widget, QListWidget):
                 # Vehicle/device lists contain user or hardware names; translate only presentation lists.
-                if widget is self.nav or widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
+                if widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
                     for index in range(widget.count()):
                         item = widget.item(index)
                         item.setText(self.tr_text(item.text())); item.setToolTip(item.text())
@@ -1612,37 +1595,67 @@ class MainWindow(QMainWindow):
         container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,1)
-        header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0); header_buttons.setSpacing(6); header_buttons.setSizeConstraint(QLayout.SetNoConstraint)
-        for title, target in [("Symptoms",11),("Diagnostics",3),("AI Analysis",8),("Live Data",4),("Guided Tests",6),("Reports",9),("Teach AI",10)]:
-            button=AdaptiveMenuTile(); button.setText(title); button.setObjectName("topNav")
-            button.setIcon(_page_icon(target)); button.setMinimumSize(42,56)
-            font=button.font(); font.setPointSize(9); button.setFont(font)
-            button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
-            button.setStyleSheet("QToolButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #214464,stop:1 #0A2037); color:#EAF4FF; border:1px solid #2C608B; border-radius:10px; padding:2px; } QToolButton:hover,QToolButton:focus { border:1px solid #5DD7FF; }")
-            button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
+        # Keep the existing quick actions plus Main menu; all other pages
+        # are accessible through the launcher tiles, without any sidebar.
+        top_sections = [
+            ("Main menu", 12), ("Symptoms", 11), ("Diagnostics", 3),
+            ("AI Analysis", 8), ("Live Data", 4),
+            ("Guided Tests", 6), ("Reports", 9), ("Teach AI", 10),
+        ]
+        self.top_navigation_buttons = {}
+        buttons = []
+        for title, target in top_sections:
+            button = AdaptiveMenuTile()
+            button.setText(title)
+            button.setAccessibleName(title)
+            button.setObjectName("topNav")
+            button.setIcon(_page_icon(target))
+            button.setCheckable(True)
+            button.setMinimumWidth(96)
+            button.setFixedHeight(60)
+            font = button.font()
+            font.setPointSize(9)
+            button.setFont(font)
+            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            button.setStyleSheet(
+                "QToolButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+                "stop:0 #214464,stop:1 #0A2037);color:#EAF4FF;"
+                "border:1px solid #2C608B;border-radius:10px;padding:2px;}"
+                "QToolButton:hover,QToolButton:focus {border:1px solid #5DD7FF;}"
+                "QToolButton:checked {background:#12518A;border:2px solid #61DEFF;}"
+            )
+            button.clicked.connect(lambda _=False, index=target: self.navigate_page(index))
+            self.top_navigation_buttons[target] = button
+            buttons.append(button)
         shell.addLayout(header)
-        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True)
-        header_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        header_scroll.setFixedHeight(66); header_scroll.setWidget(header_nav); shell.addWidget(header_scroll)
-        self.header_navigation = header_scroll
-        root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=CompactNavigation(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
-        self.nav=nav
-        for page_id in [12, 0, 11, *range(1, 11)]:
-            symbol, text = entries[page_id][0].split("  ", 1)
-            item = QListWidgetItem(text); item.setIcon(_page_icon(page_id)); item.setData(Qt.UserRole, page_id); nav.addItem(item)
-        root.addWidget(nav)
-        content=QStackedWidget(); root.addWidget(content,1)
+        self.header_navigation = ResponsiveControls(
+            buttons, max_columns=8, min_cell_width=120
+        )
+        self.header_navigation.setObjectName("topNavigation")
+        shell.addWidget(self.header_navigation)
+        self.content = QStackedWidget()
+        shell.addWidget(self.content, 1)
+        entries = [
+            ("◉  Dashboard", DashboardPage), ("▣  Vehicles", VehiclesPage),
+            ("🔌  VCI / Devices", DevicesPage), ("⌘  Diagnostic", DiagnosticPage),
+            ("◌  Live Data", LiveDataPage), ("⌘  ECU Network", NetworkPage),
+            ("✓  Tests", TestsPage), ("⚠  DTC", DTCPage),
+            ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage),
+            ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage),
+            ("▦  Main menu", LauncherPage),
+        ]
         for page_id, (_text, cls) in enumerate(entries):
-            page=cls(self)
-            if page_id != 12: self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
-            self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
-        nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: header_scroll.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
-        nav.currentRowChanged.connect(lambda row: self.pages[9].load() if row >= 0 and nav.item(row).data(Qt.UserRole) == 9 and self.online else None)
-        nav.setCurrentRow(0)
+            page = cls(self)
+            if page_id != 12:
+                self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
+            self.pages.append(page)
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QScrollArea.NoFrame)
+            scroll.setWidget(page)
+            self.content.addWidget(scroll)
+        self._current_page_id = None
+        self.navigate_page(12)
         self.stack.addWidget(container)
     def _decorate_page(self, page, page_id, text):
         layout = page.layout()
@@ -1660,14 +1673,22 @@ class MainWindow(QMainWindow):
         layout.insertWidget(0, hero)
 
     def navigate_page(self, page_id):
-        for row in range(self.nav.count()):
-            if self.nav.item(row).data(Qt.UserRole) == page_id:
-                self.nav.setCurrentRow(row)
-                return
+        """Switch screens through a single top navigation without sidebars."""
+        if not isinstance(page_id, int) or not 0 <= page_id < len(self.pages):
+            return
+        previous = self._current_page_id
+        self._current_page_id = page_id
+        self.content.setCurrentIndex(page_id)
+        for target, button in self.top_navigation_buttons.items():
+            button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))
+        if previous != page_id:
+            if page_id == 4:
+                self.pages[4].request_refresh()
+            elif page_id == 9 and self.online:
+                self.pages[9].load()
 
     def page_index(self):
-        item = self.nav.currentItem()
-        return item.data(Qt.UserRole) if item else None
+        return self._current_page_id
 
     def _build_menu(self):
         menu = self.menuBar().addMenu("Application")

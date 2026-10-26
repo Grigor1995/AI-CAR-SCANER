@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -95,14 +96,14 @@ import kotlinx.coroutines.launch
 // Color tokens follow the shared blue / cyan / violet automotive UI reference.
 // Semantic status colors remain independently green (PASS), red (FAIL), amber (INCOMPLETE).
 internal val AutomotiveDarkColors = darkColorScheme(
-    primary = Color(0xFF188AFF),
+    primary = Color(0xFF00AEEF),
     onPrimary = Color.White,
     secondary = Color(0xFF9C74FF),
     onSecondary = Color.White,
-    tertiary = Color(0xFF28D5FF),
-    background = Color(0xFF061121),
-    surface = Color(0xFF0C1C35),
-    surfaceVariant = Color(0xFF102640),
+    tertiary = Color(0xFF79E3FF),
+    background = Color(0xFF03070E),
+    surface = Color(0xFF091D30),
+    surfaceVariant = Color(0xFF103650),
     onBackground = Color(0xFFEAF4FF),
     primaryContainer = Color(0xFF103E63),
     onPrimaryContainer = Color(0xFFEAF4FF),
@@ -1866,13 +1867,18 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
     var photoCredit by remember(key) { mutableStateOf(vehicleCreditCache.get(key)) }
     LaunchedEffect(key) {
         if (portrait == null) {
-            // Prefer the exact bundled neon generation, matching Desktop even with an older backend.
+            // Show exact bundled illustration immediately, then upgrade to backend photo.
             portrait = withContext(Dispatchers.IO) {
                 runCatching { context.assets.open(file).use { stream ->
                     BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()
                 } }.getOrNull()
             }
-            val remote = if (portrait == null) withContext(Dispatchers.IO) {
+        }
+        // Upgrade the cached/offline illustration to a backend photo when one
+        // is available. The request runs once per shown vehicle key.
+        // Try the actual backend photo even if a bundled illustration exists.
+            // Keep the offline portrait as a fallback while the request runs.
+            val remote = withContext(Dispatchers.IO) {
                 runCatching {
                     val query = listOf("make" to make, "model" to model, "chassis" to chassis).joinToString("&") { (name, value) -> name + "=" + java.net.URLEncoder.encode(value, "UTF-8") }
                     val connection = java.net.URL(com.aicarscaner.mobile.data.api.ApiClient.BASE_URL + "api/v1/vehicle-reference/image?" + query).openConnection().apply { connectTimeout=4000; readTimeout=4000 }
@@ -1882,23 +1888,33 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
                     val credit = listOf(author, license).filter { it.isNotBlank() }.joinToString(" • ")
                     Triple(bitmap, credit, connection.getHeaderField("X-Image-Source") ?: "")
                 }.getOrNull()
-            } else null
+            }
             if (remote?.first != null) {
                 portrait = remote.first
                 photoCredit = remote.second to remote.third
                 vehicleCreditCache.put(key, photoCredit!!)
             }
-            portrait?.let { vehiclePortraitCache.put(key,it) }
-        }
+        portrait?.let { vehiclePortraitCache.put(key,it) }
     }
 
     if (portrait != null) {
-        Image(
-            bitmap = portrait,
-            contentDescription = "$make $model $chassis",
-            contentScale = ContentScale.Fit,
+        androidx.compose.foundation.layout.Box(
             modifier = Modifier.fillMaxWidth().height(height)
-        )
+                .background(
+                    Brush.linearGradient(listOf(Color(0xFF03070E),Color(0xFF103650),Color(0xFF041321))),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(1.dp,Color(0xFF35C8FF),RoundedCornerShape(16.dp))
+                .padding(7.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                bitmap = portrait,
+                contentDescription = "$make $model $chassis",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         photoCredit?.takeIf { it.first.isNotBlank() }?.let { credit ->
             TextButton(onClick = {
                 val uri = android.net.Uri.parse(credit.second)
@@ -1908,7 +1924,11 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
             }) { Text(credit.first, style=MaterialTheme.typography.labelSmall, maxLines=2) }
         }
     } else {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(height),contentAlignment=androidx.compose.ui.Alignment.Center) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxWidth().height(height)
+                .background(Brush.linearGradient(listOf(Color(0xFF03070E), Color(0xFF103650), Color(0xFF041321))),RoundedCornerShape(16.dp))
+                .border(1.dp,Color(0xFF35C8FF),RoundedCornerShape(16.dp)),
+            contentAlignment=androidx.compose.ui.Alignment.Center) {
             DashboardIcon(6,Modifier.size(if(height<=72.dp) 32.dp else 64.dp),MaterialTheme.colorScheme.primary.copy(alpha=.45f))
         }
     }

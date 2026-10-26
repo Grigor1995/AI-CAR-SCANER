@@ -5,11 +5,11 @@ import UIKit
 // The reference mockup is a design guide; actual telemetry and AI confidence
 // values continue to come from the ViewModel/backend, never from decorative UI.
 enum AutomotivePalette {
-    static let navy = Color(red: 6.0 / 255, green: 17.0 / 255, blue: 33.0 / 255)
-    static let midnight = Color(red: 10.0 / 255, green: 28.0 / 255, blue: 56.0 / 255)
+    static let navy = Color(red: 3.0 / 255, green: 7.0 / 255, blue: 14.0 / 255)
+    static let midnight = Color(red: 5.0 / 255, green: 23.0 / 255, blue: 39.0 / 255)
     static let panel = Color(red: 13.0 / 255, green: 31.0 / 255, blue: 62.0 / 255)
-    static let electricBlue = Color(red: 24.0 / 255, green: 138.0 / 255, blue: 255.0 / 255)
-    static let cyan = Color(red: 40.0 / 255, green: 213.0 / 255, blue: 255.0 / 255)
+    static let electricBlue = Color(red: 0.0 / 255, green: 174.0 / 255, blue: 239.0 / 255)
+    static let cyan = Color(red: 121.0 / 255, green: 227.0 / 255, blue: 255.0 / 255)
     static let violet = Color(red: 156.0 / 255, green: 116.0 / 255, blue: 255.0 / 255)
     static let positive = Color(red: 28.0 / 255, green: 211.0 / 255, blue: 150.0 / 255)
     static let negative = Color(red: 255.0 / 255, green: 92.0 / 255, blue: 114.0 / 255)
@@ -78,7 +78,7 @@ enum DesktopArtwork {
                 result[id]=UIImage(cgImage:cell)
             }
         }
-        result[0]=car;result[12]=car
+        result[0]=car;result[1]=car;result[12]=car
         return result
     }()
 }

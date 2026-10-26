@@ -444,24 +444,18 @@ def test_acquisition_errors_follow_selected_ui_language(qapp, language):
     page.timer.stop()
 
 
-def test_live_data_neon_sliders_are_bidirectional_and_track_units(qapp):
-    from PySide6.QtWidgets import QSlider
+def test_live_data_has_numeric_fields_without_sliders_and_tracks_units(qapp):
+    from PySide6.QtWidgets import QSlider, QDoubleSpinBox
     app = FakeApp()
     app.settings_store.value.return_value = "metric"
     page = LiveDataPage(app)
-    assert set(page.sim_sliders) == {"rpm", "coolant_c", "speed_kmh", "throttle_percent"}
-    for name, slider in page.sim_sliders.items():
-        assert isinstance(slider, QSlider)
-        assert slider.accessibleName()
-        target = min(slider.maximum(), slider.value() + 3)
-        slider.setValue(target)
-        assert page.sim_inputs[name].value() == target
-        page.sim_inputs[name].setValue(target + 1)
-        assert slider.value() == target + 1
+    assert set(page.sim_inputs) == {"rpm", "coolant_c", "speed_kmh", "throttle_percent"}
+    assert all(isinstance(widget, QDoubleSpinBox) for widget in page.sim_inputs.values())
+    assert not page.findChildren(QSlider)
     app.settings_store.value.return_value = "us"
     page.refresh()
-    assert page.sim_sliders["speed_kmh"].maximum() >= 158
-    assert page.sim_sliders["coolant_c"].maximum() >= 419
+    assert page.sim_inputs["speed_kmh"].maximum() >= 158
+    assert page.sim_inputs["coolant_c"].maximum() >= 419
     page.close()
     page.deleteLater()
 

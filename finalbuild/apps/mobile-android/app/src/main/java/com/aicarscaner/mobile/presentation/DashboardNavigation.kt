@@ -55,7 +55,7 @@ private object DesktopIconCache {
     private var atlas:Bitmap?=null
     @Synchronized fun image(resources:android.content.res.Resources,kind:Int):androidx.compose.ui.graphics.ImageBitmap =
         images.getOrPut(kind) {
-            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.launcher_car)
+            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.ic_launcher_foreground)
             else {
                 val sheet=atlas ?: BitmapFactory.decodeResource(resources,R.drawable.launcher_icons).also {atlas=it}
                 val index=when(kind) {0->0;14->1;2->2;3,12->4;8,13->5;4->6;7->7;9->8;10->9;6->10;else->11}
@@ -65,10 +65,10 @@ private object DesktopIconCache {
         }
 }
 @Composable
-internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
+internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier.size(24.dp), color: Color = MaterialTheme.colorScheme.primary) {
     val resources=LocalContext.current.resources
     val icon=remember(kind,resources) {DesktopIconCache.image(resources,kind)}
-    Image(bitmap=icon,contentDescription=null,modifier=modifier.size(24.dp))
+    Image(bitmap=icon,contentDescription=null,modifier=modifier)
 }
 
 @Composable
@@ -148,7 +148,7 @@ internal fun DashboardSections(
                     row.forEach { id ->
                         val title=byId.getValue(id)
                         Card(onClick={if(dragging==null) navigate(id)},
-                            modifier=Modifier.weight(1f).heightIn(min=124.dp)
+                            modifier=Modifier.weight(1f).heightIn(min=112.dp)
                                 .onGloballyPositioned {bounds[id]=it.boundsInRoot()}
                                 .graphicsLayer {alpha=if(dragging==id) .35f else 1f}
                                 .semantics {
@@ -180,7 +180,7 @@ internal fun DashboardSections(
                             shape=RoundedCornerShape(18.dp),
                             colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color.Transparent),
                             border=BorderStroke(if(target==id && dragging!=null) 2.dp else 1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.65f)),
-                            elevation=CardDefaults.cardElevation(5.dp)) {
+                            elevation=CardDefaults.cardElevation(9.dp)) {
                             LauncherTileContent(id,dashboardLabel(title))
                         }
                     }
@@ -201,9 +201,9 @@ internal fun DashboardSections(
 
 @Composable
 private fun LauncherTileContent(id:Int,title:String) {
-    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(14.dp),
-        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
-        DashboardIcon(id,Modifier.size(64.dp))
+    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(12.dp),
+        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        DashboardIcon(id,Modifier.size(44.dp))
         Text(title,fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
@@ -228,7 +228,7 @@ internal fun DashboardToolbar(
         Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
         var menuOpen by remember { mutableStateOf(false) }
         Box {
-            TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription=text.settings}) }
+            TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription="Application menu"}) }
             DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}) {
                 DropdownMenuItem(text={Text(text.settings)},onClick={menuOpen=false;onSettings()})
             }

@@ -182,3 +182,24 @@ def test_catalog_neon_manifest_covers_all_generations_and_replaced_originals():
     for row in manifest["vehicles"]:
         assert row["sha256"] != row["original_sha256"]
         assert hashlib.sha256((root / "assets/vehicle_models" / row["name"]).read_bytes()).hexdigest() == row["sha256"]
+
+
+def test_vehicle_neon_studio_preview_preserves_original_photo_pixels():
+    """Neon blue rim must not overwrite or tint the exact vehicle portrait."""
+    from PySide6.QtGui import QColor, QPixmap
+    from apps.desktop.vehicle_artwork import NeonVehiclePreview
+    app = QApplication.instance() or QApplication([])
+    original = QPixmap(180, 90)
+    original.fill(QColor(200, 33, 44))
+    preview = NeonVehiclePreview()
+    preview.setPixmap(original)
+    assert preview.pixmap() is not None
+    assert preview.pixmap().cacheKey() == original.cacheKey()
+    assert "#26BFFF" in preview.styleSheet()
+    preview.resize(320, 160)
+    preview.show()
+    app.processEvents()
+    assert not preview.grab().isNull()
+    preview.close()
+    preview.deleteLater()
+

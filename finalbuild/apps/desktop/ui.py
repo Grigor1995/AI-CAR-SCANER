@@ -729,14 +729,10 @@ def _page_icon(page_id):
     atlas = _menu_atlas()
     if page_id == 1:
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
-        return QIcon(str(root / "assets" / "AI-Car-Scanner-mobile.png"))
+        return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))
     if page_id == 12:
-        image = QPixmap(128, 128); image.fill(Qt.transparent)
-        painter = QPainter(image)
-        for index, target in enumerate((1, 2, 4, 8)):
-            painter.drawPixmap((index%2)*64, (index//2)*64, _page_icon(target).pixmap(62,62))
-        painter.end()
-        return QIcon(image)
+        root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
+        return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))
     order = [11, 3, 2, 1, 4, 6, 8, 7, 9, 10, 0, 5]
     index = order.index(page_id)
     if atlas.isNull():
@@ -790,7 +786,7 @@ class AdaptiveMenuTile(QToolButton):
         painter.drawText(rect.adjusted(0, rect.height()-text_height, 0, 0), Qt.AlignCenter | Qt.TextWordWrap, self.text())
 
 
-class MovableMenuTile(AdaptiveMenuTile):
+class MovableMenuTile(QToolButton):
     """Click opens a workflow; dragging changes its launcher position."""
     MIME = "application/x-ai-car-launcher-page"
 
@@ -878,8 +874,10 @@ class LauncherPage(QWidget):
                     ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
         for text, page_id, symbol in sections:
             tile = MovableMenuTile(self, page_id); tile.setText(text)
-            tile.setIcon(_page_icon(page_id))
-            tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            tile.setAccessibleName(text)
+            tile.setIcon(QIcon())  # Main menu is text-only.
+            tile.setToolButtonStyle(Qt.ToolButtonTextOnly)
+            font = tile.font(); font.setPointSize(14); font.setBold(True); tile.setFont(font)
             tile.setMinimumSize(72, 64)
             tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             tile.setStyleSheet("QToolButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 rgba(30,61,91,220),stop:0.5 rgba(9,27,48,215),stop:1 rgba(4,15,31,230)); color: #EAF4FF; border: 1px solid #35698F; border-top: 1px solid #6D96B6; border-radius: 18px; padding: 6px; font-weight: 600; } QToolButton:hover { border-color: #43D5FF; background: #123B5B; } QToolButton:focus { border: 2px solid #8CE8FF; }")
@@ -1046,7 +1044,9 @@ class ResponsiveControls(QWidget):
                 for column in range(max(old,columns)): self.grid.setColumnStretch(column,int(column<columns))
                 for index,widget in enumerate(self.widgets): self.grid.addWidget(widget,index//columns,index%columns)
             cell_width=max(1,(self.width()-6*(columns-1))//columns)
-            height=max(max(32,widget.heightForWidth(cell_width) if widget.hasHeightForWidth() else widget.sizeHint().height()) for widget in self.widgets)
+            height=max(max(32, widget.minimumHeight(), widget.sizeHint().height(),
+                           widget.heightForWidth(cell_width) if widget.hasHeightForWidth() else 0)
+                       for widget in self.widgets)
             desired=rows*height+6*(rows-1)
             if self.height()!=desired: self.setFixedHeight(desired)
         finally: self._arranging=False
@@ -1605,22 +1605,25 @@ class MainWindow(QMainWindow):
         self.top_navigation_buttons = {}
         buttons = []
         for title, target in top_sections:
-            button = AdaptiveMenuTile()
+            button = QToolButton()
             button.setText(title)
             button.setAccessibleName(title)
             button.setObjectName("topNav")
             button.setIcon(_page_icon(target))
+            button.setIconSize(QSize(38, 38))
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             button.setCheckable(True)
-            button.setMinimumWidth(96)
-            button.setFixedHeight(60)
+            button.setMinimumWidth(120)
+            button.setFixedHeight(94)
             font = button.font()
-            font.setPointSize(9)
+            font.setPointSize(10)
+            font.setBold(True)
             button.setFont(font)
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             button.setStyleSheet(
                 "QToolButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
                 "stop:0 #214464,stop:1 #0A2037);color:#EAF4FF;"
-                "border:1px solid #2C608B;border-radius:10px;padding:2px;}"
+                "border:1px solid #2C608B;border-radius:10px;padding:5px;}"
                 "QToolButton:hover,QToolButton:focus {border:1px solid #5DD7FF;}"
                 "QToolButton:checked {background:#12518A;border:2px solid #61DEFF;}"
             )
@@ -1629,7 +1632,7 @@ class MainWindow(QMainWindow):
             buttons.append(button)
         shell.addLayout(header)
         self.header_navigation = ResponsiveControls(
-            buttons, max_columns=8, min_cell_width=120
+            buttons, max_columns=8, min_cell_width=135
         )
         self.header_navigation.setObjectName("topNavigation")
         shell.addWidget(self.header_navigation)

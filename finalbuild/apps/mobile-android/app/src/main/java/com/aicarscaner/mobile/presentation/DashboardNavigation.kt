@@ -55,10 +55,15 @@ private object DesktopIconCache {
     private var atlas:Bitmap?=null
     @Synchronized fun image(resources:android.content.res.Resources,kind:Int):androidx.compose.ui.graphics.ImageBitmap =
         images.getOrPut(kind) {
-            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.ic_launcher_foreground)
+            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.launcher_car)
             else {
                 val sheet=atlas ?: BitmapFactory.decodeResource(resources,R.drawable.launcher_icons).also {atlas=it}
-                val index=when(kind) {0->0;14->1;2->2;3,12->4;8,13->5;4->6;7->7;9->8;10->9;6->10;else->11}
+                // Shared 4x3 atlas order matches Desktop: 11,3,2,1,4,6,8,7,9,10,0,5.
+                // Android route IDs are different; map by workflow meaning.
+                val index=when(kind) {
+                    0->0; 14->1; 2->2; 3->4; 8,13->5; 4->6
+                    7->7; 9->8; 10->9; 6,12->10; 5->11; else->10
+                }
                 val width=sheet.width/4;val height=sheet.height/3
                 Bitmap.createBitmap(sheet,index%4*width,index/4*height,(width*.96f).toInt(),height)
             }.asImageBitmap()
@@ -201,10 +206,11 @@ internal fun DashboardSections(
 
 @Composable
 private fun LauncherTileContent(id:Int,title:String) {
-    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(12.dp),
-        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        DashboardIcon(id,Modifier.size(44.dp))
-        Text(title,fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
+    // Same text-only Main menu cards as Desktop and iOS.
+    Column(Modifier.fillMaxWidth().heightIn(min=104.dp).background(desktopPanelBrush()).padding(12.dp),
+        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+        Text(title,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,
+            textAlign=androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 

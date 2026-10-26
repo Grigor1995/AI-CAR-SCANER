@@ -78,7 +78,8 @@ enum DesktopArtwork {
                 result[id]=UIImage(cgImage:cell)
             }
         }
-        result[0]=car;result[1]=car;result[12]=car
+        // iOS 0 is Vehicles and 12 is Main menu; 1 is Diagnostics (sprite slot 1).
+        result[0]=car;result[12]=car
         return result
     }()
 }

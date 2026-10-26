@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QPlainTextEdit, QProgressBar,
-    QScrollArea, QDoubleSpinBox, QSpinBox, QStackedWidget, QTableWidget, QTableWidgetItem,
+    QScrollArea, QDoubleSpinBox, QSpinBox, QSlider, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTabWidget, QVBoxLayout, QWidget, QSplitter, QToolButton, QSizePolicy, QLayout, QStylePainter, QStyleOptionToolButton, QStyle
 )
 from .measurement_units import convert, display_records
@@ -76,6 +76,10 @@ QScrollBar::handle:vertical { background: #2789DE; border-radius: 4px; min-heigh
 QScrollBar::handle:horizontal { background: #2789DE; border-radius: 4px; min-width: 28px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+QSlider#neonSimulatorSlider::groove:horizontal { height: 7px; background: #06233A; border: 1px solid #0D688E; border-radius: 3px; }
+QSlider#neonSimulatorSlider::sub-page:horizontal { background: #00AEEF; border-radius: 3px; }
+QSlider#neonSimulatorSlider::handle:horizontal { background: #79E3FF; border: 2px solid #00AEEF; width: 15px; margin: -6px 0; border-radius: 9px; }
 """
 
 APP_QSS_LIGHT = """
@@ -1067,6 +1071,7 @@ class LiveDataPage(QWidget):
         self.ai_box=QPlainTextEdit(); self.ai_box.setReadOnly(True); self.ai_box.setPlaceholderText("AI live-data interpretation will appear here..."); self.ai_box.setMaximumHeight(240); lay.addWidget(self.ai_box)
         controls = []
         self.sim_inputs = {}
+        self.sim_sliders = {}
         for key, title, low, high, value, suffix in (
             ("rpm", "Engine speed", 0, 16383, 750, " rpm"),
             ("coolant_c", "Coolant temperature", -40, 215, 90, " °C"),
@@ -1078,7 +1083,21 @@ class LiveDataPage(QWidget):
             column.addWidget(title_label)
             spin = QDoubleSpinBox(); spin.setRange(low, high); spin.setValue(value); spin.setSuffix(suffix)
             self.sim_inputs[key] = spin
-            column.addWidget(spin); controls.append(field)
+            slider = QSlider(Qt.Horizontal)
+            slider.setObjectName("neonSimulatorSlider")
+            slider.setAccessibleName(title + " slider")
+            slider.setRange(low, high)
+            slider.setValue(value)
+            slider.valueChanged.connect(spin.setValue)
+            def sync_slider(current, target=slider):
+                target.blockSignals(True)
+                target.setValue(round(current))
+                target.blockSignals(False)
+            spin.valueChanged.connect(sync_slider)
+            self.sim_sliders[key] = slider
+            column.addWidget(spin)
+            column.addWidget(slider)
+            controls.append(field)
         self.apply_sim = QPushButton("Apply simulator values")
         self.apply_sim.clicked.connect(self._apply_simulator_values)
         self.simulator_panel=ResponsiveControls(controls,max_columns=4)
@@ -1214,7 +1233,7 @@ class LiveDataPage(QWidget):
                 unit = "km/h" if key == "speed_kmh" else "C"
                 low, new_unit = convert(metric_range[0], unit, us)
                 high, _ = convert(metric_range[1], unit, us)
-                spin.setRange(low, high); spin.setSuffix(" " + new_unit if us else suffix)
+                spin.setRange(low, high); self.sim_sliders[key].setRange(round(low), round(high)); spin.setSuffix(" " + new_unit if us else suffix)
                 spin.setValue(convert(value, unit, us)[0])
             self._us_inputs = us
         self.apply_sim.setEnabled(self._status_data.get("adapter") == "simulator")

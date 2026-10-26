@@ -584,6 +584,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             }
             DemoPanel(dashboardLabel(status)) {
                 Text("VIN: "+(result.vin ?: "—"))
+                result.protocol?.let { Text("OBD: ${it.standard} · ${it.id}") }
                 result.vehicle?.let { vehicle -> Text(listOfNotNull(vehicle.make,vehicle.model,vehicle.model_year,vehicle.engine_model).joinToString(" · ")) }
             }
             result.modules.forEach { module -> DemoPanel(dashboardLabel("OBD ECU")) { Text(module.address ?: "—") } }
@@ -591,14 +592,16 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         }
     }
 
-    LaunchedEffect(liveDataRunning, obdTransport, obdConnected, discoveryPending) {
+    LaunchedEffect(liveDataRunning, obdTransport, obdConnected, discoveryPending, state.session?.session_id) {
         if (!liveDataRunning || !obdConnected || discoveryPending) {
             return@LaunchedEffect
         }
 
+        val liveSessionId = state.session?.session_id
+        val liveTransport = obdTransport
         while (isActive) {
-            LiveDataReader.read(sessionId = state.session?.session_id) { command ->
-                when (obdTransport) {
+            LiveDataReader.read(sessionId = liveSessionId) { command ->
+                when (liveTransport) {
                     "bluetooth" -> bluetoothClient.command(command)
                     "wifi" -> wifiClient.command(command)
                     else -> usbClient.command(command)
@@ -612,7 +615,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     it.engineLoadPct == null
                 ) text.noLiveData else null
             }.onFailure {
+                liveData = null // Old readings must not look like current measurements.
+                channelHistory = emptyList()
                 liveDataError = it.message ?: extra.liveDataReadFailed
+                val connected = when (liveTransport) {
+                    "bluetooth" -> bluetoothClient.isConnected
+                    "wifi" -> wifiClient.isConnected
+                    else -> usbClient.isConnected
+                }
+                if (!connected) liveDataRunning = false
             }
             delay(1200)
         }

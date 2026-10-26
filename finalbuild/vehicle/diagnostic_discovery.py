@@ -62,8 +62,15 @@ async def identify(responses: dict[str, str], *, simulated: bool = False) -> dic
     elif simulated:
         lookup_status = "simulated"
     modules = responding_modules(responses.get("0100", ""))
+    protocol = None
+    if modules and not simulated:
+        from obd.protocols import detected_protocol
+        try:
+            protocol = detected_protocol(responses.get("ATDPN", ""))
+        except ValueError:
+            pass  # An adapter label alone is not proof of a negotiated ECU link.
     return {"vin": vin, "vehicle": vehicle, "identification_status": lookup_status,
-            "modules": modules, "simulated": simulated,
+            "modules": modules, "protocol": protocol, "simulated": simulated,
             "scope": "generic_obd_responders_only"}
 
 

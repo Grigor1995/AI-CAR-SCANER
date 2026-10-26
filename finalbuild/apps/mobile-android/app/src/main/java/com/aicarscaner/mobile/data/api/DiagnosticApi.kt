@@ -289,5 +289,6 @@ data class ObdDecodedSnapshotDto(val values: com.aicarscaner.mobile.data.obd.Liv
 data class DiscoveryPlanDto(val commands: List<String>, val restore: List<String>)
 data class DiscoveredVehicleDto(val make:String?, val model:String?, val model_year:String?, val engine_model:String?)
 data class DiscoveredModuleDto(val address:String?, val name:String, val observed:Boolean)
+data class DetectedProtocolDto(val id:String, val standard:String, val automatic:Boolean = false)
 data class DiscoveryResultDto(val vin:String?, val vehicle:DiscoveredVehicleDto?, val identification_status:String,
-    val modules:List<DiscoveredModuleDto>, val simulated:Boolean)
+    val modules:List<DiscoveredModuleDto>, val simulated:Boolean, val protocol:DetectedProtocolDto? = null)

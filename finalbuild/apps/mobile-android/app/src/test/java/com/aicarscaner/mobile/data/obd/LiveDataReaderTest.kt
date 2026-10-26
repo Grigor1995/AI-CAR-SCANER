@@ -21,13 +21,37 @@ class LiveDataReaderTest {
         assertEquals(42.0, result.speedKph!!, 0.001)
     }
 
-    @Test fun failedIndividualReadIsForwardedAsMissingData() = runTest {
+    @Test fun transportFailureAbortsWithoutDecodingOrFurtherCommands() = runTest {
+        var decoded = false
+        val commands = mutableListOf<String>()
+        val result = LiveDataReader.read(plan = { plan }, decode = { decoded=true; LiveDataSnapshot() }) {
+            commands += it
+            Result.failure(IOException("adapter disconnected"))
+        }
+        assertTrue(result.isFailure)
+        assertFalse(decoded)
+        assertEquals(listOf("010C"), commands)
+        assertEquals("adapter disconnected", result.exceptionOrNull()?.message)
+    }
+
+    @Test fun validNoDataReplyIsForwardedWithoutPretendingTransportFailure() = runTest {
         var captured = emptyMap<String, String>()
-        LiveDataReader.read(plan = { plan }, decode = { captured = it; LiveDataSnapshot() }) {
-            if (it == "010C") Result.failure(IOException("timeout")) else Result.success("410D28")
+        LiveDataReader.read(plan = { plan }, decode = { captured=it; LiveDataSnapshot(speedKph=40.0) }) {
+            Result.success(if(it=="010C") "NO DATA" else "410D28")
         }.getOrThrow()
         assertEquals("NO DATA", captured["010C"])
         assertEquals("410D28", captured["010D"])
+    }
+
+    @Test fun cancellationInsideResultIsNeverSwallowedAsNoData() = runTest {
+        var decoded=false
+        try {
+            LiveDataReader.read(plan={plan}, decode={decoded=true;LiveDataSnapshot()}) {
+                Result.failure(CancellationException("stop"))
+            }
+            fail("Cancellation must propagate")
+        } catch (_:CancellationException) {}
+        assertFalse(decoded)
     }
 
     @Test fun backendFailureIsNotReportedAsSuccessfulDiagnosis() = runTest {

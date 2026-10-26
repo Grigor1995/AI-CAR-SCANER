@@ -44,6 +44,11 @@ class ObdPollingSource(AcquisitionSource):
                 unit = {'rpm':'rpm','coolant_c':'C','speed_kmh':'km/h','throttle_percent':'%'}.get(name)
                 out.append(AcquisitionRecord(session_id=session_id, timestamp_ns=time_ns(), source_type=self.source_type, channel=name, numeric_value=value, unit=unit, raw=raw if isinstance(raw, bytes) else None, sequence=sequence, metadata={'pid': pid}))
             except Exception as exc:
+                transport = getattr(self.client, "transport", None)
+                if transport is not None and not getattr(transport, "connected", True):
+                    # Let AcquisitionManager enter its reconnect path instead of
+                    # emitting endless INVALID samples from a closed transport.
+                    raise
                 out.append(AcquisitionRecord(session_id=session_id, timestamp_ns=time_ns(), source_type=self.source_type, channel=self._pid_names.get(pid, f'pid_0x{pid:02X}'), numeric_value=None, quality='INVALID', sequence=sequence, metadata={'pid': pid, 'error': str(exc)}))
         return out
 

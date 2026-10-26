@@ -2152,6 +2152,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     monkeypatch.setattr(window, "run_worker", lambda work, done: jobs.append((work, done)))
     fake_api.diagnostic_discovery.return_value = {
         "vin": "WDD2110801A123456", "identification_status": "identified",
+        "protocol": {"id": "can-11-500", "standard": "ISO 15765-4 CAN", "observed": True},
         "vehicle": {"make": "Mercedes-Benz", "model": "E-Class", "model_year": "2006"},
         "modules": [{"name": "OBD ECU", "address": "7E8", "observed": True}],
     }
@@ -2160,6 +2161,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     work, done = jobs.pop(); done(work())
     fake_api.diagnostic_discovery.assert_called_once_with("usb:test", {})
     assert "E-Class" in page.identity.toPlainText()
+    assert "ISO 15765-4 CAN" in page.identity.toPlainText()
     assert "7E8" in page.modules.item(0).text()
     assert page.connect.isEnabled()
     page._identified({"identification_status": "vin_unavailable", "modules": []})

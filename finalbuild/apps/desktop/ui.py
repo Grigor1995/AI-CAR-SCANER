@@ -909,6 +909,9 @@ class DiagnosticPage(QWidget):
                   "lookup_unavailable": "VIN lookup unavailable", "vin_unavailable": "VIN unavailable",
                   "simulated": "Simulator / synthetic data"}.get(data.get("identification_status"), "VIN unavailable")
         lines = [self.app.tr_text(status), "VIN: " + (data.get("vin") or "—")]
+        protocol = data.get("protocol") or {}
+        if protocol.get("observed"):
+            lines.append("OBD: " + str(protocol.get("standard", "")) + " · " + str(protocol.get("id", "")))
         lines += [str(vehicle[key]) for key in ("make", "model", "model_year", "engine_model") if vehicle.get(key)]
         self.identity.setPlainText("\n".join(lines))
         for module in data.get("modules", []):

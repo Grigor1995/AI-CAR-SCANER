@@ -56,3 +56,15 @@ async def test_complete_vin_identification_and_29_bit_responder(monkeypatch):
     assert result['identification_status'] == 'identified'
     assert result['modules'][0]['address'] == '18DAF110'
     assert result['scope'] == 'generic_obd_responders_only'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode,expected", [("A6", "can-11-500"), ("A7", "can-29-500"), ("3", "iso9141-2"), ("A0", None), ("?", None)])
+async def test_protocol_autodetection_requires_positive_ecu_reply(mode, expected):
+    responses = {"0100": "41 00 BE 3E B8 13", "ATDPN": mode}
+    result = await identify(responses)
+    assert (result["protocol"]["id"] if result["protocol"] else None) == expected
+    result = await identify({"0100": "NO DATA", "ATDPN": mode})
+    assert result["protocol"] is None
+    result = await identify(responses, simulated=True)
+    assert result["protocol"] is None

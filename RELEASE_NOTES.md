@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased — OBD live acquisition reliability
+
+- Show the observed protocol beside VIN discovery on Desktop/Android, requiring a positive ECU response rather than guessing from a selected model.
+
+- Android: abort a native live poll on transport failure or cancellation instead of turning it into NO DATA and sending a misleading snapshot to the backend. Preserve successful NO DATA replies for unsupported PIDs.
+- Bind polling to the selected transport/session, clear failed local readings and stop the loop when the adapter disconnects.
+- Backend: propagate disconnected OBD reads to the acquisition reconnect manager, and cancel blocked reads promptly when Stop is requested.
+- Keep completed rule-generated tests out of normal reanalysis; match by stable test names despite regenerated UUIDs.
+
 ## Unreleased — Android result submission
 
 - Remove a silent click guard that ignored Record result while another request was loading. Opening the result editor no longer depends on unrelated requests.

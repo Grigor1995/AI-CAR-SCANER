@@ -212,7 +212,18 @@ def _analyze_session(session_id: str, language: str = 'en') -> DiagnosticSession
     intelligence_engine._annotate_scores(s)
     intelligence_engine._apply_test_history(s)
     intelligence_engine._add_missing_questions(s)
-    rule_recommendations = list(s.recommendations)
+    # Rules generate fresh UUIDs on every analysis. Match completed tests by
+    # canonical name as well, using only their latest recorded outcome so an
+    # INCOMPLETE correction can reopen the test.
+    latest_results = {
+        DiagnosticDecisionEngine._recommendation_key(item.test_name): item.result
+        for item in s.test_results if item.test_name
+    }
+    completed_names = {name for name, outcome in latest_results.items() if outcome in {"PASS", "FAIL"}}
+    rule_recommendations = [
+        item for item in s.recommendations
+        if DiagnosticDecisionEngine._recommendation_key(item.name) not in completed_names
+    ]
     decision_engine.refresh_recommendations(s)
 
     # Keep rule-driven tests that are not represented in the decision catalog,

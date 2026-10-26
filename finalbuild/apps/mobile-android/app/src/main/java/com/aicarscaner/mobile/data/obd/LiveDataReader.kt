@@ -26,7 +26,9 @@ object LiveDataReader {
         },
         command: suspend (String) -> Result<String>
     ): Result<LiveDataSnapshot> = try {
-        val responses = plan().commands.associateWith { command(it).getOrElse { "NO DATA" } }
+        // A missing ECU PID is a successful "NO DATA" reply. A transport
+        // failure must abort; never turn a disconnected adapter into a snapshot.
+        val responses = plan().commands.associateWith { command(it).getOrThrow() }
         Result.success(decode(responses).copy(updatedAtMs = System.currentTimeMillis()))
     } catch (cancelled: kotlinx.coroutines.CancellationException) {
         throw cancelled

@@ -37,10 +37,10 @@ QScrollArea { border: none; }
 QMainWindow, QWidget, QDialog { background: #061121; color: #EAF4FF; font-family: Segoe UI, Arial; font-size:10pt; }
 QLabel { background: transparent; border: none; }
 QMainWindow { border: 1px solid #1C4B89; }
-QGroupBox { background: #0C1B35; border: 1px solid #24518F; border-radius: 14px; }
+QGroupBox { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #12364D,stop:0.35 #0B2541,stop:1 #061626); border: 1px solid #1E6E95; border-top: 1px solid #35C8FF; border-radius: 14px; }
 QGroupBox { margin-top: 15px; padding: 15px 12px 12px; font-weight: 650; }
 QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 7px; color: #A9CFFF; }
-QPushButton { background: #132D56; color: #EAF4FF; border: 1px solid #2864AC; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
+QPushButton { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #205477,stop:0.17 #0E355A,stop:1 #071B32); color: #EAF4FF; border: 1px solid #1973A4; border-top: 1px solid #35C8FF; border-radius: 9px; padding: 10px 15px; font-weight: 600; }
 QPushButton:hover { background: #1A4F92; border: 1px solid #2998FF; }
 QPushButton:pressed { background: #0D366A; }
 QPushButton:disabled { color: #6983A5; background: #10213B; border: 1px solid #1B3556; }
@@ -58,7 +58,7 @@ QTabBar::tab:selected { background: #1666BE; color: white; border-color: #2898FF
 QHeaderView::section, QTableWidget { background: #0C1E3A; color: #DCEEFF; border: 1px solid #294E83; padding: 5px; }
 QTableWidget { gridline-color: #1F426D; }
 QProgressBar { background: #07172C; border: 1px solid #27558D; border-radius: 6px; height: 11px; text-align: center; }
-QProgressBar::chunk { background: #0B8DFF; border-radius: 6px; }
+QProgressBar::chunk { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #0066BC,stop:1 #35C8FF); border-radius: 6px; }
 QLabel#title { font-size:17pt; font-weight: 750; color: #F3FAFF; }
 QLabel#heroTitle { font-size:22pt; color: #F4FAFF; font-weight: 800; }
 QLabel#heroSubtitle { color: #72BEFF; font-size:9pt; letter-spacing: 2px; font-weight: 700; }

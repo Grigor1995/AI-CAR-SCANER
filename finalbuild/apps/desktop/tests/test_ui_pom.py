@@ -312,27 +312,32 @@ def test_main_window_builds_reference_navigation_pages(window_factory):
     assert list(window.top_navigation_buttons) == [12, 11, 3, 8, 4, 6, 9, 10]
     assert window.top_navigation_buttons[12].text() == "Main menu"
     assert window.top_navigation_buttons[12].isChecked()
+    assert window.header_navigation.isHidden()  # No top toolbar on Main menu.
 
 
 def test_top_navigation_and_main_menu_tiles_reach_all_13_pages(window_factory):
     window = window_factory()
     top = window.top_navigation_buttons
     assert list(top) == [12, 11, 3, 8, 4, 6, 9, 10]
-    for target, button in top.items():
+    # Open a workflow from the launcher, then exercise visible top buttons.
+    window.navigate_page(11)
+    for target in [11, 3, 8, 4, 6, 9, 10, 12]:
+        button = top[target]
         button.click()
         assert window.page_index() == target
         assert window.content.currentIndex() == target
         assert button.isChecked()
+        assert window.header_navigation.isHidden() == (target == 12)
         assert sum(item.isChecked() for item in top.values()) == 1
     launcher = window.pages[12]
     for tile in launcher.tiles:
-        top[12].click()
+        window.navigate_page(12)
         tile.click()
         assert window.page_index() == tile.page_id
         assert window.content.currentIndex() == tile.page_id
-    top[12].click()
+    window.navigate_page(12)
     assert window.page_index() == 12
-    assert window.header_navigation.isVisible()
+    assert window.header_navigation.isHidden()
 
 
 def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
@@ -2194,7 +2199,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     assert page.connect.isEnabled()
 
 
-def test_launcher_cards_are_text_only_and_top_navigation_has_large_icons(window_factory):
+def test_launcher_cards_are_text_only_and_toolbar_uses_sidebar_icons(window_factory):
     from PySide6.QtWidgets import QToolButton
     window = window_factory()
     assert window.page_index() == 12
@@ -2203,16 +2208,17 @@ def test_launcher_cards_are_text_only_and_top_navigation_has_large_icons(window_
     assert not window.pages[12].background.isNull()
     assert not window.pages[12].icon_atlas.isNull()
     assert not hasattr(window, "nav")
-    assert window.header_navigation.isVisible()
+    assert window.header_navigation.isHidden()
     assert window.top_navigation_buttons[12].isChecked()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
     assert vci.icon().isNull() and diagnostic.icon().isNull()
     assert vci.toolButtonStyle() == Qt.ToolButtonTextOnly
     top = window.top_navigation_buttons[3]
-    assert top.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
-    assert top.iconSize().width() == 38
-    assert top.minimumHeight() >= 90
+    assert top.toolButtonStyle() == Qt.ToolButtonTextBesideIcon
+    assert top.iconSize().width() == 30
+    assert top.minimumHeight() >= 50
+    assert top.text() == "Diagnostics"
     vci.click()
     assert window.page_index() == 2
     assert window.header_navigation.isVisible()

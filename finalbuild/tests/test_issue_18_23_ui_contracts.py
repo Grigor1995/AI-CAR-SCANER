@@ -119,14 +119,15 @@ def test_main_menu_is_text_only_on_all_native_clients():
     assert "Text(pageTitle(id))" in launcher
 
 
-def test_top_nav_text_does_not_clip_and_uses_native_qtoolbutton():
+def test_top_nav_uses_original_sidebar_style_icons_and_hides_on_main_menu():
     source = DESKTOP.read_text(encoding="utf-8")
     top = source.split("top_sections = [", 1)[1].split("self.content = QStackedWidget()", 1)[0]
     assert "button = QToolButton()" in top
-    assert "setIconSize(QSize(38, 38))" in top
-    assert "Qt.ToolButtonTextUnderIcon" in top
-    assert "setFixedHeight(94)" in top
+    assert "setIconSize(QSize(30, 30))" in top
+    assert "Qt.ToolButtonTextBesideIcon" in top
+    assert "setFixedHeight(54)" in top
     assert "widget.minimumHeight(), widget.sizeHint().height()" in source
+    assert "self.header_navigation.setVisible(page_id != 12)" in source
 
 
 def test_same_exact_launcher_artwork_is_packaged_on_all_clients():

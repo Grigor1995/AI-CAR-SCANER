@@ -786,7 +786,7 @@ class AdaptiveMenuTile(QToolButton):
         painter.drawText(rect.adjusted(0, rect.height()-text_height, 0, 0), Qt.AlignCenter | Qt.TextWordWrap, self.text())
 
 
-class MovableMenuTile(QToolButton):
+class MovableMenuTile(AdaptiveMenuTile):
     """Click opens a workflow; dragging changes its launcher position."""
     MIME = "application/x-ai-car-launcher-page"
 
@@ -875,9 +875,9 @@ class LauncherPage(QWidget):
         for text, page_id, symbol in sections:
             tile = MovableMenuTile(self, page_id); tile.setText(text)
             tile.setAccessibleName(text)
-            tile.setIcon(QIcon())  # Main menu is text-only.
-            tile.setToolButtonStyle(Qt.ToolButtonTextOnly)
-            font = tile.font(); font.setPointSize(14); font.setBold(True); tile.setFont(font)
+            tile.setIcon(_page_icon(page_id))
+            tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            font = tile.font(); font.setPointSize(11); font.setBold(True); tile.setFont(font)
             tile.setMinimumSize(72, 64)
             tile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             tile.setStyleSheet("QToolButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 rgba(30,61,91,220),stop:0.5 rgba(9,27,48,215),stop:1 rgba(4,15,31,230)); color: #EAF4FF; border: 1px solid #35698F; border-top: 1px solid #6D96B6; border-radius: 18px; padding: 6px; font-weight: 600; } QToolButton:hover { border-color: #43D5FF; background: #123B5B; } QToolButton:focus { border: 2px solid #8CE8FF; }")

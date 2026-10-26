@@ -19,8 +19,9 @@ Vehicles and Main menu **top-navigation** icons use `brand-car.png`, which
 is byte-identical to Android/iOS `launcher_car.png`. All other navigation
 icons use the same transparent 3D atlas: `icons-3d.png` is packaged as
 `launcher_icons.png` on mobile. Page IDs differ between clients, so icons
-are mapped by workflow purpose, not numeric ID. Main-menu **cards** are
-text-only on Desktop, Android and iOS. No manufacturer photo is used for branding.
+are mapped by workflow purpose, not numeric ID. Main-menu **cards** show the
+same 3D icons on Desktop, Android and iOS with translated text labels.
+No manufacturer photo is used for branding.
 
 `mobile-app-icon.png` is generated neon-blue abstract vehicle app branding. Native
 Android density/adaptive assets and the opaque iOS 1024 icon derive from this

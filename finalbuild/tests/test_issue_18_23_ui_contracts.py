@@ -104,18 +104,18 @@ def test_desktop_uses_only_responsive_top_navigation_including_main_menu():
     assert "button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))" in code
 
 
-def test_main_menu_is_text_only_on_all_native_clients():
+def test_main_menu_restores_3d_icons_on_all_native_clients():
     desktop = DESKTOP.read_text(encoding="utf-8")
     android = ANDROID_NAV.read_text(encoding="utf-8")
     ios = IOS_SCREEN.read_text(encoding="utf-8")
-    assert "class MovableMenuTile(QToolButton)" in desktop
-    assert "tile.setIcon(QIcon())" in desktop
-    assert "tile.setToolButtonStyle(Qt.ToolButtonTextOnly)" in desktop
+    assert "class MovableMenuTile(AdaptiveMenuTile)" in desktop
+    assert "tile.setIcon(_page_icon(page_id))" in desktop
+    assert "tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)" in desktop
     card = android.split("private fun LauncherTileContent(",1)[1].split("/** Persistent actions",1)[0]
-    assert "DashboardIcon(" not in card
+    assert "DashboardIcon(id,Modifier.size(56.dp))" in card
     assert "Text(title,style=MaterialTheme.typography.titleMedium" in card
     launcher = ios.split("private var desktopMenu:",1)[1].split("private var demoHome:",1)[0]
-    assert "DesktopIcon(page:id)" not in launcher
+    assert "DesktopIcon(page:id).frame(width:64,height:64)" in launcher
     assert "Text(pageTitle(id))" in launcher
 
 

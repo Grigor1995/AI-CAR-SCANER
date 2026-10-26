@@ -29,3 +29,10 @@ Review was based on GitHub comparisons, current sources and available CI metadat
 Only delete branches whose head commit is an ancestor of current main. Do not delete `main`, `design/neon-3d-ui-review-20261023`, or `feat/backend-obd-vehicle-registry-20261022` while their unique work remains unmerged. Never force-push or rewrite shared history.
 
 A one-time GitHub Actions workflow can remove the six known fully merged branches, but only after checking each branch tip is an ancestor of main. If Action permissions/runners block the workflow, deletion must be run with a permitted GitHub account. Keep PR #25/#26 as drafts until the conflicting implementations are reviewed and tested.
+
+## Cleanup execution status (same day)
+
+- The ancestry-protected one-time GitHub Actions cleanup job did **not** execute its steps; GitHub reported an early job failure with no step logs. No branch deletion was confirmed. Its temporary workflow was removed afterward so it cannot repeatedly fail.
+- The executable Git Bash alternative is committed at `scripts/cleanup_merged_branches_git_bash.sh`. Run from the `finalbuild` folder with `bash scripts/cleanup_merged_branches_git_bash.sh`; it only deletes listed branches when their remote head is an ancestor of `origin/main`.
+- PR #24: merged Desktop + Android PDF. PR #27: merged Desktop slider controls. PR #25: superseded experimental neon branch (newer UI on main); PR #26: backend/vehicle/OBD changes remain pending reconciliation and hardware-independent tests.
+- Actual GitHub remote branch deletion requires a permissioned git push because the connected GitHub tool set does not expose branch deletion.

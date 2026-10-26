@@ -319,11 +319,11 @@ def test_top_navigation_and_main_menu_tiles_reach_all_13_pages(window_factory):
     window = window_factory()
     top = window.top_navigation_buttons
     assert list(top) == [12, 11, 3, 8, 4, 6, 9, 10]
-    for target, button in top.items():
-        if target == 12:
-            window.navigate_page(12)  # Main menu hides its own quick-action bar.
-        else:
-            button.click()
+    # Open a workflow from the launcher, then exercise visible top buttons.
+    window.navigate_page(11)
+    for target in [11, 3, 8, 4, 6, 9, 10, 12]:
+        button = top[target]
+        button.click()
         assert window.page_index() == target
         assert window.content.currentIndex() == target
         assert button.isChecked()

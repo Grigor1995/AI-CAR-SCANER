@@ -32,6 +32,7 @@ struct VehicleModelArtwork: View {
     }
 
     var body: some View {
+        Group {
         if portrait != nil {
             bundledArtwork
         } else if let remoteURL {
@@ -47,6 +48,18 @@ struct VehicleModelArtwork: View {
                 else { bundledArtwork }
             }.id(remoteURL)
         } else { bundledArtwork }
+        }
+        .padding(7)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(LinearGradient(colors: [AutomotivePalette.navy,AutomotivePalette.panel,AutomotivePalette.midnight],
+                                     startPoint: .topLeading,endPoint: .bottomTrailing))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AutomotivePalette.cyan.opacity(0.9), lineWidth: 1.5)
+        )
+        .shadow(color: AutomotivePalette.electricBlue.opacity(0.3),radius: 11,y: 3)
     }
 
     private var bundledArtwork: some View {

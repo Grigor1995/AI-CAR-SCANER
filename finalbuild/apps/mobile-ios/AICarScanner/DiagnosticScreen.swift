@@ -58,7 +58,7 @@ struct DiagnosticScreen: View {
 
                         }
                         Spacer()
-                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") }
+                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") } .accessibilityLabel("Application menu")
                         if viewModel.session != nil && tab != 12 { Button("＋"){newSessionOpen=true} }
                     }
                     if tab != 12 {

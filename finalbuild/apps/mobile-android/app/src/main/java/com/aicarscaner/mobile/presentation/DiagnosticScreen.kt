@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -1893,12 +1894,23 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
     }
 
     if (portrait != null) {
-        Image(
-            bitmap = portrait,
-            contentDescription = "$make $model $chassis",
-            contentScale = ContentScale.Fit,
+        androidx.compose.foundation.layout.Box(
             modifier = Modifier.fillMaxWidth().height(height)
-        )
+                .background(
+                    Brush.linearGradient(listOf(Color(0xFF03070E),Color(0xFF103650),Color(0xFF041321))),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(1.dp,Color(0xFF35C8FF),RoundedCornerShape(16.dp))
+                .padding(7.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                bitmap = portrait,
+                contentDescription = "$make $model $chassis",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         photoCredit?.takeIf { it.first.isNotBlank() }?.let { credit ->
             TextButton(onClick = {
                 val uri = android.net.Uri.parse(credit.second)
@@ -1908,7 +1920,11 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
             }) { Text(credit.first, style=MaterialTheme.typography.labelSmall, maxLines=2) }
         }
     } else {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(height),contentAlignment=androidx.compose.ui.Alignment.Center) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxWidth().height(height)
+                .background(Brush.linearGradient(listOf(Color(0xFF03070E), Color(0xFF103650), Color(0xFF041321))),RoundedCornerShape(16.dp))
+                .border(1.dp,Color(0xFF35C8FF),RoundedCornerShape(16.dp)),
+            contentAlignment=androidx.compose.ui.Alignment.Center) {
             DashboardIcon(6,Modifier.size(if(height<=72.dp) 32.dp else 64.dp),MaterialTheme.colorScheme.primary.copy(alpha=.45f))
         }
     }

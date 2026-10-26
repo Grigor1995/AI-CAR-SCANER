@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 from .edge_resize import EdgeResizablePanel
 from .channel_labels import CHANNEL_LABELS
 from .models import Session, Vehicle, user_report_data
-from .vehicle_artwork import load_backend_portrait
+from .vehicle_artwork import load_backend_portrait, NeonVehiclePreview
 
 
 class Panel(QGroupBox):
@@ -338,8 +338,7 @@ class DemoDashboard(QWidget):
         columns.addLayout(left, 5)
         columns.addLayout(right, 4)
         hero = Panel("Selected vehicle")
-        self.model_artwork = QLabel()
-        self.model_artwork.setAlignment(Qt.AlignCenter)
+        self.model_artwork = NeonVehiclePreview()
         self.model_artwork.setMinimumHeight(195)
         hero.body.addWidget(self.model_artwork)
         self.vehicle_name = label("Select a vehicle", "heroTitle")

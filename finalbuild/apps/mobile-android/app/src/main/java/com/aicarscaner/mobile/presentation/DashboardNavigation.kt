@@ -148,7 +148,7 @@ internal fun DashboardSections(
                     row.forEach { id ->
                         val title=byId.getValue(id)
                         Card(onClick={if(dragging==null) navigate(id)},
-                            modifier=Modifier.weight(1f).heightIn(min=124.dp)
+                            modifier=Modifier.weight(1f).heightIn(min=112.dp)
                                 .onGloballyPositioned {bounds[id]=it.boundsInRoot()}
                                 .graphicsLayer {alpha=if(dragging==id) .35f else 1f}
                                 .semantics {
@@ -180,7 +180,7 @@ internal fun DashboardSections(
                             shape=RoundedCornerShape(18.dp),
                             colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color.Transparent),
                             border=BorderStroke(if(target==id && dragging!=null) 2.dp else 1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.65f)),
-                            elevation=CardDefaults.cardElevation(5.dp)) {
+                            elevation=CardDefaults.cardElevation(9.dp)) {
                             LauncherTileContent(id,dashboardLabel(title))
                         }
                     }
@@ -201,9 +201,9 @@ internal fun DashboardSections(
 
 @Composable
 private fun LauncherTileContent(id:Int,title:String) {
-    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(14.dp),
-        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
-        DashboardIcon(id,Modifier.size(64.dp))
+    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(12.dp),
+        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        DashboardIcon(id,Modifier.size(44.dp))
         Text(title,fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
@@ -228,7 +228,7 @@ internal fun DashboardToolbar(
         Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurface)
         var menuOpen by remember { mutableStateOf(false) }
         Box {
-            TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription=text.settings}) }
+            TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription="Application menu"}) }
             DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}) {
                 DropdownMenuItem(text={Text(text.settings)},onClick={menuOpen=false;onSettings()})
             }

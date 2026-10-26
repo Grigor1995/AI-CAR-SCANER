@@ -1,5 +1,15 @@
 # AI CAR SCANNER — demo and QA presentation
 
+## Current UI mini demo — 26 October 2026
+
+[Download the 5-page PDF](AI-Car-Scanner-UI-Demo-2026-10-26.pdf) (1.53 MB).
+Fresh screenshots of the Desktop UI at `4f596b0`: editable main menu, neon vehicle
+artwork, analog Live Data, guided tests and recalculated hypothesis scores.
+Screens are rendered from the real Qt widgets with seeded demonstration data;
+no physical adapter, vehicle or AI-provider connection is claimed.
+
+## Earlier full presentation
+
 Prepared **22 October 2026**, after hiding internal Session IDs from the native
 clients and user-facing report exports.
 

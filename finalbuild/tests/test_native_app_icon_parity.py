@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _png_info(path):
     data = (ROOT / path).read_bytes()
-    assert data.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
     return struct.unpack(">IIBB", data[16:26]), data
 
 

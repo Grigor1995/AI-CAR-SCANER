@@ -83,3 +83,19 @@ def test_vehicle_photo_sources_not_destroyed_or_replaced_by_styling():
     assert '"api/v1/vehicle-reference/image?"' in android
     assert "AsyncImage(url: remoteURL)" in ios
     assert "Bundle.main.url(forResource: name" in ios
+
+
+def test_desktop_uses_only_responsive_top_navigation_including_main_menu():
+    code = DESKTOP.read_text(encoding="utf-8")
+    screen = code.split("def _build_pages(self):", 1)[1].split("def _decorate_page(", 1)[0]
+    assert '("Main menu", 12)' in screen
+    assert "self.top_navigation_buttons[target] = button" in screen
+    assert "self.header_navigation = ResponsiveControls(" in screen
+    assert "self.content = QStackedWidget()" in screen
+    assert "self.navigate_page(12)" in screen
+    assert "sideNav" not in screen
+    assert "CompactNavigation()" not in screen
+    assert "self.nav" not in code.replace("self.navigate_page", "")
+    assert "self.content.setCurrentIndex(page_id)" in code
+    assert "button.setChecked(target == page_id)" in code
+

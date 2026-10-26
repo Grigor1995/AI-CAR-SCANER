@@ -1013,9 +1013,10 @@ class DiagnosticPage(QWidget):
 
 class ResponsiveControls(QWidget):
     """Wrap complete controls to new rows instead of clipping their labels."""
-    def __init__(self, widgets, max_columns=5):
+    def __init__(self, widgets, max_columns=5, min_cell_width=180):
         super().__init__()
         self.widgets, self.max_columns = widgets, max_columns
+        self.min_cell_width = min_cell_width
         self.grid = QGridLayout(self); self.grid.setContentsMargins(0,0,0,0); self.grid.setSpacing(6)
         self.grid.setSizeConstraint(QLayout.SetNoConstraint)
         self._columns=0; self._arranging=False
@@ -1036,7 +1037,7 @@ class ResponsiveControls(QWidget):
         if self._arranging: return
         self._arranging=True
         try:
-            needed=max(180,max(widget.minimumSizeHint().width() for widget in self.widgets))
+            needed=max(self.min_cell_width,max(widget.minimumSizeHint().width() for widget in self.widgets))
             available=max(1,min(self.max_columns,(self.width()+6)//(needed+6)))
             rows=math.ceil(len(self.widgets)/available); columns=math.ceil(len(self.widgets)/rows)
             if columns!=self._columns:
@@ -1557,7 +1558,7 @@ class MainWindow(QMainWindow):
                     if translated != widget.toPlainText(): widget.setPlainText(translated)
             elif isinstance(widget, QListWidget):
                 # Vehicle/device lists contain user or hardware names; translate only presentation lists.
-                if widget is self.nav or widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
+                if widget in [self.pages[i].list for i in (6, 7, 8) if len(self.pages) > i]:
                     for index in range(widget.count()):
                         item = widget.item(index)
                         item.setText(self.tr_text(item.text())); item.setToolTip(item.text())
@@ -1594,37 +1595,67 @@ class MainWindow(QMainWindow):
         container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,1)
-        header_nav=QWidget(); header_buttons=QHBoxLayout(header_nav); header_buttons.setContentsMargins(0,0,0,0); header_buttons.setSpacing(6); header_buttons.setSizeConstraint(QLayout.SetNoConstraint)
-        for title, target in [("Symptoms",11),("Diagnostics",3),("AI Analysis",8),("Live Data",4),("Guided Tests",6),("Reports",9),("Teach AI",10)]:
-            button=AdaptiveMenuTile(); button.setText(title); button.setObjectName("topNav")
-            button.setIcon(_page_icon(target)); button.setMinimumSize(42,56)
-            font=button.font(); font.setPointSize(9); button.setFont(font)
-            button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
-            button.setStyleSheet("QToolButton { background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #214464,stop:1 #0A2037); color:#EAF4FF; border:1px solid #2C608B; border-radius:10px; padding:2px; } QToolButton:hover,QToolButton:focus { border:1px solid #5DD7FF; }")
-            button.clicked.connect(lambda _=False, index=target:self.navigate_page(index)); header_buttons.addWidget(button)
+        # The full-width top bar is the only screen navigation.
+        top_sections = [
+            ("Main menu", 12), ("Dashboard", 0), ("Symptoms", 11),
+            ("Vehicles", 1), ("VCI / Devices", 2), ("Diagnostics", 3),
+            ("Live Data", 4), ("ECU Network", 5), ("Guided Tests", 6),
+            ("DTC", 7), ("AI Analysis", 8), ("Reports", 9), ("Teach AI", 10),
+        ]
+        self.top_navigation_buttons = {}
+        buttons = []
+        for title, target in top_sections:
+            button = AdaptiveMenuTile()
+            button.setText(title)
+            button.setAccessibleName(title)
+            button.setObjectName("topNav")
+            button.setIcon(_page_icon(target))
+            button.setCheckable(True)
+            button.setMinimumWidth(96)
+            button.setFixedHeight(60)
+            font = button.font()
+            font.setPointSize(9)
+            button.setFont(font)
+            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            button.setStyleSheet(
+                "QToolButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+                "stop:0 #214464,stop:1 #0A2037);color:#EAF4FF;"
+                "border:1px solid #2C608B;border-radius:10px;padding:2px;}"
+                "QToolButton:hover,QToolButton:focus {border:1px solid #5DD7FF;}"
+                "QToolButton:checked {background:#12518A;border:2px solid #61DEFF;}"
+            )
+            button.clicked.connect(lambda _=False, index=target: self.navigate_page(index))
+            self.top_navigation_buttons[target] = button
+            buttons.append(button)
         shell.addLayout(header)
-        header_scroll=QScrollArea(); header_scroll.setWidgetResizable(True)
-        header_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff); header_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        header_scroll.setFixedHeight(66); header_scroll.setWidget(header_nav); shell.addWidget(header_scroll)
-        self.header_navigation = header_scroll
-        root=QHBoxLayout(); shell.addLayout(root,1)
-        nav=CompactNavigation(); nav.setObjectName("sideNav"); nav.setIconSize(QSize(24,24)); nav.setFixedWidth(195); entries=[("◉  Dashboard",DashboardPage), ("▣  Vehicles",VehiclesPage), ("🔌  VCI / Devices",DevicesPage), ("⌘  Diagnostic",DiagnosticPage), ("◌  Live Data",LiveDataPage), ("⌘  ECU Network",NetworkPage), ("✓  Tests",TestsPage), ("⚠  DTC", DTCPage), ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage), ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage), ("▦  Main menu", LauncherPage)]
-        self.nav=nav
-        for page_id in [12, 0, 11, *range(1, 11)]:
-            symbol, text = entries[page_id][0].split("  ", 1)
-            item = QListWidgetItem(text); item.setIcon(_page_icon(page_id)); item.setData(Qt.UserRole, page_id); nav.addItem(item)
-        root.addWidget(nav)
-        content=QStackedWidget(); root.addWidget(content,1)
+        self.header_navigation = ResponsiveControls(
+            buttons, max_columns=8, min_cell_width=120
+        )
+        self.header_navigation.setObjectName("topNavigation")
+        shell.addWidget(self.header_navigation)
+        self.content = QStackedWidget()
+        shell.addWidget(self.content, 1)
+        entries = [
+            ("◉  Dashboard", DashboardPage), ("▣  Vehicles", VehiclesPage),
+            ("🔌  VCI / Devices", DevicesPage), ("⌘  Diagnostic", DiagnosticPage),
+            ("◌  Live Data", LiveDataPage), ("⌘  ECU Network", NetworkPage),
+            ("✓  Tests", TestsPage), ("⚠  DTC", DTCPage),
+            ("◈  AI Analysis", HypothesesPage), ("▤  Reports", ReportsPage),
+            ("✧  Teach AI", TeachPage), ("✎  Symptoms", SymptomsPage),
+            ("▦  Main menu", LauncherPage),
+        ]
         for page_id, (_text, cls) in enumerate(entries):
-            page=cls(self)
-            if page_id != 12: self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
-            self.pages.append(page); scroll=QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QScrollArea.NoFrame); scroll.setWidget(page); content.addWidget(scroll)
-        nav.currentRowChanged.connect(lambda row: content.setCurrentIndex(nav.item(row).data(Qt.UserRole)) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: nav.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: header_scroll.setVisible(nav.item(row).data(Qt.UserRole) != 12) if row >= 0 else None)
-        nav.currentRowChanged.connect(lambda row: self.pages[4].request_refresh() if row >= 0 and nav.item(row).data(Qt.UserRole) == 4 else None)
-        nav.currentRowChanged.connect(lambda row: self.pages[9].load() if row >= 0 and nav.item(row).data(Qt.UserRole) == 9 and self.online else None)
-        nav.setCurrentRow(0)
+            page = cls(self)
+            if page_id != 12:
+                self._decorate_page(page, page_id, _text.split("  ", 1)[-1])
+            self.pages.append(page)
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QScrollArea.NoFrame)
+            scroll.setWidget(page)
+            self.content.addWidget(scroll)
+        self._current_page_id = None
+        self.navigate_page(12)
         self.stack.addWidget(container)
     def _decorate_page(self, page, page_id, text):
         layout = page.layout()
@@ -1642,14 +1673,22 @@ class MainWindow(QMainWindow):
         layout.insertWidget(0, hero)
 
     def navigate_page(self, page_id):
-        for row in range(self.nav.count()):
-            if self.nav.item(row).data(Qt.UserRole) == page_id:
-                self.nav.setCurrentRow(row)
-                return
+        """Switch screens through a single top navigation without sidebars."""
+        if not isinstance(page_id, int) or not 0 <= page_id < len(self.pages):
+            return
+        previous = self._current_page_id
+        self._current_page_id = page_id
+        self.content.setCurrentIndex(page_id)
+        for target, button in self.top_navigation_buttons.items():
+            button.setChecked(target == page_id)
+        if previous != page_id:
+            if page_id == 4:
+                self.pages[4].request_refresh()
+            elif page_id == 9 and self.online:
+                self.pages[9].load()
 
     def page_index(self):
-        item = self.nav.currentItem()
-        return item.data(Qt.UserRole) if item else None
+        return self._current_page_id
 
     def _build_menu(self):
         menu = self.menuBar().addMenu("Application")

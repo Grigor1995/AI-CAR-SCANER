@@ -65,10 +65,10 @@ private object DesktopIconCache {
         }
 }
 @Composable
-internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
+internal fun DashboardIcon(kind: Int, modifier: Modifier = Modifier.size(24.dp), color: Color = MaterialTheme.colorScheme.primary) {
     val resources=LocalContext.current.resources
     val icon=remember(kind,resources) {DesktopIconCache.image(resources,kind)}
-    Image(bitmap=icon,contentDescription=null,modifier=modifier.size(24.dp))
+    Image(bitmap=icon,contentDescription=null,modifier=modifier)
 }
 
 @Composable

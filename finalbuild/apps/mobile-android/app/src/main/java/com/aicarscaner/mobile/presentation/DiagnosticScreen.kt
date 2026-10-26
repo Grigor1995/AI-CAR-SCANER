@@ -1867,13 +1867,15 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
     var photoCredit by remember(key) { mutableStateOf(vehicleCreditCache.get(key)) }
     LaunchedEffect(key) {
         if (portrait == null) {
-            // Prefer the exact bundled neon generation, matching Desktop even with an older backend.
+            // Show exact bundled illustration immediately, then upgrade to backend photo.
             portrait = withContext(Dispatchers.IO) {
                 runCatching { context.assets.open(file).use { stream ->
                     BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()
                 } }.getOrNull()
             }
-            val remote = if (portrait == null) withContext(Dispatchers.IO) {
+            // Try the actual backend photo even if a bundled illustration exists.
+            // Keep the offline portrait as a fallback while the request runs.
+            val remote = withContext(Dispatchers.IO) {
                 runCatching {
                     val query = listOf("make" to make, "model" to model, "chassis" to chassis).joinToString("&") { (name, value) -> name + "=" + java.net.URLEncoder.encode(value, "UTF-8") }
                     val connection = java.net.URL(com.aicarscaner.mobile.data.api.ApiClient.BASE_URL + "api/v1/vehicle-reference/image?" + query).openConnection().apply { connectTimeout=4000; readTimeout=4000 }
@@ -1883,7 +1885,7 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
                     val credit = listOf(author, license).filter { it.isNotBlank() }.joinToString(" • ")
                     Triple(bitmap, credit, connection.getHeaderField("X-Image-Source") ?: "")
                 }.getOrNull()
-            } else null
+            }
             if (remote?.first != null) {
                 portrait = remote.first
                 photoCredit = remote.second to remote.third

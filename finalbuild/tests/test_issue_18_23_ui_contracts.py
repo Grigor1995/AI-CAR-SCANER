@@ -100,5 +100,5 @@ def test_desktop_uses_only_responsive_top_navigation_including_main_menu():
     assert "CompactNavigation()" not in screen
     assert "self.nav" not in code.replace("self.navigate_page", "")
     assert "self.content.setCurrentIndex(page_id)" in code
-    assert "button.setChecked(target == page_id)" in code
+    assert "button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))" in code
 

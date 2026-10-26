@@ -463,7 +463,7 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
 
 def check_start(window, ev, app, platform):
     assert window.isVisible()
-    assert len(window.top_navigation_buttons)==13 and len(window.pages)==13
+    assert len(window.top_navigation_buttons)==8 and len(window.pages)==13
     assert not hasattr(window, "nav")
     assert window.page_index()==12
     assert window.width()>=800 and window.height()>=500

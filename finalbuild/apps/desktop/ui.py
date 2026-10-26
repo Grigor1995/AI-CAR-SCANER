@@ -1680,7 +1680,7 @@ class MainWindow(QMainWindow):
         self._current_page_id = page_id
         self.content.setCurrentIndex(page_id)
         for target, button in self.top_navigation_buttons.items():
-            button.setChecked(target == page_id)
+            button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))
         if previous != page_id:
             if page_id == 4:
                 self.pages[4].request_refresh()

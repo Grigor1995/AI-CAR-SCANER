@@ -2212,7 +2212,7 @@ def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
     vci.click()
     assert window.page_index() == 2
     assert window.header_navigation.isVisible()
-    assert window.top_navigation_buttons[2].isChecked()
+    assert window.top_navigation_buttons[12].isChecked()  # secondary page via Main menu
 
 
 def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_factory, qapp):

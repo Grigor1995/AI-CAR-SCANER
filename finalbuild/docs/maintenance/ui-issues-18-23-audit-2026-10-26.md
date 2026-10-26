@@ -50,4 +50,4 @@ Use Xcode + iOS Simulator for actual SwiftUI compilation and UI capture.
 - "3D" refers to layered neons, gradient and elevation styles; it does **not** claim full three-dimensional vehicle CAD/mesh rendering.
 - Preserve real-photo metadata and correct model identity, never imply a generated model illustration is a verified photograph.
 
-Current merge gate: **HOLD** until CI/job failure reasons are known and Desktop, Android and iOS validations pass.
+Current review gate: **HOLD** for full release qualification until CI/job failure reasons are known and Desktop, Android and iOS validations pass. The user has explicitly requested to merge these UI changes into `main` despite the unresolved failing checks. Merging code to main must not be taken as evidence of passing QA; keep incomplete issues open and preserve the failure record.

@@ -58,7 +58,7 @@ struct DiagnosticScreen: View {
 
                         }
                         Spacer()
-                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") }
+                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") } .accessibilityLabel("Application menu")
                         if viewModel.session != nil && tab != 12 { Button("＋"){newSessionOpen=true} }
                     }
                     if tab != 12 {
@@ -182,8 +182,9 @@ struct DiagnosticScreen: View {
                 ForEach(orderedLauncherPages,id:\.self) { id in
                     Button { tab=id } label: {
                         VStack(spacing:10) {
-                            DesktopIcon(page:id).frame(height:64)
-                            Text(pageTitle(id)).font(.subheadline.weight(.semibold)).multilineTextAlignment(.center).frame(minHeight:38)
+                            DesktopIcon(page:id).frame(width:64,height:64)
+                            Text(pageTitle(id)).font(.headline.weight(.semibold))
+                                .multilineTextAlignment(.center).frame(minHeight:38)
                         }.frame(maxWidth:.infinity).padding(14).modifier(AutomotiveCardStyle())
                     }.buttonStyle(.plain)
                         .draggable("ai-car-menu:\(id)")

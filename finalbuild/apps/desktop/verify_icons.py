@@ -12,6 +12,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from PIL import Image, ImageChops
 from PySide6.QtGui import QGuiApplication, QIcon
@@ -49,7 +50,19 @@ def verify_icons() -> int:
     # Git Bash preview builds verify staged assets so a user-edited PNG can
     # be packaged without rewriting the tracked PNG/WEBP/ICO source files.
     staged = os.environ.get("AI_CAR_VERIFY_ASSET_DIR")
-    assets = Path(staged).expanduser() if staged else _resource_root() / "assets"
+    temporary_assets = None
+    if staged:
+        assets = Path(staged).expanduser()
+    elif not getattr(sys, "frozen", False):
+        # Repo keeps legacy ICO/WEBP for old release archives. Validate fresh
+        # generated icons from the real Desktop master without rewriting them.
+        # Explicit AI_CAR_VERIFY_ASSET_DIR preserves negative test semantics.
+        from apps.desktop.stage_windows_icons import stage_icons
+        temporary_assets = TemporaryDirectory(prefix="ai-car-icon-verify-")
+        assets = Path(temporary_assets.name)
+        stage_icons(_resource_root() / "assets" / "AI-Car-Scanner-master.png", assets)
+    else:
+        assets = _resource_root() / "assets"
     filenames = (
         "AI-Car-Scanner-mobile.png",
         "AI-Car-Scanner.webp",
@@ -138,6 +151,8 @@ def verify_icons() -> int:
         errors.append(f"Unable to write icon report: {exc}")
         report["status"] = "FAIL"
 
+    if temporary_assets is not None:
+        temporary_assets.cleanup()
     if sys.stdout is not None:
         print(f"Desktop icon verification: {report['status']}")
         if errors:

@@ -442,3 +442,20 @@ def test_acquisition_errors_follow_selected_ui_language(qapp, language):
     assert page.status.text() == _translate_ui_text("Acquisition not started", language)
     assert page.status.text() != "Acquisition not started"
     page.timer.stop()
+
+
+def test_live_data_has_numeric_fields_without_sliders_and_tracks_units(qapp):
+    from PySide6.QtWidgets import QSlider, QDoubleSpinBox
+    app = FakeApp()
+    app.settings_store.value.return_value = "metric"
+    page = LiveDataPage(app)
+    assert set(page.sim_inputs) == {"rpm", "coolant_c", "speed_kmh", "throttle_percent"}
+    assert all(isinstance(widget, QDoubleSpinBox) for widget in page.sim_inputs.values())
+    assert not page.findChildren(QSlider)
+    app.settings_store.value.return_value = "us"
+    page.refresh()
+    assert page.sim_inputs["speed_kmh"].maximum() >= 158
+    assert page.sim_inputs["coolant_c"].maximum() >= 419
+    page.close()
+    page.deleteLater()
+

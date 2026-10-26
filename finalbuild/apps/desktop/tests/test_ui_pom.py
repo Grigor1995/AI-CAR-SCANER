@@ -304,13 +304,40 @@ def window_factory(monkeypatch, qapp, fake_api, vehicle):
 def test_main_window_builds_reference_navigation_pages(window_factory):
     window = window_factory()
     assert window.windowTitle() == "AI Auto Diagnostic Workstation"
-    assert window.nav.count() == 13
     assert len(window.pages) == 13
+    assert window.content.count() == 13
     assert window.stack.count() == 1
     assert window.page_index() == 12
-    assert [window.nav.item(i).text().split()[-1] for i in range(window.nav.count())] == [
-        "menu", "Dashboard", "Symptoms", "Vehicles", "Devices", "Diagnostic", "Data", "Network", "Tests", "DTC", "Analysis", "Reports", "AI"
-    ]
+    assert not hasattr(window, "nav")  # Left sidebar is removed.
+    assert list(window.top_navigation_buttons) == [12, 11, 3, 8, 4, 6, 9, 10]
+    assert window.top_navigation_buttons[12].text() == "Main menu"
+    assert window.top_navigation_buttons[12].isChecked()
+    assert window.header_navigation.isHidden()  # No top toolbar on Main menu.
+
+
+def test_top_navigation_and_main_menu_tiles_reach_all_13_pages(window_factory):
+    window = window_factory()
+    top = window.top_navigation_buttons
+    assert list(top) == [12, 11, 3, 8, 4, 6, 9, 10]
+    # Open a workflow from the launcher, then exercise visible top buttons.
+    window.navigate_page(11)
+    for target in [11, 3, 8, 4, 6, 9, 10, 12]:
+        button = top[target]
+        button.click()
+        assert window.page_index() == target
+        assert window.content.currentIndex() == target
+        assert button.isChecked()
+        assert window.header_navigation.isHidden() == (target == 12)
+        assert sum(item.isChecked() for item in top.values()) == 1
+    launcher = window.pages[12]
+    for tile in launcher.tiles:
+        window.navigate_page(12)
+        tile.click()
+        assert window.page_index() == tile.page_id
+        assert window.content.currentIndex() == tile.page_id
+    window.navigate_page(12)
+    assert window.page_index() == 12
+    assert window.header_navigation.isHidden()
 
 
 def test_symptoms_and_diagnostic_results_have_separate_pages(window_factory):
@@ -524,7 +551,7 @@ def test_language_switch_translates_window_and_navigation(window_factory):
     window.language = "hy"
     window._apply_language()
     assert window.windowTitle() == ui._translate_ui_text("AI Auto Diagnostic Workstation", "hy")
-    assert window.nav.item(0).text().endswith(ui._translate_ui_text("Main menu", "hy"))
+    assert window.top_navigation_buttons[12].text() == ui._translate_ui_text("Main menu", "hy")
 
 
 def test_analyze_input_rejects_empty_evidence_and_dtc(window_factory, monkeypatch):
@@ -2172,7 +2199,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     assert page.connect.isEnabled()
 
 
-def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
+def test_launcher_uses_shared_3d_icons_and_compact_top_toolbar(window_factory):
     from PySide6.QtWidgets import QToolButton
     window = window_factory()
     assert window.page_index() == 12
@@ -2180,22 +2207,29 @@ def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
     assert len(tiles) == 12
     assert not window.pages[12].background.isNull()
     assert not window.pages[12].icon_atlas.isNull()
-    assert window.nav.isHidden()
+    assert not hasattr(window, "nav")
     assert window.header_navigation.isHidden()
+    assert window.top_navigation_buttons[12].isChecked()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
-    assert vci.iconSize().width() >= 32
+    assert not vci.icon().isNull() and not diagnostic.icon().isNull()
+    assert vci.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
     assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
+    top = window.top_navigation_buttons[3]
+    assert top.toolButtonStyle() == Qt.ToolButtonTextBesideIcon
+    assert top.iconSize().width() == 30
+    assert top.minimumHeight() >= 50
+    assert top.text() == "Diagnostics"
     vci.click()
     assert window.page_index() == 2
-    assert not window.nav.isHidden()
-    assert not window.header_navigation.isHidden()
+    assert window.header_navigation.isVisible()
+    assert window.top_navigation_buttons[12].isChecked()  # secondary page via Main menu
 
 
-def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_factory, qapp):
+def test_launcher_3d_icons_resize_and_keep_all_tiles_without_scrollbars(window_factory, qapp):
     window = window_factory()
     page = window.pages[12]
-    icon_sizes = set()
+    card_layouts = set()
     for width, height in [(960,720),(1380,780),(1920,1080),(800,600)]:
         window.resize(width,height)
         qapp.processEvents(); qapp.processEvents()
@@ -2203,8 +2237,9 @@ def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_f
         assert scroll.horizontalScrollBar().maximum() == 0
         assert scroll.verticalScrollBar().maximum() == 0
         assert all(page.rect().contains(tile.geometry()) for tile in page.tiles)
-        icon_sizes.add(page.tiles[0].iconSize().width())
-    assert len(icon_sizes) > 1
+        card_layouts.add((page._columns,page.tiles[0].width(),page.tiles[0].height()))
+        assert all(not tile.icon().isNull() for tile in page.tiles)
+    assert len(card_layouts) > 1
 
 
 def test_every_workflow_has_3d_section_header(window_factory):
@@ -2225,11 +2260,11 @@ def test_navigation_has_no_settings_buttons_or_scrollbars_in_all_languages(windo
         window.language = language; window._apply_language()
         for width,height in [(800,600),(1280,720)]:
             window.resize(width,height); qapp.processEvents(); qapp.processEvents()
-            assert window.header_navigation.horizontalScrollBar().maximum() == 0
-            assert window.header_navigation.verticalScrollBar().maximum() == 0
-            assert window.nav.horizontalScrollBar().maximum() == 0
-            assert window.nav.verticalScrollBar().maximum() == 0
-            assert window.nav.visualItemRect(window.nav.item(window.nav.count()-1)).bottom() < window.nav.viewport().height()
+            assert window.header_navigation.isVisible()
+            assert len(window.top_navigation_buttons) == 8
+            assert all(window.header_navigation.rect().contains(button.geometry())
+                       for button in window.top_navigation_buttons.values())
+            assert not hasattr(window, "nav")
 
 
 def test_live_controls_wrap_without_horizontal_scroll(window_factory,qapp):

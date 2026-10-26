@@ -8,6 +8,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QPixmap, QImage
+from PySide6.QtWidgets import QLabel
 
 
 def slug_piece(value: str) -> str:
@@ -92,3 +93,21 @@ def load_backend_portrait(label, base_url, make, model, chassis, width=420, heig
         finally:
             reply.deleteLater()
     reply.finished.connect(finished)
+
+class NeonVehiclePreview(QLabel):
+    """Studio-glass presentation for exact make/model artwork, preserving photo pixels.
+
+    The source bitmap (including backend credit metadata) is not recolored. The
+    cyan gradient and rim are native Qt stylesheet decoration behind the pixmap.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignCenter)
+        self.setContentsMargins(9, 7, 9, 7)
+        self.setStyleSheet(
+            "QLabel {"
+            "background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #03070E, stop:0.52 #0A2941, stop:1 #041321);"
+            "border: 2px solid #26BFFF; border-radius: 17px;"
+            "padding: 5px; }"
+        )

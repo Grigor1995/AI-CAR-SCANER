@@ -78,7 +78,7 @@ enum DesktopArtwork {
                 result[id]=UIImage(cgImage:cell)
             }
         }
-        result[0]=car;result[12]=car
+        result[0]=car;result[1]=car;result[12]=car
         return result
     }()
 }

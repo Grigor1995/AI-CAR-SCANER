@@ -1,5 +1,17 @@
 # AI CAR SCANNER — demo and QA presentation
 
+## Desktop and mobile mini demo — 26 October 2026
+
+[Download the 8-page PDF](AI-Car-Scanner-UI-Demo-All-Platforms-2026-10-26.pdf) (3.37 MB).
+Includes the five Desktop pages below, Android menu/vehicle source-based
+illustrations, archived Android Compose QA captures, and iOS source-based
+illustrations. Captions distinguish these: the mobile illustrations are not
+emulator/Simulator screenshots, and the Android analysis/tests captures come
+from the earlier Robolectric QA run. Fresh full-app mobile runtime captures
+remain pending; the cloud emulator did not provide a reliable capture session.
+The app launcher now uses the original monochrome D&A TOOL logo on all three
+platforms; menu icons and neon vehicle illustrations retain their existing style.
+
 ## Current UI mini demo — 26 October 2026
 
 [Download the 5-page PDF](AI-Car-Scanner-UI-Demo-2026-10-26.pdf) (1.53 MB).

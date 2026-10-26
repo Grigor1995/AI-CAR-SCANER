@@ -1,5 +1,11 @@
 # Architecture Visualizations
 
+## Interactive architecture explorer (animated HTML)
+
+Open [AI CAR SCANNER interactive architecture map](AI_CAR_SCANNER_architecture_map.html) locally in a browser to explore the animated, clickable system. Select a use-case and click nodes/arrows to inspect the high-level call paths. [Short overview](AI_CAR_SCANNER_architecture_summary.md).
+
+The visualization is an architectural model, **not** an automatically generated function-level runtime trace; confirm exact endpoint/function hops against the current implementation before relying on it for debugging.
+
 All diagrams in this document are Mermaid source so they remain editable and version-controlled with the architecture.
 
 ## 1. System context

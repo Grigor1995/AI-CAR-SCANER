@@ -1,3 +1,31 @@
+## Android screenshots extension (review branch)
+
+Review branch: docs/mobile-ui-demo-screenshots-20261026.
+
+The existing five Desktop demo PDF pages are preserved; the generator
+appends five new Android pages with ten checked-in Kotlin/Compose screenshots.
+It uses the actual Robolectric API-35 native-graphics capture files with
+fixture data, NOT photos from a phone or Android emulator. There are no
+verified iOS screenshots in this repository, so none are invented.
+
+The script is idempotent: running it again replaces the Android appendix.
+It edits the same PDF file without rasterizing the original Desktop pages.
+
+From the finalbuild repository directory:
+
+```bash
+python -m pip install "pypdf>=5,<7" "reportlab>=4,<5" "Pillow>=10,<13"
+python docs/demo/build_mobile_ui_demo_pdf.py
+```
+
+The output is docs/demo/AI-Car-Scanner-UI-Demo-2026-10-26.pdf.
+Expected result: 5 Desktop pages + 5 Android screenshot pages = 10.
+Commit the regenerated PDF on the review branch after verifying it.
+
+GitHub Actions workflow refresh-mobile-demo-pdf.yml can regenerate and
+commit the PDF automatically when runners and repository write permissions
+are available.
+
 # AI CAR SCANNER — demo and QA presentation
 
 ## Current UI mini demo — 26 October 2026

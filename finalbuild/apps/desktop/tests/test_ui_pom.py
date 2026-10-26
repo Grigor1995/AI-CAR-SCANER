@@ -2194,7 +2194,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     assert page.connect.isEnabled()
 
 
-def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
+def test_launcher_cards_are_text_only_and_top_navigation_has_large_icons(window_factory):
     from PySide6.QtWidgets import QToolButton
     window = window_factory()
     assert window.page_index() == 12
@@ -2207,18 +2207,22 @@ def test_launcher_has_large_tiles_and_distinct_vci_icon(window_factory):
     assert window.top_navigation_buttons[12].isChecked()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
-    assert vci.iconSize().width() >= 32
-    assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
+    assert vci.icon().isNull() and diagnostic.icon().isNull()
+    assert vci.toolButtonStyle() == Qt.ToolButtonTextOnly
+    top = window.top_navigation_buttons[3]
+    assert top.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
+    assert top.iconSize().width() == 38
+    assert top.minimumHeight() >= 90
     vci.click()
     assert window.page_index() == 2
     assert window.header_navigation.isVisible()
     assert window.top_navigation_buttons[12].isChecked()  # secondary page via Main menu
 
 
-def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_factory, qapp):
+def test_launcher_text_only_cards_resize_and_keep_all_tiles_without_scrollbars(window_factory, qapp):
     window = window_factory()
     page = window.pages[12]
-    icon_sizes = set()
+    card_layouts = set()
     for width, height in [(960,720),(1380,780),(1920,1080),(800,600)]:
         window.resize(width,height)
         qapp.processEvents(); qapp.processEvents()
@@ -2226,8 +2230,9 @@ def test_launcher_resizes_images_and_keeps_all_tiles_without_scrollbars(window_f
         assert scroll.horizontalScrollBar().maximum() == 0
         assert scroll.verticalScrollBar().maximum() == 0
         assert all(page.rect().contains(tile.geometry()) for tile in page.tiles)
-        icon_sizes.add(page.tiles[0].iconSize().width())
-    assert len(icon_sizes) > 1
+        card_layouts.add((page._columns,page.tiles[0].width(),page.tiles[0].height()))
+        assert all(tile.icon().isNull() for tile in page.tiles)
+    assert len(card_layouts) > 1
 
 
 def test_every_workflow_has_3d_section_header(window_factory):

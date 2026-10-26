@@ -49,7 +49,8 @@ def test_issue_18_android_icon_caller_controls_size_and_neon_tiles_are_compact()
     text = ANDROID_NAV.read_text(encoding="utf-8")
     assert "modifier: Modifier = Modifier.size(24.dp)" in text
     assert "Image(bitmap=icon,contentDescription=null,modifier=modifier)" in text
-    assert "Modifier.size(44.dp)" in text
+    assert "Modifier.size(44.dp)" not in text
+    assert "LauncherTileContent(id,dashboardLabel(title))" in text
     assert ".heightIn(min=112.dp)" in text
 
 
@@ -57,9 +58,9 @@ def test_issue_19_vehicle_tiles_use_app_artwork_not_model_specific_brand_car():
     desktop = DESKTOP.read_text(encoding="utf-8")
     android = ANDROID_NAV.read_text(encoding="utf-8")
     ios = IOS_THEME.read_text(encoding="utf-8")
-    assert 'return QIcon(str(root / "assets" / "AI-Car-Scanner-mobile.png"))' in desktop
-    assert "if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.ic_launcher_foreground)" in android
-    assert "result[0]=car;result[1]=car;result[12]=car" in ios
+    assert 'return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))' in desktop
+    assert "if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.launcher_car)" in android
+    assert "result[0]=car;result[12]=car" in ios
 
 
 def test_issues_22_23_real_vehicle_photos_have_cross_platform_neon_framing():
@@ -102,3 +103,57 @@ def test_desktop_uses_only_responsive_top_navigation_including_main_menu():
     assert "self.content.setCurrentIndex(page_id)" in code
     assert "button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))" in code
 
+
+def test_main_menu_is_text_only_on_all_native_clients():
+    desktop = DESKTOP.read_text(encoding="utf-8")
+    android = ANDROID_NAV.read_text(encoding="utf-8")
+    ios = IOS_SCREEN.read_text(encoding="utf-8")
+    assert "class MovableMenuTile(QToolButton)" in desktop
+    assert "tile.setIcon(QIcon())" in desktop
+    assert "tile.setToolButtonStyle(Qt.ToolButtonTextOnly)" in desktop
+    card = android.split("private fun LauncherTileContent(",1)[1].split("/** Persistent actions",1)[0]
+    assert "DashboardIcon(" not in card
+    assert "Text(title,style=MaterialTheme.typography.titleMedium" in card
+    launcher = ios.split("private var desktopMenu:",1)[1].split("private var demoHome:",1)[0]
+    assert "DesktopIcon(page:id)" not in launcher
+    assert "Text(pageTitle(id))" in launcher
+
+
+def test_top_nav_text_does_not_clip_and_uses_native_qtoolbutton():
+    source = DESKTOP.read_text(encoding="utf-8")
+    top = source.split("top_sections = [", 1)[1].split("self.content = QStackedWidget()", 1)[0]
+    assert "button = QToolButton()" in top
+    assert "setIconSize(QSize(38, 38))" in top
+    assert "Qt.ToolButtonTextUnderIcon" in top
+    assert "setFixedHeight(94)" in top
+    assert "widget.minimumHeight(), widget.sizeHint().height()" in source
+
+
+def test_same_exact_launcher_artwork_is_packaged_on_all_clients():
+    import hashlib
+    def digest(path):
+        return hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
+    assert len({
+        digest("assets/launcher/icons-3d.png"),
+        digest("apps/mobile-android/app/src/main/res/drawable-nodpi/launcher_icons.png"),
+        digest("apps/mobile-ios/AICarScanner/Launcher/launcher_icons.png"),
+    }) == 1
+    assert len({
+        digest("assets/launcher/brand-car.png"),
+        digest("apps/mobile-android/app/src/main/res/drawable-nodpi/launcher_car.png"),
+        digest("apps/mobile-ios/AICarScanner/Launcher/launcher_car.png"),
+    }) == 1
+
+
+def test_icon_id_mapping_follows_workflow_meaning_not_client_page_number():
+    desktop = DESKTOP.read_text(encoding="utf-8")
+    android = ANDROID_NAV.read_text(encoding="utf-8")
+    ios = IOS_THEME.read_text(encoding="utf-8")
+    assert "order = [11, 3, 2, 1, 4, 6, 8, 7, 9, 10, 0, 5]" in desktop
+    for mapped in ("0->0", "14->1", "2->2", "3->4", "8,13->5",
+                   "4->6", "7->7", "9->8", "10->9", "6,12->10", "5->11"):
+        assert mapped in android
+    for mapped in ("11:0", "1:1", "3:2", "8:4", "7:5",
+                   "2:6", "6:7", "9:8", "10:9", "5:10", "4:11"):
+        assert mapped in ios
+    assert "result[0]=car;result[12]=car" in ios

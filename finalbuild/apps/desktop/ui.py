@@ -729,7 +729,7 @@ def _page_icon(page_id):
     atlas = _menu_atlas()
     if page_id == 1:
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
-        return QIcon(str(root / "assets" / "launcher" / "brand-car.png"))
+        return QIcon(str(root / "assets" / "AI-Car-Scanner-mobile.png"))
     if page_id == 12:
         image = QPixmap(128, 128); image.fill(Qt.transparent)
         painter = QPainter(image)

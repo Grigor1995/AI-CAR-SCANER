@@ -538,7 +538,7 @@ def test_language_switch_translates_window_and_navigation(window_factory):
     window.language = "hy"
     window._apply_language()
     assert window.windowTitle() == ui._translate_ui_text("AI Auto Diagnostic Workstation", "hy")
-    assert window.nav.item(0).text().endswith(ui._translate_ui_text("Main menu", "hy"))
+    assert window.top_navigation_buttons[12].text() == ui._translate_ui_text("Main menu", "hy")
 
 
 def test_analyze_input_rejects_empty_evidence_and_dtc(window_factory, monkeypatch):

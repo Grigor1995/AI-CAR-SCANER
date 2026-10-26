@@ -89,6 +89,9 @@ def test_desktop_uses_only_responsive_top_navigation_including_main_menu():
     code = DESKTOP.read_text(encoding="utf-8")
     screen = code.split("def _build_pages(self):", 1)[1].split("def _decorate_page(", 1)[0]
     assert '("Main menu", 12)' in screen
+    assert '("Symptoms", 11)' in screen
+    assert '("Diagnostics", 3)' in screen
+    assert len(screen.split("button.setAccessibleName(title)")) == 2
     assert "self.top_navigation_buttons[target] = button" in screen
     assert "self.header_navigation = ResponsiveControls(" in screen
     assert "self.content = QStackedWidget()" in screen

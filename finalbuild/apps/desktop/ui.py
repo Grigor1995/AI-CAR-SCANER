@@ -1595,12 +1595,12 @@ class MainWindow(QMainWindow):
         container=QWidget(); shell=QVBoxLayout(container); shell.setContentsMargins(16,12,16,12); shell.setSpacing(14)
         header=QHBoxLayout(); brand=QVBoxLayout(); name=QLabel("AI CAR SCANNER"); name.setObjectName("heroTitle"); brand.addWidget(name)
         subtitle=QLabel("SMART DIAGNOSTICS  •  AI ANALYSIS  •  BETTER DRIVING"); subtitle.setObjectName("heroSubtitle"); subtitle.setWordWrap(True); brand.addWidget(subtitle); header.addLayout(brand,1)
-        # The full-width top bar is the only screen navigation.
+        # Keep the existing quick actions plus Main menu; all other pages
+        # are accessible through the launcher tiles, without any sidebar.
         top_sections = [
-            ("Main menu", 12), ("Dashboard", 0), ("Symptoms", 11),
-            ("Vehicles", 1), ("VCI / Devices", 2), ("Diagnostics", 3),
-            ("Live Data", 4), ("ECU Network", 5), ("Guided Tests", 6),
-            ("DTC", 7), ("AI Analysis", 8), ("Reports", 9), ("Teach AI", 10),
+            ("Main menu", 12), ("Symptoms", 11), ("Diagnostics", 3),
+            ("AI Analysis", 8), ("Live Data", 4),
+            ("Guided Tests", 6), ("Reports", 9), ("Teach AI", 10),
         ]
         self.top_navigation_buttons = {}
         buttons = []

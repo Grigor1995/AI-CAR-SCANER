@@ -265,12 +265,20 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
         app.processEvents()
 
     def nav(window, index):
-        button = window.top_navigation_buttons[index]
-        assert button.isVisible() and button.isEnabled(), f'Top navigation item unavailable: {index}'
+        # Quick actions stay in the top navigation. Secondary pages are opened
+        # via the top Main menu and its launcher tiles, never via a left sidebar.
+        button = window.top_navigation_buttons.get(index)
+        if button is None:
+            home = window.top_navigation_buttons[12]
+            QTest.mouseClick(home, Qt.MouseButton.LeftButton)
+            app.processEvents()
+            button = next(tile for tile in window.pages[12].tiles if tile.page_id == index)
+        assert button.isVisible() and button.isEnabled(), f'Navigation item unavailable: {index}'
         QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         app.processEvents()
         assert window.page_index() == index, f'Navigation click failed: {index}'
-        assert button.isChecked(), f'Inactive top navigation item: {index}'
+        if index in window.top_navigation_buttons:
+            assert window.top_navigation_buttons[index].isChecked()
         assert window.pages[index].isVisible(), f'Page {index} not visible'
 
     def save_settings(window, language, dark, shot_name):
@@ -320,7 +328,7 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
             ev.record('Visible window opens with full-width top navigation', lambda: check_start(window, ev, app, platform))
 
             def navigation_test():
-                assert len(window.top_navigation_buttons) == 13
+                assert len(window.top_navigation_buttons) == 8
                 for n,label in enumerate(('dashboard','vehicles','devices','diagnostic','live-data','network',
                     'tests','dtc','ai-analysis','reports','teach-ai','symptoms','main-menu')):
                     nav(window,n)

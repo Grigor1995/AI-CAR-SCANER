@@ -309,20 +309,28 @@ def test_main_window_builds_reference_navigation_pages(window_factory):
     assert window.stack.count() == 1
     assert window.page_index() == 12
     assert not hasattr(window, "nav")  # Left sidebar is removed.
-    assert list(window.top_navigation_buttons) == [12, 0, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert list(window.top_navigation_buttons) == [12, 11, 3, 8, 4, 6, 9, 10]
     assert window.top_navigation_buttons[12].text() == "Main menu"
     assert window.top_navigation_buttons[12].isChecked()
 
 
-def test_top_navigation_reaches_all_13_pages_and_highlights_active_page(window_factory):
+def test_top_navigation_and_main_menu_tiles_reach_all_13_pages(window_factory):
     window = window_factory()
-    for target, button in window.top_navigation_buttons.items():
+    top = window.top_navigation_buttons
+    assert list(top) == [12, 11, 3, 8, 4, 6, 9, 10]
+    for target, button in top.items():
         button.click()
         assert window.page_index() == target
         assert window.content.currentIndex() == target
         assert button.isChecked()
-        assert sum(item.isChecked() for item in window.top_navigation_buttons.values()) == 1
-    window.top_navigation_buttons[12].click()
+        assert sum(item.isChecked() for item in top.values()) == 1
+    launcher = window.pages[12]
+    for tile in launcher.tiles:
+        top[12].click()
+        tile.click()
+        assert window.page_index() == tile.page_id
+        assert window.content.currentIndex() == tile.page_id
+    top[12].click()
     assert window.page_index() == 12
     assert window.header_navigation.isVisible()
 
@@ -2241,7 +2249,7 @@ def test_navigation_has_no_settings_buttons_or_scrollbars_in_all_languages(windo
         for width,height in [(800,600),(1280,720)]:
             window.resize(width,height); qapp.processEvents(); qapp.processEvents()
             assert window.header_navigation.isVisible()
-            assert len(window.top_navigation_buttons) == 13
+            assert len(window.top_navigation_buttons) == 8
             assert all(window.header_navigation.rect().contains(button.geometry())
                        for button in window.top_navigation_buttons.values())
             assert not hasattr(window, "nav")

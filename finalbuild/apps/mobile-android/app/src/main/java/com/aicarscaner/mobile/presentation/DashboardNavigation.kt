@@ -55,7 +55,7 @@ private object DesktopIconCache {
     private var atlas:Bitmap?=null
     @Synchronized fun image(resources:android.content.res.Resources,kind:Int):androidx.compose.ui.graphics.ImageBitmap =
         images.getOrPut(kind) {
-            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.launcher_car)
+            if(kind==1 || kind==11) BitmapFactory.decodeResource(resources,R.drawable.ic_launcher_foreground)
             else {
                 val sheet=atlas ?: BitmapFactory.decodeResource(resources,R.drawable.launcher_icons).also {atlas=it}
                 val index=when(kind) {0->0;14->1;2->2;3,12->4;8,13->5;4->6;7->7;9->8;10->9;6->10;else->11}

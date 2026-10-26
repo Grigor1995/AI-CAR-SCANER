@@ -38,6 +38,29 @@ def polling_plan(protocol_id="auto") -> dict:
             "read_only": True, "requires_prompt_terminated_responses": True}
 
 
+def supported_polling_plan(responses: dict[str, str]) -> dict:
+    """Select implemented live PIDs from observed Mode 01 PID 00 bitmaps.
+
+    All current live channels are in the first page (01..20). Combine complete
+    responses from multiple ECUs; never infer support from a model or a value.
+    """
+    frames = {key.upper().replace(" ", ""): value for key, value in responses.items()}
+    payloads = ELM327Protocol.payloads("0100", frames.get("0100", "NO DATA"))
+    masks = [int.from_bytes(p[2:], "big") for p in payloads if p[:2] == b"\x41\x00" and len(p) == 6]
+    if not masks:
+        raise OBDProtocolError("A complete Mode 01 PID 00 capability reply is required")
+    mask = 0
+    for value in masks:
+        mask |= value
+    supported = [pid for pid in range(1, 33) if mask & (1 << (32-pid))]
+    commands = [pid.command for pid in PIDS if int(pid.command[2:], 16) in supported]
+    return {"schema_version": 2, "initialization": [], "discovery": [],
+            "commands": commands, "supported_pids": supported,
+            "unsupported_commands": [pid.command for pid in PIDS if pid.command not in commands],
+            "capabilities_observed": True, "read_only": True,
+            "requires_prompt_terminated_responses": True}
+
+
 def decode_snapshot(responses: dict[str, str]) -> dict:
     normalized = {key.upper().replace(" ", ""): value for key, value in responses.items()}
     values, errors = {}, {}

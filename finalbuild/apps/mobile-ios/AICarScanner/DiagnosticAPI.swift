@@ -74,6 +74,10 @@ final class DiagnosticAPI {
         try await request("/api/v1/obd/plan")
     }
 
+    func supportedObdPlan(_ responses: [String: String]) async throws -> ObdPollingPlan {
+        try await request("/api/v1/obd/plan", method: "POST", body: ObdRawSnapshot(responses:responses, session_id:nil))
+    }
+
     func decodeObd(_ responses: [String: String], sessionID: String? = nil) async throws -> ObdDecodedSnapshot {
         try await request("/api/v1/obd/decode", method: "POST", body: ObdRawSnapshot(responses: responses, session_id: sessionID))
     }
@@ -220,6 +224,6 @@ struct AnyEncodable: Encodable {
     }
 }
 
-struct ObdPollingPlan: Decodable { let initialization: [String]; let commands: [String] }
+struct ObdPollingPlan: Decodable { let initialization: [String]; let commands: [String]; let discovery: [String]? }
 struct ObdRawSnapshot: Encodable { let responses: [String: String]; let session_id: String? }
 struct ObdDecodedSnapshot: Decodable { let values: [String: Double?]; let errors: [String: String] }

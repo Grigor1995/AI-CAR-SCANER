@@ -9,7 +9,7 @@ from vehicle.obd.adapters.simulator import SimulatorTransport
 
 @pytest.fixture
 def responses():
-    return {'ATZ':'ELM327 v2.2','ATE0':'OK','ATL0':'OK','ATS0':'OK','ATSP0':'OK','010C':'41 0C 0B B8','0105':'41 05 5A','010D':'41 0D 28','0111':'41 11 80'}
+    return {'0100':'41 00 08 18 80 00','ATZ':'ELM327 v2.2','ATE0':'OK','ATL0':'OK','ATS0':'OK','ATSP0':'OK','010C':'41 0C 0B B8','0105':'41 05 5A','010D':'41 0D 28','0111':'41 11 80'}
 
 @pytest.mark.asyncio
 async def test_obd_polling_source(responses):

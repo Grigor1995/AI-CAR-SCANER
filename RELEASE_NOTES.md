@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Poll only observed supported live PIDs
+
+- Add backend POST /api/v1/obd/plan to select implemented Mode 01 channels from complete ECU capability bitmaps, merging multiple responder masks without model-based assumptions.
+- Cache live command selection per connection, refresh after reconnect or native session changes, and fail clearly on invalid or empty capability plans.
+- Integrate the shared selector with server-local/Desktop adapters, Android native transport and iOS Wi-Fi; keep native clients free of bitmap decoding and scaling rules.
+- Advertise explicit simulator capabilities and retain the legacy GET plan for older consumers. Backend and native apps should be updated together.
+
 ## Unreleased — OBD live acquisition reliability
 
 - Show the observed protocol beside VIN discovery on Desktop/Android, requiring a positive ECU response rather than guessing from a selected model.

@@ -29,6 +29,8 @@ class SimulatorTransport(DiagnosticTransport):
     def _dynamic_response(self, cmd: str) -> str | None:
         if not self.dynamic:
             return None
+        if cmd == "0100":
+            return "41 00 08 18 80 00"  # Four implemented synthetic live channels.
         # Deterministic, repeatable live-data waveform for development/demo use.
         self._tick += 1
         phase = self._tick * 0.18

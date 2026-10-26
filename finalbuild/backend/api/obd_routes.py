@@ -3,7 +3,7 @@ from time import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from obd.protocols import protocol_catalog, detected_protocol
-from obd.decoding import polling_plan, decode_snapshot
+from obd.decoding import polling_plan, supported_polling_plan, decode_snapshot
 
 router = APIRouter(prefix="/api/v1/obd", tags=["OBD"])
 
@@ -29,6 +29,14 @@ def protocols():
 def plan(protocol_id: str = "auto"):
     try:
         return polling_plan(protocol_id)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+
+
+@router.post("/plan")
+def observed_plan(request: RawSnapshot):
+    try:
+        return supported_polling_plan(request.responses)
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
 

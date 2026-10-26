@@ -554,6 +554,8 @@ private class FakeDiagnosticApi : DiagnosticApi {
     override suspend fun discoveryPlan() = com.aicarscaner.mobile.data.api.DiscoveryPlanDto(listOf("0902","ATH1","0100","ATDPN"),listOf("ATH0"))
     override suspend fun decodeDiscovery(frames: com.aicarscaner.mobile.data.api.ObdRawSnapshotDto) =
         com.aicarscaner.mobile.data.api.DiscoveryResultDto(null,null,"vin_unavailable",emptyList(),false)
+    override suspend fun supportedObdPlan(frames: com.aicarscaner.mobile.data.api.ObdRawSnapshotDto) = com.aicarscaner.mobile.data.api.ObdPlanDto(emptyList(), listOf("010C"))
+
     override suspend fun obdPlan() = com.aicarscaner.mobile.data.api.ObdPlanDto(emptyList(), listOf("010C"))
     override suspend fun decodeObd(frames: com.aicarscaner.mobile.data.api.ObdRawSnapshotDto) = com.aicarscaner.mobile.data.api.ObdDecodedSnapshotDto(com.aicarscaner.mobile.data.obd.LiveDataSnapshot())
 

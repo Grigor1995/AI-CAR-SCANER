@@ -115,3 +115,9 @@ after importing. No network download happens during backend startup.
 
 See [audit and limitations](REAL_OBD_AUDIT.md) before interpreting protocol
 registry entries as vehicle/hardware validation.
+
+## Capability-selected Live Data
+
+Current native bridges and server-local readers select live commands from the
+ECU capability bitmap. See [Supported PID polling](SUPPORTED_PID_POLLING.md) for
+the POST `/api/v1/obd/plan` contract, caching, invalid responses and upgrade notes.

@@ -46,6 +46,18 @@ class DiagnosticApiContractTest {
         assertTrue(reopened.dtcs.isEmpty())
     }
 
+    @Test
+    fun supportedPollingPlanSendsRawCapabilitiesToTheBackend() = runTest {
+        server.enqueue(MockResponse().setHeader("Content-Type","application/json")
+            .setBody("""{"initialization":[],"commands":["010C"],"discovery":[],"supported_pids":[12]}"""))
+        val plan=api.supportedObdPlan(ObdRawSnapshotDto(mapOf("0100" to "410000100000")))
+        val request=server.takeRequest()
+        assertEquals("POST",request.method)
+        assertEquals("/api/v1/obd/plan",request.path)
+        assertTrue(request.body.readUtf8().contains("410000100000"))
+        assertEquals(listOf("010C"),plan.commands)
+    }
+
     private fun enqueueSession() {
         server.enqueue(
             MockResponse()

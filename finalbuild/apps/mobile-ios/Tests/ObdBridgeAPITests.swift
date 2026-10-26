@@ -25,6 +25,16 @@ final class ObdBridgeAPITests: XCTestCase {
         XCTAssertEqual(plan.commands, ["010C"])
     }
 
+    func testObservedCapabilitiesAreSentToBackendForSelection() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/v1/obd/plan")
+            XCTAssertEqual(request.httpMethod, "POST")
+            return (200, Data(#"{"initialization":[],"commands":["010C"],"discovery":[],"supported_pids":[12]}"#.utf8))
+        }
+        let plan = try await api().supportedObdPlan(["0100":"410000100000"])
+        XCTAssertEqual(plan.commands,["010C"])
+    }
+
     func testRawFramesUseBackendDecodedValues() async throws {
         MockURLProtocol.handler = { request in
             XCTAssertEqual(request.url?.path, "/api/v1/obd/decode")

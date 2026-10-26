@@ -9,7 +9,11 @@ class GenericObdClient:
     def __init__(self, transport: DiagnosticTransport, protocol_id: str = "auto"):
         self.transport=transport; self.protocol=ELM327Protocol(); self.protocol_id=protocol_id
         self._lock = asyncio.Lock()
+        self._live_commands = None
+        self._live_bitmap = None
     async def connect(self):
+        self._live_commands = None
+        self._live_bitmap = None
         commands = initialization(self.protocol_id)
         await self.transport.connect()
         try:
@@ -17,17 +21,22 @@ class GenericObdClient:
                 reply = await self.command(cmd)
                 if cmd.startswith("ATSP") and ("?" in reply or "ERROR" in reply.upper()):
                     raise ValueError("Adapter rejected selected OBD protocol")
-            await self.command("0100")  # Let auto-search finish before short PID polls.
+            self._live_bitmap = await self.command("0100")  # Complete auto-search before PID polls.
         except BaseException:
             await self.transport.disconnect()
             raise
-    async def disconnect(self): await self.transport.disconnect()
+    async def disconnect(self):
+        self._live_commands = None
+        self._live_bitmap = None
+        await self.transport.disconnect()
     async def _command_unlocked(self, cmd: str) -> str:
         try:
             await self.transport.write((cmd.strip()+"\r").encode("ascii"))
             raw = await self.transport.read_until(timeout=35 if cmd == "0100" else (10 if cmd == "0902" else 3))
             return raw.decode("ascii").rstrip("> \r\n")
         except BaseException:
+            self._live_commands = None
+            self._live_bitmap = None
             await self.transport.disconnect()
             raise
 
@@ -122,14 +131,33 @@ class GenericObdClient:
     async def read_pid(self,pid:int):
         data=self.protocol.parse_pid(pid, await self.command(f"010{pid:X}" if pid < 0x10 else f"01{pid:02X}"))
         return data
-    async def read_standard_live_data(self):
-        from obd.decoding import PIDS, decode_snapshot
-        frames = {}
-        for pid in PIDS:
+    async def supported_live_commands(self):
+        from obd.decoding import supported_polling_plan
+        if self._live_commands is None:
+            bitmap = self._live_bitmap
+            if bitmap is None:
+                bitmap = await self.command("0100")
             try:
-                frames[pid.command] = await self.command(pid.command)
+                plan = supported_polling_plan({"0100": bitmap})
+            except ValueError:
+                self._live_bitmap = None
+                raise
+            self._live_commands = tuple(plan["commands"])
+        return self._live_commands
+
+    async def read_standard_live_data(self):
+        from obd.decoding import decode_snapshot
+        frames = {}
+        commands = await self.supported_live_commands()
+        if not commands:
+            self._live_commands = None
+            self._live_bitmap = None
+            raise ValueError("Vehicle reports no supported live channels")
+        for command in commands:
+            try:
+                frames[command] = await self.command(command)
             except Exception:
                 if not self.transport.connected:
                     raise
-                frames[pid.command] = "NO DATA"
+                frames[command] = "NO DATA"
         return decode_snapshot(frames)["values"]

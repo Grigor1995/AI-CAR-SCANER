@@ -21,7 +21,8 @@ class ObdPollingSource(AcquisitionSource):
     source_type = AcquisitionSourceType.OBD_PID
     def __init__(self, client: GenericObdClient, pids: list[int] | None = None):
         self.client = client
-        self.pids = pids or [0x0C, 0x05, 0x0D, 0x11]
+        self._requested_pids = list(pids if pids is not None else [0x0C, 0x05, 0x0D, 0x11])
+        self.pids = list(self._requested_pids)
         self._pid_names = {0x0C:'rpm', 0x05:'coolant_c', 0x0D:'speed_kmh', 0x11:'throttle_percent'}
         self._decoders = {
             0x0C: self.client.protocol.rpm,
@@ -31,6 +32,17 @@ class ObdPollingSource(AcquisitionSource):
         }
     async def connect(self) -> None:
         await self.client.connect()
+        capability_reader = getattr(self.client, "supported_live_commands", None)
+        if capability_reader is not None:
+            try:
+                commands = await capability_reader()
+                supported = {int(command[2:], 16) for command in commands}
+                self.pids = [pid for pid in self._requested_pids if pid in supported]
+                if not self.pids:
+                    raise ValueError("Vehicle reports no supported channels for this live plan")
+            except BaseException:
+                await self.client.disconnect()
+                raise
     async def disconnect(self) -> None:
         await self.client.disconnect()
     async def read_once(self, session_id: UUID, sequence: int) -> list[AcquisitionRecord]:

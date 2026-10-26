@@ -59,3 +59,7 @@ No CI/CD was invoked.
 Generic OBD responders are the discovery scope. ABS, airbags, OEM block names,
 CAN FD, OBDonUDS and arbitrary manufacturer functions are not implied by the
 presence of an ELM-compatible adapter or a VIN match.
+
+Follow-up: capability-based polling (priority 1 above) is now implemented in
+[Supported PID polling](../obd/SUPPORTED_PID_POLLING.md), with backend-owned
+selection and connection-local native/server-local caches.

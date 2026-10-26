@@ -70,7 +70,7 @@ import androidx.core.content.ContextCompat
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.obd.BluetoothObdClient
-import com.aicarscaner.mobile.data.obd.LiveDataReader
+import com.aicarscaner.mobile.data.obd.LivePollingSession
 import com.aicarscaner.mobile.data.obd.LiveDataSnapshot
 import com.aicarscaner.mobile.data.obd.UsbObdClient
 import com.aicarscaner.mobile.data.obd.WifiObdClient
@@ -599,8 +599,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
         val liveSessionId = state.session?.session_id
         val liveTransport = obdTransport
+        val pollingSession = LivePollingSession()
         while (isActive) {
-            LiveDataReader.read(sessionId = liveSessionId) { command ->
+            pollingSession.read(sessionId = liveSessionId) { command ->
                 when (liveTransport) {
                     "bluetooth" -> bluetoothClient.command(command)
                     "wifi" -> wifiClient.command(command)
@@ -1292,7 +1293,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             if (channelHistory.isNotEmpty() || state.backendLiveRecords.isEmpty()) DemoLiveCharts(channelHistory)
                             liveDataError?.let {
-                                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                Text(dashboardLabel(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
                         }
 

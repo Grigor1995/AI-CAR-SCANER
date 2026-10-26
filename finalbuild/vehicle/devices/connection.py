@@ -140,6 +140,7 @@ class VCIConnectionManager:
             capabilities=DeviceCapabilities(obd=True, can=True, uds=True),
             metadata={
                 "responses": {
+                    "0100": "41 00 08 18 80 00",
                     "ATZ": "ELM327 v2.2",
                     "ATE0": "OK",
                     "ATL0": "OK",

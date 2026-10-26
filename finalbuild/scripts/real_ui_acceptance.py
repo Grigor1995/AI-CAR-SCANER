@@ -466,6 +466,7 @@ def check_start(window, ev, app, platform):
     assert len(window.top_navigation_buttons)==8 and len(window.pages)==13
     assert not hasattr(window, "nav")
     assert window.page_index()==12
+    assert window.header_navigation.isHidden()
     assert window.width()>=800 and window.height()>=500
     shot=ev.shot(window,'00-visible-main-menu-startup.png',app)
     return f'Qt platform={platform}, window={window.width()}x{window.height()}, screenshot={shot}'

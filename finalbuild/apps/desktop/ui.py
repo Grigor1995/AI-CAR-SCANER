@@ -1610,20 +1610,22 @@ class MainWindow(QMainWindow):
             button.setAccessibleName(title)
             button.setObjectName("topNav")
             button.setIcon(_page_icon(target))
-            button.setIconSize(QSize(38, 38))
-            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            # Match the former left navigation: compact icon beside a readable title.
+            button.setIconSize(QSize(30, 30))
+            button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
             button.setCheckable(True)
-            button.setMinimumWidth(120)
-            button.setFixedHeight(94)
+            button.setMinimumWidth(128)
+            button.setFixedHeight(54)
             font = button.font()
             font.setPointSize(10)
             font.setBold(True)
             button.setFont(font)
             button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            button.setToolTip(title)
             button.setStyleSheet(
                 "QToolButton {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
                 "stop:0 #214464,stop:1 #0A2037);color:#EAF4FF;"
-                "border:1px solid #2C608B;border-radius:10px;padding:5px;}"
+                "border:1px solid #2C608B;border-radius:10px;padding:6px 10px;text-align:left;}"
                 "QToolButton:hover,QToolButton:focus {border:1px solid #5DD7FF;}"
                 "QToolButton:checked {background:#12518A;border:2px solid #61DEFF;}"
             )
@@ -1632,7 +1634,7 @@ class MainWindow(QMainWindow):
             buttons.append(button)
         shell.addLayout(header)
         self.header_navigation = ResponsiveControls(
-            buttons, max_columns=8, min_cell_width=135
+            buttons, max_columns=8, min_cell_width=150
         )
         self.header_navigation.setObjectName("topNavigation")
         shell.addWidget(self.header_navigation)
@@ -1682,6 +1684,9 @@ class MainWindow(QMainWindow):
         previous = self._current_page_id
         self._current_page_id = page_id
         self.content.setCurrentIndex(page_id)
+        # The launcher occupies the full window, just as when the old sidebar
+        # disappeared on Main menu. Restore navigation for every workflow page.
+        self.header_navigation.setVisible(page_id != 12)
         for target, button in self.top_navigation_buttons.items():
             button.setChecked(target == page_id or (target == 12 and page_id not in self.top_navigation_buttons))
         if previous != page_id:

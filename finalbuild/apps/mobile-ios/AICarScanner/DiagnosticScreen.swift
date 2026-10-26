@@ -181,10 +181,13 @@ struct DiagnosticScreen: View {
             LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12) {
                 ForEach(orderedLauncherPages,id:\.self) { id in
                     Button { tab=id } label: {
-                        VStack(spacing:10) {
-                            DesktopIcon(page:id).frame(height:64)
-                            Text(pageTitle(id)).font(.subheadline.weight(.semibold)).multilineTextAlignment(.center).frame(minHeight:38)
-                        }.frame(maxWidth:.infinity).padding(14).modifier(AutomotiveCardStyle())
+                        Text(pageTitle(id))
+                            .font(.headline.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth:.infinity)
+                            .frame(minHeight:86)
+                            .padding(14)
+                            .modifier(AutomotiveCardStyle())
                     }.buttonStyle(.plain)
                         .draggable("ai-car-menu:\(id)")
                         .dropDestination(for:String.self) { items,_ in

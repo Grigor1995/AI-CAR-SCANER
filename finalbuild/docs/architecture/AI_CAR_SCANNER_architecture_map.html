@@ -45,8 +45,8 @@
   }
   .layout {
     display: grid;
-    grid-template-columns: 300px 1fr 360px;
-    height: calc(100vh - 66px);
+    grid-template-columns: 244px minmax(0, 1fr) 305px;
+    height: calc(100dvh - 66px);
   }
   .sidebar, .inspector {
     background: rgba(9,15,25,.86);
@@ -99,18 +99,77 @@
     width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,.22);
   }
   .canvas-wrap {
-    overflow: auto;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
     position: relative;
+    cursor: grab;
+    touch-action: none;
+    overscroll-behavior: contain;
     background:
       linear-gradient(180deg, rgba(255,255,255,.01), rgba(255,255,255,.00)),
       linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
       linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
     background-size: auto, 40px 40px, 40px 40px;
   }
-  .canvas-inner {
-    min-width: 2220px; min-height: 880px; position: relative;
+  .canvas-wrap.dragging-canvas { cursor: grabbing; }
+  .canvas-inner { width: 100%; height: 100%; position: relative; }
+  #svg { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; }
+  .node { cursor: grab; outline: none; }
+  .node.dragging-node { cursor: grabbing; }
+  .node:focus-visible rect { stroke: #ffffff !important; stroke-width: 4px !important; }
+  .map-tools {
+    position: absolute; top: 16px; left: 16px; z-index: 5;
+    display: flex; flex-wrap: wrap; gap: 7px; max-width: calc(100% - 30px);
+    pointer-events: none;
   }
-  svg { width: 2220px; height: 880px; display: block; }
+  .map-tools button, .map-tools .zoom-readout {
+    pointer-events: auto; border: 1px solid rgba(121,227,255,.35);
+    background: rgba(5,18,32,.96); color: #e8f1ff;
+    border-radius: 10px; padding: 9px 12px;
+    font: 600 12px Inter,Segoe UI,sans-serif;
+    box-shadow: 0 3px 16px rgba(0,0,0,.35);
+  }
+  .map-tools button { cursor: pointer; }
+  .map-tools button:hover, .map-tools button:focus-visible {
+    background: #0d3c57; border-color: #79e3ff;
+  }
+  .map-tools .zoom-readout { color: #79e3ff; }
+  .map-hint {
+    position: absolute; bottom: 18px; left: 18px; z-index: 4;
+    color: #d1e7f6; background: rgba(5,18,32,.9);
+    border: 1px solid rgba(121,227,255,.19);
+    border-radius: 10px; padding: 9px 12px;
+    font-size: 12px; pointer-events: none;
+  }
+  .minimap-wrap {
+    position: absolute; bottom: 16px; right: 16px; z-index: 4;
+    width: 200px; height: 96px; padding: 5px;
+    border: 1px solid rgba(121,227,255,.45); border-radius: 12px;
+    background: rgba(4,15,27,.94); box-shadow: 0 5px 22px rgba(0,0,0,.55);
+  }
+  #minimap { width: 100%; height: 100%; cursor: crosshair; }
+  .edge-label { opacity: 0; pointer-events: none; }
+  .edge-label.focus-label { opacity: 1; fill: #d5f6ff; font-weight: 700; }
+  .edge-path.dimmed { opacity: .055; }
+  .flow-anim { pointer-events: none; }
+  .canvas-wrap.is-panning * { cursor: grabbing !important; }
+  body.map-focus .layout { grid-template-columns: 0 minmax(0,1fr) 0; }
+  body.map-focus .sidebar, body.map-focus .inspector { overflow: hidden; visibility: hidden; }
+  @media (max-width: 1120px) {
+    .layout { grid-template-columns: 205px minmax(0, 1fr) 255px; }
+    .section { padding: 11px 10px 4px; }
+    .flow-btn { padding: 9px 10px; }
+    .flow-btn small { display: none; }
+  }
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 0 minmax(0, 1fr) 0; }
+    .sidebar, .inspector { visibility: hidden; overflow: hidden; }
+    .map-hint { bottom: 120px; max-width: 70%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .flow-anim { animation: none !important; }
+  }
   .node rect {
     rx: 18; ry: 18;
     filter: drop-shadow(0 8px 20px rgba(0,0,0,.34));
@@ -225,10 +284,11 @@
       <div class="section">
         <h3>How to use</h3>
         <div class="card tiny">
-          1) Click a <b>use-case</b> to highlight the relevant call path.<br/>
-          2) Click an <b>arrow</b> to inspect that exact transition.<br/>
-          3) Click a <b>node</b> to inspect that subsystem.<br/>
-          4) Use <b>Overview</b> to reset and understand the main system shape.
+          1) Drag empty canvas to <b>move around the map</b>.<br/>
+          2) Drag a <b>node</b> to rearrange it; arrows follow.<br/>
+          3) Mouse wheel <b>zooms at cursor</b> (not page scrolling).<br/>
+          4) Click a node/arrow to inspect the call.<br/>
+          5) Use <b>Fit all</b>, <b>Focus flow</b>, or <b>Reset layout</b>.
         </div>
       </div>
       <div class="footer-note">
@@ -237,9 +297,16 @@
       </div>
     </aside>
 
-    <main class="canvas-wrap">
+    <main class="canvas-wrap" id="mapViewport">
+      <div class="map-tools" aria-label="Map controls">
+        <button type="button" id="btnFit" title="Show the complete system (smaller cards)">Fit all</button>
+        <button type="button" id="btnFocus" title="Center the selected call flow">Focus flow</button>
+        <button type="button" id="btnReset" title="Reset all node positions and zoom">Reset layout</button>
+        <button type="button" id="btnMapFocus" title="Toggle full-width graph">Map only</button>
+        <span id="zoomValue" class="zoom-readout" aria-live="polite">100%</span>
+      </div>
       <div class="canvas-inner">
-        <svg id="svg" viewBox="0 0 2220 880" preserveAspectRatio="xMinYMin meet">
+        <svg id="svg" viewBox="0 0 1320 760" preserveAspectRatio="xMinYMin meet" aria-label="Interactive architecture diagram: drag background to pan and drag cards to move them">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="8.8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#5d7b99"></path>
@@ -252,6 +319,8 @@
           <g id="nodes"></g>
         </svg>
       </div>
+      <div class="map-hint">Drag background: move map · Drag card: reposition · Wheel: zoom · Double-click: fit all</div>
+      <div class="minimap-wrap" title="Click minimap to jump to a location"><svg id="minimap" viewBox="0 0 2220 880" preserveAspectRatio="xMidYMid meet" aria-label="Click to recenter architecture map"></svg></div>
     </main>
 
     <aside class="inspector">
@@ -284,6 +353,34 @@ const flows = {"overview": {"title": "System overview", "summary": "High-level p
 const groupStyles = {"client": {"fill": "#0c2b40", "stroke": "#35c8ff"}, "shared": {"fill": "#12301f", "stroke": "#5ef0a0"}, "orchestration": {"fill": "#2b2340", "stroke": "#b98cff"}, "backend": {"fill": "#3a1d39", "stroke": "#ff7bd6"}, "route": {"fill": "#3d2a11", "stroke": "#ffc767"}, "service": {"fill": "#1f3048", "stroke": "#92b8ff"}, "data": {"fill": "#20312a", "stroke": "#a7f5a4"}};
 
 const svg = document.getElementById('svg');
+const canvasViewport = document.getElementById('mapViewport');
+const minimap = document.getElementById('minimap');
+const zoomValue = document.getElementById('zoomValue');
+const LAYOUT_STORAGE_KEY = 'ai-car-scanner-architecture-node-layout-v2';
+const defaultPositions = new Map(nodes.map(n => [n.id, {x:n.x, y:n.y}]));
+const labelEls = new Map();
+const hitEls = new Map();
+const MAX_WORLD_W = 2220;
+const MAX_WORLD_H = 880;
+// The diagram is navigated by SVG viewBox, not by scrollbars or page scrolling.
+let view = {x:0, y:0, w:1300, h:760};
+let zoomBaseWidth = 1300;
+let dragState = null;
+let suppressClick = false;
+let lastFocusEdgeId = null;
+try {
+  const saved = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || 'null');
+  if (saved && typeof saved === 'object') {
+    for (const n of nodes) {
+      const v = saved[n.id];
+      if (v && Number.isFinite(v.x) && Number.isFinite(v.y)) {
+        n.x = Math.max(-400, Math.min(4500, v.x));
+        n.y = Math.max(-600, Math.min(2600, v.y));
+      }
+    }
+  }
+} catch (_) { /* Private / file:// storage can be unavailable; dragging still works. */ }
+
 const nodeLayer = document.getElementById('nodes');
 const edgeLayer = document.getElementById('edges');
 const infoTitle = document.getElementById('infoTitle');
@@ -357,8 +454,15 @@ function renderNodes() {
     tag.textContent = n.group.toUpperCase();
     g.appendChild(tag);
 
-    g.style.cursor = 'pointer';
+    g.setAttribute('tabindex', '0');
+    g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', n.label.replace(/\n/g, ' ') + ': drag to move, click for details');
     g.addEventListener('click', () => selectNode(n.id));
+    g.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); selectNode(n.id);
+      }
+    });
     g.addEventListener('mouseenter', () => {
       if (!g.classList.contains('active')) g.classList.add('active');
     });
@@ -389,6 +493,10 @@ function renderEdges() {
 
     edgeEls.set(e.id, p);
     animEls.set(e.id, a);
+    hitEls.set(e.id, hit);
+    labelEls.set(e.id, label);
+    hit.addEventListener('pointerenter', () => label.classList.add('focus-label'));
+    hit.addEventListener('pointerleave', () => { if (selectedId !== e.id) label.classList.remove('focus-label'); });
   }
 }
 
@@ -413,6 +521,7 @@ function resetHighlights() {
   edgeEls.forEach(el => el.classList.remove('active','dimmed'));
   animEls.forEach(el => el.classList.remove('active'));
   nodeEls.forEach(el => el.classList.remove('active'));
+  labelEls.forEach(el => el.classList.remove('focus-label'));
 }
 
 function activateFlow(flowId) {
@@ -501,7 +610,208 @@ function selectEdge(edgeId) {
   infoText.textContent = e.details;
   const category = e.category || 'transition';
   infoMeta.innerHTML = `<div class="badge">Edge</div><div class="badge">${category}</div><div class="badge">${e.label}</div>`;
+  labelEls.get(edgeId)?.classList.add('focus-label');
   renderPathList([edgeId]);
+}
+
+// -------------------- Viewport navigation --------------------
+function screenAspect() {
+  return Math.max(0.3, svg.clientHeight / Math.max(1, svg.clientWidth));
+}
+function setView(next) {
+  const ratio = screenAspect();
+  const w = Math.max(460, Math.min(4100, next.w));
+  const h = w * ratio;
+  view = {x:next.x, y:next.y + (next.h - h) / 2, w, h};
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+  zoomValue.textContent = `${Math.round(zoomBaseWidth / view.w * 100)}%`;
+  updateMinimap();
+}
+function pointInWorld(evt) {
+  const bounds = svg.getBoundingClientRect();
+  return {
+    x: view.x + (evt.clientX - bounds.left) / Math.max(1, bounds.width) * view.w,
+    y: view.y + (evt.clientY - bounds.top) / Math.max(1, bounds.height) * view.h
+  };
+}
+function worldPerPixel() { return view.w / Math.max(1, svg.clientWidth); }
+function zoomAt(clientX, clientY, multiplier) {
+  const ratio = screenAspect();
+  const position = pointInWorld({clientX, clientY});
+  const bounds = svg.getBoundingClientRect();
+  const fracX = (clientX - bounds.left) / Math.max(1, bounds.width);
+  const fracY = (clientY - bounds.top) / Math.max(1, bounds.height);
+  const w = Math.max(460, Math.min(4100, view.w * multiplier));
+  setView({x:position.x - fracX*w, y:position.y - fracY*w*ratio, w, h:w*ratio});
+}
+function mapBounds(ids) {
+  const matching = ids ? nodes.filter(n => ids.has(n.id)) : nodes;
+  if (!matching.length) return {left:0, top:0, right:MAX_WORLD_W, bottom:MAX_WORLD_H};
+  return {
+    left:Math.min(...matching.map(n=>n.x)), top:Math.min(...matching.map(n=>n.y)),
+    right:Math.max(...matching.map(n=>n.x+n.w)),
+    bottom:Math.max(...matching.map(n=>n.y+n.h))
+  };
+}
+function frameBounds(bounds, fit=true) {
+  const cx = (bounds.left+bounds.right)/2;
+  const cy = (bounds.top+bounds.bottom)/2;
+  const aspect = screenAspect();
+  const extentW = bounds.right-bounds.left+140;
+  const extentH = (bounds.bottom-bounds.top+150)/aspect;
+  const w = fit ? Math.max(extentW,extentH) : Math.min(1450,Math.max(1000,Math.max(extentW,extentH)));
+  setView({x:cx-w/2, y:cy-w*aspect/2, w, h:w*aspect});
+}
+function fitAll() { frameBounds(mapBounds(),true); }
+function focusFlow() {
+  const ids = new Set();
+  for (const id of flows[activeFlow].edges) {
+    const edge = edgeMap.get(id);
+    if (edge) { ids.add(edge.from); ids.add(edge.to); }
+  }
+  frameBounds(mapBounds(ids), false);
+}
+function saveLayout() {
+  try { localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(Object.fromEntries(nodes.map(n => [n.id,{x:n.x,y:n.y}])))); }
+  catch (_) { /* e.g. file:// private mode */ }
+}
+function refreshGeometry() {
+  for (const n of nodes) {
+    nodeEls.get(n.id).setAttribute('transform', `translate(${n.x},${n.y})`);
+  }
+  for (const e of edges) {
+    const path = pathForEdge(e.from,e.to);
+    edgeEls.get(e.id).setAttribute('d',path);
+    animEls.get(e.id).setAttribute('d',path);
+    hitEls.get(e.id).setAttribute('d',path);
+    const m = midPoint(e.from,e.to);
+    labelEls.get(e.id).setAttribute('x',m.x);
+    labelEls.get(e.id).setAttribute('y',m.y);
+  }
+  updateMinimap();
+}
+function resetLayout() {
+  for (const n of nodes) Object.assign(n, defaultPositions.get(n.id));
+  try { localStorage.removeItem(LAYOUT_STORAGE_KEY); } catch (_) {}
+  refreshGeometry();
+  initialCamera();
+}
+function initialCamera() {
+  const w = Math.min(1480, Math.max(970, svg.clientWidth * 1.15));
+  zoomBaseWidth = w;
+  const ratio = screenAspect();
+  setView({x:0, y:Math.max(-75,(460-w*ratio)/2), w, h:w*ratio});
+}
+function updateMinimap() {
+  if (!minimap) return;
+  const ns='http://www.w3.org/2000/svg';
+  if (!minimap.childElementCount) {
+    for (const n of nodes) {
+      const rect=document.createElementNS(ns,'rect');
+      rect.setAttribute('data-minimap-node',n.id);
+      rect.setAttribute('fill',groupStyles[n.group].fill);
+      rect.setAttribute('stroke',groupStyles[n.group].stroke);
+      rect.setAttribute('stroke-width','8');
+      rect.setAttribute('rx','13');
+      minimap.appendChild(rect);
+    }
+    const current=document.createElementNS(ns,'rect');
+    current.setAttribute('id','minimap-window');
+    current.setAttribute('fill','rgba(121,227,255,.12)');
+    current.setAttribute('stroke','#79e3ff');
+    current.setAttribute('stroke-width','18');
+    current.setAttribute('pointer-events','none');
+    minimap.appendChild(current);
+  }
+  for (const n of nodes) {
+    const rect=minimap.querySelector(`[data-minimap-node="${n.id}"]`);
+    if(rect) for(const [k,v] of Object.entries({x:n.x,y:n.y,width:n.w,height:n.h})) rect.setAttribute(k,v);
+  }
+  const windowRect=minimap.querySelector('#minimap-window');
+  for(const [k,v] of Object.entries({x:view.x,y:view.y,width:view.w,height:view.h})) windowRect.setAttribute(k,v);
+}
+const panThreshold = 5;
+svg.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  const targetNode = event.target.closest('.node');
+  dragState = {
+    pointerId:event.pointerId, kind:targetNode?'node':'pan', nodeId:targetNode?.dataset.nodeId,
+    x:event.clientX, y:event.clientY, moved:false,
+    originalView:{...view},
+    originalNode:targetNode ? {...defaultPositions.get(targetNode.dataset.nodeId),
+      x:nodeMap.get(targetNode.dataset.nodeId).x,y:nodeMap.get(targetNode.dataset.nodeId).y} : null
+  };
+});
+svg.addEventListener('pointermove', event => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  const dx=event.clientX-dragState.x, dy=event.clientY-dragState.y;
+  if (!dragState.moved && Math.hypot(dx,dy)<panThreshold) return;
+  if (!dragState.moved) {
+    dragState.moved=true;
+    svg.setPointerCapture(event.pointerId);
+    canvasViewport.classList.toggle('is-panning',dragState.kind==='pan');
+    if(dragState.nodeId) nodeEls.get(dragState.nodeId)?.classList.add('dragging-node');
+  }
+  event.preventDefault();
+  const units = dragState.originalView.w / Math.max(1,svg.clientWidth);
+  if (dragState.kind === 'pan') {
+    const v=dragState.originalView;
+    setView({x:v.x-dx*units,y:v.y-dy*units,w:v.w,h:v.h});
+  } else {
+    const n=nodeMap.get(dragState.nodeId);
+    n.x=dragState.originalNode.x+dx*units;
+    n.y=dragState.originalNode.y+dy*units;
+    refreshGeometry();
+  }
+});
+function finishDrag(event) {
+  if (!dragState || dragState.pointerId!==event.pointerId) return;
+  const moved=dragState.moved;
+  const kind=dragState.kind;
+  if (dragState.nodeId) nodeEls.get(dragState.nodeId)?.classList.remove('dragging-node');
+  canvasViewport.classList.remove('is-panning');
+  dragState=null;
+  if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
+  if (moved) {
+    if(kind==='node') saveLayout();
+    // Suppress the synthetic click produced after a completed drag, but keep normal node clicks.
+    suppressClick=true;
+    setTimeout(()=>{suppressClick=false;}, 0);
+  }
+}
+svg.addEventListener('pointerup',finishDrag);
+svg.addEventListener('pointercancel',finishDrag);
+svg.addEventListener('click', event => {
+  if (suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); suppressClick=false; }
+},true);
+canvasViewport.addEventListener('wheel', event => {
+  event.preventDefault();
+  zoomAt(event.clientX,event.clientY,event.deltaY<0?0.89:1.12);
+},{passive:false});
+svg.addEventListener('dblclick', event => {event.preventDefault();fitAll();});
+minimap.addEventListener('click', event => {
+  const p=minimap.createSVGPoint();p.x=event.clientX;p.y=event.clientY;
+  const m=minimap.getScreenCTM();if(!m)return;
+  const at=p.matrixTransform(m.inverse());
+  setView({x:at.x-view.w/2,y:at.y-view.h/2,w:view.w,h:view.h});
+});
+document.getElementById('btnFit').addEventListener('click',fitAll);
+document.getElementById('btnFocus').addEventListener('click',focusFlow);
+document.getElementById('btnReset').addEventListener('click',resetLayout);
+document.getElementById('btnMapFocus').addEventListener('click',event=>{
+  document.body.classList.toggle('map-focus');
+  event.currentTarget.textContent=document.body.classList.contains('map-focus')?'Show panels':'Map only';
+  requestAnimationFrame(()=>{
+    // keep current center when a side panel is opened or hidden
+    const cx=view.x+view.w/2,cy=view.y+view.h/2;
+    const ratio=screenAspect();setView({x:cx-view.w/2,y:cy-view.w*ratio/2,w:view.w,h:view.w*ratio});
+  });
+});
+if(typeof ResizeObserver!=='undefined') {
+  new ResizeObserver(()=>{
+    const cx=view.x+view.w/2,cy=view.y+view.h/2,ratio=screenAspect();
+    setView({x:cx-view.w/2,y:cy-view.w*ratio/2,w:view.w,h:view.w*ratio});
+  }).observe(canvasViewport);
 }
 
 renderLegend();
@@ -509,6 +819,7 @@ renderNodes();
 renderEdges();
 renderFlowButtons();
 activateFlow('overview');
+initialCamera();
 </script>
 </body>
 </html>

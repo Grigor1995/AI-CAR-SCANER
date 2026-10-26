@@ -2,6 +2,8 @@
 
 ## Interactive architecture explorer (animated HTML)
 
+**Updated mouse-first controls (26 Oct 2026):** Drag empty canvas to pan; drag individual cards to reposition them while connections redraw; use mouse wheel to zoom at the cursor (it never scrolls the graph). `Fit all` shows the complete map, `Focus flow` centers the highlighted path, `Reset layout` restores the initial arrangement and clears saved positions, and `Map only` temporarily hides the side panels. A small overview minimap supports click-to-recenter navigation. Dragged node positions are saved locally when browser storage permits. The diagram remains clickable: select any node, connection, or use-case to inspect its call path.
+
 Open [AI CAR SCANNER interactive architecture map](AI_CAR_SCANNER_architecture_map.html) locally in a browser to explore the animated, clickable system. Select a use-case and click nodes/arrows to inspect the high-level call paths. [Short overview](AI_CAR_SCANNER_architecture_summary.md).
 
 The visualization is an architectural model, **not** an automatically generated function-level runtime trace; confirm exact endpoint/function hops against the current implementation before relying on it for debugging.

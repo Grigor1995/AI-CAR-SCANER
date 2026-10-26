@@ -323,3 +323,12 @@ MESSAGES["ru"]['Stop live data before discovery'] = 'Остановите чте
 
 MESSAGES["hy"]["Main menu"] = "Գլխավոր մենյու"
 MESSAGES["ru"]["Main menu"] = "Главное меню"
+
+MESSAGES['hy'].update({
+    'Drag tiles to reorder': 'Քաշեք պատկերակները՝ հերթականությունը փոխելու համար',
+    'Drag tiles to reorder • Ctrl+←/→': 'Քաշեք պատկերակները՝ հերթականությունը փոխելու համար • Ctrl+←/→',
+})
+MESSAGES['ru'].update({
+    'Drag tiles to reorder': 'Перетаскивайте значки, чтобы изменить порядок',
+    'Drag tiles to reorder • Ctrl+←/→': 'Перетаскивайте значки, чтобы изменить порядок • Ctrl+←/→',
+})

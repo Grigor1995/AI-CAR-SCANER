@@ -8,8 +8,8 @@ import sys
 from functools import lru_cache
 import time
 from typing import Any, Callable
-from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent
-from PySide6.QtGui import QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap, QRadialGradient, QLinearGradient
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent, QMimeData
+from PySide6.QtGui import QDrag, QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap, QRadialGradient, QLinearGradient
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
@@ -790,10 +790,75 @@ class AdaptiveMenuTile(QToolButton):
         painter.drawText(rect.adjusted(0, rect.height()-text_height, 0, 0), Qt.AlignCenter | Qt.TextWordWrap, self.text())
 
 
+class MovableMenuTile(AdaptiveMenuTile):
+    """Click opens a workflow; dragging changes its launcher position."""
+    MIME = "application/x-ai-car-launcher-page"
+
+    def __init__(self, launcher, page_id):
+        super().__init__()
+        self.launcher, self.page_id = launcher, page_id
+        self._press_pos = None
+        self._moved = False
+        self.setAcceptDrops(True)
+
+    def mousePressEvent(self, event):
+        self._press_pos = event.position().toPoint() if event.button() == Qt.LeftButton else None
+        self._moved = False
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._press_pos is not None and event.buttons() & Qt.LeftButton:
+            if (event.position().toPoint()-self._press_pos).manhattanLength() >= QApplication.startDragDistance():
+                self._moved = True; self._press_pos = None; self.setDown(False)
+                mime = QMimeData(); mime.setData(self.MIME, str(self.page_id).encode())
+                drag = QDrag(self); drag.setMimeData(mime)
+                drag.setPixmap(self.grab().scaled(180, 140, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                drag.exec(Qt.MoveAction)
+                return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._press_pos = None
+        if self._moved:
+            self._moved = False; self.setDown(False); event.accept(); return
+        super().mouseReleaseEvent(event)
+
+    def _accepts(self, event):
+        source = event.source()
+        return isinstance(source, MovableMenuTile) and source.launcher is self.launcher and event.mimeData().hasFormat(self.MIME)
+
+    def dragEnterEvent(self, event):
+        if self._accepts(event):
+            self.setDown(True); event.acceptProposedAction()
+        else: event.ignore()
+
+    def dragLeaveEvent(self, event):
+        self.setDown(False); event.accept()
+
+    def dragMoveEvent(self, event):
+        if self._accepts(event): event.acceptProposedAction()
+        else: event.ignore()
+
+    def dropEvent(self, event):
+        self.setDown(False)
+        if not self._accepts(event): event.ignore(); return
+        self.launcher.move_tile(event.source().page_id, self.page_id)
+        event.setDropAction(Qt.MoveAction); event.accept()
+
+    def keyPressEvent(self, event):
+        if event.modifiers() & Qt.ControlModifier and event.key() in (Qt.Key_Left, Qt.Key_Right):
+            ids = [tile.page_id for tile in self.launcher.tiles]
+            target = ids.index(self.page_id) + (-1 if event.key() == Qt.Key_Left else 1)
+            if 0 <= target < len(ids): self.launcher.move_tile(self.page_id, ids[target])
+            event.accept(); return
+        super().keyPressEvent(event)
+
+
 class LauncherPage(QWidget):
     """Large menu tiles keep every workflow visible on launch."""
     def __init__(self, app: "MainWindow"):
         super().__init__()
+        self.app = app
         root = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
         self.art_root = root / "assets" / "launcher"
         self.background = QPixmap(str(self.art_root / "background.png"))
@@ -804,6 +869,7 @@ class LauncherPage(QWidget):
         layout.setContentsMargins(20, 14, 20, 16)
         layout.setSizeConstraint(QLayout.SetNoConstraint)
         title = QLabel("Main menu"); title.setObjectName("title"); title.setStyleSheet("color: #EAF4FF;"); layout.addWidget(title)
+        hint = QLabel("Drag tiles to reorder"); hint.setObjectName("muted"); layout.addWidget(hint)
         self.grid = QGridLayout(); self.grid.setSpacing(14); layout.addLayout(self.grid, 1)
         self.tiles = []; self._columns = 0
         sections = [("Symptoms", 11, "✎"), ("Diagnostics", 3, ""), ("VCI / Devices", 2, ""),
@@ -811,7 +877,7 @@ class LauncherPage(QWidget):
                     ("AI Analysis", 8, "◈"), ("DTC", 7, "⚠"), ("Reports", 9, "▤"),
                     ("Teach AI", 10, "✧"), ("Dashboard", 0, "◉"), ("ECU Network", 5, "⌘")]
         for text, page_id, symbol in sections:
-            tile = AdaptiveMenuTile(); tile.setText(text)
+            tile = MovableMenuTile(self, page_id); tile.setText(text)
             tile.setIcon(_page_icon(page_id))
             tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             tile.setMinimumSize(72, 64)
@@ -819,7 +885,30 @@ class LauncherPage(QWidget):
             tile.setStyleSheet("QToolButton { background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 rgba(30,61,91,220),stop:0.5 rgba(9,27,48,215),stop:1 rgba(4,15,31,230)); color: #EAF4FF; border: 1px solid #35698F; border-top: 1px solid #6D96B6; border-radius: 18px; padding: 6px; font-weight: 600; } QToolButton:hover { border-color: #43D5FF; background: #123B5B; } QToolButton:focus { border: 2px solid #8CE8FF; }")
             tile.clicked.connect(lambda _=False, target=page_id: app.navigate_page(target))
             self.tiles.append(tile)
+        try:
+            saved = app.settings_store.value("launcher_order", "[]")
+            saved = json.loads(saved) if isinstance(saved, str) else saved
+        except (TypeError, ValueError):
+            saved = []
+        by_id = {tile.page_id: tile for tile in self.tiles}
+        ids = []
+        for page_id in saved if isinstance(saved, list) else []:
+            if type(page_id) is int and page_id in by_id and page_id not in ids: ids.append(page_id)
+        ids += [tile.page_id for tile in self.tiles if tile.page_id not in ids]
+        self.tiles = [by_id[page_id] for page_id in ids]
         self._reflow()
+        self.refresh()
+
+    def move_tile(self, source_id, target_id):
+        ids = [tile.page_id for tile in self.tiles]
+        if source_id not in ids or target_id not in ids or source_id == target_id: return
+        target = ids.index(target_id)
+        tile = self.tiles.pop(ids.index(source_id)); self.tiles.insert(target, tile)
+        self.app.settings_store.setValue("launcher_order", json.dumps([item.page_id for item in self.tiles]))
+        sync = getattr(self.app.settings_store, "sync", None)
+        if callable(sync): sync()
+        self._reflow(force=True)
+        tile.setFocus()
 
     def minimumSizeHint(self):
         return QSize(240, 180)
@@ -828,14 +917,14 @@ class LauncherPage(QWidget):
         super().resizeEvent(event)
         self._reflow()
 
-    def _reflow(self):
-        width, height = max(240, self.width()-40), max(120, self.height()-80)
+    def _reflow(self, force=False):
+        width, height = max(240, self.width()-40), max(120, self.height()-100)
         def score(columns):
             rows = math.ceil(len(self.tiles)/columns)
             cell_w, cell_h = (width-14*(columns-1))/columns, (height-14*(rows-1))/rows
             return abs(math.log(max(.1, cell_w/max(1,cell_h))/1.45)) + max(0, 115-cell_w)/35 + max(0, 90-cell_h)/25 + (rows*columns-len(self.tiles))*.12
         columns = min(range(2, 7), key=score)
-        if columns == self._columns: return
+        if columns == self._columns and not force: return
         old_columns = self._columns
         self._columns = columns
         for tile in self.tiles: self.grid.removeWidget(tile)
@@ -843,6 +932,7 @@ class LauncherPage(QWidget):
             self.grid.setColumnStretch(column, 1 if column < columns else 0)
         for row in range(6): self.grid.setRowStretch(row, 1 if row < math.ceil(len(self.tiles)/columns) else 0)
         for index, tile in enumerate(self.tiles): self.grid.addWidget(tile, index//columns, index%columns)
+        for first, second in zip(self.tiles, self.tiles[1:]): QWidget.setTabOrder(first, second)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -856,7 +946,9 @@ class LauncherPage(QWidget):
         painter.fillRect(self.rect(), QColor(2, 10, 24, 70))
 
     def refresh(self):
-        pass
+        hint = self.app.tr_text("Drag tiles to reorder • Ctrl+←/→")
+        for tile in self.tiles:
+            tile.setToolTip(hint); tile.setAccessibleDescription(hint)
 
 
 class DiagnosticPage(QWidget):

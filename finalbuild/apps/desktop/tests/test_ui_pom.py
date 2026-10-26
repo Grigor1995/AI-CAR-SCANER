@@ -2243,3 +2243,97 @@ def test_live_controls_wrap_without_horizontal_scroll(window_factory,qapp):
             assert scroll.horizontalScrollBar().maximum()==0
             assert all(page.action_panel.rect().contains(widget.geometry()) for widget in page.action_panel.widgets)
             assert all(page.simulator_panel.rect().contains(widget.geometry()) for widget in page.simulator_panel.widgets)
+
+
+def test_launcher_order_persists_and_keeps_workflow_links(window_factory, tmp_path):
+    from PySide6.QtCore import QSettings as NativeSettings
+    import json
+    window = window_factory()
+    settings = NativeSettings(str(tmp_path / "layout.ini"), NativeSettings.IniFormat)
+    window.settings_store = settings
+    page = window.pages[12]
+    original = {tile.page_id for tile in page.tiles}
+    page.move_tile(3, 11)
+    assert [tile.page_id for tile in page.tiles[:2]] == [3, 11]
+    assert {tile.page_id for tile in page.tiles} == original
+    settings.sync()
+    window.settings_store = NativeSettings(str(tmp_path / "layout.ini"), NativeSettings.IniFormat)
+    restored = ui.LauncherPage(window)
+    assert [tile.page_id for tile in restored.tiles[:2]] == [3, 11]
+    assert json.loads(window.settings_store.value("launcher_order"))[0] == 3
+    restored.tiles[0].click()
+    assert window.page_index() == 3
+    restored.deleteLater()
+
+
+def test_launcher_keyboard_move_and_cancelled_external_drop(window_factory, qapp):
+    from PySide6.QtTest import QTest
+    from types import SimpleNamespace
+    window = window_factory()
+    page = window.pages[12]
+    tile = page.tiles[1]
+    QTest.keyClick(tile, Qt.Key_Left, Qt.ControlModifier)
+    assert page.tiles[0].page_id == 3
+    before = list(page.tiles)
+    ignored = []
+    page.tiles[0].dropEvent(SimpleNamespace(source=lambda: object(), ignore=lambda: ignored.append(True)))
+    assert ignored and page.tiles == before
+    tile.click()
+    assert window.page_index() == 3
+
+
+def test_launcher_repairs_invalid_saved_order_without_losing_sections(window_factory):
+    window = window_factory()
+    window.settings_store.setValue("launcher_order", '[3,3,999,true,11]')
+    restored = ui.LauncherPage(window)
+    assert [tile.page_id for tile in restored.tiles[:2]] == [3, 11]
+    assert len({tile.page_id for tile in restored.tiles}) == 12
+    assert len(restored.tiles) == 12
+    restored.deleteLater()
+
+
+def test_launcher_drag_reorders_but_does_not_activate_the_dragged_tile(window_factory, monkeypatch):
+    from PySide6.QtCore import QPointF
+    from PySide6.QtGui import QMouseEvent
+    from types import SimpleNamespace
+    window = window_factory()
+    page = window.pages[12]
+    source, target = page.tiles[1], page.tiles[0]
+    calls = []
+
+    def event():
+        return SimpleNamespace(source=lambda: source, mimeData=lambda: drag.mime,
+                               acceptProposedAction=lambda: calls.append("accepted"),
+                               setDropAction=lambda action: calls.append(action),
+                               accept=lambda: calls.append("drop"), ignore=lambda: calls.append("ignored"))
+
+    class FakeDrag:
+        def __init__(self, sender):
+            assert sender is source
+            self.mime = None
+        def setMimeData(self, mime):
+            self.mime = mime
+        def setPixmap(self, image):
+            assert not image.isNull()
+        def exec(self, action):
+            assert bytes(self.mime.data(source.MIME)) == b"3"
+            target.dragEnterEvent(event())
+            assert target.isDown()
+            target.dragMoveEvent(event())
+            target.dropEvent(event())
+            return Qt.MoveAction
+
+    drag = FakeDrag(source)
+    monkeypatch.setattr(ui, "QDrag", lambda sender: drag)
+    def mouse(kind, x, button, held):
+        return QMouseEvent(kind, QPointF(x, 20), QPointF(x, 20), button, held, Qt.NoModifier)
+    source.mousePressEvent(mouse(QEvent.MouseButtonPress, 20, Qt.LeftButton, Qt.LeftButton))
+    source.mouseMoveEvent(mouse(QEvent.MouseMove, 21, Qt.NoButton, Qt.LeftButton))
+    assert page.tiles[0].page_id == 11  # A small click movement must not reorder.
+    source.mouseMoveEvent(mouse(QEvent.MouseMove, 100, Qt.NoButton, Qt.LeftButton))
+    source.mouseReleaseEvent(mouse(QEvent.MouseButtonRelease, 100, Qt.LeftButton, Qt.NoButton))
+    assert [tile.page_id for tile in page.tiles[:2]] == [3, 11]
+    assert window.page_index() == 12
+    assert "drop" in calls
+    target.dragLeaveEvent(SimpleNamespace(accept=lambda: None))
+    assert not target.isDown()

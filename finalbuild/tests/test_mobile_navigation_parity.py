@@ -24,7 +24,9 @@ def test_ios_navigation_has_stable_tab_ids_and_desktop_labels():
     titles[6] = "DTC"
     titles[7] = "Tests"  # iOS uses the expanded native label "Guided Tests".
     menu = source.split("private var desktopMenu:", 1)[1].split("private var demoHome:", 1)[0]
-    ids = [int(i) for i in re.search(r'ForEach\(\[([\d,]+)\]', menu).group(1).split(",")]
+    defaults = source.split("private var orderedLauncherPages:", 1)[1].split("private func moveLauncherPage", 1)[0]
+    ids = [int(i) for i in re.search(r'defaults:\[([\d,]+)\]', defaults).group(1).split(",")]
+    assert "ForEach(orderedLauncherPages" in menu
     assert [titles[i] for i in ids[:len(ORDER)]] == ORDER
     assert "titles[index]" not in source
     assert "symbols[index]" not in source

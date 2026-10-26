@@ -820,7 +820,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                     }
                 }
                 if(selectedTab==11) {
-                    DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
+                    DashboardSections(scrollState=pageScrollState,navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
                 } else if(selectedTab==14) {
                     diagnosticPanel()
                 } else if(state.session==null && selectedTab==2) {
@@ -1604,7 +1604,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         }
 
                         6 -> { DemoHome(session, tabs) { selectedTab = it }; DemoPanel(dashboardLabel("Live Data / Custom dashboard")) { if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory, dashboard=true) } }
-                        11 -> DashboardSections(navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
+                        11 -> DashboardSections(scrollState=pageScrollState,navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
                         12 -> if (channelHistory.isEmpty() && state.backendLiveRecords.isNotEmpty()) DemoBackendLiveCharts(state.backendLiveRecords) else DemoLiveCharts(channelHistory,dashboard=true)
                         13 -> DemoProgress(session) {selectedTab=8}
                         7 -> DemoDtcList(session, "DTC")

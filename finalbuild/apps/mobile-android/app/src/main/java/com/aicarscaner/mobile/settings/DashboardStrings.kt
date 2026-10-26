@@ -2,6 +2,9 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Hold and drag to reorder" to Pair("Երկար սեղմեք և քաշեք՝ հերթականությունը փոխելու համար", "Удерживайте и перетаскивайте, чтобы изменить порядок"),
+    "Move earlier" to Pair("Տեղափոխել առաջ", "Переместить раньше"),
+    "Move later" to Pair("Տեղափոխել հետ", "Переместить позже"),
     "Backend capability discovery plan is unavailable" to Pair("Backend-ի աջակցվող PID-երի հայտնաբերման պլանը հասանելի չէ", "План определения поддерживаемых PID недоступен на сервере"),
     "Vehicle reports no supported live channels" to Pair("Մեքենան չի հայտնել աջակցվող ընթացիկ տվյալների ալիքներ", "Автомобиль не сообщил о поддерживаемых каналах текущих данных"),
     "Request timed out. Check the backend connection and retry." to Pair("Հարցման ժամանակը սպառվեց։ Ստուգեք backend-ի կապը և կրկին փորձեք։", "Время ожидания истекло. Проверьте соединение с сервером и повторите попытку."),

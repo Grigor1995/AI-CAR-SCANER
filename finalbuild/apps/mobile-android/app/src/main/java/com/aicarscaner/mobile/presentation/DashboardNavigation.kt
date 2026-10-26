@@ -1,6 +1,25 @@
 package com.aicarscaner.mobile.presentation
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.unit.IntOffset
+import com.aicarscaner.mobile.settings.LauncherOrderStore
+import com.aicarscaner.mobile.settings.moveLauncherItem
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
@@ -80,31 +99,112 @@ internal fun DashboardBottomBar(selected: Int, navigate: (Int) -> Unit) {
 }
 
 @Composable
-internal fun DashboardSections(navigate: (Int) -> Unit) {
+internal fun DashboardSections(
+    scrollState: ScrollState? = null,
+    orderStore: LauncherOrderStore? = null,
+    navigate: (Int) -> Unit
+) {
     val sections=listOf(
         0 to "Symptoms", 14 to "Diagnostic", 2 to "VCI / Devices", 1 to "Vehicles", 3 to "Live Data", 8 to "Tests",
         4 to "AI Analysis", 7 to "DTC", 9 to "Reports", 10 to "Teach AI",
         6 to "Dashboard", 5 to "Activity", 13 to "Testing progress", 12 to "Custom dashboard"
     )
-    Text(dashboardLabel("Main menu"),style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
-    BoxWithConstraints {
-    val columns=if(maxWidth >= 600.dp) 3 else 2
-    Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-    sections.chunked(columns).forEach { pair ->
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            pair.forEach { (id,title) ->
-                Card(onClick={navigate(id)},modifier=Modifier.weight(1f).heightIn(min=124.dp),shape=RoundedCornerShape(18.dp),
-                    colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color.Transparent),border=BorderStroke(1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.65f)),elevation=CardDefaults.cardElevation(5.dp)) {
-                    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(14.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
-                        DashboardIcon(id,Modifier.size(64.dp))
-                        Text(dashboardLabel(title),fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
-                    }
-                }
-            }
-            repeat(columns-pair.size) { Spacer(Modifier.weight(1f)) }
+    val context=LocalContext.current
+    val store=remember(context,orderStore) { orderStore ?: LauncherOrderStore(context) }
+    var order by remember(store) { mutableStateOf(store.load(sections.map {it.first})) }
+    val bounds=remember {mutableMapOf<Int,Rect>()}
+    var gridOrigin by remember {mutableStateOf(Offset.Zero)}
+    var dragging by remember {mutableStateOf<Int?>(null)}
+    var pointer by remember {mutableStateOf(Offset.Zero)}
+    var grabOffset by remember {mutableStateOf(Offset.Zero)}
+    var sourceSize by remember {mutableStateOf(androidx.compose.ui.geometry.Size.Zero)}
+    var target by remember {mutableStateOf<Int?>(null)}
+    val density=LocalDensity.current
+    val viewportHeight=LocalView.current.height.toFloat()
+    val edge=with(density) {88.dp.toPx()}
+    val scrollStep=with(density) {10.dp.toPx()}
+    val earlier=dashboardLabel("Move earlier")
+    val later=dashboardLabel("Move later")
+    fun move(source:Int,destination:Int) {
+        val next=moveLauncherItem(order,source,destination)
+        if(next!=order) {order=next;store.save(next)}
+    }
+    LaunchedEffect(dragging,scrollState) {
+        while(isActive && dragging!=null) {
+            val delta=when {pointer.y<edge*2 -> -scrollStep;pointer.y>viewportHeight-edge -> scrollStep;else->0f}
+            if(delta!=0f) scrollState?.scrollBy(delta)
+            target=bounds.entries.firstOrNull {it.value.contains(pointer)}?.key
+            delay(16)
         }
     }
+    Text(dashboardLabel("Main menu"),style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+    Text(dashboardLabel("Hold and drag to reorder"),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+    BoxWithConstraints(Modifier.onGloballyPositioned {gridOrigin=it.boundsInRoot().topLeft}) {
+        val columns=if(maxWidth>=600.dp) 3 else 2
+        val byId=sections.toMap()
+        Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            order.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                    row.forEach { id ->
+                        val title=byId.getValue(id)
+                        Card(onClick={if(dragging==null) navigate(id)},
+                            modifier=Modifier.weight(1f).heightIn(min=124.dp)
+                                .onGloballyPositioned {bounds[id]=it.boundsInRoot()}
+                                .graphicsLayer {alpha=if(dragging==id) .35f else 1f}
+                                .semantics {
+                                    customActions=listOf(
+                                        CustomAccessibilityAction(earlier) {val index=order.indexOf(id);if(index>0) move(id,order[index-1]);true},
+                                        CustomAccessibilityAction(later) {val index=order.indexOf(id);if(index<order.lastIndex) move(id,order[index+1]);true}
+                                    )
+                                }
+                                .pointerInput(id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart={local ->
+                                            bounds[id]?.let {rect ->
+                                                dragging=id;grabOffset=local;pointer=rect.topLeft+local;sourceSize=rect.size;target=id
+                                            }
+                                        },
+                                        onDrag={change,_ ->
+                                            change.consume()
+                                            pointer=(bounds[id]?.topLeft ?: Offset.Zero)+change.position
+                                            target=bounds.entries.firstOrNull {it.value.contains(pointer)}?.key
+                                        },
+                                        onDragEnd={
+                                            val destination=bounds.entries.firstOrNull {it.value.contains(pointer)}?.key
+                                            if(destination!=null) move(id,destination)
+                                            dragging=null;target=null
+                                        },
+                                        onDragCancel={dragging=null;target=null}
+                                    )
+                                },
+                            shape=RoundedCornerShape(18.dp),
+                            colors=CardDefaults.cardColors(contentColor=MaterialTheme.colorScheme.onSurface,containerColor=Color.Transparent),
+                            border=BorderStroke(if(target==id && dragging!=null) 2.dp else 1.dp,MaterialTheme.colorScheme.primary.copy(alpha=.65f)),
+                            elevation=CardDefaults.cardElevation(5.dp)) {
+                            LauncherTileContent(id,dashboardLabel(title))
+                        }
+                    }
+                    repeat(columns-row.size) {Spacer(Modifier.weight(1f))}
+                }
+            }
+        }
+        dragging?.let {id ->
+            Card(modifier=Modifier.offset {val at=pointer-grabOffset-gridOrigin;IntOffset(at.x.roundToInt(),at.y.roundToInt())}
+                .size(with(density){sourceSize.width.toDp()},with(density){sourceSize.height.toDp()})
+                .clearAndSetSemantics {},shape=RoundedCornerShape(18.dp),
+                border=BorderStroke(2.dp,MaterialTheme.colorScheme.primary),elevation=CardDefaults.cardElevation(12.dp)) {
+                LauncherTileContent(id,dashboardLabel(byId.getValue(id)))
+            }
+        }
     }
+}
+
+@Composable
+private fun LauncherTileContent(id:Int,title:String) {
+    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(14.dp),
+        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(14.dp)) {
+        DashboardIcon(id,Modifier.size(64.dp))
+        Text(title,fontWeight=FontWeight.Medium,textAlign=androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 

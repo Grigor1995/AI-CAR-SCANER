@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Editable main menu order
+
+- Reorder Desktop, Android and iOS launcher tiles by dragging; preserve the chosen order locally after reopening the app. Keep workflow destinations stable regardless of visual position.
+- Desktop supports Ctrl+Left/Right; Android supports long-press drag with edge scrolling; native mobile accessibility exposes earlier/later actions. No move buttons or sliders are added.
+- Recover safely from obsolete/duplicate saved entries and append new sections without losing menu items.
+
 ## Unreleased — Poll only observed supported live PIDs
 
 - Add backend POST /api/v1/obd/plan to select implemented Mode 01 channels from complete ECU capability bitmaps, merging multiple responder masks without model-based assumptions.

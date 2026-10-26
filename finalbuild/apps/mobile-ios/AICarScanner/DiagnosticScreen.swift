@@ -19,6 +19,8 @@ struct DiagnosticScreen: View {
     @State private var lpg = true
     @State private var symptom = ""
     @State private var dtc = ""
+    @AppStorage("launcher_order") private var launcherOrder = ""
+    @State private var launcherDropTarget:Int?
     @State private var settingsOpen = false
     @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
@@ -165,17 +167,42 @@ struct DiagnosticScreen: View {
         default:return t.tr("Main menu","Главное меню","Գլխավոր մենյու")
         }
     }
+    private var orderedLauncherPages: [Int] {
+        LauncherOrder.normalized(launcherOrder,defaults:[11,1,3,0,8,7,2,6,9,10,5,4])
+    }
+    private func moveLauncherPage(_ source:Int,to target:Int) {
+        let order=LauncherOrder.moving(orderedLauncherPages,source:source,target:target)
+        launcherOrder=order.map(String.init).joined(separator:",")
+    }
     private var desktopMenu: some View {
         VStack(alignment:.leading,spacing:16) {
             Text(pageTitle(12)).font(.title2.bold())
+            Text(t.tr("Hold and drag to reorder", "Удерживайте и перетаскивайте, чтобы изменить порядок", "Երկար սեղմեք և քաշեք՝ հերթականությունը փոխելու համար")).font(.caption).foregroundStyle(.secondary)
             LazyVGrid(columns:[GridItem(.adaptive(minimum:145),spacing:12)],spacing:12) {
-                ForEach([11,1,3,0,8,7,2,6,9,10,5,4],id:\.self) { id in
+                ForEach(orderedLauncherPages,id:\.self) { id in
                     Button { tab=id } label: {
                         VStack(spacing:10) {
                             DesktopIcon(page:id).frame(height:64)
                             Text(pageTitle(id)).font(.subheadline.weight(.semibold)).multilineTextAlignment(.center).frame(minHeight:38)
                         }.frame(maxWidth:.infinity).padding(14).modifier(AutomotiveCardStyle())
                     }.buttonStyle(.plain)
+                        .draggable("ai-car-menu:\(id)")
+                        .dropDestination(for:String.self) { items,_ in
+                            guard items.count==1, let item=items.first, item.hasPrefix("ai-car-menu:"),
+                                  let source=Int(item.dropFirst("ai-car-menu:".count)), orderedLauncherPages.contains(source) else {return false}
+                            moveLauncherPage(source,to:id)
+                            return true
+                        } isTargeted: { active in
+                            if active {launcherDropTarget=id}
+                            else if launcherDropTarget==id {launcherDropTarget=nil}
+                        }
+                        .overlay(RoundedRectangle(cornerRadius:18).stroke(launcherDropTarget==id ? AutomotivePalette.cyan : .clear,lineWidth:2).allowsHitTesting(false))
+                        .accessibilityAction(named:Text(t.tr("Move earlier", "Переместить раньше", "Տեղափոխել առաջ"))) {
+                            if let index=orderedLauncherPages.firstIndex(of:id), index>0 {moveLauncherPage(id,to:orderedLauncherPages[index-1])}
+                        }
+                        .accessibilityAction(named:Text(t.tr("Move later", "Переместить позже", "Տեղափոխել հետ"))) {
+                            if let index=orderedLauncherPages.firstIndex(of:id), index<orderedLauncherPages.count-1 {moveLauncherPage(id,to:orderedLauncherPages[index+1])}
+                        }
                 }
             }
         }

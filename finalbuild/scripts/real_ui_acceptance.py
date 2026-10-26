@@ -265,12 +265,12 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
         app.processEvents()
 
     def nav(window, index):
-        item = window.nav.item(index)
-        rect = window.nav.visualItemRect(item)
-        assert rect.isValid(), f'Invalid navigation rect {index}'
-        QTest.mouseClick(window.nav.viewport(), Qt.MouseButton.LeftButton, pos=rect.center())
+        button = window.top_navigation_buttons[index]
+        assert button.isVisible() and button.isEnabled(), f'Top navigation item unavailable: {index}'
+        QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         app.processEvents()
-        assert window.nav.currentRow() == index, f'Navigation click failed: {index}'
+        assert window.page_index() == index, f'Navigation click failed: {index}'
+        assert button.isChecked(), f'Inactive top navigation item: {index}'
         assert window.pages[index].isVisible(), f'Page {index} not visible'
 
     def save_settings(window, language, dark, shot_name):
@@ -317,15 +317,16 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
             window.raise_()
             window.activateWindow()
             app.processEvents()
-            ev.record('Visible window opens with seven navigation pages', lambda: check_start(window, ev, app, platform))
+            ev.record('Visible window opens with full-width top navigation', lambda: check_start(window, ev, app, platform))
 
             def navigation_test():
-                assert window.nav.count() == 7
-                for n,label in enumerate(('dashboard','vehicles','devices','diagnostic','live-data','network','tests')):
+                assert len(window.top_navigation_buttons) == 13
+                for n,label in enumerate(('dashboard','vehicles','devices','diagnostic','live-data','network',
+                    'tests','dtc','ai-analysis','reports','teach-ai','symptoms','main-menu')):
                     nav(window,n)
                     ev.shot(window, f'01-navigation-{n+1:02d}-{label}.png', app)
-                return '7/7 pages opened via real Qt mouse events; 7 screenshots'
-            ev.record('Seven visible pages: real mouse navigation and screenshots', navigation_test)
+                return '13/13 pages opened via real Qt mouse events; 13 screenshots'
+            ev.record('All 13 top navigation pages: real mouse clicks and screenshots', navigation_test)
 
             def catalog_test():
                 nav(window,1)
@@ -454,10 +455,11 @@ def run_visible_source(ev: Evidence, hold_seconds: float) -> None:
 
 def check_start(window, ev, app, platform):
     assert window.isVisible()
-    assert window.nav.count()==7 and len(window.pages)==7
-    assert window.nav.currentRow()==0
+    assert len(window.top_navigation_buttons)==13 and len(window.pages)==13
+    assert not hasattr(window, "nav")
+    assert window.page_index()==12
     assert window.width()>=800 and window.height()>=500
-    shot=ev.shot(window,'00-visible-dashboard-startup.png',app)
+    shot=ev.shot(window,'00-visible-main-menu-startup.png',app)
     return f'Qt platform={platform}, window={window.width()}x{window.height()}, screenshot={shot}'
 
 

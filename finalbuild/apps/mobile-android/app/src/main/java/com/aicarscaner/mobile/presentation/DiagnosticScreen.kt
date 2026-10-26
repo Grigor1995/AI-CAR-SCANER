@@ -96,14 +96,14 @@ import kotlinx.coroutines.launch
 // Color tokens follow the shared blue / cyan / violet automotive UI reference.
 // Semantic status colors remain independently green (PASS), red (FAIL), amber (INCOMPLETE).
 internal val AutomotiveDarkColors = darkColorScheme(
-    primary = Color(0xFF188AFF),
+    primary = Color(0xFF00AEEF),
     onPrimary = Color.White,
     secondary = Color(0xFF9C74FF),
     onSecondary = Color.White,
-    tertiary = Color(0xFF28D5FF),
-    background = Color(0xFF061121),
-    surface = Color(0xFF0C1C35),
-    surfaceVariant = Color(0xFF102640),
+    tertiary = Color(0xFF79E3FF),
+    background = Color(0xFF03070E),
+    surface = Color(0xFF091D30),
+    surfaceVariant = Color(0xFF103650),
     onBackground = Color(0xFFEAF4FF),
     primaryContainer = Color(0xFF103E63),
     onPrimaryContainer = Color(0xFFEAF4FF),

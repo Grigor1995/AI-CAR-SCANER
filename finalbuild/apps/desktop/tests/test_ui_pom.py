@@ -2199,7 +2199,7 @@ def test_diagnostic_vin_discovery_uses_backend_and_displays_measured_modules(win
     assert page.connect.isEnabled()
 
 
-def test_launcher_cards_are_text_only_and_toolbar_uses_sidebar_icons(window_factory):
+def test_launcher_uses_shared_3d_icons_and_compact_top_toolbar(window_factory):
     from PySide6.QtWidgets import QToolButton
     window = window_factory()
     assert window.page_index() == 12
@@ -2212,8 +2212,9 @@ def test_launcher_cards_are_text_only_and_toolbar_uses_sidebar_icons(window_fact
     assert window.top_navigation_buttons[12].isChecked()
     vci = next(tile for tile in tiles if tile.text() == "VCI / Devices")
     diagnostic = next(tile for tile in tiles if tile.text() == "Diagnostics")
-    assert vci.icon().isNull() and diagnostic.icon().isNull()
-    assert vci.toolButtonStyle() == Qt.ToolButtonTextOnly
+    assert not vci.icon().isNull() and not diagnostic.icon().isNull()
+    assert vci.toolButtonStyle() == Qt.ToolButtonTextUnderIcon
+    assert vci.icon().pixmap(72,72).toImage() != diagnostic.icon().pixmap(72,72).toImage()
     top = window.top_navigation_buttons[3]
     assert top.toolButtonStyle() == Qt.ToolButtonTextBesideIcon
     assert top.iconSize().width() == 30
@@ -2225,7 +2226,7 @@ def test_launcher_cards_are_text_only_and_toolbar_uses_sidebar_icons(window_fact
     assert window.top_navigation_buttons[12].isChecked()  # secondary page via Main menu
 
 
-def test_launcher_text_only_cards_resize_and_keep_all_tiles_without_scrollbars(window_factory, qapp):
+def test_launcher_3d_icons_resize_and_keep_all_tiles_without_scrollbars(window_factory, qapp):
     window = window_factory()
     page = window.pages[12]
     card_layouts = set()
@@ -2237,7 +2238,7 @@ def test_launcher_text_only_cards_resize_and_keep_all_tiles_without_scrollbars(w
         assert scroll.verticalScrollBar().maximum() == 0
         assert all(page.rect().contains(tile.geometry()) for tile in page.tiles)
         card_layouts.add((page._columns,page.tiles[0].width(),page.tiles[0].height()))
-        assert all(tile.icon().isNull() for tile in page.tiles)
+        assert all(not tile.icon().isNull() for tile in page.tiles)
     assert len(card_layouts) > 1
 
 

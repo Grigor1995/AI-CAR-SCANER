@@ -19,9 +19,19 @@ Vehicles and Main menu **top-navigation** icons use `brand-car.png`, which
 is byte-identical to Android/iOS `launcher_car.png`. All other navigation
 icons use the same transparent 3D atlas: `icons-3d.png` is packaged as
 `launcher_icons.png` on mobile. Page IDs differ between clients, so icons
-are mapped by workflow purpose, not numeric ID. Main-menu **cards** are
-text-only on Desktop, Android and iOS. No manufacturer photo is used for branding.
+are mapped by workflow purpose, not numeric ID. Main-menu **cards** show the
+same 3D icons on Desktop, Android and iOS with translated text labels.
+No manufacturer photo is used for branding.
 
-`mobile-app-icon.png` is generated neon-blue abstract vehicle app branding. Native
-Android density/adaptive assets and the opaque iOS 1024 icon derive from this
-master. Android themed icons use a separate monochrome vehicle vector.
+The **installed app icon** is the silver/black D&A TOOL artwork in
+`assets/AI-Car-Scanner-master.png` (1024x1024, opaque). The exact same PNG
+is tracked in Desktop's `assets/AI-Car-Scanner-mobile.png`, Android's
+`res/drawable-nodpi/ic_launcher_foreground.png`, and iOS's
+`AppIcon.appiconset/ai-car-scanner-icon.png`. Android's adaptive icon uses an
+18dp safe-area inset, and its Android-13 monochrome override is intentionally
+omitted to prevent a different generic themed icon. The Windows executable
+uses a multi-resolution ICO staged from the same master by the build scripts.
+Use `python scripts/regenerate_native_icons.py` to refresh legacy mipmap
+WEBP and tracked Desktop ICO/WEBP files from the master before release. The
+previous neon-blue `mobile-app-icon.png` is retained only as an archival
+concept, **not** as the installed application icon.

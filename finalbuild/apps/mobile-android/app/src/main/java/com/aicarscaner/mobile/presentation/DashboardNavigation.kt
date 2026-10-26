@@ -206,10 +206,12 @@ internal fun DashboardSections(
 
 @Composable
 private fun LauncherTileContent(id:Int,title:String) {
-    // Same text-only Main menu cards as Desktop and iOS.
-    Column(Modifier.fillMaxWidth().heightIn(min=104.dp).background(desktopPanelBrush()).padding(12.dp),
-        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-        Text(title,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,
+    // Restore the shared 3D icon atlas used by the Desktop launcher.
+    Column(Modifier.fillMaxWidth().background(desktopPanelBrush()).padding(12.dp),
+        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        DashboardIcon(id,Modifier.size(56.dp))
+        Text(title,style=MaterialTheme.typography.titleMedium,
+            fontWeight=FontWeight.Bold,
             textAlign=androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

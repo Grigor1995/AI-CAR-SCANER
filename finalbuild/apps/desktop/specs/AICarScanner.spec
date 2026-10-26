@@ -7,10 +7,24 @@ project_root = next(
     (parent for parent in spec_path.parents if (parent / "apps" / "desktop" / "main.py").is_file()),
     spec_path.parent,
 )
-# Consume existing artwork only. Never regenerate/overwrite tracked icons
-# from inside PyInstaller (especially important for uncommitted local artwork).
-# Git Bash builds set AI_CAR_ICON_STAGE_DIR to isolated build-release assets.
-asset_root = Path(os.environ.get("AI_CAR_ICON_STAGE_DIR") or (project_root / "assets")).resolve()
+# All releases use the canonical 1024px silver D&A master. When a build
+# script stages its own icon assets, honor that directory. Direct PyInstaller
+# builds generate icons in a scratch folder and NEVER overwrite tracked files.
+staged_root = os.environ.get("AI_CAR_ICON_STAGE_DIR")
+if staged_root:
+    asset_root = Path(staged_root).expanduser().resolve()
+else:
+    import importlib.util
+    source = project_root / "assets" / "AI-Car-Scanner-master.png"
+    asset_root = project_root / "build-release" / "icons-from-master"
+    helper_path = project_root / "apps" / "desktop" / "stage_windows_icons.py"
+    helper_spec = importlib.util.spec_from_file_location("stage_windows_icons_for_spec", helper_path)
+    if helper_spec is None or helper_spec.loader is None:
+        raise RuntimeError(f"Cannot import icon staging helper: {helper_path}")
+    helper = importlib.util.module_from_spec(helper_spec)
+    helper_spec.loader.exec_module(helper)
+    helper.stage_icons(source, asset_root)
+    asset_root = asset_root.resolve()
 for filename in ("AI-Car-Scanner-mobile.png", "AI-Car-Scanner.webp", "AI-Car-Scanner.ico"):
     if not (asset_root / filename).is_file():
         raise FileNotFoundError(f"Required Desktop icon missing: {asset_root / filename}")

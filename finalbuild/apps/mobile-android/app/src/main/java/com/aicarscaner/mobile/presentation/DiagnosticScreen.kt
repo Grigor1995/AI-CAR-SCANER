@@ -1873,7 +1873,10 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
                     BitmapFactory.decodeStream(stream,null,BitmapFactory.Options().apply { inSampleSize=sample })?.asImageBitmap()
                 } }.getOrNull()
             }
-            // Try the actual backend photo even if a bundled illustration exists.
+        }
+        // Upgrade the cached/offline illustration to a backend photo when one
+        // is available. The request runs once per shown vehicle key.
+        // Try the actual backend photo even if a bundled illustration exists.
             // Keep the offline portrait as a fallback while the request runs.
             val remote = withContext(Dispatchers.IO) {
                 runCatching {
@@ -1891,8 +1894,7 @@ internal fun VehicleModelArtwork(make: String, model: String, chassis: String, h
                 photoCredit = remote.second to remote.third
                 vehicleCreditCache.put(key, photoCredit!!)
             }
-            portrait?.let { vehiclePortraitCache.put(key,it) }
-        }
+        portrait?.let { vehiclePortraitCache.put(key,it) }
     }
 
     if (portrait != null) {

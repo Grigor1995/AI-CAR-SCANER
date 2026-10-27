@@ -145,6 +145,8 @@ def main() -> int:
     if coverage_file.exists():
         coverage_file.unlink()
     env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["QT_STYLE_OVERRIDE"] = "Fusion"
     env["AI_CAR_DISABLE_LLM_AUTOSTART"] = "1"

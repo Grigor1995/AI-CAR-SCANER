@@ -1565,25 +1565,24 @@ def test_report_export_escapes_session_content(window_factory, monkeypatch, tmp_
     destination = tmp_path / 'report.html'
     monkeypatch.setattr(demo_ui.QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'HTML'))
     window.pages[9].export()
-    contents = destination.read_text()
+    contents = destination.read_text(encoding="utf-8")
     assert '&lt;script&gt;' in contents
     assert '<script>' not in contents
 
 
-@pytest.mark.parametrize("pixel_font", [False, True])
-def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(window_factory, monkeypatch, tmp_path, pixel_font):
+@pytest.mark.parametrize("language,heading", [
+    ("en", "Diagnostic report"), ("hy", "Ախտորոշման հաշվետվություն"), ("ru", "Диагностический отчёт"),
+])
+def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(window_factory, monkeypatch, tmp_path, language, heading):
     from apps.desktop import demo_ui
+    from PySide6 import QtPrintSupport
     from pypdf import PdfReader
     window = window_factory()
-    if pixel_font:
-        from PySide6.QtGui import QFont
-        class PixelFontDocument(demo_ui.QTextDocument):
-            def __init__(self):
-                super().__init__()
-                font = QFont()
-                font.setPixelSize(16)
-                self.setDefaultFont(font)
-        monkeypatch.setattr(demo_ui, 'QTextDocument', PixelFontDocument)
+    window.language = language
+    def forbidden_printer(*args, **kwargs):
+        raise AssertionError("Offline PDF export must not use OS printer services")
+    monkeypatch.setattr(QtPrintSupport, "QPrinter", forbidden_printer)
+    window.api.get_session.side_effect = AssertionError("PDF export must work offline")
     window.session_json = {'session_id': 'pdf-session-123', 'dtcs': [{'code': 'P0302'}]}
     destination = tmp_path / 'report.pdf'
     monkeypatch.setattr(demo_ui.QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'PDF'))
@@ -1593,6 +1592,29 @@ def test_native_pdf_export_hides_session_id_and_preserves_diagnostic_content(win
     assert 'pdf-session-123' not in text
     assert 'session_id' not in text
     assert 'P0302' in text
+    assert heading in text
+
+
+@pytest.mark.parametrize("failure", ["renderer", "destination"])
+def test_pdf_export_surfaces_failure_without_success_message(window_factory, monkeypatch, tmp_path, failure):
+    from apps.desktop import demo_ui
+    from shared import reporting
+    window = window_factory()
+    window.session_json = {'dtcs': [{'code': 'P0302'}]}
+    destination = tmp_path / 'report.pdf'
+    if failure == "destination":
+        destination.mkdir()
+    else:
+        def failed_renderer(*args):
+            raise RuntimeError("PDF renderer unavailable")
+        monkeypatch.setattr(reporting, "render_diagnostic_pdf", failed_renderer)
+    monkeypatch.setattr(demo_ui.QFileDialog, "getSaveFileName", lambda *a: (str(destination), "PDF"))
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.statusBar().clearMessage()
+    window.pages[9].export()
+    assert len(errors) == 1 and errors[0]
+    assert not window.statusBar().currentMessage()
 
 
 def test_history_open_clears_previous_vehicle_telemetry(window_factory):
@@ -1722,7 +1744,7 @@ def test_dashboard_presentation_strings_have_hy_and_ru_translations():
     import ast
     import re
     from pathlib import Path
-    tree = ast.parse(Path(ui.__file__).with_name("demo_ui.py").read_text())
+    tree = ast.parse(Path(ui.__file__).with_name("demo_ui.py").read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not node.args:
             continue

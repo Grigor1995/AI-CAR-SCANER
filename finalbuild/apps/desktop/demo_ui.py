@@ -10,8 +10,7 @@ import math
 from collections import defaultdict
 
 from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QColor, QPainter, QPen, QTextDocument, QFont, QBrush, QLinearGradient, QRadialGradient
-from PySide6.QtPrintSupport import QPrinter
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient, QRadialGradient
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QGroupBox, QProgressBar, QListWidget, QListWidgetItem, QPlainTextEdit,
@@ -544,16 +543,12 @@ class ReportsPage(QWidget):
             if not filename.lower().endswith(".json"):
                 content = '<!doctype html><meta charset="utf-8"><title>' + html.escape(self.app.tr_text('Diagnostic report')) + '</title><h1>AI Car Scanner</h1><p>' + html.escape(self.app.tr_text('Hypotheses require test confirmation.')) + '</p><pre>' + html.escape(content) + '</pre>'
             if filename.lower().endswith(".pdf"):
-                printer = QPrinter(QPrinter.HighResolution)
-                printer.setOutputFormat(QPrinter.PdfFormat)
-                printer.setOutputFileName(filename)
-                document = QTextDocument()
-                # Native system fonts can have only a pixel size on Windows.
-                # Give the printer an explicit printable font and ink color.
-                document.setDefaultFont(QFont("Arial", 10))
-                document.setDefaultStyleSheet("body, pre { color: #000000; background: #ffffff; }")
-                document.setHtml(content)
-                document.print_(printer)
+                from shared.reporting import render_diagnostic_pdf
+                try:
+                    Path(filename).write_bytes(render_diagnostic_pdf(user_report_data(data), self.app.language))
+                except Exception as exc:
+                    self.app.show_error(str(exc))
+                    return
             else:
                 Path(filename).write_text(content, encoding="utf-8")
             self.app.statusBar().showMessage(self.app.tr_text("Diagnostic report exported"))

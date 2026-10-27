@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Windows Desktop PDF and build reliability
+
+- Export offline Desktop PDFs with the same ReportLab renderer as backend reports, avoiding Windows Qt printer/COM failures and blank PDFs. Bundle the Unicode font for Armenian and Russian text.
+- Read the dashboard translation test source explicitly as UTF-8 and run Desktop test subprocesses in UTF-8 mode on Windows.
+- Keep the diagnostic-content and internal-session-ID checks, and verify offline PDF export in English, Armenian and Russian without OS printer access.
+
 ## Unreleased — Editable main menu order
 
 - Reorder Desktop, Android and iOS launcher tiles by dragging; preserve the chosen order locally after reopening the app. Keep workflow destinations stable regardless of visual position.

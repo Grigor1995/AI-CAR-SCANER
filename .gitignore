@@ -19,3 +19,7 @@ htmlcov/
 
 # Local static-analysis caches
 .ruff_cache/
+
+# Local setup runner configuration (machine-specific paths)
+/.runner-state.json
+/.runner-state.tmp

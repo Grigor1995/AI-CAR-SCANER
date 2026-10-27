@@ -12,6 +12,18 @@ Evidence-driven automotive diagnostic platform with a shared FastAPI backend, de
 
 The repository uses native client implementations. The browser/PWA client and its static Render deployment have been removed. The legacy Flutter client sources and their build scaffolding have been removed.
 
+## Setup after cloning
+
+```bash
+python runner.py setup --accept-android-licenses --run
+```
+
+The Windows runner prepares `.venv`, Backend/Desktop dependencies, local AI and
+Android tools/APK. Missing model/SDK downloads can total several GB. Existing
+assets can be supplied with `--model` and `--llama-dir`. Use a second terminal
+with an emulator running: `python runner.py android`.
+[Runner commands, recovery and prerequisites](finalbuild/docs/building/LOCAL_RUNNER.md).
+
 ## Build all native apps
 
 One entrypoint: `python build.py`. Run `python build.py --check` to verify native

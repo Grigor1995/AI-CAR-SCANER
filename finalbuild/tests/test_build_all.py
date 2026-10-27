@@ -236,3 +236,11 @@ def test_android_backend_url_rejects_invalid_host_or_port(url):
     with pytest.raises(SystemExit) as error:
         build.main(['--targets','android','--android-api-url',url])
     assert error.value.code == 2
+
+
+def test_runner_can_supply_license_stdin_with_live_logging(tmp_path):
+    import sys
+    command = [sys.executable, '-c', 'import sys; print("ACCEPTED=" + sys.stdin.read().strip())']
+    process = build.Runner(tmp_path / 'stdin.log')
+    process.run(command, cwd=tmp_path, input_text='yes\n')
+    assert 'ACCEPTED=yes' in process.log.read_text()

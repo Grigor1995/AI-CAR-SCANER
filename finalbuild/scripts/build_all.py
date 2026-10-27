@@ -45,7 +45,7 @@ def android_sdk() -> Path | None:
         for line in local.read_text(encoding="utf-8").splitlines():
             if line.startswith("sdk.dir="):
                 candidates.append(line.partition("=")[2].replace("\\:", ":").replace("\\\\", "\\"))
-    candidates += [str(Path.home() / "Android/Sdk"), str(Path.home() / "Library/Android/sdk")]
+    candidates += [str(Path.home() / "Android/Sdk"), str(Path.home() / "Library/Android/sdk"), str(REPO / ".build-tools/setup/android-sdk")]
     if os.environ.get("LOCALAPPDATA"):
         candidates.append(str(Path(os.environ["LOCALAPPDATA"]) / "Android/Sdk"))
     return next((Path(p).expanduser().resolve() for p in candidates if p and Path(p).expanduser().is_dir()), None)
@@ -56,6 +56,8 @@ def java_executable() -> str | None:
         candidate = Path(os.environ["JAVA_HOME"]) / "bin" / ("java.exe" if platform.system() == "Windows" else "java")
         if candidate.is_file():
             return str(candidate)
+    managed = REPO / ".build-tools/setup/jdk/bin" / ("java.exe" if platform.system() == "Windows" else "java")
+    if managed.is_file(): return str(managed)
     return executable("java")
 
 
@@ -113,7 +115,7 @@ class Runner:
         self.log = log
         log.parent.mkdir(parents=True, exist_ok=True)
 
-    def run(self, command: list[str], *, cwd: Path = PROJECT, env: dict | None = None, timeout: int = 1800) -> None:
+    def run(self, command: list[str], *, cwd: Path = PROJECT, env: dict | None = None, timeout: int = 1800, input_text: str | None = None) -> None:
         command = [str(item) for item in command]
         env = dict(os.environ if env is None else env)
         env["PYTHONUNBUFFERED"] = "1"
@@ -139,8 +141,13 @@ class Runner:
             options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
             process = None
             try:
-                process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT, **options)
-                process.wait(timeout=timeout)
+                process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
+                                           stdin=subprocess.PIPE if input_text is not None else None,
+                                           text=input_text is not None, **options)
+                if input_text is None:
+                    process.wait(timeout=timeout)
+                else:
+                    process.communicate(input=input_text, timeout=timeout)
             except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
                 if process is not None:
                     if os.name == "nt":

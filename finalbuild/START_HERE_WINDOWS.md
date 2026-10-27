@@ -1,5 +1,10 @@
 # Clean Windows setup — Desktop, Backend and Android
 
+For automatic setup after cloning, run `python runner.py setup --accept-android-licenses --run`
+from the repository root. See [the local runner guide](docs/building/LOCAL_RUNNER.md)
+for existing model/runtime path options. The manual equivalent is below.
+
+
 Use a **new Git Bash terminal** after closing old Desktop/backend processes and
 terminals that reference the deleted virtual environment. Commands below assume
 Python 3.14, Git, Android Studio, Android SDK 36 and JDK 17 are installed.

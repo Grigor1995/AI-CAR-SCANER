@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Windows online installer
+
+- Add a local Inno Setup builder (`python installer.py`) producing Setup.exe and a SHA-256 checksum, with a pinned GitHub source snapshot.
+- Install Desktop and Backend with optional local AI and Desktop shortcut checkboxes; provision signed official Python when missing and reuse the existing setup runner.
+- Add Start menu launch/uninstall entries, hidden-console launch with logs, safe retries/upgrades and Windows Apps uninstallation. Preserve user diagnostic data and shared Python on removal.
+- Keep installer compilation and Windows shell integration explicitly subject to a Windows smoke test; no CI/CD added.
+
 ## Unreleased — Windows Desktop PDF and build reliability
 
 - Export offline Desktop PDFs with the same ReportLab renderer as backend reports, avoiding Windows Qt printer/COM failures and blank PDFs. Bundle the Unicode font for Armenian and Russian text.

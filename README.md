@@ -24,6 +24,14 @@ assets can be supplied with `--model` and `--llama-dir`. Use a second terminal
 with an emulator running: `python runner.py android`.
 [Runner commands, recovery and prerequisites](finalbuild/docs/building/LOCAL_RUNNER.md).
 
+## Windows installer
+
+Build the download-and-install wizard locally with `python installer.py`
+(requires Inno Setup 6.3+ on Windows). It downloads the pinned GitHub source,
+installs Desktop/Backend, offers optional Local AI and Desktop shortcuts, and
+registers a Windows uninstaller.
+[Installer build, distribution and removal](finalbuild/docs/building/WINDOWS_INSTALLER.md).
+
 ## Build all native apps
 
 One entrypoint: `python build.py`. Run `python build.py --check` to verify native

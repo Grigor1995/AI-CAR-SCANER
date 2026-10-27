@@ -1,7 +1,7 @@
 """Native editors for the common backend profile/input/report contracts."""
 from pathlib import Path
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QPlainTextEdit, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QPlainTextEdit, QFileDialog, QMessageBox, QLabel
 from .models import Vehicle
 
 
@@ -67,44 +67,130 @@ def shared_vehicles(app):
 
 
 def edit_inputs(app):
-    if not app.session: return
+    if not app.session:
+        app.show_error(tr(app, 'Open a diagnostic session first.', 'Сначала откройте диагностический сеанс.', 'Նախ բացեք ախտորոշման սեսիա։'))
+        return
     sid = app.session.session_id
     dialog = QDialog(app); dialog.resize(660, 460)
     dialog.setWindowTitle(tr(app, 'Symptoms / DTC editor', 'Редактор симптомов / DTC', 'Ախտանիշների / DTC խմբագրում'))
     layout = QVBoxLayout(dialog); rows = QListWidget(); layout.addWidget(rows)
     text = QPlainTextEdit(); layout.addWidget(text)
-    def load(data):
-        rows.clear()
-        for kind, key in [('symptom', 'symptoms'), ('dtc', 'dtcs')]:
-            for entry in data.get(key, []):
-                item = QListWidgetItem(entry.get('raw_text') or entry.get('code') or '—')
-                item.setData(Qt.UserRole, (kind, entry['id'])); rows.addItem(item)
+    status = QLabel(); status.setWordWrap(True); status.setObjectName('inputEditorStatus'); layout.addWidget(status)
+    bar = QHBoxLayout(); layout.addLayout(bar)
+    save_label = tr(app, 'Save and analyze', 'Сохранить и анализировать', 'Պահպանել և վերլուծել')
+    save_button = QPushButton(save_label); bar.addWidget(save_button)
+    delete_button = QPushButton(tr(app, 'Delete', 'Удалить', 'Ջնջել')); bar.addWidget(delete_button)
+    busy = False
+
+    def active():
+        return app.session is not None and app.session.session_id == sid
+
+    def controls():
+        selected = rows.currentItem() is not None
+        rows.setEnabled(not busy); text.setEnabled(selected and not busy and active())
+        save_button.setEnabled(selected and bool(text.toPlainText().strip()) and not busy and active())
+        delete_button.setEnabled(selected and not busy and active())
+        save_button.setText(tr(app, 'Saving and analyzing…', 'Сохранение и анализ…', 'Պահպանում և վերլուծություն…') if busy else save_label)
+
     def selection():
         item = rows.currentItem()
         text.setPlainText(item.text() if item else '')
+        controls()
+
+    def load(data):
+        previous = rows.currentItem()
+        selected = previous.data(Qt.UserRole) if previous else None
+        previous_row = rows.currentRow()
+        rows.blockSignals(True)
+        try:
+            rows.clear()
+            for kind, key in [('symptom', 'symptoms'), ('dtc', 'dtcs')]:
+                for entry in data.get(key, []):
+                    item = QListWidgetItem(entry.get('raw_text') or entry.get('code') or '—')
+                    item.setData(Qt.UserRole, (kind, entry['id']))
+                    item.setData(Qt.UserRole + 1, dict(entry))
+                    rows.addItem(item)
+            index = next((i for i in range(rows.count()) if rows.item(i).data(Qt.UserRole) == selected), None)
+            if rows.count(): rows.setCurrentRow(index if index is not None else max(0, min(previous_row, rows.count()-1)))
+        finally:
+            rows.blockSignals(False)
+        selection()
+
     rows.itemSelectionChanged.connect(selection)
+    text.textChanged.connect(controls)
+
+    def failed(message):
+        nonlocal busy
+        busy = False
+        status.setText(tr(app, 'Save failed: ', 'Не удалось сохранить: ', 'Պահպանումը ձախողվեց․ ') + str(message).replace(sid, "[internal]"))
+        controls()
+
     def mutate(delete=False):
+        nonlocal busy
+        if busy: return
+        if not active():
+            status.setText(tr(app, 'The active session changed. Reopen this editor.', 'Активный сеанс изменился. Откройте редактор заново.', 'Ակտիվ սեսիան փոխվել է։ Վերաբացեք խմբագրիչը։'))
+            controls(); return
         item = rows.currentItem()
-        if not item or (not delete and not text.toPlainText().strip()): return
+        if item is None:
+            status.setText(tr(app, 'Select a recorded symptom or DTC.', 'Выберите записанный симптом или DTC.', 'Ընտրեք գրանցված ախտանիշը կամ DTC-ն։')); return
+        value = text.toPlainText().strip()
+        if not delete and not value:
+            status.setText(tr(app, 'Enter a nonempty value.', 'Введите непустое значение.', 'Մուտքագրեք ոչ դատարկ արժեք։')); return
         if delete and QMessageBox.question(dialog, dialog.windowTitle(), tr(app, 'Delete selected input?', 'Удалить выбранную запись?', 'Ջնջե՞լ ընտրված գրառումը։'), QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes: return
-        kind, item_id = item.data(Qt.UserRole); value = text.toPlainText().strip()
+        kind, item_id = item.data(Qt.UserRole)
+        original = item.data(Qt.UserRole + 1) or {}
+        language = app.language
+        busy = True; controls()
+        status.setText(tr(app, 'Saving and analyzing…', 'Сохранение и анализ…', 'Պահպանում և վերլուծություն…'))
+
         def work():
             if kind == 'symptom':
-                if delete: app.api.delete_symptom(sid, item_id)
-                else: app.api.update_symptom(sid, item_id, value)
+                saved = app.api.delete_symptom(sid, item_id) if delete else app.api.update_symptom(sid, item_id, value)
+            elif delete:
+                saved = app.api.delete_dtc(sid, item_id)
             else:
-                if delete: app.api.delete_dtc(sid, item_id)
-                else: app.api.update_dtc(sid, item_id, value)
-            return app.api.analyze(sid, app.language)
-        def done(data):
-            load(data)
-            if app.session and app.session.session_id == sid:
-                app.session_json = data; app.refresh_pages()
-        app.run_worker(work, done)
-    bar = QHBoxLayout(); layout.addLayout(bar)
-    for labels, action in [(('Save and analyze', 'Сохранить и анализировать', 'Պահպանել և վերլուծել'), lambda: mutate()), (('Delete', 'Удалить', 'Ջնջել'), lambda: mutate(True))]:
-        button = QPushButton(tr(app, *labels)); button.clicked.connect(action); bar.addWidget(button)
-    load(app.session_json); dialog.exec()
+                metadata = {key: original[key] for key in ('description', 'source') if key in original}
+                saved = app.api.update_dtc(sid, item_id, value, **metadata)
+            # Saving and analysis are distinct server operations. Never report a
+            # completed save as lost if subsequent analysis/plan refresh fails.
+            try:
+                analyzed = app.api.analyze(sid, language)
+            except Exception as error:
+                return {'session': saved, 'analysis_error': str(error)}
+            try:
+                decision = app.api.decision_plan(sid, language=language)
+            except Exception:
+                decision = {'candidates': analyzed.get('recommendations', [])}
+            return {'session': analyzed, 'decision': decision}
+
+        def done(result):
+            nonlocal busy
+            try:
+                if not active():
+                    status.setText(tr(app, 'The active session changed. Reopen this editor.', 'Активный сеанс изменился. Откройте редактор заново.', 'Ակտիվ սեսիան փոխվել է։ Վերաբացեք խմբագրիչը։')); return
+                data = result['session']
+                app.session_json = data
+                app.session.state = data.get('state', app.session.state)
+                app.decision = result.get('decision', {})
+                load(data); app.refresh_pages()
+                if result.get('analysis_error'):
+                    message = tr(app, 'Saved; analysis failed. Retry Save and analyze: ', 'Сохранено; анализ не завершён. Повторите сохранение и анализ: ', 'Պահպանված է․ վերլուծությունը ձախողվել է։ Կրկին փորձեք․ ') + result['analysis_error'].replace(sid, '[internal]')
+                else:
+                    message = tr(app, 'Saved and analyzed. Diagnosis and recommended tests updated.', 'Сохранено и проанализировано. Диагноз и рекомендуемые тесты обновлены.', 'Պահպանված և վերլուծված է։ Ախտորոշումն ու առաջարկվող թեստերը թարմացվել են։')
+                status.setText(message)
+                app.statusBar().showMessage(message)
+            finally:
+                busy = False; controls()
+
+        app.run_worker(work, done, failed)
+
+    save_button.clicked.connect(lambda: mutate())
+    delete_button.clicked.connect(lambda: mutate(True))
+    load(app.session_json)
+    if not rows.count():
+        status.setText(tr(app, 'No recorded inputs. Add a symptom or DTC on the Symptoms page first.', 'Записей нет. Сначала добавьте симптом или DTC на странице симптомов.', 'Գրանցումներ չկան։ Նախ ախտանիշների էջում ավելացրեք ախտանիշ կամ DTC։'))
+    dialog.exec()
 
 
 def export_backend_report(app, format):

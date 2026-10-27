@@ -2416,7 +2416,7 @@ def test_recorded_input_editor_updates_and_deletes_through_shared_api(window_fac
     window.session_json['symptoms'] = [{'id': 'symptom', 'raw_text': 'Old observation'}]
     window.session_json['dtcs'] = [{'id': 'dtc', 'code': 'P0302'}]
     fake_api.analyze.return_value = dict(window.session_json)
-    monkeypatch.setattr(window, 'run_worker', lambda fn, done: done(fn()))
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done, failed=None: done(fn()))
     monkeypatch.setattr(QMessageBox, 'question', lambda *a: QMessageBox.Yes)
     def edit_dialog():
         dialog = next(d for d in window.findChildren(QDialog) if d.windowTitle() == 'Symptoms / DTC editor')
@@ -2484,3 +2484,137 @@ def test_shared_vehicle_profile_edit_and_confirmed_delete(window_factory, monkey
     QTimer.singleShot(0, interact)
     client_workspace.shared_vehicles(window)
     fake_api.delete_vehicle_profile.assert_called_once_with('shared')
+
+
+def _exercise_input_editor(window, exercise):
+    from apps.desktop import client_workspace
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog
+    errors = []
+    def begin():
+        dialog = next(d for d in window.findChildren(QDialog) if d.windowTitle() == 'Symptoms / DTC editor')
+        try: exercise(dialog)
+        except BaseException as error: errors.append(error)
+        finally: dialog.reject()
+    QTimer.singleShot(0, begin)
+    client_workspace.edit_inputs(window)
+    if errors: raise errors[0]
+
+
+def test_save_analyze_auto_selects_and_preserves_selection_for_repeat_save(window_factory, monkeypatch, fake_api):
+    from copy import deepcopy
+    from PySide6.QtWidgets import QListWidget, QPlainTextEdit, QPushButton, QLabel
+    window = window_factory(); window.session = Session('edit-session', 'READY', window.active_vehicle)
+    data = {'session_id':'edit-session', 'state':'ANALYZED', 'symptoms':[{'id':'symptom', 'raw_text':'Old symptom'}], 'dtcs':[], 'recommendations':[]}
+    window.session_json = deepcopy(data)
+    def save(sid, item_id, value):
+        data['symptoms'][0]['raw_text'] = value
+        return deepcopy(data)
+    fake_api.update_symptom.side_effect = save
+    fake_api.analyze.side_effect = lambda *a: deepcopy(data)
+    fake_api.decision_plan.return_value = {'candidates':[], 'questions':['Check ignition']}
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done, failed=None: done(fn()))
+    def exercise(dialog):
+        rows=dialog.findChild(QListWidget); field=dialog.findChild(QPlainTextEdit)
+        button=next(b for b in dialog.findChildren(QPushButton) if b.text()=='Save and analyze')
+        assert rows.currentItem().data(Qt.UserRole)==('symptom','symptom')
+        assert field.toPlainText()=='Old symptom'
+        field.setPlainText('First correction'); button.click()
+        assert rows.currentItem().text()=='First correction'
+        field.setPlainText('Second correction'); button.click()
+        assert fake_api.update_symptom.call_count==2
+        assert window.session_json['symptoms'][0]['raw_text']=='Second correction'
+        assert window.decision['questions']==['Check ignition']
+        assert 'Saved and analyzed' in dialog.findChild(QLabel,'inputEditorStatus').text()
+    _exercise_input_editor(window,exercise)
+
+
+@pytest.mark.parametrize('outcome',['success','save-error','analysis-error','session-switch'])
+def test_save_analyze_real_worker_has_busy_feedback_retry_and_session_ownership(window_factory, monkeypatch, fake_api, outcome):
+    from copy import deepcopy
+    from threading import Event
+    from time import monotonic
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QPlainTextEdit, QPushButton, QLabel
+    from unittest.mock import Mock
+    window=window_factory();window.session=Session('edit-session','READY',window.active_vehicle)
+    data={'session_id':'edit-session','state':'ANALYZED','symptoms':[{'id':'symptom','raw_text':'Old'}],'dtcs':[],'recommendations':[]}
+    window.session_json=deepcopy(data)
+    window.decision={'candidates':[{'id':'stale'}]}
+    gate=Event()
+    def save(*args):
+        if not gate.wait(3):raise RuntimeError('Test worker was not released')
+        if outcome=='save-error':raise RuntimeError('Backend unavailable')
+        data['symptoms'][0]['raw_text']=args[2]
+        return deepcopy(data)
+    fake_api.update_symptom.side_effect=save
+    fake_api.analyze.side_effect=RuntimeError('Analysis timed out') if outcome=='analysis-error' else lambda *a:deepcopy(data)
+    fake_api.decision_plan.return_value={'candidates':[]}
+    monkeypatch.setattr(window,'show_error',Mock())
+    def exercise(dialog):
+        field=dialog.findChild(QPlainTextEdit)
+        button=next(b for b in dialog.findChildren(QPushButton) if b.text()=='Save and analyze')
+        status=dialog.findChild(QLabel,'inputEditorStatus')
+        try:
+            field.setPlainText('Corrected symptom');button.click();button.click()
+            assert not button.isEnabled() and not field.isEnabled()
+            assert 'Saving and analyzing' in status.text()
+            if outcome=='session-switch':
+                window.session=Session('other-session','READY',window.active_vehicle)
+                window.session_json={'session_id':'other-session'}
+            gate.set()
+            deadline=monotonic()+3
+            while window._workers and monotonic()<deadline:QTest.qWait(10)
+            assert not window._workers
+            fake_api.update_symptom.assert_called_once_with('edit-session','symptom','Corrected symptom')
+            window.show_error.assert_not_called()
+            if outcome=='save-error':
+                assert 'Backend unavailable' in status.text()
+                assert field.toPlainText()=='Corrected symptom' and button.isEnabled()
+                assert window.session_json['symptoms'][0]['raw_text']=='Old'
+                # An error must leave the same draft retryable.
+                fake_api.update_symptom.side_effect=lambda *a:deepcopy(data)
+                button.click()
+                deadline=monotonic()+3
+                while window._workers and monotonic()<deadline:QTest.qWait(10)
+                assert 'Saved and analyzed' in status.text()
+            elif outcome=='analysis-error':
+                assert status.text().startswith('Saved; analysis failed')
+                assert window.session_json['symptoms'][0]['raw_text']=='Corrected symptom'
+                assert window.decision=={} and button.isEnabled()
+            elif outcome=='session-switch':
+                assert window.session_json=={'session_id':'other-session'}
+                assert 'session changed' in status.text() and not button.isEnabled()
+            else:
+                assert 'Saved and analyzed' in status.text() and button.isEnabled()
+        finally:gate.set()
+    _exercise_input_editor(window,exercise)
+
+
+def test_save_analyze_empty_editor_is_explicitly_disabled(window_factory, fake_api):
+    from PySide6.QtWidgets import QPushButton, QLabel
+    window=window_factory();window.session=Session('empty-session','READY',window.active_vehicle)
+    window.session_json={'symptoms':[],'dtcs':[]}
+    def exercise(dialog):
+        assert all(not b.isEnabled() for b in dialog.findChildren(QPushButton))
+        assert 'No recorded inputs' in dialog.findChild(QLabel,'inputEditorStatus').text()
+    _exercise_input_editor(window,exercise)
+
+
+def test_save_analyze_preserves_dtc_metadata_and_uses_fresh_recommendations_if_plan_fails(window_factory, monkeypatch, fake_api):
+    from PySide6.QtWidgets import QPushButton, QPlainTextEdit
+    window=window_factory();window.session=Session('edit-session','READY',window.active_vehicle)
+    data={'session_id':'edit-session','state':'ANALYZED','symptoms':[], 'dtcs':[{'id':'dtc','code':'P0302','description':'Cylinder 2 misfire','source':'ECU_REPORTED'}],
+          'recommendations':[{'id':'new-test','name':'Ignition test','purpose':'Verify misfire','priority_score':1,'risk_level':'LOW'}]}
+    window.session_json=data
+    fake_api.analyze.return_value=data
+    fake_api.decision_plan.side_effect=RuntimeError('Plan temporarily unavailable')
+    monkeypatch.setattr(window,'run_worker',lambda fn,done,failed=None:done(fn()))
+    def exercise(dialog):
+        dialog.findChild(QPlainTextEdit).setPlainText('P0171')
+        next(b for b in dialog.findChildren(QPushButton) if b.text()=='Save and analyze').click()
+        fake_api.update_dtc.assert_called_once_with('edit-session','dtc','P0171',description='Cylinder 2 misfire',source='ECU_REPORTED')
+        assert window.decision['candidates']==data['recommendations']
+        assert window.pages[6].list.count()==1
+        assert window.pages[6].list.item(0).data(Qt.UserRole)=='new-test'
+    _exercise_input_editor(window,exercise)

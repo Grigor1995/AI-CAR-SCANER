@@ -1733,7 +1733,7 @@ class MainWindow(QMainWindow):
             self, self.tr_text("About"), self.tr_text("AI Auto Diagnostic Workstation") + "\n" + self.tr_text("Evidence-driven automotive diagnostics.")
         ))
         helpm.addAction(about)
-    def run_worker(self, fn: Callable[[], Any], done: Callable[[Any], None]) -> None:
+    def run_worker(self, fn: Callable[[], Any], done: Callable[[Any], None], failed: Callable[[str], None] | None = None) -> None:
         if self._closing:
             return
         worker = Worker(fn)
@@ -1743,7 +1743,7 @@ class MainWindow(QMainWindow):
             lambda result: done(result) if not self._closing else None
         )
         worker.failed.connect(
-            lambda message: self.show_error(message) if not self._closing else None
+            lambda message: (failed(message) if failed is not None else self.show_error(message)) if not self._closing else None
         )
         # Use a QObject receiver on the GUI thread, not a closure that removes
         # the final strong reference while QThread is still finishing.

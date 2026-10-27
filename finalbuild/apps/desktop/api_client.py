@@ -140,6 +140,7 @@ class DiagnosticApiClient:
         return self._request(
             "POST", f"/api/v1/analysis/{session_id}",
             params={"language": normalized_language},
+            timeout=float(os.environ.get("AI_CAR_ANALYSIS_TIMEOUT_S", "300")),
         )
 
     def decision_plan(self, session_id: str, language: str | None = None) -> dict[str, Any]:
@@ -262,8 +263,8 @@ class DiagnosticApiClient:
     def delete_symptom(self, session_id: str, item_id: str):
         return self._request('DELETE', f'/api/v1/sessions/{session_id}/symptoms/{item_id}')
 
-    def update_dtc(self, session_id: str, item_id: str, code: str):
-        return self._request('PUT', f'/api/v1/sessions/{session_id}/dtcs/{item_id}', json={'code': code.strip().upper(), 'source': 'USER_REPORTED'})
+    def update_dtc(self, session_id: str, item_id: str, code: str, description: str | None = None, source: str = 'USER_REPORTED'):
+        return self._request('PUT', f'/api/v1/sessions/{session_id}/dtcs/{item_id}', json={'code': code.strip().upper(), 'description': description, 'source': source})
 
     def delete_dtc(self, session_id: str, item_id: str):
         return self._request('DELETE', f'/api/v1/sessions/{session_id}/dtcs/{item_id}')

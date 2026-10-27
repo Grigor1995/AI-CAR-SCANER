@@ -125,7 +125,7 @@ def test_public_api_methods_route_correctly(client, monkeypatch, invoke, method,
     args, kwargs = request.call_args
     assert args[0] == method
     assert args[1] == "http://backend.test" + path
-    assert kwargs["timeout"] == (300.0 if path.endswith("/ai-analyze-live") else 4)
+    assert kwargs["timeout"] == (300.0 if path.endswith("/ai-analyze-live") or path.startswith("/api/v1/analysis/") else 4)
     if path.endswith("/records"):
         assert kwargs["params"] == {"limit": 1000}
     if path.endswith("/ai-analyze-live"):
@@ -167,3 +167,21 @@ def test_shutdown_releases_blocked_http_wait_and_prevents_new_requests(monkeypat
     finally:
         release.set()
         thread.join(2)
+
+
+def test_analysis_timeout_can_be_configured_without_slowing_health_checks(client, monkeypatch):
+    monkeypatch.setenv('AI_CAR_ANALYSIS_TIMEOUT_S', '120')
+    request = Mock(return_value=FakeResponse())
+    monkeypatch.setattr(client.session, 'request', request)
+    client.analyze('case', language='hy')
+    assert request.call_args.kwargs['timeout'] == 120
+    assert request.call_args.kwargs['params'] == {'language': 'hy'}
+    client.health()
+    assert request.call_args.kwargs['timeout'] == 4
+
+
+def test_dtc_edit_preserves_measured_source_and_description(client, monkeypatch):
+    request = Mock(return_value=FakeResponse())
+    monkeypatch.setattr(client.session, 'request', request)
+    client.update_dtc('case', 'dtc', 'p0302', description='Cylinder 2 misfire', source='ECU_REPORTED')
+    assert request.call_args.kwargs['json'] == {'code': 'P0302', 'description': 'Cylinder 2 misfire', 'source': 'ECU_REPORTED'}

@@ -4,10 +4,9 @@ Examples from the repository root:
   python build.py --check
   python build.py --targets desktop android
   python build.py --skip-unavailable
-  python build.py --ci --with-tests
 
-Full three-platform builds require Windows + Android SDK + macOS/Xcode runners.
-The companion GitHub Actions workflow provides those runners in one invocation.
+Windows EXE packaging requires Windows; iOS requires macOS/Xcode.
+Run the same local entrypoint on each required operating system.
 """
 from __future__ import annotations
 
@@ -64,7 +63,7 @@ def preflight(target: str) -> list[str]:
     problems = []
     if target == "desktop":
         if platform.system() != "Windows":
-            problems.append("Desktop .exe packaging requires Windows; use --ci for the Windows runner.")
+            problems.append("Desktop .exe packaging requires Windows; run this builder on Windows.")
         if sys.version_info < (3, 12):
             problems.append("Desktop requires Python 3.12+ (Windows Python 3.14 x64 recommended).")
         if sys.maxsize <= 2**32:
@@ -93,7 +92,7 @@ def preflight(target: str) -> list[str]:
             problems.append("Install bash to run the bundled Gradle wrapper.")
     elif target == "ios":
         if platform.system() != "Darwin":
-            return ["iOS requires macOS with Xcode; use --ci to build on the macOS runner."]
+            return ["iOS requires macOS with Xcode; run this builder on a Mac."]
         for tool in ("xcodebuild", "xcrun", "xcodegen"):
             if executable(tool) is None:
                 problems.append(f"Install {tool}; XcodeGen can be installed with: brew install xcodegen")
@@ -348,8 +347,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--with-tests", action="store_true", help="Run Desktop regression, Android JVM/lint, and iOS XCTest before reporting success")
     parser.add_argument("--no-install", action="store_true", help="Use current Python's existing Desktop dependencies instead of creating/updating an isolated environment")
     parser.add_argument("--android-api-url", help="Backend URL embedded in the Android app, e.g. http://10.0.2.2:8001/")
-    parser.add_argument("--ci", action="store_true", help="Submit the three-OS GitHub Actions workflow using an authenticated gh CLI")
-    parser.add_argument("--ref", default="main", help="Git ref for --ci (default: main)")
     args = parser.parse_args(argv)
     args.targets = list(dict.fromkeys(args.targets))
     if args.android_api_url:
@@ -362,17 +359,6 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--android-api-url has an invalid host or port")
         if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password or url.query or url.fragment:
             parser.error("--android-api-url requires an HTTP(S) backend URL without credentials/query/fragment")
-    if args.ci:
-        if args.check or args.no_install or args.skip_unavailable or args.android_api_url or args.targets != list(TARGETS):
-            parser.error("--ci builds all three targets; local-only selection/check/install flags do not apply")
-        if executable("gh") is None:
-            print("Install/authenticate GitHub CLI, or open Actions > Build all native apps > Run workflow.", file=sys.stderr)
-            return 2
-        result = subprocess.run(["gh", "workflow", "run", "build-all.yml", "--ref", args.ref, "-f", f"run_tests={str(args.with_tests).lower()}"], cwd=REPO)
-        if result.returncode:
-            return result.returncode
-        print("Workflow submitted. Builds are not complete yet; see Actions > Build all native apps for status and downloadable artifacts.")
-        return 0
     try:
         return execute(args)
     except KeyboardInterrupt:

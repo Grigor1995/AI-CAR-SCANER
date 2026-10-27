@@ -16,8 +16,9 @@ The repository uses native client implementations. The browser/PWA client and it
 
 One entrypoint: `python build.py`. Run `python build.py --check` to verify native
 toolchains. On Windows, build locally with `python build.py --targets desktop android`.
-For Desktop + Android + iOS together, run the **Build all native apps** Actions
-workflow, or `python build.py --ci --with-tests` with authenticated GitHub CLI.
+For Android + iOS, run `python build.py --targets android ios --with-tests` on
+macOS with the required toolchains. Desktop EXE packaging requires Windows;
+iOS requires macOS/Xcode. Builds run locally; no CI/CD dispatch is configured.
 [Full instructions, prerequisites and artifacts](finalbuild/docs/building/BUILD_ALL.md).
 
 iOS output is an unsigned Simulator app; iPhone/App Store distribution requires
@@ -40,6 +41,15 @@ The three native clients share the backend vehicle catalog and DiagnosticSession
 
 - [Architecture documentation](finalbuild/docs/README.md)
 - [Platform feature contract](finalbuild/PLATFORM_FEATURE_PARITY.md)
-- [CI and quality report](report.md)
+- [Historical quality report](report.md)
 
 The results in report.md are tied to the specific commits and CI runs named in that report; they must not be interpreted as validation of later commits unless a matching run is linked.
+
+## Safe local cleanup
+
+`python clean.py` previews disposable Python/test/lint caches; run
+`python clean.py --apply` to remove that list. Tracked files, native build outputs,
+test reports, models, environments and SDKs are preserved.
+
+[Current native functionality](finalbuild/docs/reviews/native-parity-implementation-2026-10-27.md)
+· [Latest Desktop Save/analyze fix](finalbuild/docs/reviews/desktop-save-analyze-fix-2026-10-27.md).

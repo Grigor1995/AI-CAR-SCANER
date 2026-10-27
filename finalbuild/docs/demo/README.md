@@ -14,7 +14,7 @@ It edits the same PDF file without rasterizing the original Desktop pages.
 From the finalbuild repository directory:
 
 ```bash
-python -m pip install "pypdf>=5,<7" "reportlab>=4,<5" "Pillow>=10,<13"
+python -m pip install -r docs/demo/requirements.txt
 python docs/demo/build_mobile_ui_demo_pdf.py
 ```
 
@@ -22,9 +22,8 @@ The output is docs/demo/AI-Car-Scanner-UI-Demo-2026-10-26.pdf.
 Expected result: 5 Desktop pages + 5 Android screenshot pages = 10.
 Commit the regenerated PDF on the review branch after verifying it.
 
-GitHub Actions workflow refresh-mobile-demo-pdf.yml can regenerate and
-commit the PDF automatically when runners and repository write permissions
-are available.
+Regenerate and verify the PDF locally with the command above. No automated
+workflow or automatic PDF commit is configured.
 
 # AI CAR SCANNER — demo and QA presentation
 

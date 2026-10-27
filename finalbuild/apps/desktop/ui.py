@@ -9,7 +9,7 @@ from functools import lru_cache
 import time
 from typing import Any, Callable
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QSize, QTimer, QSettings, QCoreApplication, QEvent, QMimeData
-from PySide6.QtGui import QDrag, QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap, QRadialGradient, QLinearGradient
+from PySide6.QtGui import QDrag, QAction, QColor, QPainter, QPen, QBrush, QIcon, QImage, QFont, QPixmap, QLinearGradient
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGridLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,

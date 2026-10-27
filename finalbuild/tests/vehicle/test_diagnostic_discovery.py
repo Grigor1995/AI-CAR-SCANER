@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 from vehicle.diagnostic_discovery import collect, identify, responding_modules, vin_from_response
 

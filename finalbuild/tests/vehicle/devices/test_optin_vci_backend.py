@@ -1,5 +1,4 @@
 """Device backend must not activate physical LAN/USB by default."""
-import os
 
 from device.manager import VCIConnectionManager, _build_vci_manager
 

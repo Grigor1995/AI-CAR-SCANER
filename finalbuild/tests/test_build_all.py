@@ -112,7 +112,7 @@ def test_ios_preflight_is_actionable_on_windows(monkeypatch):
     monkeypatch.setattr(build.platform, "system", lambda: "Windows")
     reasons = build.preflight("ios")
     assert "macOS" in reasons[0]
-    assert "--ci" in reasons[0]
+    assert "run this builder on a Mac" in reasons[0]
 
 
 def test_android_sdk_reads_local_properties_without_changing_shell_home(monkeypatch, tmp_path):
@@ -136,13 +136,13 @@ def test_ios_test_destination_uses_available_iphone_not_hardcoded_model(monkeypa
     assert build.simulator_destination() == "platform=iOS Simulator,id=available-iphone"
 
 
-def test_ci_submission_does_not_report_a_completed_build(monkeypatch, capsys):
-    monkeypatch.setattr(build, "executable", lambda name: "/tools/gh")
-    command = Mock(return_value=SimpleNamespace(returncode=0))
+def test_removed_ci_flag_never_dispatches_remote_builds(monkeypatch):
+    command = Mock()
     monkeypatch.setattr(build.subprocess, "run", command)
-    assert build.main(["--ci", "--with-tests"]) == 0
-    assert command.call_args.args[0] == ["gh", "workflow", "run", "build-all.yml", "--ref", "main", "-f", "run_tests=true"]
-    assert "Builds are not complete yet" in capsys.readouterr().out
+    with pytest.raises(SystemExit) as error:
+        build.main(["--ci", "--with-tests"])
+    assert error.value.code == 2
+    command.assert_not_called()
 
 
 def test_ios_package_is_a_simulator_app_not_a_signed_ipa(monkeypatch, tmp_path):

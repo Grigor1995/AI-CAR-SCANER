@@ -15,14 +15,6 @@ final class DiagnosticViewModel: ObservableObject {
     @Published var obdValues: [String: Double?] = [:]
     private let obdWifi = NativeObdWifiBridge()
 
-    func readObdWifi(host: String, port: Int) async {
-        do { obdValues = try await obdWifi.poll(host: host, port: port, api: api, sessionID: session?.session_id).values }
-        catch {
-            obdValues = [:]
-            self.error = (error as? NativeObdWifiBridge.BridgeError)?.message(language:settings.language) ?? error.localizedDescription
-        }
-    }
-
     func disconnectObdWifi() async {
         let previous=obdTask;previous?.cancel();obdTask=nil
         obdRevision=UUID();obdRunning=false

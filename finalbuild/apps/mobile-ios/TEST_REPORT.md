@@ -1,5 +1,13 @@
 # Native iOS Test Report
 
+## Current validation boundary — 2026-10-27
+
+The 19 current Swift source/test files pass syntax parsing. Current Xcode builds,
+XCTest execution and Simulator acceptance remain unverified in this Linux
+environment. Run these locally on macOS; automated workflows have been removed.
+The entries below are historical evidence for their stated dates/commits.
+
+
 ## Privacy follow-up — 2026-10-22
 
 The current source declares **29 XCTest cases**. The additional report-export
@@ -21,9 +29,9 @@ for retry, duplicate submissions are disabled while loading, and successful
 submissions return to the updated analysis. Selected-language result-label
 assertions have also been added; these require the next Xcode test run.
 
-## Current status
+## Historical CI baseline
 
-The native iOS CI suite has a previously verified baseline of **2 tests passed, 0 failures** (run #14). This branch expands the suite with URLProtocol-backed API contract tests; its final status must be taken from the GitHub Actions run triggered by this commit.
+The native iOS CI suite has a previously verified baseline of **2 tests passed, 0 failures** (run #14). That historical run does not validate the current URLProtocol-backed API contracts or UI. Current validation requires a local Xcode test run.
 
 ## Test environment
 

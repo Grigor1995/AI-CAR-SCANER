@@ -17,7 +17,6 @@ from apps.desktop.stage_windows_icons import stage_icons
 from apps.desktop.ui import (
     DashboardPage,
     DevicesPage,
-    DiagnosticPage,
     SymptomsPage,
     LiveDataPage,
     MainWindow,

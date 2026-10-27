@@ -16,3 +16,6 @@ __pycache__/
 .coverage.*
 htmlcov/
 .venv/
+
+# Local static-analysis caches
+.ruff_cache/

@@ -44,4 +44,4 @@ Current iOS code supports BLE adapter discovery only; it does not yet connect to
 
 ## Test report
 
-The latest validated simulator run is documented in [TEST_REPORT.md](TEST_REPORT.md). The native iOS workflow runs on macOS with XcodeGen + Xcode and executes XCTest on an iOS Simulator. API tests use URLProtocol mocks and do not require a live backend.
+Build and run XCTest locally on macOS with XcodeGen + Xcode. API tests use URLProtocol mocks and do not require a live backend. [TEST_REPORT.md](TEST_REPORT.md) distinguishes source checks from historical Simulator results; those results do not validate the current UI. No CI/CD workflow is configured.

@@ -36,7 +36,7 @@ The platform is **evidence-driven first, AI-assisted second**. Deterministic dia
 - RAG foundation with metadata filtering and reranking seams.
 - OBD/VCI abstraction, simulator, telemetry/acquisition services, and vehicle/network discovery foundations.
 - Native PySide6 Desktop, Kotlin/Jetpack Compose Android, and SwiftUI iOS clients.
-- Unit/API/integration/regression tests and CI workflows.
+- Locally executed unit/API/integration/regression tests.
 
 ## Important implementation note
 

@@ -1,39 +1,20 @@
 # Build Desktop, Android and iOS
 
-One repository entrypoint: `build.py` at the **repository root**. The same runner
-is used locally and by the **Build all native apps** GitHub Actions workflow.
-It can be invoked by absolute path from any working directory.
+One repository entrypoint: `build.py` at the **repository root**. It uses local
+toolchains and can be invoked by absolute path from any working directory.
+CI/CD workflow configuration and the remote `--ci`/`--ref` dispatch options have
+been removed. The builder does not submit jobs or publish artifacts remotely.
 
-## All three platforms in one invocation
+## Platform requirements
 
-Windows cannot run Xcode. The complete build uses three native runners:
-
-| Target | Runner | Output |
+| Target | Local host/toolchain | Output |
 |---|---|---|
-| Desktop | Windows 2022, Python 3.14 x64 | ZIP containing `AICarScanner.exe` + `backend_service.exe` |
-| Android | Ubuntu, JDK 17, Android SDK 36 | Installable debug APK |
-| iOS | macOS 15, Xcode, XcodeGen | Unsigned iOS **Simulator** `.app` ZIP |
+| Desktop | Windows, Python 3.12+ | ZIP with `AICarScanner.exe` and `backend_service.exe` |
+| Android | Windows/Linux/macOS, JDK 17, Android SDK 36 | Debug APK |
+| iOS | macOS, Xcode and XcodeGen | Unsigned Simulator `.app` ZIP |
 
-Open [Build all native apps](https://github.com/Grigor1995/AI-CAR-SCANER/actions/workflows/build-all.yml),
-select **Run workflow**, choose `main`, and leave `run_tests` enabled. After all
-three jobs pass, download **ai-car-scanner-complete-build** from the run's
-Artifacts section. Each platform also uploads its own package, log and summary.
-If one job fails, its logs remain available and the complete bundle is not
-published. A green workflow means all requested platform jobs succeeded.
-
-Alternatively, with [GitHub CLI](https://cli.github.com/) installed and logged in
-with permission to run Actions for this repository:
-
-```bash
-# From the repository root:
-git pull --ff-only origin main
-gh auth login                   # one-time, if not already authenticated
-python build.py --ci --with-tests
-```
-
-`--ci` **submits** the workflow; it does not report that remote builds have
-already completed. Follow status in Actions. Use `--ref branch-name` to build an
-existing pushed branch instead of `main`. The workflow must exist at that ref.
+A single Windows machine cannot compile iOS. Run the same entrypoint on Windows
+for Desktop + Android and on macOS for iOS. Outputs remain in local `artifacts/`.
 
 ## Local build
 
@@ -70,7 +51,7 @@ build successfully. If no target can build, the command fails regardless.
 
 Running `python build.py` without options requests all three targets. Missing
 native toolchains are not silently downloaded or marked successful. Windows
-Desktop + Android can be built in one local run; all three require the workflow.
+Desktop + Android can be built in one Windows run; iOS needs a separate macOS run.
 
 ### Already inside finalbuild/apps/mobile-android?
 
@@ -93,7 +74,7 @@ This avoids requirements-file and working-directory problems.
 
 ### Desktop
 
-- Windows x64 and Python 3.12+; Python 3.14 x64 is recommended and used by CI.
+- Windows x64 and Python 3.12+; Python 3.14 x64 is supported.
 - The builder creates/reuses `.build-tools/desktop-venv/` and installs runtime
   dependencies there. With `--with-tests`, backend/Desktop dev dependencies are
   also installed. It does not alter the user's activated environment.
@@ -177,12 +158,12 @@ It does not attach OBD hardware or turn simulator builds into device validation.
 The runner's own tests cover independent failure propagation, missing platforms,
 strict vs partial status, output hashes, no-side-effect preflight, missing
 artifacts, SDK paths, supported Java, simulator selection, package contents and
-honest CI dispatch status.
+rejection of removed remote-dispatch options.
 
 Development validation for this change includes an actual Android APK build
 through the new root command with JVM tests/lint. Windows EXE packaging and iOS
 Xcode execution require their native runners; this Linux development environment
-cannot certify those builds before the workflow is run.
+cannot certify Windows packaging or iOS execution.
 
 ### Recorded validation for this implementation
 
@@ -192,11 +173,9 @@ cannot certify those builds before the workflow is run.
   completed successfully and produced a **53,453,588-byte debug APK**. Its
   SHA-256 was recomputed and matched `build-summary.json`.
 - Android JVM tests: **89 passed**; `lintDebug` passed.
-- Workflow YAML and the Windows/Android/macOS + aggregate-bundle matrix parsed
-  successfully. Critical Python static checks passed.
-- The workflow was not dispatched from this cloud because an authenticated
-  GitHub Actions session was unavailable. Windows packaging and iOS native
-  execution must be confirmed by the first corresponding workflow run.
+- These recorded counts describe the original builder implementation, not the
+  current application. Windows packaging and iOS execution require local
+  validation on their respective operating systems.
 
 ### Build progress and interruption
 

@@ -32,8 +32,9 @@ API: http://127.0.0.1:8001/docs
 ## Build all native applications
 
 Use the repository-root runner: `python ../build.py --check` from this folder.
-For a complete Desktop/Android/iOS build, run **Build all native apps** in GitHub
-Actions or `python ../build.py --ci --with-tests` with authenticated GitHub CLI.
+Run `python ../build.py --targets desktop android --with-tests` on Windows,
+or `python ../build.py --targets android ios --with-tests` on macOS.
+The builder uses local toolchains; no CI/CD dispatch is configured.
 [Local builds, toolchain setup and artifacts](docs/building/BUILD_ALL.md).
 
 ## Run tests

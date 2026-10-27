@@ -2376,7 +2376,7 @@ def test_launcher_drag_reorders_but_does_not_activate_the_dragged_tile(window_fa
 
 
 def test_shared_vehicle_dialog_uses_backend_profiles_without_deleting_sessions(window_factory, monkeypatch, fake_api):
-    from apps.desktop import client_workspace, ui
+    from apps.desktop import client_workspace
     from apps.desktop.models import Vehicle
     from PySide6.QtCore import QTimer
     from PySide6.QtWidgets import QDialog, QListWidget, QPushButton

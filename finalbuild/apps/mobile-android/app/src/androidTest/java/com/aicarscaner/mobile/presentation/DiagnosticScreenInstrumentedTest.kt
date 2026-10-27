@@ -28,6 +28,8 @@ import com.aicarscaner.mobile.data.api.SymptomRequest
 import com.aicarscaner.mobile.data.api.TestResultDto
 import com.aicarscaner.mobile.data.api.TestResultRequest
 import com.aicarscaner.mobile.data.api.VehicleCatalogEntryDto
+import com.aicarscaner.mobile.data.api.VehicleProfileDto
+import com.aicarscaner.mobile.data.api.VehicleProfileRequest
 import com.aicarscaner.mobile.data.api.VehicleDto
 import com.aicarscaner.mobile.data.repository.DiagnosticRepository
 import org.junit.Assert.assertTrue
@@ -530,6 +532,30 @@ class DiagnosticScreenInstrumentedTest {
 }
 
 private class FakeDiagnosticApi : DiagnosticApi {
+    override suspend fun decisionPlan(id:String,language:String):com.google.gson.JsonObject = error("Unused fixture action")
+    override suspend fun aiProvider():com.google.gson.JsonObject = error("Unused fixture action")
+
+    override suspend fun connectServerDevice(device:String,body:Map<String,Any>):com.google.gson.JsonObject = error("Unused fixture action")
+    override suspend fun disconnectServerDevice(device:String):com.google.gson.JsonObject = error("Unused fixture action")
+    override suspend fun discoverServerDevice(device:String,body:Map<String,Any>):com.google.gson.JsonObject = error("Unused fixture action")
+
+    override suspend fun devices(): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun scanServerDevices(transport: String, body: Map<String, Double>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun probeServerWifi(body: Map<String, Any>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun startAcquisition(id: String, body: Map<String, Any>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun stopAcquisition(id: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun simulatorParameters(id: String, body: Map<String, Double>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun telemetrySummary(id: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun analyzeTelemetry(id: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun analyzeLive(id: String, language: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun networkMap(id: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun activeProbe(id: String, body: Map<String, String>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun ingestReference(body: Map<String, Any>): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun profiles(): List<VehicleProfileDto> = error("Unused backend action in this fixture")
+    override suspend fun saveProfile(body: VehicleProfileRequest): VehicleProfileDto = error("Unused backend action in this fixture")
+    override suspend fun updateProfile(id: String, body: VehicleProfileRequest): VehicleProfileDto = error("Unused backend action in this fixture")
+    override suspend fun deleteProfile(id: String): com.google.gson.JsonObject = error("Unused backend action in this fixture")
+    override suspend fun report(id: String, format: String, language: String): okhttp3.ResponseBody = error("Unused backend action in this fixture")
     override suspend fun acquisitionRecords(sessionId: String, limit: Int) = com.aicarscaner.mobile.data.api.BackendLiveRecordsDto()
     override suspend fun vehicleRegistryMakes(): List<String> = listOf("Mercedes-Benz")
 

@@ -175,6 +175,51 @@ data class BackendLiveRecordDto(
 data class BackendLiveRecordsDto(val records: List<BackendLiveRecordDto> = emptyList())
 
 interface DiagnosticApi {
+    @GET("api/v1/decision/sessions/{id}/plan")
+    suspend fun decisionPlan(@Path("id") id:String,@Query("language") language:String):com.google.gson.JsonObject
+    @GET("api/v1/ai/provider")
+    suspend fun aiProvider():com.google.gson.JsonObject
+    @GET("api/v1/devices")
+    suspend fun devices(): com.google.gson.JsonObject
+    @POST("api/v1/devices/scan/{transport}")
+    suspend fun scanServerDevices(@Path("transport") transport: String, @Body body: Map<String, Double> = mapOf("timeout" to 3.0)): com.google.gson.JsonObject
+    @POST("api/v1/devices/wifi/probe")
+    suspend fun probeServerWifi(@Body body: Map<String, @JvmSuppressWildcards Any>): com.google.gson.JsonObject
+    @POST("api/v1/devices/{device}/connect")
+    suspend fun connectServerDevice(@Path("device") device:String, @Body body:Map<String, @JvmSuppressWildcards Any>):com.google.gson.JsonObject
+    @POST("api/v1/devices/{device}/disconnect")
+    suspend fun disconnectServerDevice(@Path("device") device:String):com.google.gson.JsonObject
+    @POST("api/v1/devices/{device}/diagnostic-discovery")
+    suspend fun discoverServerDevice(@Path("device") device:String, @Body body:Map<String, @JvmSuppressWildcards Any>):com.google.gson.JsonObject
+    @POST("api/v1/acquisition/sessions/{id}/start")
+    suspend fun startAcquisition(@Path("id") id: String, @Body body: Map<String, @JvmSuppressWildcards Any>): com.google.gson.JsonObject
+    @POST("api/v1/acquisition/sessions/{id}/stop")
+    suspend fun stopAcquisition(@Path("id") id: String): com.google.gson.JsonObject
+    @PUT("api/v1/acquisition/sessions/{id}/simulator/parameters")
+    suspend fun simulatorParameters(@Path("id") id: String, @Body body: Map<String, Double>): com.google.gson.JsonObject
+    @GET("api/v1/telemetry/sessions/{id}/summary")
+    suspend fun telemetrySummary(@Path("id") id: String): com.google.gson.JsonObject
+    @POST("api/v1/telemetry/sessions/{id}/analyze")
+    suspend fun analyzeTelemetry(@Path("id") id: String): com.google.gson.JsonObject
+    @POST("api/v1/telemetry/sessions/{id}/ai-analyze-live")
+    suspend fun analyzeLive(@Path("id") id: String, @Query("language") language: String): com.google.gson.JsonObject
+    @GET("api/v1/network-discovery/sessions/{id}/map")
+    suspend fun networkMap(@Path("id") id: String): com.google.gson.JsonObject
+    @POST("api/v1/network-discovery/sessions/{id}/active-probe")
+    suspend fun activeProbe(@Path("id") id: String, @Body body: Map<String, String> = emptyMap()): com.google.gson.JsonObject
+    @POST("api/v1/knowledge/ingest/text")
+    suspend fun ingestReference(@Body body: Map<String, @JvmSuppressWildcards Any>): com.google.gson.JsonObject
+    @GET("api/v1/vehicle-profiles")
+    suspend fun profiles(): List<VehicleProfileDto>
+    @POST("api/v1/vehicle-profiles")
+    suspend fun saveProfile(@Body body: VehicleProfileRequest): VehicleProfileDto
+    @PUT("api/v1/vehicle-profiles/{id}")
+    suspend fun updateProfile(@Path("id") id: String, @Body body: VehicleProfileRequest): VehicleProfileDto
+    @DELETE("api/v1/vehicle-profiles/{id}")
+    suspend fun deleteProfile(@Path("id") id: String): com.google.gson.JsonObject
+    @GET("api/v1/sessions/{id}/report")
+    suspend fun report(@Path("id") id: String, @Query("format") format: String, @Query("language") language: String): okhttp3.ResponseBody
+
     @GET("api/v1/acquisition/sessions/{sessionId}/records")
     suspend fun acquisitionRecords(
         @Path("sessionId") sessionId: String,
@@ -295,3 +340,6 @@ data class DiscoveredModuleDto(val address:String?, val name:String, val observe
 data class DetectedProtocolDto(val id:String, val standard:String, val automatic:Boolean = false)
 data class DiscoveryResultDto(val vin:String?, val vehicle:DiscoveredVehicleDto?, val identification_status:String,
     val modules:List<DiscoveredModuleDto>, val simulated:Boolean, val protocol:DetectedProtocolDto? = null)
+
+data class VehicleProfileRequest(val name: String, val vehicle: VehicleDto)
+data class VehicleProfileDto(val id: String, val name: String, val vehicle: VehicleDto)

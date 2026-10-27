@@ -1,5 +1,8 @@
 # Desktop / Android / iOS functional parity audit — 27 October 2026
 
+Follow-up implementation: [native parity implementation](native-parity-implementation-2026-10-27.md).
+This audit describes the pre-change baseline.
+
 Reviewed source: `6b6c2bf` (also origin/main when inspected). This audit checks
 implemented actions and data paths, not just matching page names. No application
 behavior was changed. No CI/CD was used.

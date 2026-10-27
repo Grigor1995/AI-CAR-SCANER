@@ -14,6 +14,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        ApiClient.loadURL(applicationContext)
         val repository = DiagnosticRepository(ApiClient.diagnosticApi, applicationContext)
 
         setContent {

@@ -613,6 +613,9 @@ class VehiclesPage(QWidget):
     def __init__(self, app: "MainWindow") -> None:
         super().__init__(); self.app=app
         lay=QVBoxLayout(self); bar=QHBoxLayout(); add=QPushButton("+ Add vehicle"); add.clicked.connect(app.add_vehicle); bar.addWidget(add); self.delete_btn=QPushButton("Delete selected"); self.delete_btn.clicked.connect(app.delete_selected_vehicle); self.delete_btn.setEnabled(False); bar.addWidget(self.delete_btn); self.edit_btn=QPushButton("Edit vehicle"); self.edit_btn.clicked.connect(lambda: app.edit_selected_vehicle()); self.edit_btn.setEnabled(False); bar.addWidget(self.edit_btn); bar.addStretch(); lay.addLayout(bar)
+        from .client_workspace import shared_vehicles, tr
+        shared = QPushButton(tr(app,"Shared vehicles","Общие автомобили","Ընդհանուր մեքենաներ"))
+        shared.clicked.connect(lambda: shared_vehicles(app)); bar.addWidget(shared)
         self.model_artwork = NeonVehiclePreview()
         self.model_artwork.setMaximumHeight(185)
         lay.addWidget(self.model_artwork)
@@ -673,6 +676,9 @@ class SymptomsPage(QWidget):
         form=QGridLayout(); self.symptom=QPlainTextEdit(); self.symptom.setPlaceholderText("Describe the symptom naturally… Example: engine shakes below 2000 RPM during acceleration on LPG; petrol is normal."); self.symptom.setFixedHeight(120)
         self.dtc=QLineEdit(); self.dtc.setPlaceholderText("P0302"); submit=QPushButton("Add evidence + Analyze"); submit.clicked.connect(app.analyze_input)
         form.addWidget(QLabel("Symptoms / observations"),0,0); form.addWidget(self.symptom,1,0,1,2); form.addWidget(QLabel("DTC"),2,0); form.addWidget(self.dtc,2,1); form.addWidget(submit,3,0,1,2); lay.addLayout(form)
+        from .client_workspace import edit_inputs, tr
+        editor=QPushButton(tr(app,"Edit recorded symptoms / DTC","Изменить симптомы / DTC","Խմբագրել ախտանիշները / DTC"))
+        editor.clicked.connect(lambda: edit_inputs(app)); lay.addWidget(editor)
         out=QTabWidget(); self.summary=QPlainTextEdit(); self.summary.setReadOnly(True); out.addTab(self.summary,"Analysis"); self.evidence=QPlainTextEdit(); self.evidence.setReadOnly(True); self.hypotheses=QPlainTextEdit(); self.hypotheses.setReadOnly(True); self.questions=QPlainTextEdit(); self.questions.setReadOnly(True); out.addTab(self.evidence,"Evidence"); out.addTab(self.hypotheses,"Hypotheses"); out.addTab(self.questions,"Missing info"); lay.addWidget(out)
     def refresh(self):
         if not self.app.session: self.lbl.setText("No active session"); return
@@ -1436,6 +1442,9 @@ class MainWindow(QMainWindow):
         self.resize(1440, 900)
         self._apply_theme()
         self.api = DiagnosticApiClient()
+        saved_backend = self.settings_store.value("backend_url", "", type=str)
+        if saved_backend and not os.environ.get("AI_CAR_BACKEND_URL"):
+            self.api.base_url = saved_backend.rstrip('/')
         self.store = VehicleStore()
         self.vehicles = self.store.load()
         self._vehicle_catalog = []
@@ -1508,6 +1517,10 @@ class MainWindow(QMainWindow):
         display_mode.addItem(self.tr_text("Line chart"), "chart")
         display_mode.setCurrentIndex(max(0, display_mode.findData(self.settings_store.value("telemetry_display_mode", "analog"))))
         form.addRow(self.tr_text("Widget display"), display_mode)
+        backend_url = QLineEdit(self.api.base_url, dialog)
+        form.addRow("API URL", backend_url)
+        from .client_workspace import tr
+        form.addRow(QLabel(tr(self,"Backend URL changes apply after restart.","Новый адрес сервера применяется после перезапуска.","Backend-ի հասցեի փոփոխությունը կկիրառվի վերագործարկումից հետո։")))
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=dialog)
         buttons.button(QDialogButtonBox.Save).setText(self.tr_text("Save"))
         buttons.button(QDialogButtonBox.Cancel).setText(self.tr_text("Cancel"))
@@ -1517,6 +1530,13 @@ class MainWindow(QMainWindow):
         if dialog.exec() != QDialog.Accepted:
             dialog.deleteLater()
             return
+        from urllib.parse import urlsplit
+        address=backend_url.text().strip().rstrip('/')
+        parsed=urlsplit(address)
+        if parsed.scheme not in {'http','https'} or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            self.show_error(tr(self,"Invalid backend URL","Неверный адрес сервера","Backend-ի հասցեն անվավեր է"));dialog.deleteLater();return
+        if address != self.api.base_url:
+            self.settings_store.setValue("backend_url", address)
         self.settings_store.setValue("telemetry_display_mode", display_mode.currentData())
         self.settings_store.setValue("unit_system", units.currentData())
         self.refresh_pages()
@@ -1986,7 +2006,7 @@ class MainWindow(QMainWindow):
         text=self.pages[11].symptom.toPlainText().strip(); dtc=self.pages[11].dtc.text().strip()
         if not text and not dtc: self.show_error("Enter a symptom, observation or DTC."); return
         def work():
-            if text: self.api.ingest_evidence(self.session.session_id,text)
+            if text: self.api.add_symptom(self.session.session_id,text)
             if dtc: self.api.add_dtc(self.session.session_id,dtc)
             return self.api.analyze(self.session.session_id, language=self.language)
         self.run_worker(work,self._analysis_done)

@@ -2,6 +2,11 @@ package com.aicarscaner.mobile.settings
 
 /** Presentation strings shared by the reference dashboard and its native screens. */
 internal val dashboardTranslations = mapOf(
+    "Resize widget" to Pair("Փոխել ցուցիչի չափը", "Изменить размер виджета"),
+    "MAF" to Pair("Օդի զանգվածային հոսք", "Массовый расход воздуха"),
+    "STFT" to Pair("Վառելիքի կարճաժամկետ շտկում", "Краткосрочная коррекция топлива"),
+    "LTFT" to Pair("Վառելիքի երկարաժամկետ շտկում", "Долгосрочная коррекция топлива"),
+
     "Hold and drag to reorder" to Pair("Երկար սեղմեք և քաշեք՝ հերթականությունը փոխելու համար", "Удерживайте и перетаскивайте, чтобы изменить порядок"),
     "Move earlier" to Pair("Տեղափոխել առաջ", "Переместить раньше"),
     "Move later" to Pair("Տեղափոխել հետ", "Переместить позже"),

@@ -268,6 +268,7 @@ def fake_api():
         {"make": "Kia", "model": "Forte", "chassis": "BD",
          "year": 2017, "engine": "2.0", "ecu": "SIM2K"},
     ]
+    api.base_url = "http://127.0.0.1:8001"
     return api
 
 
@@ -581,7 +582,7 @@ def test_analyze_input_worker_sends_symptom_and_dtc(window_factory, monkeypatch,
     fake_api.add_dtc.return_value = {}
     fake_api.analyze.return_value = {"session_id": "session-1", "state": "ANALYZED"}
     result = worker()
-    fake_api.ingest_evidence.assert_called_once_with("session-1", "Engine shakes on LPG")
+    fake_api.add_symptom.assert_called_once_with("session-1", "Engine shakes on LPG")
     fake_api.add_dtc.assert_called_once_with("session-1", "P0302")
     fake_api.analyze.assert_called_once_with("session-1", language="en")
     assert result["state"] == "ANALYZED"
@@ -2372,3 +2373,114 @@ def test_launcher_drag_reorders_but_does_not_activate_the_dragged_tile(window_fa
     assert "drop" in calls
     target.dragLeaveEvent(SimpleNamespace(accept=lambda: None))
     assert not target.isDown()
+
+
+def test_shared_vehicle_dialog_uses_backend_profiles_without_deleting_sessions(window_factory, monkeypatch, fake_api):
+    from apps.desktop import client_workspace, ui
+    from apps.desktop.models import Vehicle
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog, QListWidget, QPushButton
+    from unittest.mock import Mock
+    window = window_factory()
+    window.language = 'en'
+    vehicle = Vehicle(make='Ford', model='Mondeo', year=2011, engine='2.0 TDCi')
+    window.active_vehicle = vehicle
+    window.vehicles = [vehicle]
+    profile = {'id': 'shared-car', 'name': '', 'vehicle': vehicle.to_json()}
+    fake_api.vehicle_profiles.return_value = [profile]
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done: done(fn()))
+    monkeypatch.setattr(window, 'new_session', Mock())
+    def use_dialog():
+        dialog = next(d for d in window.findChildren(QDialog) if d.windowTitle() == 'Shared vehicles')
+        rows = dialog.findChild(QListWidget)
+        assert rows.count() == 1
+        def click(text):
+            next(b for b in dialog.findChildren(QPushButton) if b.text() == text).click()
+        click('Save current')
+        fake_api.save_vehicle_profile.assert_called_once_with(vehicle.to_json())
+        rows.setCurrentRow(0)
+        click('Use')
+    QTimer.singleShot(0, use_dialog)
+    client_workspace.shared_vehicles(window)
+    window.new_session.assert_called_once()
+    assert window.active_vehicle.make == 'Ford'
+
+
+def test_recorded_input_editor_updates_and_deletes_through_shared_api(window_factory, monkeypatch, fake_api):
+    from apps.desktop import client_workspace
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog, QListWidget, QPushButton, QPlainTextEdit, QMessageBox
+    window = window_factory()
+    window.session = Session("workspace-session", "READY", window.active_vehicle)
+    window.language = 'en'
+    window.session_json['symptoms'] = [{'id': 'symptom', 'raw_text': 'Old observation'}]
+    window.session_json['dtcs'] = [{'id': 'dtc', 'code': 'P0302'}]
+    fake_api.analyze.return_value = dict(window.session_json)
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done: done(fn()))
+    monkeypatch.setattr(QMessageBox, 'question', lambda *a: QMessageBox.Yes)
+    def edit_dialog():
+        dialog = next(d for d in window.findChildren(QDialog) if d.windowTitle() == 'Symptoms / DTC editor')
+        rows = dialog.findChild(QListWidget); field = dialog.findChild(QPlainTextEdit)
+        def click(text):next(b for b in dialog.findChildren(QPushButton) if b.text() == text).click()
+        rows.setCurrentRow(0);field.setPlainText('Changed observation');click('Save and analyze')
+        fake_api.update_symptom.assert_called_once_with(window.session.session_id, 'symptom', 'Changed observation')
+        rows.setCurrentRow(1);field.setPlainText('P0171');click('Save and analyze')
+        fake_api.update_dtc.assert_called_once_with(window.session.session_id, 'dtc', 'P0171')
+        rows.setCurrentRow(1);click('Delete')
+        fake_api.delete_dtc.assert_called_once()
+        rows.setCurrentRow(0);click('Delete')
+        fake_api.delete_symptom.assert_called_once()
+        dialog.accept()
+    QTimer.singleShot(0, edit_dialog)
+    client_workspace.edit_inputs(window)
+
+
+def test_common_backend_pdf_export_preserves_downloaded_bytes(window_factory, monkeypatch, fake_api, tmp_path):
+    from apps.desktop import client_workspace
+    from PySide6.QtWidgets import QFileDialog
+    window = window_factory()
+    window.session = Session("workspace-session", "READY", window.active_vehicle)
+    destination = tmp_path / 'report.pdf'
+    fake_api.download_report.return_value = b'%PDF-1.4 shared-report'
+    monkeypatch.setattr(QFileDialog, 'getSaveFileName', lambda *a: (str(destination), 'PDF'))
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done: done(fn()))
+    client_workspace.export_backend_report(window, 'pdf')
+    assert destination.read_bytes() == b'%PDF-1.4 shared-report'
+    fake_api.download_report.assert_called_once_with(window.session.session_id, 'pdf', window.language)
+
+
+def test_shared_vehicle_profile_edit_and_confirmed_delete(window_factory, monkeypatch, fake_api):
+    from apps.desktop import client_workspace, ui
+    from dataclasses import replace
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog, QListWidget, QPushButton, QMessageBox
+    window = window_factory()
+    data = [{'id': 'shared', 'name': 'Car', 'vehicle': {'make': 'Ford', 'model': 'Mondeo', 'year': 2011, 'ecu': None}}]
+    fake_api.vehicle_profiles.side_effect = lambda: list(data)
+    def save(vehicle, profile_id, name): data[0] = dict(id=profile_id, name=name, vehicle=vehicle)
+    fake_api.save_vehicle_profile.side_effect = save
+    fake_api.delete_vehicle_profile.side_effect = lambda _: data.clear()
+    monkeypatch.setattr(window, 'run_worker', lambda fn, done: done(fn()))
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.Yes)
+    class Editor:
+        def __init__(self, parent): pass
+        def set_vehicle(self, vehicle):
+            assert vehicle.ecu == ''
+            self.value = replace(vehicle, year=2012)
+        def exec(self): return QDialog.Accepted
+        def vehicle(self): return self.value
+        def deleteLater(self): pass
+    monkeypatch.setattr(ui, 'VehicleDialog', Editor)
+    def interact():
+        dialog = next(d for d in window.findChildren(QDialog) if d.windowTitle() == 'Shared vehicles')
+        try:
+            rows = dialog.findChild(QListWidget); rows.setCurrentRow(0)
+            next(b for b in dialog.findChildren(QPushButton) if b.text() == 'Edit').click()
+            assert data[0]['vehicle']['year'] == 2012
+            rows.setCurrentRow(0)
+            next(b for b in dialog.findChildren(QPushButton) if b.text() == 'Delete').click()
+            assert rows.count() == 0
+        finally: dialog.reject()
+    QTimer.singleShot(0, interact)
+    client_workspace.shared_vehicles(window)
+    fake_api.delete_vehicle_profile.assert_called_once_with('shared')

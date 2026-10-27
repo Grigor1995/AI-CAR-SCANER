@@ -37,11 +37,11 @@ class Vehicle:
         return cls(
             make=str(data.get("make", "Unknown")),
             model=str(data.get("model", "Vehicle")),
-            chassis=str(data.get("chassis", "")),
+            chassis=str(data.get("chassis") or ""),
             year=int(data["year"]) if data.get("year") not in (None, "") else None,
-            engine=str(data.get("engine", "")),
+            engine=str(data.get("engine") or ""),
             fuel=fuel_values(data.get("fuel", [])),
-            ecu=str(data.get("ecu", "")),
+            ecu=str(data.get("ecu") or ""),
         )
 
 @dataclass

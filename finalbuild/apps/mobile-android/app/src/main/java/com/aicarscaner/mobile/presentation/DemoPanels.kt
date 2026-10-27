@@ -1,6 +1,8 @@
 package com.aicarscaner.mobile.presentation
 
 import android.content.Intent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Brush
@@ -194,13 +196,16 @@ internal fun channels(history:List<LiveDataSnapshot>)=listOf(
     ChartChannel("Speed","km/h",Color(0xFF21D6A0),history.mapNotNull{it.speedKph}),
     ChartChannel("Engine load","%",Color(0xFFFFC663),history.mapNotNull{it.engineLoadPct}),
     ChartChannel("Intake air","°C",Color(0xFF20B9FF),history.mapNotNull{it.intakeAirC}),
-    ChartChannel("Throttle","%",Color(0xFFB67CFF),history.mapNotNull{it.throttlePct})
+    ChartChannel("Throttle","%",Color(0xFFB67CFF),history.mapNotNull{it.throttlePct}),
+    ChartChannel("MAF","g/s",Color(0xFF20B9FF),history.mapNotNull{it.mafGps}),
+    ChartChannel("STFT","%",Color(0xFF21D6A0),history.mapNotNull{it.shortFuelTrimPct}),
+    ChartChannel("LTFT","%",Color(0xFFFFC663),history.mapNotNull{it.longFuelTrimPct})
 )
 
 @Composable
-private fun ChannelTrace(channel:ChartChannel,modifier:Modifier=Modifier) {
+private fun ChannelTrace(channel:ChartChannel,modifier:Modifier=Modifier, chartHeight:androidx.compose.ui.unit.Dp=68.dp) {
     val grid=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.16f)
-    Canvas(modifier.fillMaxWidth().height(68.dp)) {
+    Canvas(modifier.fillMaxWidth().height(chartHeight)) {
         for(line in 1..3) drawLine(grid,Offset(0f,size.height*line/4),Offset(size.width,size.height*line/4))
         val values=channel.values
         if(values.size>=2){
@@ -253,7 +258,7 @@ internal fun gaugeRange(unit: String, value: Double?) = when(unit) {
 
 // Presentation bands only: speed colors are not speed limits or RPM redlines.
 internal fun gaugeBands(channel: ChartChannel): List<Triple<Double, Double, Color>> {
-    val (low, high) = gaugeRange(channel.unit, channel.values.lastOrNull())
+    val (low, high) = if(channel.key in setOf("STFT","LTFT")) -100.0 to 100.0 else gaugeRange(channel.unit, channel.values.lastOrNull())
     val coolant = channel.key.lowercase() in setOf("coolant", "coolant temperature", "coolant_temp", "0x05", "0105")
     val boundaries = if (coolant && channel.unit in setOf("C", "°C", "°F")) {
         listOf(60.0, 92.0, 102.0, 110.0).map { if (channel.unit == "°F") it*1.8+32 else it }
@@ -264,14 +269,14 @@ internal fun gaugeBands(channel: ChartChannel): List<Triple<Double, Double, Colo
 }
 
 @Composable
-private fun ChannelGauge(channel: ChartChannel) {
+private fun ChannelGauge(channel: ChartChannel, chartHeight:androidx.compose.ui.unit.Dp=140.dp) {
     val track=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.25f)
-    val (low,high)=gaugeRange(channel.unit,channel.values.lastOrNull())
+    val (low,high)=if(channel.key in setOf("STFT","LTFT")) -100.0 to 100.0 else gaugeRange(channel.unit,channel.values.lastOrNull())
     val bands=gaugeBands(channel)
     val value=channel.values.lastOrNull() ?: low
     val needle=if(value in bands[2].first..bands[2].second) bands[2].third
         else bands.firstOrNull { value < it.second }?.third ?: bands.last().third
-    Canvas(Modifier.fillMaxWidth().height(140.dp).semantics { contentDescription="${channel.key} ${channel.values.lastOrNull() ?: "—"} ${channel.unit}" }) {
+    Canvas(Modifier.fillMaxWidth().height(chartHeight).semantics { contentDescription="${channel.key} ${channel.values.lastOrNull() ?: "—"} ${channel.unit}" }) {
         val radius=minOf(size.width/2-10.dp.toPx(),size.height/2-8.dp.toPx())
         val center=Offset(size.width/2,size.height/2)
         drawCircle(Brush.radialGradient(listOf(Color(0xFF244762),Color(0xFF071322))),radius+5.dp.toPx(),center)
@@ -304,9 +309,19 @@ private fun ChannelGauge(channel: ChartChannel) {
 @Composable
 private fun ChannelWidget(channel: ChartChannel) {
     val analog=LocalDashboardAnalog.current
+    val context=androidx.compose.ui.platform.LocalContext.current
+    val density=androidx.compose.ui.platform.LocalDensity.current
+    val prefs=remember {context.getSharedPreferences("widget_sizes",0)}
+    var chartHeight by remember(channel.key) {mutableFloatStateOf(prefs.getFloat(channel.key,180f).coerceIn(140f,420f))}
+    val resizeLabel=dashboardLabel("Resize widget")
     DemoPanel(dashboardLabel(channelTitle(channel.key))) {
         Text(channel.values.lastOrNull()?.let { "%.1f ${channel.unit}".format(it) } ?: "—",style=MaterialTheme.typography.titleLarge,color=channel.color,fontWeight=FontWeight.Bold)
-        if(analog) ChannelGauge(channel) else ChannelTrace(channel)
+        if(analog) ChannelGauge(channel,chartHeight.dp) else ChannelTrace(channel,chartHeight=chartHeight.dp)
+        Box(Modifier.fillMaxWidth().height(14.dp).pointerInput(channel.key) {
+            detectVerticalDragGestures(onDragEnd={prefs.edit().putFloat(channel.key,chartHeight).apply()}) {change,amount ->
+                change.consume();chartHeight=(chartHeight+amount/density.density).coerceIn(140f,420f)
+            }
+        }.semantics {contentDescription=resizeLabel})
     }
 }
 

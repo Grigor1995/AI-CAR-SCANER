@@ -6,6 +6,7 @@ from diagnostic.localization import localize_session_analysis
 from ai.reasoning.engine import DiagnosticIntelligenceEngine
 from diagnostic.rules import DiagnosticReasoningEngine
 from diagnostic.decision import DiagnosticDecisionEngine
+from api.client_features_routes import router as client_features_router
 from api.platform_routes import router as platform_router
 from api.intelligence_routes import router as intelligence_router
 from api.state import sessions, load_persisted_sessions, persist_sessions
@@ -51,6 +52,7 @@ async def persist_diagnostic_sessions(request: Request, call_next):
 engine=DiagnosticReasoningEngine()
 intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()
+app.include_router(client_features_router)
 app.include_router(obd_router)
 app.include_router(advanced_obd_router)
 app.include_router(reference_router)

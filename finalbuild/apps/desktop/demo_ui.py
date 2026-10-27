@@ -479,6 +479,10 @@ class ReportsPage(QWidget):
         bar.addWidget(action("Refresh history", self.load))
         bar.addWidget(action("Open selected", self.open_selected))
         bar.addWidget(action("Export current report", self.export, True))
+        from .client_workspace import export_backend_report, tr
+        for format in ('pdf', 'json'):
+            button = action(tr(app,"Backend report","Отчёт сервера","Backend հաշվետվություն") + ' ' + format.upper(), lambda checked=False, fmt=format: export_backend_report(app, fmt))
+            bar.addWidget(button)
         layout.addLayout(bar)
         self.history.itemDoubleClicked.connect(lambda _: self.open_selected())
 

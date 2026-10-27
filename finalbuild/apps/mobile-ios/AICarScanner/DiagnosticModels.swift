@@ -163,6 +163,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 struct AppSettings {
     var language: AppLanguage = .en
     var darkTheme = true
+    var usUnits = false
+    var analogDisplay = true
     var apiURL = "https://ai-car-scaner.onrender.com"
 }
 struct LiveRecord: Decodable {
@@ -200,4 +202,13 @@ private func reportSnapshot(_ value: Any) -> Any {
     }
     if let array = value as? [Any] { return array.map { reportSnapshot($0) } }
     return value
+}
+
+extension DiagnosticSession {
+    var currentTestProgress:(completed:Int,total:Int) {
+        let ids=Set(recommendations.map(\.id))
+        let latest=test_results.reduce(into:[String:TestResult]()) {$0[$1.test_id]=$1}
+        let completed=latest.values.filter {ids.contains($0.test_id) && ["PASS","FAIL"].contains($0.result.uppercased())}.count
+        return (completed,ids.count)
+    }
 }

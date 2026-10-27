@@ -14,3 +14,6 @@ PyYAML>=6,<7
 python-multipart>=0.0.9,<1
 
 # Local LLM is provided by llama-server.exe and accessed through its HTTP API.
+
+# Unicode PDF reports shared by all native clients
+reportlab>=4.2,<5

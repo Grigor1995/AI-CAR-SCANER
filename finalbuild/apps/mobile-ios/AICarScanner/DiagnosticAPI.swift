@@ -47,6 +47,7 @@ final class DiagnosticAPI {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.timeoutInterval = path.contains("ai-analyze-live") ? 300 : 60
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         if let body {
@@ -68,6 +69,25 @@ final class DiagnosticAPI {
         }
 
         return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    func operation(_ path: String, method: String = "GET", body: [String: JSONValue]? = nil, language: String? = nil) async throws -> JSONValue {
+        try await request(path, method: method, body: body, query: language.map { [URLQueryItem(name:"language", value:$0)] } ?? [])
+    }
+
+    func discoveryPlan() async throws -> DiscoveryPlan {
+        try await request("/api/v1/obd/discovery/plan")
+    }
+    func decodeDiscovery(_ responses: [String:String]) async throws -> DiscoveryResult {
+        try await request("/api/v1/obd/discovery/decode", method:"POST", body:ObdRawSnapshot(responses:responses,session_id:nil))
+    }
+    func reportData(_ id: String, format: String, language: AppLanguage) async throws -> Data {
+        guard var parts=URLComponents(string:baseURL + "/api/v1/sessions/" + id + "/report") else { throw APIError.invalidURL }
+        parts.queryItems=[URLQueryItem(name:"format",value:format),URLQueryItem(name:"language",value:language.rawValue)]
+        guard let url=parts.url else { throw APIError.invalidURL }
+        let (data,response)=try await session.data(from:url)
+        guard let http=response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw APIError.server((response as? HTTPURLResponse)?.statusCode ?? 0,String(decoding:data,as:UTF8.self)) }
+        return data
     }
 
     func obdPlan() async throws -> ObdPollingPlan {
@@ -227,3 +247,11 @@ struct AnyEncodable: Encodable {
 struct ObdPollingPlan: Decodable { let initialization: [String]; let commands: [String]; let discovery: [String]? }
 struct ObdRawSnapshot: Encodable { let responses: [String: String]; let session_id: String? }
 struct ObdDecodedSnapshot: Decodable { let values: [String: Double?]; let errors: [String: String] }
+
+struct DiscoveryPlan: Decodable { let commands:[String]; let restore:[String] }
+struct DiscoveryResult: Decodable {
+    let vin:String?; let identification_status:String
+    let vehicle:[String:JSONValue]?; let modules:[JSONValue]
+    let detectedProtocol:JSONValue?
+    enum CodingKeys:String,CodingKey {case vin, identification_status, vehicle, modules;case detectedProtocol="protocol"}
+}

@@ -17,6 +17,7 @@ internal fun AnalysisWorkspace(
     onAnalyze: () -> Unit,
     onRecord: (String, String) -> Unit
 ) {
+    BackendTools("decision",session)
     var section by remember(session.session_id) { mutableIntStateOf(0) }
     LaunchedEffect(session.session_id, resultRevision) {
         if (resultRevision > 0) section = 0

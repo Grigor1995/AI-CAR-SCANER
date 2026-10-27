@@ -252,3 +252,34 @@ class DiagnosticApiClient:
 
     def diagnostic_discovery(self, device_id: str, config: dict | None = None) -> dict[str, Any]:
         return self._request("POST", f"/api/v1/devices/{device_id}/diagnostic-discovery", json={"config": config or {}}, timeout=120)
+
+    def add_symptom(self, session_id: str, text: str):
+        return self._request('POST', f'/api/v1/sessions/{session_id}/symptoms', json={'raw_text': text, 'symptom': text})
+
+    def update_symptom(self, session_id: str, item_id: str, text: str):
+        return self._request('PUT', f'/api/v1/sessions/{session_id}/symptoms/{item_id}', json={'raw_text': text, 'symptom': text})
+
+    def delete_symptom(self, session_id: str, item_id: str):
+        return self._request('DELETE', f'/api/v1/sessions/{session_id}/symptoms/{item_id}')
+
+    def update_dtc(self, session_id: str, item_id: str, code: str):
+        return self._request('PUT', f'/api/v1/sessions/{session_id}/dtcs/{item_id}', json={'code': code.strip().upper(), 'source': 'USER_REPORTED'})
+
+    def delete_dtc(self, session_id: str, item_id: str):
+        return self._request('DELETE', f'/api/v1/sessions/{session_id}/dtcs/{item_id}')
+
+    def vehicle_profiles(self):
+        return self._request('GET', '/api/v1/vehicle-profiles')
+
+    def save_vehicle_profile(self, vehicle: dict, profile_id: str | None = None, name: str = ''):
+        path = '/api/v1/vehicle-profiles' + (f'/{profile_id}' if profile_id else '')
+        return self._request('PUT' if profile_id else 'POST', path, json={'name': name, 'vehicle': vehicle})
+
+    def delete_vehicle_profile(self, profile_id: str):
+        return self._request('DELETE', f'/api/v1/vehicle-profiles/{profile_id}')
+
+    def download_report(self, session_id: str, format: str = 'pdf', language: str = 'en') -> bytes:
+        response = self._send('GET', f'/api/v1/sessions/{session_id}/report', 60, {'params': {'format': format, 'language': language}})
+        if not response.ok:
+            raise ApiError(f'HTTP {response.status_code}: {response.text}')
+        return response.content

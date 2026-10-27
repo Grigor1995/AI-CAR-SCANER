@@ -57,6 +57,37 @@ actor NativeObdWifiBridge {
         guard !busy else { throw BridgeError.concurrentRead }
         busy = true
         defer { busy = false }
+        try await ensureConnection(host:host,port:port)
+        do {
+            if liveSessionID != sessionID {
+                liveCommands = nil
+                capabilityFrames = [:]
+                liveSessionID = sessionID
+            }
+            if liveCommands == nil {
+                let bootstrap = try await api.obdPlan()
+                if !initialized {
+                    for command in bootstrap.initialization { _ = try await exchange(command, timeout: 35) }
+                    initialized = true
+                }
+                guard let discovery=bootstrap.discovery, !discovery.isEmpty else { throw BridgeError.capabilityUnavailable }
+                var observed: [String:String] = [:]
+                for command in discovery { observed[command] = try await exchange(command, timeout:35) }
+                let selected = try await api.supportedObdPlan(observed)
+                guard !selected.commands.isEmpty else { throw BridgeError.noSupportedChannels }
+                capabilityFrames = observed
+                liveCommands = selected.commands
+            }
+            var responses = capabilityFrames
+            for command in liveCommands ?? [] { responses[command] = try await exchange(command) }
+            return try await api.decodeObd(responses, sessionID: sessionID)
+        } catch {
+            disconnect()
+            throw error
+        }
+    }
+
+    private func ensureConnection(host:String, port:Int) async throws {
         let target = "\(host):\(port)"
         if endpoint != target {
             disconnect()
@@ -93,33 +124,26 @@ actor NativeObdWifiBridge {
                 endpoint = target
             } catch { disconnect(); throw error }
         }
+    }
+
+    func identify(host:String, port:Int, api:DiagnosticAPI) async throws -> DiscoveryResult {
+        guard !busy else { throw BridgeError.concurrentRead }
+        busy=true
+        defer { busy=false; initialized=false; liveCommands=nil; capabilityFrames=[:] }
+        try await ensureConnection(host:host,port:port)
+        let bootstrap=try await api.obdPlan()
+        for command in bootstrap.initialization { _ = try await exchange(command,timeout:35) }
+        let plan=try await api.discoveryPlan()
+        var responses:[String:String]=[:]
         do {
-            if liveSessionID != sessionID {
-                liveCommands = nil
-                capabilityFrames = [:]
-                liveSessionID = sessionID
-            }
-            if liveCommands == nil {
-                let bootstrap = try await api.obdPlan()
-                if !initialized {
-                    for command in bootstrap.initialization { _ = try await exchange(command, timeout: 35) }
-                    initialized = true
-                }
-                guard let discovery=bootstrap.discovery, !discovery.isEmpty else { throw BridgeError.capabilityUnavailable }
-                var observed: [String:String] = [:]
-                for command in discovery { observed[command] = try await exchange(command, timeout:35) }
-                let selected = try await api.supportedObdPlan(observed)
-                guard !selected.commands.isEmpty else { throw BridgeError.noSupportedChannels }
-                capabilityFrames = observed
-                liveCommands = selected.commands
-            }
-            var responses = capabilityFrames
-            for command in liveCommands ?? [] { responses[command] = try await exchange(command) }
-            return try await api.decodeObd(responses, sessionID: sessionID)
+            for command in plan.commands { responses[command]=try await exchange(command,timeout:35) }
         } catch {
+            for command in plan.restore { _ = try? await exchange(command) }
             disconnect()
             throw error
         }
+        for command in plan.restore { _ = try await exchange(command) }
+        return try await api.decodeDiscovery(responses)
     }
 
     private func exchange(_ command: String, timeout: TimeInterval = 3) async throws -> String {

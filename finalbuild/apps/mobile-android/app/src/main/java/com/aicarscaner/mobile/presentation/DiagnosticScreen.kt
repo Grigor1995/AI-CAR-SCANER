@@ -148,6 +148,10 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val extra = text.extra
 
     val bluetoothClient = remember { BluetoothObdClient() }
+    val bleClient = remember {com.aicarscaner.mobile.data.obd.BleObdClient()}
+    val bleConnected by bleClient.connected.collectAsState()
+    var bleDevices by remember {mutableStateOf(emptyList<BluetoothDevice>())}
+    var bleScanning by remember {mutableStateOf(false)}
     val wifiClient = remember { WifiObdClient() }
     val usbClient = remember { UsbObdClient() }
 
@@ -261,6 +265,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         liveData = null
         liveDataError = null
         bluetoothClient.close()
+        bleClient.close()
         wifiClient.close()
         usbClient.close()
         obdStatus = text.notConnected
@@ -333,8 +338,15 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         return true
     }
 
-    val obdConnected =
-        bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected
+    val obdConnected = when(obdTransport) {
+        "ble" -> bleConnected
+        "wifi" -> wifiClient.isConnected
+        "usb" -> usbClient.isConnected
+        else -> bluetoothClient.isConnected
+    }
+    LaunchedEffect(bleConnected) {
+        if(obdTransport=="ble" && !bleConnected) {liveDataRunning=false;liveData=null;channelHistory=emptyList();obdStatus=text.notConnected}
+    }
 
     var discoveryPending by remember { mutableStateOf(false) }
     var discoveryResult by remember { mutableStateOf<com.aicarscaner.mobile.data.api.DiscoveryResultDto?>(null) }
@@ -347,6 +359,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
 
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 TransportButton(obdTransport == "bluetooth", { obdTransport = "bluetooth" }, text.bluetooth)
+                                TransportButton(obdTransport == "ble", {obdTransport="ble"}, "BLE")
                                 TransportButton(obdTransport == "wifi", { obdTransport = "wifi" }, text.wifi)
                                 TransportButton(obdTransport == "usb", { obdTransport = "usb" }, text.usb)
                             }
@@ -392,6 +405,30 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                                 }
                                             }
                                         }
+                                    }
+                                }
+
+                                "ble" -> {
+                                    Button(enabled=!bleScanning,onClick={
+                                        val permissions=if(Build.VERSION.SDK_INT>=31) bluetoothPermission else arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                                        if(permissions.any {ContextCompat.checkSelfPermission(context,it)!=PackageManager.PERMISSION_GRANTED}) permissionLauncher.launch(permissions)
+                                        else {
+                                            bleScanning=true
+                                            scope.launch {
+                                                try {bleDevices=bleClient.scan(context)}
+                                                catch(cancelled:kotlinx.coroutines.CancellationException) {throw cancelled}
+                                                catch(error:Exception) {obdStatus=error.message ?: extra.unknownError}
+                                                finally {bleScanning=false}
+                                            }
+                                        }
+                                    }) {Text(demo("Scan BLE adapters","Поиск BLE адаптеров","Որոնել BLE ադապտերներ"))}
+                                    if(bleScanning) CircularProgressIndicator()
+                                    bleDevices.forEach {device ->
+                                        Text(device.name ?: device.address)
+                                        Button(enabled=!bleClient.isConnected,onClick={scope.launch {
+                                            closeAllObd()
+                                            bleClient.connect(context,device).onSuccess {obdStatus=it}.onFailure {obdStatus=it.message ?: extra.unknownError}
+                                        }}) {Text(text.connect)}
                                     }
                                 }
 
@@ -496,11 +533,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                 }
                             }
 
-                            if (bluetoothClient.isConnected || wifiClient.isConnected || usbClient.isConnected) {
+                            if (obdConnected) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Button(onClick = {
                                         scope.launch {
                                             when (obdTransport) {
+                                                "ble" -> bleClient.command("010C")
                                                 "bluetooth" -> bluetoothClient.command("010C")
                                                 "wifi" -> wifiClient.readRpm()
                                                 else -> usbClient.readRpm()
@@ -511,6 +549,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                                     Button(onClick = {
                                         scope.launch {
                                             when (obdTransport) {
+                                                "ble" -> bleClient.command("03")
                                                 "bluetooth" -> bluetoothClient.command("03")
                                                 "wifi" -> wifiClient.readDtcs()
                                                 else -> usbClient.readDtcs()
@@ -546,6 +585,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
             discoveryPending=true;discoveryResult=null;discoveryError=false
             scope.launch {
                 suspend fun command(step:String):String = when(discoveryTransport) {
+                    "ble" -> bleClient.command(step,35000)
                     "bluetooth" -> bluetoothClient.command(step,35000)
                     "wifi" -> wifiClient.command(step,35000)
                     else -> usbClient.command(step,35000)
@@ -566,6 +606,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     }
     val diagnosticPanel: @Composable () -> Unit = {
         Text(dashboardLabel("Diagnostics"),style=MaterialTheme.typography.titleLarge)
+        BackendTools("network",state.session)
         Text(dashboardLabel("VIN lookup uses NHTSA online. Only responding generic OBD ECUs are shown."))
         OutlinedButton(onClick={selectedTab=2;refreshUsbDevices()},enabled=!discoveryPending,modifier=Modifier.fillMaxWidth()) {
             Text(dashboardLabel("VCI / Devices"))
@@ -604,6 +645,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         while (isActive) {
             pollingSession.read(sessionId = liveSessionId) { command ->
                 when (liveTransport) {
+                    "ble" -> bleClient.command(command)
                     "bluetooth" -> bluetoothClient.command(command)
                     "wifi" -> wifiClient.command(command)
                     else -> usbClient.command(command)
@@ -621,6 +663,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 channelHistory = emptyList()
                 liveDataError = it.message ?: extra.liveDataReadFailed
                 val connected = when (liveTransport) {
+                    "ble" -> bleClient.isConnected
                     "bluetooth" -> bluetoothClient.isConnected
                     "wifi" -> wifiClient.isConnected
                     else -> usbClient.isConnected
@@ -634,6 +677,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     DisposableEffect(Unit) {
         onDispose {
             bluetoothClient.close()
+        bleClient.close()
             wifiClient.close()
             usbClient.close()
         }
@@ -822,10 +866,12 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                 }
                 if(selectedTab==11) {
                     DashboardSections(scrollState=pageScrollState,navigate={selectedTab=it;if(it==2) refreshUsbDevices()})
+                        BackendTools("profiles", state.session, onOpen={viewModel.openSession(it,appSettings.language.code);selectedTab=6})
                 } else if(selectedTab==14) {
                     diagnosticPanel()
                 } else if(state.session==null && selectedTab==2) {
                     adapterPanel()
+                    BackendTools("devices",state.session)
                 } else if (state.session == null) {
                     OutlinedButton(onClick={selectedTab=14},modifier=Modifier.fillMaxWidth()) { Text(dashboardLabel("Connect OBD and identify vehicle")) }
                     OutlinedButton(onClick = { selectedTab = 9; viewModel.loadHistory() }, modifier = Modifier.fillMaxWidth()) {
@@ -1217,9 +1263,9 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             ) { Text(text.startNewSession) }
                         }
 
-                        2 -> adapterPanel()
+                        2 -> {adapterPanel();BackendTools("devices",session)}
 
-                        3 -> {
+                        3 -> { BackendTools("live",session,onRefresh={viewModel.refreshBackendLiveRecords();viewModel.openSession(session.session_id,appSettings.language.code)});
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -1617,6 +1663,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             testResultDialogOpen = true
                         }
                         9 -> {
+                            BackendTools("reports",session)
                             LaunchedEffect(Unit) { viewModel.loadHistory() }
                             OutlinedButton(onClick = { viewModel.loadHistory() }) { Text(demo("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) }
                             state.history.forEach { previous ->
@@ -1627,7 +1674,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                             }
                             DemoReports(session, tabs[9], demo("Share session report", "Поделиться отчётом", "Կիսվել հաշվետվությամբ"))
                         }
-                        10 -> DemoTeach(tabs[10], demo("Draft saved on this device; no model training", "Черновик на устройстве; без обучения модели", "Սևագիրը պահվում է սարքում․ մոդելը չի ուսուցանվում"), demo("Share note", "Поделиться", "Կիսվել նշումով"))
+                        10 -> { BackendTools("teach",session); DemoTeach(tabs[10], demo("Draft saved on this device; no model training", "Черновик на устройстве; без обучения модели", "Սևագիրը պահվում է սարքում․ մոդելը չի ուսուցանվում"), demo("Share note", "Поделиться", "Կիսվել նշումով")) }
                         5 -> {
                             Text(text.activity, style = MaterialTheme.typography.titleLarge)
                             if (session.audit_log.isEmpty()) {
@@ -1843,6 +1890,7 @@ private fun SettingsDialog(
                             }
                         }
                     }
+                    BackendConnectionSettings()
                     Text(dashboardLabel("Preferences saved on this device"),color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodySmall)
                     Button(onClick=onClose,modifier=Modifier.fillMaxWidth()) {Text(text.close)}
                 }

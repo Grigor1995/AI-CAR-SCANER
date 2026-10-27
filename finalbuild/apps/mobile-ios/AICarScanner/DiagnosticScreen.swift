@@ -21,6 +21,8 @@ struct DiagnosticScreen: View {
     @State private var dtc = ""
     @AppStorage("launcher_order") private var launcherOrder = ""
     @State private var launcherDropTarget:Int?
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var backendDraft=""
     @State private var settingsOpen = false
     @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
@@ -74,10 +76,10 @@ struct DiagnosticScreen: View {
                         }.padding(16).modifier(AutomotiveCardStyle())
                     }
                     switch tab {
-                    case 12: desktopMenu
+                    case 12: VStack {desktopMenu;BackendWorkspace(model:viewModel,mode:"profiles")}
                     case 11: inputsView
                     case 0: vehicleView
-                    case 1: obdView
+                    case 1: diagnosticView
                     case 2: analysisView
                     case 3: obdView
                     case 4: activityView
@@ -136,6 +138,9 @@ struct DiagnosticScreen: View {
                 Button(t.save){ if let s=editSymptom { Task{ await updateSymptomLocally(s); editSymptom=nil } } }
             }
             .alert(t.tr("Error", "Ошибка", "Սխալ"),isPresented:Binding(get:{viewModel.error != nil},set:{if !$0{viewModel.error=nil}})){Button("OK"){}}
+            .onChange(of:scenePhase) {_,phase in
+                if phase == .background {obd.disconnect();Task {await viewModel.disconnectObdWifi()}}
+            }
             .onChange(of: viewModel.settings.language) { _, _ in
                 if let id = viewModel.session?.session_id { Task { await viewModel.openSession(id) } }
             }
@@ -299,6 +304,11 @@ struct DiagnosticScreen: View {
     private var demoTests: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(t.nextTests).font(.title2.bold())
+            if let session=viewModel.session {
+                let progress=session.currentTestProgress
+                ProgressView(value:Double(progress.completed),total:Double(max(1,progress.total)))
+                Text("\(progress.completed) / \(progress.total)").font(.caption)
+            }
             ForEach(viewModel.session?.recommendations ?? []) { recommendation in
                 VStack(alignment: .leading, spacing: 10) {
                     Label(recommendation.name, systemImage: "checklist").font(.headline)
@@ -326,21 +336,8 @@ struct DiagnosticScreen: View {
             if let error = viewModel.liveDataError {
                 Text(error).font(.caption).foregroundStyle(AutomotivePalette.negative)
             }
-            ForEach(Array(Dictionary(grouping: viewModel.liveRecords, by: \.pid).keys.sorted()), id: \.self) { pid in
-                let records = viewModel.liveRecords.filter { $0.pid == pid }
-                SectionCard(records.last?.display_name ?? pid) {
-                    if let last = records.last, let value = last.numeric_value {
-                        Text("\(value, specifier: "%.2f") \(last.unit ?? "")").font(.title2.bold())
-                    }
-                    Chart(Array(records.enumerated()), id: \.offset) { item in
-                        if let value = item.element.numeric_value {
-                            LineMark(x: .value("Sample", item.offset), y: .value("Value", value))
-                                .foregroundStyle(AutomotivePalette.cyan)
-                        }
-                    }.frame(height: 110)
-                    Text(records.last?.sourceLabel ?? "—").font(.caption).foregroundStyle(.secondary)
-                }
-            }
+            LiveDashboard(model:viewModel)
+            BackendWorkspace(model:viewModel,mode:"live")
             if viewModel.liveRecords.isEmpty { Text(t.tr("No samples. Start backend acquisition to view channels.", "Нет данных. Запустите сбор на сервере.", "Տվյալներ չկան․ գործարկեք սերվերի չափումների հավաքումը։")) }
         }.task {
             while !Task.isCancelled && viewModel.session != nil {
@@ -354,6 +351,7 @@ struct DiagnosticScreen: View {
 
     private var demoReports: some View {
         VStack(alignment: .leading, spacing: 14) {
+            BackendWorkspace(model:viewModel,mode:"reports")
             Text(t.tr("Reports / History", "Отчёты / История", "Հաշվետվություններ / Պատմություն")).font(.title2.bold())
             Button(t.tr("Refresh history", "Обновить историю", "Թարմացնել պատմությունը")) { Task { await viewModel.loadHistory() } }
             ForEach(viewModel.history, id: \.session_id) { previous in
@@ -376,6 +374,7 @@ struct DiagnosticScreen: View {
 
     private var demoTeach: some View {
         VStack(alignment: .leading, spacing: 14) {
+            BackendWorkspace(model:viewModel,mode:"teach")
             Text(t.tr("Teach AI / Your solution", "Обучить ИИ / Ваше решение", "Սովորեցրու AI-ին / Քո լուծումը")).font(.title2.bold())
             TextField(t.tr("Repair title", "Название ремонта", "Վերանորոգման վերնագիր"), text: $repairTitle).textFieldStyle(.roundedBorder)
             TextEditor(text: $repairDraft).frame(minHeight: 180).padding(8).modifier(AutomotiveCardStyle())
@@ -474,6 +473,7 @@ struct DiagnosticScreen: View {
         VStack(alignment:.leading,spacing:10) {
             if let s=viewModel.session {
                 StatusCard(title:t.state,value:t.protocolLabel(s.state))
+                BackendWorkspace(model:viewModel,mode:"decision")
                 AnalysisDiagram(session: s, language: viewModel.settings.language)
                 SectionCard("\(t.evidence) (\(s.evidence.count))"){ForEach(s.evidence){x in Text("\(x.fact)\n\(t.protocolLabel(x.status)) • \(t.protocolLabel(x.source))").font(.subheadline)}}
                 SectionCard("\(t.hypotheses) (\(s.hypotheses.count))"){ForEach(s.hypotheses){x in VStack(alignment:.leading){Text(x.statement).bold();Text("\(x.category) • \(x.status)").font(.caption).foregroundStyle(.secondary);if let score=x.evidenceScore {Text("\(Int((score*100).rounded()))%").font(.caption.bold())}}}}
@@ -485,22 +485,54 @@ struct DiagnosticScreen: View {
         }
     }
 
+    private var diagnosticView:some View {
+        VStack(alignment:.leading,spacing:14) {
+            Text(t.tr("VIN and responding ECUs","VIN и ответившие ЭБУ","VIN և պատասխանած ECU-ներ")).font(.title2.bold())
+            TextField(t.tr("Wi-Fi adapter host","Адрес Wi-Fi адаптера","Wi-Fi ադապտերի հասցե"),text:$obdHost).textInputAutocapitalization(.never)
+            TextField(t.tr("Port","Порт","Պորտ"),text:$obdPort).keyboardType(.numberPad)
+            Button(t.tr("Connect OBD and identify vehicle","Подключить OBD и определить автомобиль","Միացնել OBD-ն և ճանաչել մեքենան")) {
+                Task {await viewModel.identifyObdWifi(host:obdHost,port:Int(obdPort) ?? 0)}
+            }.disabled(obdHost.isEmpty || viewModel.loading || viewModel.discovering)
+            if let result=viewModel.discovery {
+                Text("VIN: " + (result.vin ?? "—"))
+                Text(t.obdMessage(result.identification_status))
+                if let detected=result.detectedProtocol {Text(detected.pretty)}
+                if let vehicle=result.vehicle {Text(JSONValue.object(vehicle).pretty)}
+                ForEach(Array(result.modules.enumerated()),id:\.offset) {_,module in Text(module.pretty)}
+            }
+            if obd.connected {
+                Button(t.tr("Identify via BLE","Определить через BLE","Նույնականացնել BLE-ով")) {Task {await viewModel.identifyObdBLE(obd)}}.disabled(viewModel.obdRunning || viewModel.discovering)
+            }
+            BackendWorkspace(model:viewModel,mode:"network")
+        }.textFieldStyle(.roundedBorder).buttonStyle(.bordered)
+    }
+
     private var obdView:some View {
         VStack(alignment:.leading,spacing:10) {
             Text(t.obd).font(.title3.bold())
-            SectionCard("BLE"){Text(obd.status).font(.subheadline);Button(t.scan){obd.scan()}.buttonStyle(.borderedProminent)
-                ForEach(obd.devices,id:\.identifier){x in Text(x.name ?? t.tr("Unknown adapter", "Неизвестный адаптер", "Անհայտ ադապտեր"))}}
+            SectionCard("BLE"){Text(t.obdMessage(obd.status)).font(.subheadline);Button(t.scan){obd.scan()}.buttonStyle(.borderedProminent)
+                ForEach(obd.devices,id:\.identifier){x in
+                    Button(x.name ?? t.tr("Unknown adapter","Неизвестный адаптер","Անհայտ ադապտեր")) {
+                        Task {do {await viewModel.disconnectObdWifi();try await obd.connect(x)} catch {viewModel.error=error.localizedDescription}}
+                    }.disabled(viewModel.obdRunning || viewModel.discovering)
+                }
+                if obd.connected {
+                    Button(t.tr("Start BLE Live Data","Запустить данные BLE","Գործարկել BLE տվյալները")) {viewModel.startObdBLE(obd)}.disabled(viewModel.obdRunning || viewModel.discovering)
+                    Button(t.tr("Disconnect BLE","Отключить BLE","Անջատել BLE-ն")) {Task {await viewModel.disconnectObdWifi();obd.disconnect()}}
+                }}
             SectionCard("Wi-Fi OBD") {
                 TextField(t.tr("Adapter host", "Адрес адаптера", "Ադապտերի հասցե"), text: $obdHost).textInputAutocapitalization(.never).autocorrectionDisabled()
                 TextField(t.tr("Port", "Порт", "Պորտ"), text: $obdPort).keyboardType(.numberPad)
                 Button(t.tr("Connect / Read", "Подключить / Считать", "Միացնել / Կարդալ")) {
-                    Task { await viewModel.readObdWifi(host: obdHost, port: Int(obdPort) ?? 0) }
-                }.buttonStyle(.borderedProminent).disabled(obdHost.isEmpty)
+                    obd.disconnect();viewModel.startObdWifi(host:obdHost,port:Int(obdPort) ?? 0)
+                }.buttonStyle(.borderedProminent).disabled(obdHost.isEmpty || viewModel.obdRunning || viewModel.discovering)
+                if viewModel.obdRunning { ProgressView(t.tr("Reading OBD…","Чтение OBD…","OBD ընթերցում…")) }
                 Button(t.tr("Disconnect", "Отключить", "Անջատել")) { Task { await viewModel.disconnectObdWifi() } }
                 ForEach(viewModel.obdValues.keys.sorted(), id: \.self) { key in
                     HStack { Text(key); Spacer(); Text(viewModel.obdValues[key].flatMap { $0 }.map { String(format: "%.1f", $0) } ?? "—") }
                 }
             }
+            BackendWorkspace(model:viewModel,mode:"devices")
             Text(t.tr("USB on iOS requires an Apple-approved accessory path (MFi/ExternalAccessory).", "USB в iOS требует одобренного Apple аксессуара (MFi/ExternalAccessory).", "iOS-ում USB կապը պահանջում է Apple-ի հաստատած պարագա (MFi/ExternalAccessory)։")).font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -515,9 +547,20 @@ struct DiagnosticScreen: View {
     private var settingsView:some View {
         NavigationStack{Form{
             Section(t.languageLabel){Picker(t.languageLabel,selection:Binding(get:{viewModel.settings.language},set:{viewModel.settings.language=$0;viewModel.saveSettings()})){ForEach(AppLanguage.allCases){Text($0.label).tag($0)}}}
+            Section(t.tr("Units","Единицы","Միավորներ")) {
+                Toggle("USA • mph • °F",isOn:Binding(get:{viewModel.settings.usUnits},set:{viewModel.settings.usUnits=$0;viewModel.saveSettings()}))
+            }
+            Section(t.tr("Widget display","Вид виджетов","Ցուցիչների տեսք")) {
+                Toggle(t.tr("Analog gauge","Аналоговый прибор","Անալոգային ցուցիչ"),isOn:Binding(get:{viewModel.settings.analogDisplay},set:{viewModel.settings.analogDisplay=$0;viewModel.saveSettings()}))
+            }
             Section(t.theme){Toggle(t.dark,isOn:Binding(get:{viewModel.settings.darkTheme},set:{viewModel.settings.darkTheme=$0;viewModel.saveSettings()}))}
-            Section(t.tr("Server", "Сервер", "Սերվեր")){TextField(t.tr("API URL", "Адрес API", "API հասցե"),text:Binding(get:{viewModel.settings.apiURL},set:{viewModel.settings.apiURL=$0;viewModel.saveSettings()})).textInputAutocapitalization(.never).autocorrectionDisabled(); Button(t.tr("Refresh catalog", "Обновить каталог", "Թարմացնել մեքենաների ցանկը")) { Task { await viewModel.loadCatalog() } }}
-        }.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
+            Section(t.tr("Server", "Сервер", "Սերվեր")) {
+                TextField("API URL",text:$backendDraft).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Text(t.tr("Changing servers clears the active session.","Смена сервера сбрасывает активный сеанс.","Սերվերը փոխելիս ակտիվ սեսիան կփակվի։")).font(.caption)
+                Button(t.tr("Apply backend","Применить сервер","Կիրառել backend-ը")) {Task {obd.disconnect();await viewModel.changeBackend(backendDraft)}}
+                Button(t.tr("Refresh catalog","Обновить каталог","Թարմացնել ցանկը")) {Task {await viewModel.loadCatalog()}}
+            }
+        }.onAppear {backendDraft=viewModel.settings.apiURL}.navigationTitle(t.settings).toolbar{ToolbarItem(placement:.confirmationAction){Button(t.close){settingsOpen=false}}}}
     }
 
     private var makes:[String]{viewModel.catalog.map(\.make).unique().sorted()}

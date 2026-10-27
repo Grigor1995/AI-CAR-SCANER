@@ -26,6 +26,7 @@ def test_ios_dashboard_diagnostics_and_vci_shortcuts_route_to_existing_screens()
     dashboard = src.split("private var demoHome:", 1)[1].split("private func demoMetric", 1)[0]
     assert "tab = 1" in dashboard
     assert "tab = 3" in dashboard
-    assert "case 1: obdView" in src
+    assert "case 1: diagnosticView" in src
+    assert "viewModel.identifyObdWifi" in src
     assert "case 11: inputsView" in src
     assert "case 3: obdView" in src

@@ -1,6 +1,6 @@
-# Windows online installer
+# Windows installer
 
-The installer downloads a pinned GitHub source snapshot, prepares Desktop +
+By default the installer includes a pinned Git source snapshot and prepares Desktop +
 Backend, and offers Local AI and Desktop shortcut checkboxes. Git, Android
 Studio and a prebuilt Desktop ZIP are not required on the destination computer.
 No CI/CD or automatic release publication is used.
@@ -14,7 +14,7 @@ Windows Package Manager:
 winget install --id JRSoftware.InnoSetup --exact --source winget
 ```
 
-From the repository root, after pushing the desired source commit to GitHub:
+From the cloned repository root, after committing the desired source changes:
 
 ```bash
 python installer.py
@@ -38,10 +38,18 @@ Python. The checksum identifies this exact installer. The build does not sign
 or publish it. Production signing requires your own Windows code-signing
 certificate; an unsigned download can display Windows SmartScreen.
 
-The installer defaults to local `HEAD`. It must be present in the official
-GitHub repository before distribution. Use `--commit FULL_40_CHARACTER_SHA`
-for another already-pushed commit. The manifest records the source commit,
-not a moving `main` branch. `python installer.py --prepare-only` prepares an
+The installer defaults to local `HEAD` and exports tracked files with
+`git archive`. It includes neither Git history nor ignored/untracked files
+such as local ENV overrides and virtual environments. The embedded snapshot
+is verified against its manifest SHA-256 before extraction. Private GitHub
+repositories do not require users to authenticate.
+
+Use `--commit FULL_40_CHARACTER_SHA` for another commit available in the local
+clone. The manifest records that exact source commit, not a moving branch.
+For a smaller installer that fetches source at installation time, use
+`python installer.py --online-only`. This mode requires the pinned commit to
+be publicly downloadable; GitHub returns 404 for inaccessible/private sources.
+Do not use online-only mode to distribute a private repository. `python installer.py --prepare-only` prepares an
 inspectable payload on any OS, without claiming to compile a Windows executable.
 
 ## Installer appearance
@@ -68,8 +76,9 @@ the same colors; native Windows buttons/dialogs remain keyboard accessible.
 - **Launch AI Car Scanner** on completion: starts Desktop, Backend and, when
   selected, local AI with no terminal window. Startup output is saved to disk.
 
-Internet access is required for GitHub, PyPI and, when AI is selected,
-Hugging Face/llama.cpp downloads. A progress console displays the existing
+Internet access is required for Python/PyPI and, when AI is selected,
+Hugging Face/llama.cpp downloads. The default bundled source does not require
+a GitHub source download; online-only mode does. A progress console displays the existing
 runner's download/setup output. Failed setup returns to the wizard with an
 error instead of claiming success; rerun Setup to retry. The AI downloader
 retains resumable partial model downloads.
@@ -125,6 +134,9 @@ AI/cache files and shortcuts. Diagnostic/user data under
 `%APPDATA%\AI-Car-Scanner` is retained. Python is not removed because other
 applications may use it.
 
+Setup displays its specific failure text inside the wizard. Early bootstrap
+failures also persist under `%LOCALAPPDATA%\AI-Car-Scanner\installer-logs`
+(transcripts and `last-error.txt`), including failures before Python starts.
 Inspect `logs\setup-*.log`, `logs\bootstrap-errors.log` and
 `logs\desktop.log` for application failures. Inno Setup also writes its own
 Setup log to the Windows temporary folder. Python prerequisite failures appear

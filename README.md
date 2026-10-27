@@ -27,7 +27,7 @@ with an emulator running: `python runner.py android`.
 ## Windows installer
 
 Build the download-and-install wizard locally with `python installer.py`
-(requires Inno Setup 6.3+ on Windows). It downloads the pinned GitHub source,
+(requires Inno Setup 6.3+ on Windows). It bundles a pinned Git source snapshot (including private repos),
 installs Desktop/Backend, offers optional Local AI and Desktop shortcuts, and
 registers a Windows uninstaller.
 [Installer build, distribution and removal](finalbuild/docs/building/WINDOWS_INSTALLER.md).

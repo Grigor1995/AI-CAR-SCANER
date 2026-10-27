@@ -48,6 +48,9 @@ Name: localai; Description: "Enable local AI - download or select an existing GG
 Name: desktopicon; Description: "Create a Desktop shortcut"; GroupDescription: "Shortcuts:"
 
 [Files]
+#if FileExists(PayloadDir + "\source.zip")
+Source: "{#PayloadDir}\source.zip"; Flags: dontcopy
+#endif
 Source: "{#PayloadDir}\bootstrap.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#PayloadDir}\windows_installer.py"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#PayloadDir}\manifest.json"; DestDir: "{app}\installer"; Flags: ignoreversion
@@ -275,6 +278,7 @@ var
   Arguments: String;
   Code: Integer;
   ShowCommand: Integer;
+  ErrorText: AnsiString;
 begin
   Result := '';
   if DirExists(WizardDirValue) and not IsEmptyDirectory(WizardDirValue) and
@@ -291,15 +295,23 @@ begin
   ExtractTemporaryFile('bootstrap.ps1');
   ExtractTemporaryFile('windows_installer.py');
   ExtractTemporaryFile('manifest.json');
+  DeleteFile(ExpandConstant('{tmp}\installer-error.txt'));
+#if FileExists(PayloadDir + "\source.zip")
+  ExtractTemporaryFile('source.zip');
+#endif
   Arguments := '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\bootstrap.ps1') +
     '" -Root "' + WizardDirValue + '" -Manifest "' + ExpandConstant('{tmp}\manifest.json') +
-    '" -Helper "' + ExpandConstant('{tmp}\windows_installer.py') + '"';
+    '" -Helper "' + ExpandConstant('{tmp}\windows_installer.py') +
+    '" -ErrorFile "' + ExpandConstant('{tmp}\installer-error.txt') + '"';
+#if FileExists(PayloadDir + "\source.zip")
+  Arguments := Arguments + ' -SourceArchive "' + ExpandConstant('{tmp}\source.zip') + '"';
+#endif
   if WizardIsTaskSelected('localai') then begin
     Arguments := Arguments + ' -WithAI';
     if LocalModelCheck.Checked then
       Arguments := Arguments + ' -LocalModel "' + ModelPath.Text + '"';
   end;
-  DownloadPage.SetText('Internet access is required. A console shows download and installation progress.',
+  DownloadPage.SetText('A console shows setup progress. Dependencies and optional AI require internet access.',
     'Local AI downloads several GB when selected. Close the application before repairing or upgrading.');
   ShowCommand := SW_SHOWNORMAL;
   if WizardSilent then ShowCommand := SW_HIDE
@@ -308,8 +320,12 @@ begin
     if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Arguments,
         ExpandConstant('{tmp}'), ShowCommand, ewWaitUntilTerminated, Code) then
       Result := 'Could not start Windows PowerShell. Check the Setup log.'
-    else if Code <> 0 then
-      Result := 'Setup did not complete. See the console and ' + WizardDirValue + '\logs. Check your internet connection and retry.';
+    else if Code <> 0 then begin
+      Result := 'Setup did not complete (exit ' + IntToStr(Code) + ').';
+      if LoadStringFromFile(ExpandConstant('{tmp}\installer-error.txt'), ErrorText) then
+        Result := Result + #13#10 + Copy(UTF8Decode(ErrorText), 1, 2500);
+      Result := Result + #13#10 + 'Logs: ' + ExpandConstant('{localappdata}\AI-Car-Scanner\installer-logs');
+    end;
   finally
     if not WizardSilent then DownloadPage.Hide;
   end;

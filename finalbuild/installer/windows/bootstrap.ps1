@@ -4,12 +4,24 @@ param(
     [string]$Helper,
     [switch]$WithAI,
     [string]$LocalModel,
+    [string]$SourceArchive,
+    [string]$ErrorFile,
     [switch]$CheckRunning
 )
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $env:PYTHONUTF8 = '1'
 $env:PYTHONIOENCODING = 'utf-8'
+function Save-SetupError([string]$Message) {
+    if ($ErrorFile) {
+        try { [IO.File]::WriteAllText($ErrorFile, $Message, (New-Object Text.UTF8Encoding($false))) } catch { }
+    }
+    try {
+        $folder = Join-Path $env:LOCALAPPDATA 'AI-Car-Scanner\installer-logs'
+        New-Item -ItemType Directory -Force -Path $folder | Out-Null
+        [IO.File]::WriteAllText((Join-Path $folder 'last-error.txt'), $Message, (New-Object Text.UTF8Encoding($false)))
+    } catch { }
+}
 function Find-Python {
     $candidates = @()
     foreach ($name in @('py.exe', 'python.exe')) {
@@ -45,13 +57,28 @@ function Find-Python {
     }
     return $null
 }
+$transcribing = $false
 try {
+    if ($ErrorFile) { Remove-Item -LiteralPath $ErrorFile -ErrorAction SilentlyContinue }
+    if (-not $CheckRunning) {
+        try {
+            $folder = Join-Path $env:LOCALAPPDATA 'AI-Car-Scanner\installer-logs'
+            New-Item -ItemType Directory -Force -Path $folder | Out-Null
+            $log = Join-Path $folder ('bootstrap-' + (Get-Date -Format 'yyyyMMddTHHmmssfff') + '.log')
+            Start-Transcript -Path $log | Out-Null
+            $transcribing = $true
+        } catch { }
+    }
     $repositoryPath = (Join-Path $Root 'repo').TrimEnd('\') + '\'
-    $running = @(Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe' OR Name='llama-server.exe'" | Where-Object {
+    $running = @()
+    if (Test-Path -LiteralPath (Join-Path $Root 'repo')) {
+        $running = @(Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe' OR Name='llama-server.exe'" | Where-Object {
         ($_.ExecutablePath -and $_.ExecutablePath.StartsWith($repositoryPath, [StringComparison]::OrdinalIgnoreCase)) -or
         ($_.CommandLine -and $_.CommandLine.IndexOf($repositoryPath, [StringComparison]::OrdinalIgnoreCase) -ge 0)
-    })
+        })
+    }
     if ($running.Count -gt 0) {
+        Save-SetupError 'Close AI Car Scanner and its backend/local AI before updating or uninstalling.'
         Write-Host 'Close AI Car Scanner and its backend/local AI before updating or uninstalling.' -ForegroundColor Red
         exit 10
     }
@@ -81,13 +108,21 @@ try {
     $arguments = @($Helper, 'install', '--root', $Root, '--manifest', $Manifest)
     if ($WithAI) { $arguments += '--with-ai' }
     if ($LocalModel) { $arguments += @('--model', $LocalModel) }
+    if ($SourceArchive) { $arguments += @('--source-archive', $SourceArchive) }
+    if ($ErrorFile) { $arguments += @('--error-file', $ErrorFile) }
     & $python @arguments
-    if ($LASTEXITCODE -ne 0) { throw "Application setup failed ($LASTEXITCODE). Logs: $Root\logs" }
+    if ($LASTEXITCODE -ne 0) {
+        if ($ErrorFile -and (Test-Path -LiteralPath $ErrorFile)) {
+            throw ([IO.File]::ReadAllText($ErrorFile, [Text.Encoding]::UTF8))
+        }
+        throw "Application setup failed ($LASTEXITCODE). Logs: $Root\logs"
+    }
     exit 0
 } catch {
+    Save-SetupError $_.Exception.Message
     Write-Host $_ -ForegroundColor Red
     Write-Host 'Setup did not complete. Keep this error message and retry Setup.'
-    # A visible console gives users the failure instead of disappearing immediately.
-    Start-Sleep -Seconds 5
     exit 1
+} finally {
+    if ($transcribing) { try { Stop-Transcript | Out-Null } catch { } }
 }

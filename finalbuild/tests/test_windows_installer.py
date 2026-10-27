@@ -1,5 +1,8 @@
 """Installer lifecycle and download-boundary regressions without Windows mutations."""
 import importlib.util
+import hashlib
+import subprocess
+import urllib.error
 from io import BytesIO
 import json
 from pathlib import Path
@@ -153,7 +156,14 @@ def test_launch_uses_saved_runner_and_no_console_and_propagates_failure(tmp_path
     assert 'creationflags' in options
 
 
-def test_prepared_payload_pins_source_and_includes_real_app_icon(tmp_path):
+def fake_export(commit, destination):
+    data = snapshot()
+    destination.write_bytes(data)
+    return hashlib.sha256(data).hexdigest()
+
+
+def test_prepared_payload_pins_source_and_includes_real_app_icon(tmp_path, monkeypatch):
+    monkeypatch.setattr(builder, 'export_snapshot', fake_export)
     payload = builder.prepare(tmp_path, SHA)
     assert helper.manifest_data(payload / 'manifest.json')['commit'] == SHA
     assert (payload / 'app.ico').read_bytes().startswith(b'\x00\x00\x01\x00')
@@ -183,6 +193,7 @@ def test_linked_checkout_is_not_modified(tmp_path):
 
 
 def test_compiled_artifact_has_verified_checksum_and_pinned_arguments(tmp_path, monkeypatch):
+    monkeypatch.setattr(builder, 'export_snapshot', fake_export)
     compiler = tmp_path / 'ISCC.exe'
     compiler.write_bytes(b'compiler')
     monkeypatch.setattr(builder.platform, 'system', lambda: 'Windows')
@@ -246,3 +257,77 @@ def test_global_config_preserves_custom_env_when_ai_choice_changes(tmp_path):
     values = json.loads(config.read_text())['environment']
     assert values['LOCAL_LLM_SERVER_THREADS'] == 4 and values['API_KEY'] == 'private'
     assert values['AI_CAR_DISABLE_LLM_AUTOSTART'] is True
+
+
+def bundled_config(tmp_path, contents):
+    config = args(tmp_path)
+    config.source_archive = tmp_path / 'source.zip'
+    config.source_archive.write_bytes(contents)
+    config.manifest.write_text(json.dumps({'repository': helper.REPOSITORY, 'commit': SHA,
+        'source_mode': 'bundled', 'source_sha256': hashlib.sha256(contents).hexdigest()}))
+    return config
+
+
+def test_bundled_source_installs_without_github_access(tmp_path, monkeypatch):
+    code = '''from pathlib import Path
+p = Path('.venv/Scripts/pythonw.exe')
+p.parent.mkdir(parents=True,exist_ok=True)
+p.write_bytes(b'pythonw')
+Path('.runner-state.json').write_text('{"ai_enabled":false}')
+'''
+    config = bundled_config(tmp_path, snapshot(runner_code=code))
+    def forbidden(*a, **kw):
+        raise AssertionError('Bundled installer must not request the private GitHub repository')
+    monkeypatch.setattr(helper.urllib.request, 'urlopen', forbidden)
+    assert helper.install(config) == 0
+    assert json.loads((config.root / helper.MARKER).read_text())['ready'] is True
+
+
+def test_damaged_bundled_source_cannot_be_promoted(tmp_path):
+    config = bundled_config(tmp_path, snapshot())
+    config.source_archive.write_bytes(b'damaged')
+    with pytest.raises(ValueError, match='checksum mismatch'):
+        helper.install(config)
+    assert not (config.root / 'repo').exists()
+
+
+def test_online_404_has_actionable_error_for_wizard(tmp_path, monkeypatch):
+    config = args(tmp_path)
+    def unavailable(request, **kwargs):
+        raise urllib.error.HTTPError(request.full_url, 404, 'Not Found', {}, None)
+    monkeypatch.setattr(helper.urllib.request, 'urlopen', unavailable)
+    status = tmp_path / 'installer-error.txt'
+    assert helper.main(['install', '--root', str(config.root), '--manifest', str(config.manifest), '--error-file', str(status)]) == 1
+    text = status.read_text(encoding='utf-8')
+    assert 'HTTP 404' in text and 'private' in text and 'python installer.py' in text
+    assert (config.root / 'logs/bootstrap-errors.log').is_file()
+
+
+def test_online_only_rebuild_removes_stale_bundled_source(tmp_path, monkeypatch):
+    monkeypatch.setattr(builder, 'export_snapshot', fake_export)
+    payload = builder.prepare(tmp_path, SHA)
+    assert (payload / 'source.zip').is_file()
+    builder.prepare(tmp_path, SHA, online_only=True)
+    assert not (payload / 'source.zip').exists()
+    assert json.loads((payload / 'manifest.json').read_text())['source_mode'] == 'online'
+
+
+def test_real_git_archive_excludes_untracked_files_and_git_metadata(tmp_path, monkeypatch):
+    repository = tmp_path / 'checkout'
+    repository.mkdir()
+    def git(*arguments):
+        return subprocess.check_output(['git', *arguments], cwd=repository, stderr=subprocess.DEVNULL, text=True).strip()
+    git('init')
+    (repository / 'source.py').write_text('tracked source')
+    (repository / 'private.env').write_text('untracked private value')
+    git('add', 'source.py')
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '--no-gpg-sign', '-m', 'Fixture')
+    commit = git('rev-parse', 'HEAD')
+    monkeypatch.setattr(builder, 'ROOT', repository)
+    archive = tmp_path / 'snapshot.zip'
+    digest = builder.export_snapshot(commit, archive)
+    assert digest == hashlib.sha256(archive.read_bytes()).hexdigest()
+    with zipfile.ZipFile(archive) as source:
+        names = source.namelist()
+        assert 'AI-CAR-SCANER-' + commit + '/source.py' in names
+        assert not any('private.env' in name or '/.git/' in name for name in names)

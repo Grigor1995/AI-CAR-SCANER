@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Installer source 404 recovery
+
+- Bundle a SHA-256-verified snapshot of tracked source by default, so private GitHub repositories do not fail with unauthenticated source-download 404s. Keep `--online-only` for publicly downloadable commits.
+- Exclude Git history and untracked/ignored local secrets from the source archive. Validate checksum and safe extraction before promoting source files.
+- Display the actual setup failure in the wizard, persist early PowerShell transcripts/errors, and explain inaccessible-source HTTP errors. Keep AI/model/dependency downloads separate from the bundled source.
+
 ## Unreleased — Desktop-styled installer and shared configuration
 
 - Style the Windows wizard with the Desktop navy/neon-blue palette and existing abstract vehicle artwork; add a dedicated AI model page and review summary.

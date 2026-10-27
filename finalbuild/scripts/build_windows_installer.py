@@ -25,7 +25,16 @@ def compiler(explicit=None):
     return next((Path(p).resolve() for p in candidates if p and Path(p).is_file()), None)
 
 
-def prepare(output, commit):
+def export_snapshot(commit, destination):
+    # Archive tracked files from the selected commit, never .git, local ENV,
+    # venvs, credentials or other untracked files from the developer's clone.
+    subprocess.run(['git', 'archive', '--format=zip', '--prefix=AI-CAR-SCANER-' + commit + '/',
+                    '--output=' + str(destination), commit], cwd=ROOT, check=True)
+    with destination.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def prepare(output, commit, *, online_only=False):
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('Use a full 40-character commit SHA; branch names are not pinned installers')
     payload = output / 'payload'
@@ -33,17 +42,24 @@ def prepare(output, commit):
     for name in ('bootstrap.ps1', 'windows_installer.py', 'AI-Car-Scanner.iss', 'wizard-side.bmp', 'wizard-icon.bmp'):
         shutil.copy2(SOURCE / name, payload / name)
     shutil.copy2(ROOT / 'finalbuild/assets/AI-Car-Scanner.ico', payload / 'app.ico')
-    (payload / 'manifest.json').write_text(json.dumps({
-        'repository': 'Grigor1995/AI-CAR-SCANER', 'commit': commit,
-    }, indent=2) + '\n', encoding='utf-8')
+    manifest = {'repository': 'Grigor1995/AI-CAR-SCANER', 'commit': commit,
+                'source_mode': 'online' if online_only else 'bundled'}
+    archive = payload / 'source.zip'
+    if online_only:
+        # Do not accidentally ship an older bundled snapshot on a later build.
+        archive.unlink(missing_ok=True)
+    else:
+        manifest['source_sha256'] = export_snapshot(commit, archive)
+    (payload / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     return payload
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--iscc', type=Path, help='Inno Setup 6.3+ ISCC.exe')
-    parser.add_argument('--commit', help='Official repository commit, default: local HEAD; must be pushed before distributing')
+    parser.add_argument('--commit', help='Commit available locally, default: HEAD; online-only mode requires public GitHub access')
     parser.add_argument('--output', type=Path, default=ROOT / 'artifacts/windows-installer')
+    parser.add_argument('--online-only', action='store_true', help='Download public GitHub source at install time instead of bundling the tracked snapshot')
     parser.add_argument('--prepare-only', action='store_true', help='Prepare inspectable payload without a Windows compiler')
     args = parser.parse_args(argv)
     try:
@@ -54,7 +70,7 @@ def main(argv=None):
         if not args.prepare_only and iscc is None:
             raise ValueError('Install Inno Setup 6.3+ from https://jrsoftware.org/isdl.php or pass --iscc "C:\\path\\ISCC.exe"')
         output = args.output.resolve()
-        payload = prepare(output, commit)
+        payload = prepare(output, commit, online_only=args.online_only)
         print(f'[INSTALLER] Pinned source: {commit}\n[INSTALLER] Payload: {payload}')
         if args.prepare_only:
             return 0

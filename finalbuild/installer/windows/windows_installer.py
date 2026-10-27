@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 from datetime import datetime, timezone
 import json
 import os
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+import urllib.error
 import zipfile
 
 OWNER = 'AI-Car-Scanner-online-installer-v1'
@@ -24,6 +26,10 @@ def manifest_data(path):
     data = json.loads(Path(path).read_text(encoding='utf-8'))
     if data.get('repository') != REPOSITORY or not re.fullmatch(r'[0-9a-f]{40}', data.get('commit', '')):
         raise ValueError('Installer manifest must pin the official repository and a full commit SHA')
+    if data.get('source_mode', 'online') not in {'online', 'bundled'}:
+        raise ValueError('Unknown installer source mode')
+    if data.get('source_mode') == 'bundled' and not re.fullmatch(r'[0-9a-f]{64}', data.get('source_sha256', '')):
+        raise ValueError('Bundled source must have a SHA-256 checksum')
     return data
 
 
@@ -148,19 +154,37 @@ def install(args):
         progress('[SETUP] Repository: ' + REPOSITORY + '@' + manifest['commit'])
         with tempfile.TemporaryDirectory(prefix='ai-car-source-', dir=root) as staging:
             stage = Path(staging)
-            archive = stage / 'repository.zip'
-            url = f'https://codeload.github.com/{REPOSITORY}/zip/{manifest["commit"]}'
-            progress('[DOWNLOAD] GitHub source snapshot; internet access required')
-            request = urllib.request.Request(url, headers={'User-Agent': OWNER})
-            with urllib.request.urlopen(request, timeout=60) as response, archive.open('wb') as destination:
-                if not response.geturl().startswith('https://'):
-                    raise ValueError('Insecure download redirect rejected')
-                count = 0
-                while chunk := response.read(1024 * 1024):
-                    count += len(chunk)
-                    if count > 1024**3:
-                        raise ValueError('Unexpectedly large repository download')
-                    destination.write(chunk)
+            if manifest.get('source_mode') == 'bundled':
+                archive = getattr(args, 'source_archive', None) or Path(args.manifest).parent / 'source.zip'
+                archive = Path(archive)
+                if not archive.is_file():
+                    raise ValueError('Bundled source is missing. Rebuild Setup.exe with python installer.py')
+                progress('[SOURCE] Verifying bundled Git snapshot; no GitHub login or download required')
+                with archive.open('rb') as stream:
+                    digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+                if digest != manifest['source_sha256']:
+                    raise ValueError('Bundled source checksum mismatch. Rebuild or download Setup.exe again')
+            else:
+                archive = stage / 'repository.zip'
+                url = f'https://codeload.github.com/{REPOSITORY}/zip/{manifest["commit"]}'
+                progress('[DOWNLOAD] GitHub source snapshot; internet access required')
+                request = urllib.request.Request(url, headers={'User-Agent': OWNER})
+                try:
+                    with urllib.request.urlopen(request, timeout=60) as response, archive.open('wb') as destination:
+                        if not response.geturl().startswith('https://'):
+                            raise ValueError('Insecure download redirect rejected')
+                        count = 0
+                        while chunk := response.read(1024 * 1024):
+                            count += len(chunk)
+                            if count > 1024**3:
+                                raise ValueError('Unexpectedly large repository download')
+                            destination.write(chunk)
+                except urllib.error.HTTPError as error:
+                    if error.code in (401, 403, 404):
+                        raise RuntimeError(f'GitHub source is not publicly accessible (HTTP {error.code}). '
+                                           'The repository may be private or the commit unavailable. '
+                                           'Build the default bundled installer with python installer.py (without --online-only).') from error
+                    raise
             checkout = extract_source(archive, stage, manifest['commit'])
             previous['ready'] = False
             (root / MARKER).write_text(json.dumps(previous, indent=2), encoding='utf-8')
@@ -222,6 +246,8 @@ def main(argv=None):
     setup = commands.add_parser('install')
     setup.add_argument('--root', type=Path, required=True)
     setup.add_argument('--manifest', type=Path, required=True)
+    setup.add_argument('--source-archive', type=Path)
+    setup.add_argument('--error-file', type=Path)
     setup.add_argument('--with-ai', action='store_true')
     setup.add_argument('--model', type=Path, help='Use an existing GGUF without copying or downloading its weights')
     run = commands.add_parser('launch')
@@ -234,6 +260,11 @@ def main(argv=None):
             import ctypes
             ctypes.windll.user32.MessageBoxW(None, str(error), 'AI Car Scanner', 0x10)
         else:
+            if getattr(args, 'error_file', None):
+                try:
+                    args.error_file.write_text(str(error), encoding='utf-8')
+                except OSError:
+                    pass
             marker = args.root / MARKER
             if marker.is_file():
                 try:

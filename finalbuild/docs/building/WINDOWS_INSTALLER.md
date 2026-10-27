@@ -44,6 +44,13 @@ for another already-pushed commit. The manifest records the source commit,
 not a moving `main` branch. `python installer.py --prepare-only` prepares an
 inspectable payload on any OS, without claiming to compile a Windows executable.
 
+## Installer appearance
+
+The wizard uses the Desktop navy/neon-blue palette, Segoe UI typography,
+existing abstract vehicle artwork, branded welcome/finish artwork and a
+resizable window. The AI page, editable model path and review summary follow
+the same colors; native Windows buttons/dialogs remain keyboard accessible.
+
 ## Installation choices
 
 - **Local AI**, unchecked by default: downloads the verified llama.cpp CPU
@@ -51,6 +58,11 @@ inspectable payload on any OS, without claiming to compile a Windows executable.
   5–6 GB additional download and enough disk/memory for the model. Without
   this checkbox the application and deterministic diagnostic workflows still
   install; local LLM startup is disabled.
+- **Local model** on the AI page: unchecked downloads the verified default
+  weights; checked enables a GGUF path field and Browse button. The file is
+  checked before downloading the repository, passed to the existing runner's
+  `--model` option and referenced without copying. The runtime may still need
+  downloading. The last selected local model is remembered for repair.
 - **Desktop shortcut**, checked by default: creates a shortcut using the
   existing application icon. A Start menu shortcut is always created.
 - **Launch AI Car Scanner** on completion: starts Desktop, Backend and, when
@@ -77,6 +89,7 @@ Default location:
   installer\                 bootstrap, launcher helper, pinned manifest
   repo\                      GitHub snapshot, isolated .venv, runner state
   repo\finalbuild\models\    optional GGUF model
+  environment.json           shared application ENV configuration
   logs\                      setup logs and desktop.log
   unins000.exe               Windows uninstaller
 ```
@@ -92,6 +105,15 @@ same installer to change the AI/shortcut choices. Snapshot updates remove
 obsolete source files and preserve the venv, downloaded models and runner
 state until setup reconfigures them. Unchecking Local AI disables startup and
 keeps previously downloaded weights for reuse; uninstall removes those files.
+
+## Shared global settings
+
+Setup creates `environment.json` beside the installed `repo` directory.
+Desktop and Backend read it automatically when launched from shortcuts.
+Edit ports, context, threads or other ENV options there and restart the app.
+[JSON format, precedence and development overrides](ENVIRONMENT_CONFIG.md).
+For scripted installs, select the `localai` task and pass
+`/LOCALMODEL="C:\Models\model.gguf"` to use existing weights.
 
 ## Uninstall and troubleshooting
 

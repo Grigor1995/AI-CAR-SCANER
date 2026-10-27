@@ -30,7 +30,7 @@ def prepare(output, commit):
         raise ValueError('Use a full 40-character commit SHA; branch names are not pinned installers')
     payload = output / 'payload'
     payload.mkdir(parents=True, exist_ok=True)
-    for name in ('bootstrap.ps1', 'windows_installer.py', 'AI-Car-Scanner.iss'):
+    for name in ('bootstrap.ps1', 'windows_installer.py', 'AI-Car-Scanner.iss', 'wizard-side.bmp', 'wizard-icon.bmp'):
         shutil.copy2(SOURCE / name, payload / name)
     shutil.copy2(ROOT / 'finalbuild/assets/AI-Car-Scanner.ico', payload / 'app.ico')
     (payload / 'manifest.json').write_text(json.dumps({

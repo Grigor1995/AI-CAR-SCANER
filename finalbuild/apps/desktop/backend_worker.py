@@ -20,6 +20,9 @@ def main() -> None:
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
 
+    from shared.environment import apply_environment
+    apply_environment()
+
     print(f"[backend] Python {sys.version.split()[0]}; loading from {root}", flush=True)
     if os.getenv("AI_CAR_DESKTOP_LOCAL_DB") == "1":
         from diagnostic.local_database import prepare_local_database

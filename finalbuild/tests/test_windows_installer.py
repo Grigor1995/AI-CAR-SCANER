@@ -198,3 +198,51 @@ def test_compiled_artifact_has_verified_checksum_and_pinned_arguments(tmp_path, 
     assert checksum.startswith(hashlib.sha256(b'MZ fake test executable').hexdigest())
     assert '/DAppVersion=1.0-' + SHA[:8] in calls[0]
     assert json.loads((tmp_path / 'output/payload/manifest.json').read_text())['commit'] == SHA
+
+
+@pytest.mark.parametrize('payload', [b'', b'not a model'])
+def test_invalid_local_model_rejected_before_download(tmp_path, monkeypatch, payload):
+    config = args(tmp_path, True)
+    config.model = tmp_path / 'bad.gguf'
+    config.model.write_bytes(payload)
+    def forbidden(*a, **kw):
+        raise AssertionError('No download for an invalid local model')
+    monkeypatch.setattr(helper.urllib.request, 'urlopen', forbidden)
+    with pytest.raises(ValueError, match='GGUF'):
+        helper.install(config)
+    assert not config.root.exists()
+
+
+def test_local_model_forwarded_without_copy_and_global_config_written(tmp_path, monkeypatch):
+    config = args(tmp_path, True)
+    config.model = tmp_path / 'իմ մոդել with spaces.gguf'
+    config.model.write_bytes(b'GGUF owned original')
+    code = '''import json,sys
+from pathlib import Path
+assert '--skip-ai' not in sys.argv
+model = sys.argv[sys.argv.index('--model')+1]
+assert Path(model).read_bytes() == b'GGUF owned original'
+p = Path('.venv/Scripts/pythonw.exe')
+p.parent.mkdir(parents=True,exist_ok=True)
+p.write_bytes(b'pythonw')
+Path('.runner-state.json').write_text(json.dumps({'model':model,'llama':'runtime/llama-server.exe','ai_enabled':True}))
+'''
+    data = snapshot(runner_code=code)
+    monkeypatch.setattr(helper.urllib.request, 'urlopen', lambda *a, **kw: Download(data))
+    assert helper.install(config) == 0
+    values = json.loads((config.root / 'environment.json').read_text(encoding='utf-8'))['environment']
+    assert values['LOCAL_LLM_MODEL_PATH'] == str(config.model.resolve())
+    assert values['AI_CAR_DISABLE_LLM_AUTOSTART'] is False
+    assert not list((config.root / 'repo').rglob('*.gguf'))
+    assert config.model.read_bytes() == b'GGUF owned original'
+
+
+def test_global_config_preserves_custom_env_when_ai_choice_changes(tmp_path):
+    root = tmp_path / 'install'
+    root.mkdir()
+    config = root / 'environment.json'
+    config.write_text(json.dumps({'version': 1, 'environment': {'LOCAL_LLM_SERVER_THREADS': 4, 'API_KEY': 'private'}}))
+    helper.save_global_config(root, root / 'repo', {}, False)
+    values = json.loads(config.read_text())['environment']
+    assert values['LOCAL_LLM_SERVER_THREADS'] == 4 and values['API_KEY'] == 'private'
+    assert values['AI_CAR_DISABLE_LLM_AUTOSTART'] is True

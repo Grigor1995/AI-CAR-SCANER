@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Desktop-styled installer and shared configuration
+
+- Style the Windows wizard with the Desktop navy/neon-blue palette and existing abstract vehicle artwork; add a dedicated AI model page and review summary.
+- Choose AI weight download or a local GGUF checkbox/path/browser. Validate local files before setup, preserve external model files and remember the local choice on repair.
+- Add shared versioned JSON ENV configuration for runner, Desktop and backend, with process/local overrides and packaged defaults. Installer shortcuts load the generated installation-level environment.json.
+- Respect configured AI endpoints and effective ports in runner launch/health/emulator routing. Retain custom JSON values during upgrades.
+
 ## Unreleased — Windows online installer
 
 - Add a local Inno Setup builder (`python installer.py`) producing Setup.exe and a SHA-256 checksum, with a pinned GitHub source snapshot.

@@ -23,3 +23,6 @@ htmlcov/
 # Local setup runner configuration (machine-specific paths)
 /.runner-state.json
 /.runner-state.tmp
+
+# Machine-specific global environment overrides
+/finalbuild/config/environment.local.json

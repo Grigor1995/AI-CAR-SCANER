@@ -3,6 +3,7 @@ param(
     [string]$Manifest,
     [string]$Helper,
     [switch]$WithAI,
+    [string]$LocalModel,
     [switch]$CheckRunning
 )
 $ErrorActionPreference = 'Stop'
@@ -79,6 +80,7 @@ try {
     }
     $arguments = @($Helper, 'install', '--root', $Root, '--manifest', $Manifest)
     if ($WithAI) { $arguments += '--with-ai' }
+    if ($LocalModel) { $arguments += @('--model', $LocalModel) }
     & $python @arguments
     if ($LASTEXITCODE -ne 0) { throw "Application setup failed ($LASTEXITCODE). Logs: $Root\logs" }
     exit 0

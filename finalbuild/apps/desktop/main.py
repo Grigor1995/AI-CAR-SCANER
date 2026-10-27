@@ -24,6 +24,10 @@ else:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from shared.environment import apply_environment
+
+apply_environment()
+
 HOST = os.environ.get("AI_CAR_BACKEND_HOST", "127.0.0.1")
 _default_port = int(os.environ.get("AI_CAR_BACKEND_PORT", "8001"))
 _requested_url = os.environ.get("AI_CAR_BACKEND_URL", "").rstrip("/")

@@ -44,6 +44,7 @@ SDK_PACKAGES = ('platform-tools', 'platforms;android-36', 'build-tools;35.0.0')
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from finalbuild.scripts.build_all import Runner, BuildError, android_sdk, java_executable  # noqa: E402
+from finalbuild.shared.environment import environment_values  # noqa: E402
 
 
 class SetupError(RuntimeError):
@@ -153,17 +154,19 @@ def save_state(state):
 
 
 def child_env(state):
-    env = os.environ.copy()
-    env['PYTHONUNBUFFERED'] = '1'
-    env['AI_CAR_BACKEND_HOST'] = '0.0.0.0'
-    env['AI_CAR_BACKEND_PORT'] = str(state.get('port', 8001))
-    env['LOCAL_LLM_SERVER_HOST'] = '127.0.0.1'
-    env['LOCAL_LLM_SERVER_PORT'] = str(state.get('ai_port', 8000))
-    env['LOCAL_LLM_SERVER_URL'] = f'http://127.0.0.1:{state.get("ai_port",8000)}'
+    # Process ENV > local/explicit JSON > saved runner settings > shipped JSON.
+    env = environment_values()
+    env.update(PYTHONUNBUFFERED='1', AI_CAR_BACKEND_HOST='0.0.0.0',
+               AI_CAR_BACKEND_PORT=str(state.get('port', env.get('AI_CAR_BACKEND_PORT', 8001))),
+               LOCAL_LLM_SERVER_HOST='127.0.0.1',
+               LOCAL_LLM_SERVER_PORT=str(state.get('ai_port', env.get('LOCAL_LLM_SERVER_PORT', 8000))))
     for key, field in [('JAVA_HOME', 'java_home'), ('ANDROID_HOME', 'sdk'), ('ANDROID_SDK_ROOT', 'sdk'),
                        ('LOCAL_LLM_MODEL_PATH', 'model'), ('LOCAL_LLM_SERVER_PATH', 'llama')]:
-        if state.get(field): env[key] = state[field]
-    if state.get('java_home'): env['PATH'] = str(Path(state['java_home']) / 'bin') + os.pathsep + env.get('PATH', '')
+        if state.get(field): env[key] = str(state[field])
+    env.update(environment_values(include_defaults=False))
+    env.update(os.environ)
+    env.setdefault('LOCAL_LLM_SERVER_URL', f'http://{env["LOCAL_LLM_SERVER_HOST"]}:{env["LOCAL_LLM_SERVER_PORT"]}')
+    if env.get('JAVA_HOME'): env['PATH'] = str(Path(env['JAVA_HOME']) / 'bin') + os.pathsep + env.get('PATH', '')
     env.setdefault('GRADLE_USER_HOME', str(ROOT / '.build-tools/gradle'))
     return env
 
@@ -410,11 +413,11 @@ def desktop(args):
     env = child_env(state)
     command = [str(python), '-m', 'apps.desktop.main', '--with-backend']
     if not args.no_ai and state.get('ai_enabled', True):
-        if not state.get('model') or not gguf(Path(state['model'])) or not Path(state.get('llama', '')).is_file():
+        if not gguf(Path(env.get('LOCAL_LLM_MODEL_PATH', ''))) or not Path(env.get('LOCAL_LLM_SERVER_PATH', '')).is_file():
             raise SetupError('Local AI is not configured. Run setup or use desktop --no-ai.')
         command.append('--local-ai')
     else: env['AI_CAR_DISABLE_LLM_AUTOSTART'] = '1'
-    print(f'[RUN] Desktop + Backend at http://127.0.0.1:{state.get("port",8001)}; keep this terminal open.', flush=True)
+    print(f'[RUN] Desktop + Backend at http://127.0.0.1:{env["AI_CAR_BACKEND_PORT"]}; keep this terminal open.', flush=True)
     return subprocess.call(command, cwd=PROJECT, env=env)
 
 
@@ -437,7 +440,15 @@ def choose_device(state, requested=None):
 def android(args):
     state = load_state()
     if not state.get('sdk') or not state.get('java_home'): raise SetupError('Run setup with Android enabled first')
-    state['api_url'] = args.api_url or (f'http://127.0.0.1:{state.get("port",8001)}/' if args.reverse else state['api_url'])
+    env = child_env(state)
+    port = env['AI_CAR_BACKEND_PORT']
+    requested = args.api_url or env.get('AI_CAR_ANDROID_API_URL')
+    if requested:
+        state['api_url'] = api_url(requested)
+    elif args.reverse:
+        state['api_url'] = f'http://127.0.0.1:{port}/'
+    elif urllib.parse.urlsplit(state['api_url']).hostname == '10.0.2.2':
+        state['api_url'] = f'http://10.0.2.2:{port}/'
     if not args.build_only:
         target = urllib.parse.urlsplit(state['api_url'])
         check = urllib.parse.urlunsplit(target._replace(netloc='127.0.0.1' + (f':{target.port}' if target.port else ''))) if target.hostname == '10.0.2.2' else state['api_url']
@@ -447,7 +458,7 @@ def android(args):
     apk = build_android(state, Runner(log), args.with_tests)
     if args.build_only: print(f'[APK] {apk}'); return 0
     adb_command(state, 'install', '-r', str(apk), serial=serial)
-    if args.reverse: adb_command(state, 'reverse', f'tcp:{state.get("port",8001)}', f'tcp:{state.get("port",8001)}', serial=serial)
+    if args.reverse: adb_command(state, 'reverse', f'tcp:{port}', f'tcp:{port}', serial=serial)
     adb_command(state, 'shell', 'am', 'force-stop', PACKAGE, serial=serial)
     # Debug run-as changes only the backend URL; retain drafts and other app settings.
     root = ET.Element('map'); ET.SubElement(root, 'string', name='url').text = state['api_url'].rstrip('/')
@@ -460,6 +471,7 @@ def android(args):
 
 def check(args):
     state = load_state()
+    env = child_env(state)
     problems = []
     if not state: problems.append('Runner is not configured: run python runner.py setup')
     python = venv_python()
@@ -468,8 +480,8 @@ def check(args):
         result = subprocess.run([str(python), '-c', 'from PySide6 import QtCore; import fastapi, reportlab, sqlalchemy'], cwd=PROJECT, capture_output=True, text=True)
         if result.returncode: problems.append('Python dependencies incomplete: ' + result.stderr[-1000:])
     if state.get('ai_enabled', True):
-        if not gguf(Path(state.get('model') or PROJECT / 'models' / MODEL_NAME)): problems.append('GGUF model missing/invalid')
-        if not state.get('llama') or not Path(state['llama']).is_file(): problems.append('llama-server not configured')
+        if not gguf(Path(env.get('LOCAL_LLM_MODEL_PATH') or PROJECT / 'models' / MODEL_NAME)): problems.append('GGUF model missing/invalid')
+        if not env.get('LOCAL_LLM_SERVER_PATH') or not Path(env['LOCAL_LLM_SERVER_PATH']).is_file(): problems.append('llama-server not configured')
     if state.get('android_enabled', True):
         if not existing_java(state.get('java_home')): problems.append('Working JDK 17–23 not configured')
         sdk = Path(state.get('sdk') or TOOLS / 'android-sdk')
@@ -477,8 +489,8 @@ def check(args):
         if not (sdk / 'build-tools/35.0.0/source.properties').is_file(): problems.append('Android build-tools 35.0.0 missing')
         if not (sdk / 'platform-tools' / ('adb.exe' if os.name == 'nt' else 'adb')).is_file(): problems.append('Android platform-tools / ADB missing')
     if args.services:
-        if not health(f'http://127.0.0.1:{state.get("port",8001)}'): problems.append('Backend is stopped: run python runner.py desktop')
-        if state.get('ai_enabled', True) and not health(f'http://127.0.0.1:{state.get("ai_port",8000)}'): problems.append('Local AI server is not healthy')
+        if not health(env.get('AI_CAR_BACKEND_URL', f'http://127.0.0.1:{env["AI_CAR_BACKEND_PORT"]}')): problems.append('Backend is stopped: run python runner.py desktop')
+        if state.get('ai_enabled', True) and not health(env['LOCAL_LLM_SERVER_URL']): problems.append('Local AI server is not healthy')
     for message in problems: print('[NEEDS SETUP] ' + message)
     if not problems: print('[READY] Configured components' + (' and services' if args.services else '') + ' checked')
     return 2 if problems else 0
@@ -498,8 +510,8 @@ def main(argv=None):
     configure.add_argument('--skip-android-build', action='store_true', help='Prepare tools without compiling the APK')
     configure.add_argument('--with-tests', action='store_true', help='Install and run Python/Desktop tests, plus Android JVM/lint when building Android')
     configure.add_argument('--run', action='store_true', help='Open Desktop/backend after setup')
-    configure.add_argument('--port', type=int, default=8001)
-    configure.add_argument('--ai-port', type=int, default=8000)
+    configure.add_argument('--port', type=int, default=int(os.environ.get('AI_CAR_BACKEND_PORT', environment_values().get('AI_CAR_BACKEND_PORT', 8001))))
+    configure.add_argument('--ai-port', type=int, default=int(os.environ.get('LOCAL_LLM_SERVER_PORT', environment_values().get('LOCAL_LLM_SERVER_PORT', 8000))))
     configure.add_argument('--api-url', type=api_url)
     launch = commands.add_parser('desktop', help='Run Desktop + Backend + local AI using the project venv')
     launch.add_argument('--no-ai', action='store_true')

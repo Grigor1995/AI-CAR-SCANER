@@ -288,7 +288,7 @@ def test_test_enabled_setup_does_not_connect_to_inherited_database(local,monkeyp
 def test_runner_sets_local_ai_endpoint_in_children_only(monkeypatch):
     monkeypatch.setenv('LOCAL_LLM_SERVER_URL','http://localhost:1234')
     child=runner.child_env({'ai_port':8000,'port':8001})
-    assert child['LOCAL_LLM_SERVER_URL']=='http://127.0.0.1:8000'
+    assert child['LOCAL_LLM_SERVER_URL']=='http://localhost:1234'
     assert os.environ['LOCAL_LLM_SERVER_URL']=='http://localhost:1234'
     with pytest.raises(SystemExit):runner.main(['setup','--port','8000'])
 
@@ -303,3 +303,17 @@ def test_setup_releases_install_lock_before_opening_desktop(local,monkeypatch):
     monkeypatch.setattr(runner,'perform_setup',configured)
     monkeypatch.setattr(runner,'desktop',launched)
     assert runner.setup(setup_args(run=True))==0
+
+
+def test_child_env_uses_global_json_then_process_override(local, monkeypatch):
+    config = local / 'environment.json'
+    config.write_text('{"version":1,"environment":{"LOCAL_LLM_SERVER_PORT":9222,"LOCAL_LLM_SERVER_THREADS":3}}')
+    monkeypatch.setenv('AI_CAR_ENV_CONFIG', str(config))
+    for key in ('LOCAL_LLM_SERVER_PORT', 'LOCAL_LLM_SERVER_URL', 'LOCAL_LLM_SERVER_THREADS'):
+        monkeypatch.delenv(key, raising=False)
+    child = runner.child_env({'ai_port': 8000})
+    assert child['LOCAL_LLM_SERVER_PORT'] == '9222'
+    assert child['LOCAL_LLM_SERVER_URL'] == 'http://127.0.0.1:9222'
+    assert child['LOCAL_LLM_SERVER_THREADS'] == '3'
+    monkeypatch.setenv('LOCAL_LLM_SERVER_THREADS', '5')
+    assert runner.child_env({})['LOCAL_LLM_SERVER_THREADS'] == '5'

@@ -88,8 +88,50 @@ def promote_source(checkout, repository, previous_files=()):
     return sorted(files)
 
 
+def validate_local_model(args):
+    model = getattr(args, 'model', None)
+    if model is None:
+        return None
+    if not args.with_ai:
+        raise ValueError('Enable AI before choosing a local model')
+    model = Path(model).expanduser().resolve()
+    try:
+        with model.open('rb') as stream:
+            if stream.read(4) != b'GGUF':
+                raise ValueError('Select a GGUF model file')
+    except OSError as error:
+        raise ValueError(f'Cannot read local model: {model}') from error
+    return model
+
+
+def save_global_config(root, repository, state, with_ai):
+    """Keep user ENV settings; replace only paths/options selected by Setup."""
+    config = root / 'environment.json'
+    if config.is_symlink() or config.with_suffix('.tmp').is_symlink():
+        raise ValueError('Linked global configuration files are not overwritten')
+    defaults = repository / 'finalbuild/config/environment.json'
+    data = json.loads(defaults.read_text(encoding='utf-8')) if defaults.is_file() else {'version': 1, 'environment': {}}
+    if config.is_file():
+        existing = json.loads(config.read_text(encoding='utf-8'))
+        if existing.get('version') != 1 or not isinstance(existing.get('environment'), dict):
+            raise ValueError('Invalid global environment.json; expected version 1 and environment object')
+        data['environment'].update(existing['environment'])
+    values = data['environment']
+    if not config.is_file():
+        values['AI_CAR_BACKEND_PORT'] = state.get('port', values.get('AI_CAR_BACKEND_PORT', 8001))
+        values['LOCAL_LLM_SERVER_PORT'] = state.get('ai_port', values.get('LOCAL_LLM_SERVER_PORT', 8000))
+    values['AI_CAR_DISABLE_LLM_AUTOSTART'] = not with_ai
+    if with_ai:
+        for key, field in [('LOCAL_LLM_MODEL_PATH', 'model'), ('LOCAL_LLM_SERVER_PATH', 'llama')]:
+            if state.get(field): values[key] = state[field]
+    temporary = config.with_suffix('.tmp')
+    temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    temporary.replace(config)
+
+
 def install(args):
     manifest = manifest_data(args.manifest)
+    local_model = validate_local_model(args)
     root = claim_root(args.root)
     logs = root / 'logs'
     logs.mkdir(exist_ok=True)
@@ -128,9 +170,13 @@ def install(args):
         command = [sys.executable, str(repository / 'runner.py'), 'setup', '--skip-android']
         if not args.with_ai:
             command.append('--skip-ai')
+        elif local_model:
+            command += ['--model', str(local_model)]
         progress('[SETUP] Desktop/backend dependencies' + (' + local AI (several GB)' if args.with_ai else '; local AI disabled'))
         env = os.environ.copy()
         env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
+        if (root / 'environment.json').is_file():
+            env['AI_CAR_ENV_CONFIG'] = str(root / 'environment.json')
         with subprocess.Popen(command, cwd=repository, env=env, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace') as child:
             for line in child.stdout:
@@ -141,7 +187,9 @@ def install(args):
         for relative in ('.venv/Scripts/pythonw.exe', '.runner-state.json'):
             if not (repository / relative).is_file():
                 raise RuntimeError('Setup returned without required file: ' + relative)
-        previous.update(ready=True, ai_enabled=args.with_ai)
+        state = json.loads((repository / '.runner-state.json').read_text(encoding='utf-8'))
+        save_global_config(root, repository, state, args.with_ai)
+        previous.update(ready=True, ai_enabled=args.with_ai, ai_source='local' if local_model else 'download')
         (root / MARKER).write_text(json.dumps(previous, indent=2), encoding='utf-8')
         progress('[READY] Desktop and backend installed. AI: ' + str(args.with_ai))
     return 0
@@ -155,6 +203,8 @@ def launch(args):
     repository = root / 'repo'
     env = os.environ.copy()
     env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
+    if (root / 'environment.json').is_file():
+        env['AI_CAR_ENV_CONFIG'] = str(root / 'environment.json')
     # Desktop's runner owns backend + AI startup/shutdown. Hide its console,
     # retain stdout/stderr on disk, and report failed startup through a dialog.
     with (root / 'logs/desktop.log').open('a', encoding='utf-8') as output:
@@ -173,6 +223,7 @@ def main(argv=None):
     setup.add_argument('--root', type=Path, required=True)
     setup.add_argument('--manifest', type=Path, required=True)
     setup.add_argument('--with-ai', action='store_true')
+    setup.add_argument('--model', type=Path, help='Use an existing GGUF without copying or downloading its weights')
     run = commands.add_parser('launch')
     run.add_argument('--root', type=Path, required=True)
     args = parser.parse_args(argv)

@@ -31,6 +31,9 @@ Build the download-and-install wizard locally with `python installer.py`
 installs Desktop/Backend, offers optional Local AI and Desktop shortcuts, and
 registers a Windows uninstaller.
 [Installer build, distribution and removal](finalbuild/docs/building/WINDOWS_INSTALLER.md).
+The Desktop-styled wizard supports downloaded or existing local GGUF models.
+[Shared JSON environment configuration](finalbuild/docs/building/ENVIRONMENT_CONFIG.md)
+controls Desktop, Backend and runner settings.
 
 ## Build all native apps
 

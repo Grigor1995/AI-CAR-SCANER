@@ -28,10 +28,11 @@ python -m pip install -r finalbuild/backend/requirements.txt
 export DATABASE_URL='sqlite:///ecosystem.sqlite'
 python -m alembic -c finalbuild/backend/alembic.ini upgrade head
 export AI_CAR_ECOSYSTEM_ENABLED=1
-cd finalbuild
-python -m apps.desktop.backend_worker
+python finalbuild/apps/desktop/backend_worker.py
 ```
 
+Keep the repository-root working directory for both commands so the relative
+SQLite URL points to the same database during migration and server startup.
 This starts only the API; it does not add native login UI. Test the v2 OpenAPI
 contracts at `/docs`. The feature blocks legacy API paths intentionally. Leave
 the flag unset/0 for normal current Desktop/mobile diagnosis. The runner now

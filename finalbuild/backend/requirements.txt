@@ -3,7 +3,7 @@ uvicorn[standard]>=0.30,<1
 pydantic>=2.8,<3
 sqlalchemy>=2.0,<3
 psycopg[binary]>=3.2,<4
-alembic>=1.13,<2
+alembic>=1.16,<2
 
 # Physical transport support
 bleak>=3.0,<4
@@ -17,3 +17,6 @@ python-multipart>=0.0.9,<1
 
 # Unicode PDF reports shared by all native clients
 reportlab>=4.2,<5
+
+# IANA timezone validation on Windows account profiles
+tzdata>=2024.1

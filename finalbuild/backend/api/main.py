@@ -31,7 +31,8 @@ from api.global_data_routes import router as global_data_router
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Restore persisted sessions before serving requests."""
-    load_persisted_sessions()
+    if not ecosystem_enabled():
+        load_persisted_sessions()
     try:
         yield
     finally:
@@ -48,7 +49,8 @@ async def persist_diagnostic_sessions(request: Request, call_next):
     try:
         return await call_next(request)
     finally:
-        persist_sessions()
+        if not ecosystem_enabled():
+            persist_sessions()
 engine=DiagnosticReasoningEngine()
 intelligence_engine=DiagnosticIntelligenceEngine()
 decision_engine=DiagnosticDecisionEngine()
@@ -276,3 +278,8 @@ def analyze(session_id:str, language: str = 'en'):
 @app.post('/api/v1/analysis/{session_id}',response_model=DiagnosticSession)
 def analyze_compat(session_id:str, language: str = 'en'):
     return _analyze_session(session_id, language)
+
+
+# Register last so the opt-in ownership boundary wraps legacy middleware/routes.
+from ecosystem.api import install as install_ecosystem, enabled as ecosystem_enabled  # noqa: E402
+install_ecosystem(app)

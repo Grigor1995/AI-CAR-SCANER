@@ -317,3 +317,10 @@ def test_child_env_uses_global_json_then_process_override(local, monkeypatch):
     assert child['LOCAL_LLM_SERVER_THREADS'] == '3'
     monkeypatch.setenv('LOCAL_LLM_SERVER_THREADS', '5')
     assert runner.child_env({})['LOCAL_LLM_SERVER_THREADS'] == '5'
+
+
+def test_runner_is_loopback_by_default_with_explicit_lan_override(monkeypatch):
+    monkeypatch.delenv('AI_CAR_BACKEND_HOST',raising=False)
+    assert runner.child_env({})['AI_CAR_BACKEND_HOST']=='127.0.0.1'
+    monkeypatch.setenv('AI_CAR_BACKEND_HOST','0.0.0.0')
+    assert runner.child_env({})['AI_CAR_BACKEND_HOST']=='0.0.0.0'

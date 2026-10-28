@@ -78,7 +78,9 @@ python runner.py desktop
 ```
 
 This uses `.venv` automatically, starts Backend on port 8001 and local AI on 8000,
-and opens Desktop. The API binds to `0.0.0.0` so LAN devices can reach it. Keep
+and opens Desktop. The API binds to `127.0.0.1` by default. Emulator host routing remains available.
+Physical LAN phones require an explicit `AI_CAR_BACKEND_HOST=0.0.0.0` override
+on a trusted development network; the legacy API is not a public authenticated service. Keep
 Desktop/the terminal open while Android uses its backend. Set `--port` during
 setup to choose another backend port; the default Android URL follows that port.
 `--ai-port` changes the AI port; Backend and AI ports must differ.

@@ -26,3 +26,6 @@ htmlcov/
 
 # Machine-specific global environment overrides
 /finalbuild/config/environment.local.json
+
+# Local foundation smoke-test database
+/ecosystem.sqlite*

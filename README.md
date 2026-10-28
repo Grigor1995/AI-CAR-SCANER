@@ -4,6 +4,20 @@ Evidence-driven automotive diagnostic platform with a shared FastAPI backend, de
 
 [Release notes](RELEASE_NOTES.md)
 
+## Ecosystem foundation (development)
+
+The `feature/ecosystem-foundation-20261028` branch starts the requested ecosystem
+without replacing the native UI or shared diagnostic engine. Audit, baseline,
+interactive architecture, API/migration/security design and a phased roadmap
+are in [docs](docs/CURRENT_SYSTEM_AUDIT.md). The first backend account/ownership/
+workshop-consent milestone is opt-in (`AI_CAR_ECOSYSTEM_ENABLED`, default off).
+Native login screens, authenticated diagnostic adapters, scheduling, notification
+providers, marketplace and admin tools remain later milestones.
+
+[Implementation status](docs/IMPLEMENTATION_REPORT.md) ·
+[Interactive architecture](docs/architecture/interactive_architecture.html) ·
+[Rollout / local smoke test](docs/DEPLOYMENT_GUIDE.md).
+
 ## Supported clients
 
 - **Desktop:** Python + PySide6 workstation (finalbuild/apps/desktop).

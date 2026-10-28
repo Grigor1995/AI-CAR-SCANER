@@ -11,6 +11,7 @@ function activate(e,action){e.addEventListener('click',action);e.addEventListene
 for(const title of Object.keys(data.views)){const option=document.createElement('option');option.textContent=title;$('view').append(option);}
 for(const layer of data.layers){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=true;box.dataset.layer=layer;box.addEventListener('change',()=>{box.checked?visibleLayers.add(layer):visibleLayers.delete(layer);render();});label.append(box,document.createTextNode(layer));$('layers').append(label);}
 function render(){
+ $('view-description').textContent=data.descriptions[$('view').value];
  scene.replaceChildren();
  const ids=new Set(data.views[$('view').value]),query=$('search').value.trim().toLowerCase();
  const selected=data.nodes.filter(n=>ids.has(n.id)&&visibleLayers.has(n.layer)&&JSON.stringify(n).toLowerCase().includes(query));

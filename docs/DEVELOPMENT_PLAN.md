@@ -21,3 +21,22 @@ Each milestone needs buildable code, meaningful tests, migration notes, current
 UI/icon reuse and an updated implementation report. No automatic deployment or
 CI/CD is introduced. A phase's UI screens/migrations are not complete until its
 own acceptance gates pass. Keep incomplete functionality feature-gated.
+
+
+## Proposed phase-specific deliverables (not implemented claims)
+
+| Phase | Proposed API / migration boundary | Native UI / artifacts |
+|---|---|---|
+| 1A | implemented `/api/v2/ecosystem` accounts, sessions, owned profiles, centers/invites/consents; revision 0001 | API contracts, additive schema and negative access tests; native UI unchanged |
+| 1B | owner-scoped adapters to current sessions, devices, telemetry, tests and reports; explicit legacy ownership/import mapping | no duplicate engine; endpoint permission audit and replay tests |
+| 1C | consume stable identity contracts; staff/admin provisioning policy | current-themed login, profile, mode selector, account/consent screens on all three clients |
+| 2 | proposed schedules/runs/alert preferences/delivery APIs; schedule/run/outbox/destination-verification tables | Auto Monitoring, Notifications, Service Centers; DST and provider-failure test artifacts |
+| 3 | proposed work-orders/repair-references/diagram-provider APIs; work-order/notes/licensed-reference records | Connected Users, customer vehicle workspace, testing methodology, wiring and final PDF checklist |
+| 4 | proposed merchants/products/fitment/offers/discount eligibility APIs; merchant, compatibility, stock and offer tables | seller portal, inventory/discount forms and eligible workshop offers; no paid fault-ranking changes |
+| 5 | proposed admin account/merchant approval/feature/audit aggregate APIs; privileged-action and moderation records | real-data platform dashboard, account management, merchant approval and security audit tools |
+| 6 | versioned sync/conflict and capability APIs only after a concrete device topology is selected | parity builds, offline queue state/merge UX, transport bindings or measured C++ artifact if justified |
+| 7 | retention/export/delete/operational interfaces; tested backup and job cleanup policies | signed release artifacts, restore/pentest/load reports and hardware acceptance matrix |
+
+Phase 2–7 API names remain design proposals until their milestones provide typed
+contracts, migrations, UI, tests and deployment evidence. Providers, licenses and
+real devices are dependencies, not implementation placeholders presented as PASS.

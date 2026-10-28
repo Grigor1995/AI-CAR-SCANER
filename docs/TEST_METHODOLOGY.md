@@ -15,3 +15,8 @@ Gradle project. Device instrumentation, real ELM sessions, iOS and Windows
 release execution have independent gates. Baseline 966 Python passes and high
 line coverage do not prove forthcoming email, marketplace or hardware behavior.
 No CI/CD or external messaging/deployment is run.
+
+Reproducible local helpers: `scripts/check_ecosystem_smoke.py` creates only a
+temporary database and real Uvicorn process; `scripts/check_architecture_browser.py`
+uses local Chromium and bundled assets over loopback. Smoke tests do not send
+email/SMS, connect hardware or access an operator database.

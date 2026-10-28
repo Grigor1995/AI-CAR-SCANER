@@ -156,7 +156,7 @@ def save_state(state):
 def child_env(state):
     # Process ENV > local/explicit JSON > saved runner settings > shipped JSON.
     env = environment_values()
-    env.update(PYTHONUNBUFFERED='1', AI_CAR_BACKEND_HOST='0.0.0.0',
+    env.update(PYTHONUNBUFFERED='1', AI_CAR_BACKEND_HOST='127.0.0.1',
                AI_CAR_BACKEND_PORT=str(state.get('port', env.get('AI_CAR_BACKEND_PORT', 8001))),
                LOCAL_LLM_SERVER_HOST='127.0.0.1',
                LOCAL_LLM_SERVER_PORT=str(state.get('ai_port', env.get('LOCAL_LLM_SERVER_PORT', 8000))))

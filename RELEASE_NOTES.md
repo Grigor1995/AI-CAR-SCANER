@@ -1,5 +1,13 @@
 # Release notes
 
+## Development — Ecosystem foundation (new branch)
+
+- Audit the existing platform and preserve its native UIs, shared DiagnosticSession, reasoning and transport modules; add local interactive architecture and staged implementation documentation.
+- Add feature-gated v2 accounts, hashed/revocable bearer sessions, primary-mode authorization, owned legacy-compatible profiles and durable owner-approved workshop sharing.
+- Add explicit Alembic migrations, scoped audit events and EN/HY/RU error responses. Invites grant no access until the owner accepts; revocation and expiry are rechecked on reads.
+- With ecosystem mode enabled, block legacy anonymous API bypasses and skip anonymous global-session cache persistence. With it disabled, existing diagnostic clients retain their API behavior.
+- Change runner bind default to loopback; trusted physical-LAN development requires an explicit host override. Native authenticated diagnostics/workspaces and remaining ecosystem phases are not yet production-ready.
+
 ## Unreleased — Installer source 404 recovery
 
 - Bundle a SHA-256-verified snapshot of tracked source by default, so private GitHub repositories do not fail with unauthenticated source-download 404s. Keep `--online-only` for publicly downloadable commits.

@@ -24,6 +24,7 @@ release publishing, CI/CD, SMS or email is performed by this branch.
 From the repository root (use the prepared venv Python):
 
 ```bash
+python -m pip install -r finalbuild/backend/requirements.txt
 export DATABASE_URL='sqlite:///ecosystem.sqlite'
 python -m alembic -c finalbuild/backend/alembic.ini upgrade head
 export AI_CAR_ECOSYSTEM_ENABLED=1
@@ -46,3 +47,8 @@ python -m http.server 8765 --bind 127.0.0.1 --directory docs
 ```
 
 Open `http://127.0.0.1:8765/architecture/interactive_architecture.html`.
+
+The migration CLI reuses the bounded database-engine factory and explicitly
+disposes its engine. Alembic >=1.16 is required for Windows-safe path parsing.
+Autogeneration excludes unrelated legacy tables; PostgreSQL offline SQL is
+provided as review evidence, not a claim of a live PostgreSQL test.

@@ -703,5 +703,17 @@ window.ARCHITECTURE_DATA = {
       "cpp",
       "storage"
     ]
+  },
+  "descriptions": {
+    "High-Level Architecture": "Existing modules, the first account/consent foundation and explicitly planned integrations. No C++ core or complete ecosystem is claimed.",
+    "USER Diagnostic Flow": "Existing local diagnostic workflow plus new owned-profile APIs; authenticated diagnostic-session adapters and native login UI are next.",
+    "CUSTOMER Diagnostic Flow": "Foundation implements staff-scoped vehicle-profile sharing. Full authenticated professional diagnostics, work orders and licensed guides are planned.",
+    "Automated OBD Monitoring": "Scheduler and unattended scans are PLANNED. Availability/ignition/OS restrictions must defer unperformed scans, never mark them successful.",
+    "AI Diagnostic Decision Flow": "Existing evidence-driven deterministic/AI modules; shared canonical session and test recalculation. LLMs cannot invent readings.",
+    "Notifications": "Email/SMS/outbox and verified delivery are PLANNED; no external provider is configured or executed here.",
+    "Marketplace": "Merchant role contract is defined. Products, stock, discounts, verified compatibility and seller portal are PLANNED.",
+    "Admin and Permission Management": "Foundation checks assigned modes and current DB roles. Admin management, MFA and production analytics are PLANNED.",
+    "Offline/Online Synchronization": "Existing local/shared backend topology. A cross-device synchronization queue and conflict handling are PLANNED, not implemented.",
+    "Cross-Platform Integration": "Existing native UIs/transports and shared Python backend. Native authenticated workspace UI and any measured C++ extraction are later milestones."
   }
 };

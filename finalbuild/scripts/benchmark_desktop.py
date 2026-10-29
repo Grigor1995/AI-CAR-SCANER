@@ -79,6 +79,7 @@ def benchmark_qt_source(iterations: int) -> dict:
             raise AssertionError("Benchmark must never write real vehicle profiles")
 
     class NoNetworkAPI:
+        base_url = "http://127.0.0.1:9"  # Inert metadata; no vehicle triggers portrait loading.
         def __getattr__(self, name):
             raise AssertionError(f"Benchmark must never access backend API: {name}")
 

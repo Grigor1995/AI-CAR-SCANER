@@ -1,0 +1,143 @@
+{
+  "results": {
+    "python_exact_mean": {
+      "pipeline": {
+        "iterations": 40,
+        "warmups": 5,
+        "p50_ms": 18.05646,
+        "p95_ms": 19.681492,
+        "p99_ms": 20.910664,
+        "operations_per_second": 54.955837084268644,
+        "cpu_seconds": 0.727336524,
+        "wall_seconds": 0.7278571689967066,
+        "cpu_percent_one_core": 99.92846879595565,
+        "traced_peak_bytes": 688168,
+        "allocation_count": "NOT MEASURED",
+        "gc_counts_after": [
+          1,
+          10,
+          11
+        ]
+      },
+      "max_absolute_numeric_difference": 0.0,
+      "tolerance_check": "PASS (fixture only; not exact equivalence)"
+    },
+    "python_fmean_experiment": {
+      "pipeline": {
+        "iterations": 40,
+        "warmups": 5,
+        "p50_ms": 10.999602,
+        "p95_ms": 20.537872,
+        "p99_ms": 28.166502,
+        "operations_per_second": 78.07341253486918,
+        "cpu_seconds": 0.5111900539999998,
+        "wall_seconds": 0.5123383070022101,
+        "cpu_percent_one_core": 99.7758799241601,
+        "traced_peak_bytes": 688168,
+        "allocation_count": "NOT MEASURED",
+        "gc_counts_after": [
+          1,
+          10,
+          11
+        ]
+      },
+      "max_absolute_numeric_difference": 1.1368683772161603e-13,
+      "tolerance_check": "PASS (fixture only; not exact equivalence)"
+    },
+    "cpp_copy_included_experiment": {
+      "pipeline": {
+        "iterations": 40,
+        "warmups": 5,
+        "p50_ms": 13.307042,
+        "p95_ms": 17.553157,
+        "p99_ms": 18.832294,
+        "operations_per_second": 72.89430379545963,
+        "cpu_seconds": 0.548698913,
+        "wall_seconds": 0.5487397219985723,
+        "cpu_percent_one_core": 99.99256314115118,
+        "traced_peak_bytes": 688168,
+        "allocation_count": "NOT MEASURED",
+        "gc_counts_after": [
+          13,
+          8,
+          13
+        ]
+      },
+      "max_absolute_numeric_difference": 0.0,
+      "tolerance_check": "PASS (fixture only; not exact equivalence)"
+    },
+    "native_prepacked_micro_only": {
+      "iterations": 1000,
+      "warmups": 5,
+      "p50_ms": 0.00681,
+      "p95_ms": 0.00692,
+      "p99_ms": 0.020911,
+      "operations_per_second": 136566.16403404035,
+      "cpu_seconds": 0.007327663000000317,
+      "wall_seconds": 0.007322457997361198,
+      "cpu_percent_one_core": 100.07108272442116,
+      "traced_peak_bytes": 340,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        6,
+        0,
+        0
+      ]
+    },
+    "native_mean_with_copy_micro": {
+      "iterations": 1000,
+      "warmups": 5,
+      "p50_ms": 0.188409,
+      "p95_ms": 0.306391,
+      "p99_ms": 0.41823,
+      "operations_per_second": 4754.588581882447,
+      "cpu_seconds": 0.21032713899999989,
+      "wall_seconds": 0.21032314001058694,
+      "cpu_percent_one_core": 100.00190135494019,
+      "traced_peak_bytes": 40196,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        6,
+        0,
+        0
+      ]
+    },
+    "python_fmean_micro": {
+      "iterations": 1000,
+      "warmups": 5,
+      "p50_ms": 0.023245,
+      "p95_ms": 0.025668,
+      "p99_ms": 0.067131,
+      "operations_per_second": 39201.8672352073,
+      "cpu_seconds": 0.025506887000000145,
+      "wall_seconds": 0.025508988997898996,
+      "cpu_percent_one_core": 99.99175977574406,
+      "traced_peak_bytes": 116,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        4,
+        0,
+        0
+      ]
+    },
+    "python_exact_mean_micro": {
+      "iterations": 1000,
+      "warmups": 5,
+      "p50_ms": 0.729919,
+      "p95_ms": 1.183382,
+      "p99_ms": 1.249893,
+      "operations_per_second": 1254.1816768818392,
+      "cpu_seconds": 0.7972829309999998,
+      "wall_seconds": 0.7973326499923132,
+      "cpu_percent_one_core": 99.99376433508473,
+      "traced_peak_bytes": 2948,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        9,
+        0,
+        0
+      ]
+    }
+  },
+  "decision": "NOT INTEGRATED: finite-only contract, floating-point equivalence not universal; compare simpler fmean first. GIL release only during ctypes call, packing holds GIL. No JNI/iOS/Windows validation."
+}

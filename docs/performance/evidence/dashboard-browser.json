@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checks": {
+    "initial_nodes": 13,
+    "search": 1,
+    "language": 1,
+    "decision": 1,
+    "details_and_dependencies": true,
+    "zoom": true,
+    "pan": true,
+    "wheel": true,
+    "baseline_rows": 9,
+    "comparison_rows": 3,
+    "expandable": true,
+    "responsive": true
+  },
+  "scope": "Chromium local HTTP, not Windows/iOS rendering"
+}

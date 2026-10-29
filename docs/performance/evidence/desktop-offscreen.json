@@ -1,0 +1,30 @@
+{
+  "status": "MEASURED",
+  "performance_budget_ms": {
+    "navigation_p95": 0.0,
+    "qt_timer_p95": 0.0
+  },
+  "source_qt": {
+    "mode": "source-offscreen-no-network",
+    "window_startup_ms": 419.381,
+    "navigation_latency": {
+      "samples": 70,
+      "mean_ms": 4.87,
+      "p50_ms": 2.322,
+      "p95_ms": 12.622,
+      "max_ms": 66.825
+    },
+    "qt_timer_turnaround": {
+      "samples": 70,
+      "mean_ms": 0.07,
+      "p50_ms": 0.035,
+      "p95_ms": 0.214,
+      "max_ms": 0.536
+    },
+    "python_allocated_growth_kib": 1186.518,
+    "python_tracemalloc_peak_kib": 2614.15,
+    "limitations": "Qt offscreen; no rendering FPS or GPU measurement. tracemalloc excludes native Qt/C++ memory."
+  },
+  "packaged_exe": null,
+  "violations": []
+}

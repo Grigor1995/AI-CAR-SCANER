@@ -1,5 +1,12 @@
 # Release notes
 
+## Unreleased — Measured telemetry optimization (2026-10-29)
+
+- Reuse sorted/filtered signal samples for telemetry statistics and events while preserving public APIs, arithmetic and current UI/assets.
+- Paired synthetic 1k/10k/50k summary benchmarks show about 11–20% lower p50 on the audit host; hardware/LLM latency is not inferred.
+- Add exact regression cases, reproducible profiling scripts, optional C++20 experiment and an interactive local performance dashboard. Keep C++ outside production because simpler Python alternatives beat its copy-inclusive experiment.
+- Full common suite: 1062 passed, 2 skipped; all five Desktop groups pass. Detailed platform limitations and raw evidence: docs/performance/FINAL_PERFORMANCE_REPORT.md.
+
 ## Development — Ecosystem foundation (new branch)
 
 - Audit the existing platform and preserve its native UIs, shared DiagnosticSession, reasoning and transport modules; add local interactive architecture and staged implementation documentation.

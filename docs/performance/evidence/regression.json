@@ -1,0 +1,92 @@
+{
+  "common": {
+    "status": "PASS",
+    "passed": 1062,
+    "skipped": 2,
+    "seconds": 44.47
+  },
+  "merged_foundation_before_optimization": {
+    "status": "PASS",
+    "passed": 1001,
+    "skipped": 2,
+    "seconds": 41.96
+  },
+  "targeted_after_benchmark_tool_fix": {
+    "status": "PASS",
+    "passed": 71,
+    "seconds": 1.56
+  },
+  "desktop": {
+    "status": "PASS",
+    "groups": 5,
+    "cases": {
+      "logic": {
+        "total": 217,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 216
+      },
+      "diagnostic-e2e": {
+        "total": 6,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      "negative": {
+        "total": 68,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "ui-pom": {
+        "total": 142,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 142
+      },
+      "ui-widgets": {
+        "total": 25,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 25
+      }
+    },
+    "source_line_coverage": 90.43,
+    "core_line_coverage": 90.84
+  },
+  "android": {
+    "status": "PASS (cached build/test tasks)",
+    "tasks": "67: 1 executed, 66 up-to-date",
+    "seconds": 14,
+    "junit_counts": {
+      "tests": 113,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "scope": "Kotlin, instrumentation source compile, JVM tests, debug APK, lint. No emulator/device tests executed."
+  },
+  "native": {
+    "status": "PASS",
+    "compiler": "g++ C++20 -O3 shared library; ASan+UBSan contract executable",
+    "platform": "Linux x86_64 only"
+  },
+  "http_restart_smoke": {
+    "status": "PASS",
+    "checks": 10
+  },
+  "dashboard": {
+    "status": "PASS",
+    "checks": 12
+  },
+  "ios": "BLOCKED: Xcode unavailable",
+  "windows_package": "NOT RUN: Linux host",
+  "physical_obd": "BLOCKED: no hardware",
+  "live_postgresql": "NOT RUN",
+  "real_llm": "NOT RUN: no loaded model"
+}

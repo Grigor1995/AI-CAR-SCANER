@@ -39,3 +39,10 @@ Actual browser QA is reproducible with
 It uses a temporary browser profile and local HTTP server, not external sites.
 Execution evidence is under `../evidence/architecture-browser-checks.json`;
 the PNG is supporting evidence, not a replacement for the interactive diagram.
+
+## Measured performance audit
+
+Open [performance_architecture_dashboard.html](performance_architecture_dashboard.html)
+for the bundled architecture graph, measured baseline, paired before/after data
+and isolated C++ experiment. See [performance reports](../performance/FINAL_PERFORMANCE_REPORT.md)
+for reproduction commands and unmeasured hardware/platform limitations.

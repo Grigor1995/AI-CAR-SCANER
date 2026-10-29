@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections import defaultdict
 from uuid import UUID
-from .analysis import compute_stats, detect_events
+from .analysis import _analyze_sorted_signal
 from .channels import channel_name
 from .models import TelemetrySample, TelemetrySummary
 
@@ -25,6 +25,7 @@ class TelemetryService:
         return sorted(items, key=lambda x: (x.timestamp_ms, x.sequence or -1))
 
     def summarize(self, session_id: UUID) -> TelemetrySummary:
+        # Grouping preserves the global stable timestamp/sequence order.
         items = self.samples(session_id)
         grouped: dict[str, list[TelemetrySample]] = defaultdict(list)
         for item in items:
@@ -32,9 +33,8 @@ class TelemetryService:
         stats = []
         events = []
         for pid, signal_samples in sorted(grouped.items()):
-            signal_stats = compute_stats(session_id, pid, signal_samples)
+            signal_stats, signal_events = _analyze_sorted_signal(session_id, pid, signal_samples)
             signal_stats.display_name = channel_name(pid)
-            signal_events = detect_events(session_id, pid, signal_samples)
             signal_stats.anomaly_count = sum(1 for e in signal_events if e.event_type.value in {"STEP_CHANGE", "RATE_SPIKE", "OUT_OF_RANGE"})
             signal_stats.event_count = len(signal_events)
             stats.append(signal_stats)

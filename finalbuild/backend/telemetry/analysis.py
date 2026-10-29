@@ -17,7 +17,11 @@ def _stddev(values: list[float], avg: float) -> float:
 
 
 def compute_stats(session_id, pid: str, samples: Sequence[TelemetrySample]) -> SignalStats:
-    xs = _sorted_valid(samples)
+    return _compute_stats_prepared(session_id, pid, _sorted_valid(samples))
+
+
+def _compute_stats_prepared(session_id, pid: str, xs: Sequence[TelemetrySample]) -> SignalStats:
+    """Internal contract: samples are already sorted and exclude INVALID."""
     if not xs:
         return SignalStats(session_id=session_id, pid=pid, count=0)
     values = [s.value for s in xs]
@@ -49,7 +53,11 @@ def compute_stats(session_id, pid: str, samples: Sequence[TelemetrySample]) -> S
 
 
 def detect_events(session_id, pid: str, samples: Sequence[TelemetrySample]) -> list[SignalEvent]:
-    xs = _sorted_valid(samples)
+    return _detect_events_prepared(session_id, pid, _sorted_valid(samples))
+
+
+def _detect_events_prepared(session_id, pid: str, xs: Sequence[TelemetrySample]) -> list[SignalEvent]:
+    """Internal contract: samples are already sorted and exclude INVALID."""
     definition = SIGNAL_DEFINITIONS.get(pid)
     if len(xs) < 2:
         return []
@@ -92,3 +100,14 @@ def detect_events(session_id, pid: str, samples: Sequence[TelemetrySample]) -> l
                 metrics={"rate_per_second": rate, "threshold": definition.rate_threshold_per_second},
             ))
     return events
+
+
+def _analyze_sorted_signal(session_id, pid: str, samples: Sequence[TelemetrySample]) -> tuple[SignalStats, list[SignalEvent]]:
+    """Internal service contract: input is sorted by timestamp/sequence already.
+
+    Filter once without sorting again. No mutation, cache, arithmetic or event
+    threshold changes; standalone public entry points still accept any order.
+    """
+    prepared = [s for s in samples if s.quality != SampleQuality.INVALID]
+    return (_compute_stats_prepared(session_id, pid, prepared),
+            _detect_events_prepared(session_id, pid, prepared))

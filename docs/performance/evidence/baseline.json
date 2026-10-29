@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "python": "3.13.5 (main, Aug 10 2026, 12:06:59) [GCC 14.2.0]",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "git_head": "540e00f07b8f60c2788c8d12dea1200817669afb",
+  "clock": "perf_counter_ns",
+  "seed": 429,
+  "results": {
+    "diagnostic_analysis": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 0.595091,
+      "p95_ms": 0.960246,
+      "p99_ms": 0.991914,
+      "operations_per_second": 1506.4580340953669,
+      "cpu_seconds": 0.019920742999999907,
+      "wall_seconds": 0.01991426201129798,
+      "cpu_percent_one_core": 100.03254445832967,
+      "traced_peak_bytes": 52217,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        573,
+        0,
+        0
+      ]
+    },
+    "pid_snapshot": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 0.0242015,
+      "p95_ms": 0.057987,
+      "p99_ms": 0.139891,
+      "operations_per_second": 32962.64996141297,
+      "cpu_seconds": 0.0009148599999999618,
+      "wall_seconds": 0.0009101210016524419,
+      "cpu_percent_one_core": 100.52069981232337,
+      "traced_peak_bytes": 2303,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        14,
+        0,
+        0
+      ]
+    },
+    "dtc_decode": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 0.001677,
+      "p95_ms": 0.003816,
+      "p99_ms": 0.028763,
+      "operations_per_second": 317551.0524781139,
+      "cpu_seconds": 9.837599999995561e-05,
+      "wall_seconds": 9.447299817111343e-05,
+      "cpu_percent_one_core": 104.13134112857612,
+      "traced_peak_bytes": 464,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        4,
+        0,
+        0
+      ]
+    },
+    "session_json": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 0.004707,
+      "p95_ms": 0.007782,
+      "p99_ms": 0.092089,
+      "operations_per_second": 120237.58781125915,
+      "cpu_seconds": 0.0002535570000001819,
+      "wall_seconds": 0.00024950600345619023,
+      "cpu_percent_one_core": 101.62360684227102,
+      "traced_peak_bytes": 1426,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        4,
+        0,
+        0
+      ]
+    },
+    "telemetry_summary_1000": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 1.8905370000000001,
+      "p95_ms": 3.203024,
+      "p99_ms": 3.859453,
+      "operations_per_second": 462.8894506505687,
+      "cpu_seconds": 0.06481730399999996,
+      "wall_seconds": 0.06481029100541491,
+      "cpu_percent_one_core": 100.0108208040363,
+      "traced_peak_bytes": 35956,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        1094,
+        0,
+        0
+      ]
+    },
+    "telemetry_summary_10000": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 21.6640345,
+      "p95_ms": 31.762082,
+      "p99_ms": 33.210543,
+      "operations_per_second": 43.90976248733629,
+      "cpu_seconds": 0.6809249100000003,
+      "wall_seconds": 0.6832193640002515,
+      "cpu_percent_one_core": 99.66417023270284,
+      "traced_peak_bytes": 688168,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        1,
+        4,
+        9
+      ]
+    },
+    "telemetry_summary_50000": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 189.2053195,
+      "p95_ms": 223.155404,
+      "p99_ms": 233.758288,
+      "operations_per_second": 5.251978826524044,
+      "cpu_seconds": 5.711892613000001,
+      "wall_seconds": 5.712132701009978,
+      "cpu_percent_one_core": 99.99579687618368,
+      "traced_peak_bytes": 3888072,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        0,
+        10,
+        162
+      ]
+    },
+    "http_health_inprocess": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 2.34382,
+      "p95_ms": 2.745305,
+      "p99_ms": 3.452039,
+      "operations_per_second": 418.0649021476908,
+      "cpu_seconds": 0.0739952929999994,
+      "wall_seconds": 0.0717591930006165,
+      "cpu_percent_one_core": 103.11611642478155,
+      "traced_peak_bytes": 71287,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        1317,
+        1,
+        0
+      ]
+    },
+    "sqlite_indexed_history_100": {
+      "iterations": 30,
+      "warmups": 5,
+      "p50_ms": 0.029369,
+      "p95_ms": 0.089024,
+      "p99_ms": 0.348465,
+      "operations_per_second": 23400.570858412484,
+      "cpu_seconds": 0.001286733000000595,
+      "wall_seconds": 0.0012820200063288212,
+      "cpu_percent_one_core": 100.36762247457197,
+      "traced_peak_bytes": 4499,
+      "allocation_count": "NOT MEASURED",
+      "gc_counts_after": [
+        138,
+        0,
+        0
+      ]
+    }
+  },
+  "backend_import_fresh_process_ms": [
+    746.929736007587,
+    713.5045369941508,
+    793.1246000080137,
+    706.8880839942722,
+    695.1823029958177
+  ],
+  "profile": "baseline.prof",
+  "limitations": [
+    "Synthetic shuffled telemetry; four channels at 10 Hz each; not hardware throughput.",
+    "Fresh process imports use warm OS file cache; true cold boot NOT MEASURED.",
+    "HTTP is in-process TestClient, not socket/load capacity.",
+    "SQLite is an isolated in-memory indexed fixture, not deployed PostgreSQL.",
+    "Adapter/ECU/network latency, real LLM/RAG model inference, Windows/iOS, GPU/frame times and RSS NOT MEASURED."
+  ]
+}

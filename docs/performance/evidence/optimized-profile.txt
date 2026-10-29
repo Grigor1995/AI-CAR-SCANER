@@ -1,0 +1,40 @@
+Thu Oct 29 11:01:40 2026    /workspace/AI-CAR-SCANER/docs/performance/evidence/optimized.prof
+
+         596637 function calls in 0.286 seconds
+
+   Ordered by: cumulative time
+   List reduced from 56 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.001    0.001    0.286    0.286 benchmark_pipeline.py:78(<lambda>)
+        1    0.008    0.008    0.285    0.285 service.py:27(summarize)
+        4    0.007    0.002    0.174    0.043 analysis.py:105(_analyze_sorted_signal)
+        4    0.014    0.004    0.114    0.028 analysis.py:23(_compute_stats_prepared)
+        1    0.000    0.000    0.098    0.098 service.py:21(samples)
+        2    0.061    0.031    0.098    0.049 {built-in method builtins.sorted}
+        8    0.000    0.000    0.083    0.010 statistics.py:472(mean)
+        8    0.032    0.004    0.083    0.010 statistics.py:158(_sum)
+        4    0.046    0.011    0.053    0.013 analysis.py:59(_detect_events_prepared)
+    99004    0.014    0.000    0.039    0.000 statistics.py:291(_exact_ratio)
+    50000    0.037    0.000    0.037    0.000 service.py:25(<lambda>)
+    99004    0.025    0.000    0.025    0.000 {method 'as_integer_ratio' of 'float' objects}
+       16    0.004    0.000    0.011    0.001 {built-in method builtins.sum}
+    99025    0.011    0.000    0.011    0.000 {method 'get' of 'dict' objects}
+        4    0.000    0.000    0.010    0.003 analysis.py:13(_stddev)
+    99000    0.007    0.000    0.007    0.000 {built-in method builtins.abs}
+    49508    0.006    0.000    0.006    0.000 analysis.py:16(<genexpr>)
+    50004    0.005    0.000    0.005    0.000 {method 'append' of 'list' objects}
+    49512    0.005    0.000    0.005    0.000 {built-in method builtins.max}
+        4    0.001    0.000    0.001    0.000 {built-in method builtins.min}
+      111    0.000    0.000    0.000    0.000 fractions.py:663(forward)
+      119    0.000    0.000    0.000    0.000 statistics.py:207(<genexpr>)
+      127    0.000    0.000    0.000    0.000 fractions.py:203(__new__)
+      111    0.000    0.000    0.000    0.000 fractions.py:760(_add)
+        5    0.000    0.000    0.000    0.000 main.py:270(__init__)
+        5    0.000    0.000    0.000    0.000 {method 'validate_python' of 'pydantic_core._pydantic_core.SchemaValidator' objects}
+        8    0.000    0.000    0.000    0.000 fractions.py:677(reverse)
+      127    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+      341    0.000    0.000    0.000    0.000 {built-in method math.gcd}
+        8    0.000    0.000    0.000    0.000 statistics.py:337(_convert)
+
+

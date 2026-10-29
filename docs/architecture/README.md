@@ -55,3 +55,19 @@ partial/planned components. See [business report](../business/FINAL_BUSINESS_MIG
 for actual implemented scope, local run and remaining provider/native UI work.
 
 The current three-product deployment is documented in [three_app_deployment.mmd](three_app_deployment.mmd) and [local deployment guide](../business/THREE_APP_DEPLOYMENT.md).
+
+## Source-aware explorer
+
+`interactive_architecture.html` preserves the original 10 views and adds 12
+source-backed views. Source browsing, bounded call/import graphs, per-symbol
+previews and saved node/group drag layouts work offline with bundled data.
+Regenerate from repository root with:
+
+```sh
+python -m pip install -r scripts/architecture/requirements.txt
+python scripts/architecture/generate_index.py
+```
+
+See [migration status](../microservices/MIGRATION_STATUS.md) and
+[indexing limits](../microservices/SOURCE_CODE_INDEXING.md). Service health is
+not probed; embedded/shared SQL is not labeled as an extracted deployment.

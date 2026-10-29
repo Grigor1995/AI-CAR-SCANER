@@ -23,6 +23,23 @@ def environment_values(*, include_defaults=True, environ=None):
             raise ValueError(f'Environment configuration not found: {path}')
         paths.append(path)
     values = {}
+    global_root = PROJECT if getattr(sys, "frozen", False) else PROJECT.parent
+    if include_defaults and (global_root / 'config/global_config.json').is_file():
+        # Importing configuration here is backend/setup-only; thin native clients
+        # deliberately do not import this module.
+        from backend.configuration.runtime import ConfigManager
+        config = ConfigManager(root=global_root, environ=environ).snapshot
+        values.update({'AI_CAR_BACKEND_PORT': str(config.services.backend_port),
+                       'LOCAL_LLM_SERVER_CONTEXT': str(config.ai.context),
+                       'DIAGNOSTIC_LLM_PROVIDER': config.ai.provider,
+                       'LOCAL_LLM_TEMPERATURE': str(config.ai.temperature),
+                       'LOCAL_LLM_MAX_TOKENS': str(config.ai.max_tokens),
+                       'LOCAL_LLM_SERVER_TIMEOUT_S': str(config.ai.timeout_seconds)})
+        if config.ai.endpoint != 'http://127.0.0.1:8000':
+            values['LOCAL_LLM_SERVER_URL'] = config.ai.endpoint
+        if config.ai.model_path != 'models':
+            model_path = Path(config.ai.model_path).expanduser()
+            values['LOCAL_LLM_MODEL_PATH'] = str(model_path if model_path.is_absolute() else PROJECT / model_path)
     for path in paths:
         if not path.is_file():
             continue
@@ -33,6 +50,8 @@ def environment_values(*, include_defaults=True, environ=None):
             for name, value in data['environment'].items():
                 if not re.fullmatch(r'[A-Z_][A-Z0-9_]*', name) or not isinstance(value, (str, int, float, bool)):
                     raise ValueError('Environment names must be uppercase and values must be strings, numbers or booleans')
+                if path == PROJECT / 'config/environment.json' and name in values:
+                    continue
                 values[name] = ('1' if value else '0') if isinstance(value, bool) else str(value)
         except (OSError, ValueError) as error:
             raise ValueError(f'Invalid environment configuration: {path}: {error}') from error

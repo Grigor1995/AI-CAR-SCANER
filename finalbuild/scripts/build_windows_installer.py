@@ -42,6 +42,8 @@ def prepare(output, commit, *, online_only=False):
     for name in ('bootstrap.ps1', 'windows_installer.py', 'AI-Car-Scanner.iss', 'wizard-side.bmp', 'wizard-icon.bmp'):
         shutil.copy2(SOURCE / name, payload / name)
     shutil.copy2(ROOT / 'finalbuild/assets/AI-Car-Scanner.ico', payload / 'app.ico')
+    for role in ('user', 'customer', 'market'):
+        shutil.copy2(ROOT / f'finalbuild/assets/app_icons/{role}/icon.ico', payload / f'product-{role}.ico')
     manifest = {'repository': 'Grigor1995/AI-CAR-SCANER', 'commit': commit,
                 'source_mode': 'online' if online_only else 'bundled'}
     archive = payload / 'source.zip'

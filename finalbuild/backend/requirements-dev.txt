@@ -11,3 +11,6 @@ Pillow>=13,<14
 
 # Optional local architecture browser QA (Chromium installed separately)
 websockets>=12
+
+# Reproducible language-aware source indexing and schema contract tests (local only)
+-r ../../scripts/architecture/requirements.txt

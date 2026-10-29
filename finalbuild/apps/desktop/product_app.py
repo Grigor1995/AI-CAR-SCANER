@@ -45,7 +45,7 @@ def main(role,argv=None):
     from .theme import APP_QSS
     app.setStyleSheet(APP_QSS)
     asset_root=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[2]))
-    app.setWindowIcon(QIcon(str(asset_root/'assets/AI-Car-Scanner-mobile.png')))
+    app.setWindowIcon(QIcon(str(asset_root/'assets/app_icons'/role.lower()/'icon.png')))
     class Host(QWidget):
         delivered=Signal(int,object,str)
         def __init__(self):

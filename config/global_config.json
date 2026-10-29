@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "app": {
+    "name": "AI Car Scanner",
+    "version": "0.6.0",
+    "language": "en",
+    "timezone": "UTC",
+    "platforms": [
+      "desktop",
+      "android",
+      "ios"
+    ],
+    "units": "EU"
+  },
+  "native": {
+    "minimum_cpp": 20,
+    "preferred_cpp": 23,
+    "enabled": false,
+    "build_policy": "toolchain_owned"
+  },
+  "ai": {
+    "provider": "llama-server",
+    "model_path": "models",
+    "endpoint": "http://127.0.0.1:8000",
+    "api_key_env": "OPENAI_API_KEY",
+    "context": 8192,
+    "temperature": 0.1,
+    "max_tokens": 700,
+    "timeout_seconds": 300.0,
+    "retries": 1,
+    "offline": true,
+    "rag_enabled": true,
+    "rules_enabled": true,
+    "ml_enabled": false
+  },
+  "services": {
+    "vehicle_catalog": {
+      "mode": "embedded",
+      "service_id": "vehicle-catalog",
+      "api_version": "v1",
+      "url": "http://127.0.0.1:8011",
+      "token_env": "AI_CAR_VEHICLE_SERVICE_TOKEN",
+      "timeout_seconds": 2.0,
+      "retries": 1,
+      "enabled": true,
+      "health_path": "/health"
+    },
+    "backend_port": 8001,
+    "database_url_env": "DATABASE_URL"
+  },
+  "obd": {
+    "timeout_seconds": 3.0,
+    "retries": 2,
+    "poll_interval_ms": 500,
+    "autodetect": true,
+    "read_only": true,
+    "write_policy": "explicit_authorized_operation",
+    "max_buffer_samples": 100000
+  },
+  "monitoring": {
+    "enabled": true,
+    "notifications_enabled": true,
+    "provider_credentials_env": "AI_CAR_NOTIFICATION_CREDENTIALS",
+    "delivery_mode": "in_app_only"
+  },
+  "ui": {
+    "theme": "dark",
+    "chart": "analog"
+  },
+  "updates": {
+    "enabled": false,
+    "signed_required": true,
+    "manifest_url": ""
+  },
+  "marketplace": {
+    "enabled": true,
+    "purchase_enabled": false,
+    "checkout_enabled": false,
+    "payments_enabled": false,
+    "subscriptions_enabled": false
+  }
+}

@@ -73,8 +73,9 @@ def test_android_three_application_ids_and_variant_workspace_values():
 
 def test_backend_docker_does_not_copy_a_second_vehicle_stack_or_desktop_code():
     docker=(ROOT/'infrastructure/docker/backend.Dockerfile').read_text()
-    assert 'COPY backend backend' in docker and '"backend.main"' in docker
+    assert 'COPY finalbuild/backend backend' in docker and '"backend.main"' in docker
     assert 'COPY vehicle vehicle' not in docker and 'COPY apps' not in docker
+    assert 'COPY config /app/config' in docker
 
 
 def test_independent_backend_bootstrap_migrates_explicit_database_without_gui(monkeypatch,tmp_path):

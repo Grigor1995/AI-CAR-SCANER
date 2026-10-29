@@ -19,7 +19,7 @@ api_packages = (
     "api", "diagnostic", "ai", "device", "acquisition",
     "telemetry", "vehicle", "obd", "vehicle_diagnostic", "multi_ecu",
     "network_discovery", "simulator",
-    "professional_platform", "security", "observability", "ecosystem",
+    "professional_platform", "security", "observability", "ecosystem", "configuration", "services",
 )
 api_hiddenimports = ["api.main", "global_data", "backend.scripts.seed_vehicle_catalog"]
 for package in api_packages:
@@ -30,6 +30,9 @@ a = Analysis(
     pathex=[str(project_root), str(backend_root)],
     binaries=[],
     datas=[(str(project_root / "config" / "environment.json"), "config"),
+           (str(project_root.parent / "config" / "global_config.json"), "config"),
+           (str(project_root.parent / "config" / "global_config.schema.json"), "config"),
+           (str(project_root.parent / "config" / "environments"), "config/environments"),
            (str(backend_root), "backend"),
            (str(project_root / "data" / "vehicle_reference.json"), "data"),
            (str(project_root / "data" / "vehicle_fitment_catalog.json"), "data"),

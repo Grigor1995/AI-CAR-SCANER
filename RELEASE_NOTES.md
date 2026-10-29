@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Optional catalog microservice, global config and source explorer (2026-10-29)
+
+- Add a real independently executable read-only vehicle catalog with authenticated internal HTTP, bounded retries/timeouts, no redirect credential forwarding, and an account-protected gateway. Embedded mode remains the default; private diagnostics/business SQL remain on the shared backend.
+- Add strict versioned global JSON/schema and environment overlays, frozen snapshots, legacy ENV compatibility and audited ADMIN-only runtime timeout/retry changes. Purchase/payment flags remain disabled; policy-only fields are identified in the config reference.
+- Extend the existing offline architecture explorer with a generated Python AST/native syntax index, 12 source views, symbol previews/call evidence, node/group dragging and saved/exportable layouts. Dynamic/native semantic gaps remain explicitly unresolved.
+- Add distinct generated USER, CUSTOMER and MARKET icons for Desktop, Android flavors, iOS targets and installer shortcuts. Preserve other application artwork and UI.
+- Verify 1133 common tests (2 skipped), all five Desktop groups with 90.36% production core coverage, Android three-flavor build/tests/lint, browser interaction tests and two-process gateway failure/rollback smoke. Windows installer, iOS runtime, Docker execution and physical OBD acceptance remain unverified here.
+
 ## Unreleased — Three independent apps and centralized backend
 
 - Centralize real vehicle/protocol code, server/AI lifecycle and PDF rendering under finalbuild/backend; retain small compatibility exports and preserve legacy behavior.

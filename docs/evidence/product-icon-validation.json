@@ -1,0 +1,34 @@
+{
+  "result": "PASS",
+  "roles": {
+    "user": {
+      "sha256": "f4e2d33c14e003f144520e95120e0eaededf111625ce9e270faa0c5a5427957e",
+      "desktop_png": "1024 RGBA, alpha 0..255",
+      "desktop_ico": "16..256",
+      "ios": "1024 RGB opaque",
+      "android_package": "com.aicarscaner.user",
+      "jvm_tests": 113,
+      "failures": 0
+    },
+    "customer": {
+      "sha256": "7515d0a1f903023819636e7777bd1a6b2ded09e2f247770e5bfaa4310ba75064",
+      "desktop_png": "1024 RGBA, alpha 0..255",
+      "desktop_ico": "16..256",
+      "ios": "1024 RGB opaque",
+      "android_package": "com.aicarscaner.customer",
+      "jvm_tests": 113,
+      "failures": 0
+    },
+    "market": {
+      "sha256": "45c40237d841a3ddc2aacc966c4bdc06c82be3bf3b81a09c4a513be8f45d8c90",
+      "desktop_png": "1024 RGBA, alpha 0..255",
+      "desktop_ico": "16..256",
+      "ios": "1024 RGB opaque",
+      "android_package": "com.aicarscaner.market",
+      "jvm_tests": 113,
+      "failures": 0
+    }
+  },
+  "ios_runtime": "NOT EXECUTED; exported asset verified only",
+  "windows_runtime": "NOT EXECUTED; PNG/ICO export verified only"
+}

@@ -55,3 +55,12 @@ def test_direct_entrypoints_load_json_before_service_configuration(tmp_path, ent
     script = ('from apps.desktop import main; assert main.PORT == 9231; assert main.LLM_PORT == 9232' if entry == 'desktop'
               else 'import backend.api; import os; assert os.environ["AI_CAR_BACKEND_PORT"] == "9231"')
     subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[1], env=env, check=True)
+
+
+def test_global_model_path_is_relative_to_backend_source_root(tmp_path, monkeypatch):
+    project=tmp_path/'finalbuild';project.mkdir()
+    directory=tmp_path/'config';directory.mkdir()
+    (directory/'global_config.json').write_text(json.dumps({'ai':{'model_path':'models/example.gguf'}}))
+    monkeypatch.setattr(environment,'PROJECT',project)
+    values=environment.environment_values(environ={})
+    assert values['LOCAL_LLM_MODEL_PATH']==str(project/'models/example.gguf')

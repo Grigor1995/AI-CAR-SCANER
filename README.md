@@ -97,3 +97,15 @@ test reports, models, environments and SDKs are preserved.
 
 [Current native functionality](finalbuild/docs/reviews/native-parity-implementation-2026-10-27.md)
 · [Latest Desktop Save/analyze fix](finalbuild/docs/reviews/desktop-save-analyze-fix-2026-10-27.md).
+
+### Incremental service architecture and product icons
+
+The shared backend now supports an optional independent read-only vehicle catalog,
+validated root-level `config/global_config.json`, and an offline source-aware
+[architecture explorer](docs/architecture/interactive_architecture.html).
+Identity, private diagnostics and other business workflows still share backend SQL;
+this is an incremental extraction, not a fully distributed deployment.
+USER, CUSTOMER and MARKET have distinct generated launcher/window/shortcut icons.
+See [local run commands](docs/microservices/RUN.md),
+[migration status](docs/microservices/MIGRATION_STATUS.md) and
+[verification](docs/microservices/REGRESSION_REPORT.md).

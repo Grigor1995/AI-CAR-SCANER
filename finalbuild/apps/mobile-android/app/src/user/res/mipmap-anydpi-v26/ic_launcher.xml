@@ -1,0 +1,4 @@
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/product_launcher_background" />
+    <foreground android:drawable="@drawable/product_launcher_foreground" />
+</adaptive-icon>

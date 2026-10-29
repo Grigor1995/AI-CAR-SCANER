@@ -33,3 +33,6 @@ htmlcov/
 # Local business backend databases contain private accounts/vehicle history.
 /business.sqlite*
 /finalbuild/business.sqlite*
+
+# Operator-specific production configuration (safe example is tracked)
+/config/environments/production.json

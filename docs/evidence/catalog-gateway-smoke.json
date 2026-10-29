@@ -1,0 +1,19 @@
+{
+  "result": "PASS",
+  "checks": {
+    "independent_services_started": true,
+    "catalog_authentication": true,
+    "catalog_readiness": true,
+    "gateway_requires_account": true,
+    "gateway_remote_stats": true,
+    "gateway_remote_makes": true,
+    "gateway_remote_models": true,
+    "gateway_remote_fitments": true,
+    "gateway_remote_profile": true,
+    "catalog_failure_is_503": true,
+    "identity_survives_catalog_failure": true,
+    "rollback_embedded_preserves_account": true,
+    "rollback_embedded_restores_catalog": true
+  },
+  "execution": "Two independent Python processes; real HTTP + temporary Alembic SQLite; no hardware/providers"
+}

@@ -1,0 +1,7 @@
+{
+  "services": {
+    "vehicle_catalog": {
+      "mode": "embedded"
+    }
+  }
+}

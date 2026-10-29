@@ -255,3 +255,10 @@ def install(app):
     app.include_router(router)
     from .business_api import router as business_router
     app.include_router(business_router)
+
+    from .catalog_api import router as catalog_router
+    from .config_api import router as config_router
+    from services.vehicle_catalog.correlation import install as install_correlation
+    app.include_router(catalog_router)
+    app.include_router(config_router)
+    install_correlation(app)

@@ -47,7 +47,7 @@ def main():
         print(evaluate('JSON.stringify({url:location.href,ready:document.readyState,title:document.title,data:window.ARCHITECTURE_DATA&&window.ARCHITECTURE_DATA.nodes.length,views:document.getElementById("view")&&document.getElementById("view").options.length,text:document.body.innerText.slice(0,500)})'))
        assert checks['initial_nodes']==22
        checks['all_views']=evaluate('''(()=>{const s=document.getElementById('view'),r={};for(const option of s.options){s.value=option.value;s.dispatchEvent(new Event('change'));r[s.value]=document.querySelectorAll('[data-node]').length;}s.selectedIndex=0;s.dispatchEvent(new Event('change'));return r;})()''')
-       assert len(checks['all_views'])==10 and all(checks['all_views'].values())
+       assert len(checks['all_views'])==22 and all(checks['all_views'].values())
        checks['search']=evaluate('''(()=>{const s=document.getElementById('search');s.value='PostgreSQL';s.dispatchEvent(new Event('input'));const n=document.querySelectorAll('[data-node]').length;s.value='';s.dispatchEvent(new Event('input'));return n;})()''');assert checks['search']==1
        checks['layer_filter']=evaluate('''(()=>{const b=document.querySelector('[data-layer="Native UI"]');b.checked=false;b.dispatchEvent(new Event('change'));const n=document.querySelectorAll('[data-node]').length;b.checked=true;b.dispatchEvent(new Event('change'));return n;})()''');assert checks['layer_filter']==19
        checks['collapse']=evaluate('''(()=>{document.querySelector('[data-group="Native UI"]').dispatchEvent(new Event('click'));const n=document.querySelectorAll('[data-node]').length;document.querySelector('[data-group="Native UI"]').dispatchEvent(new Event('click'));return n;})()''');assert checks['collapse']==19
@@ -69,6 +69,41 @@ def main():
        call('Input.dispatchMouseEvent',dict(type='mouseWheel',x=box['x'],y=box['y'],deltaX=0,deltaY=-120));time.sleep(.15)
        checks['wheel_zoom']=evaluate('document.getElementById("diagram").dataset.scale')!=before;assert checks['wheel_zoom']
        evaluate('document.getElementById("reset").click();document.querySelector("[data-node=identity]").dispatchEvent(new Event("click"))')
+       checks['source_search']=evaluate("""(()=>{const q=document.getElementById('source-query');q.value='services/vehicle_catalog/app.py';q.dispatchEvent(new Event('input'));const b=document.querySelector('#source-results button');b.click();return document.getElementById('source-detail').textContent.includes('Read-only')||document.getElementById('source-detail').textContent.includes('vehicle_catalog');})()""")
+       assert checks['source_search']
+       checks['source_history_and_preview']=evaluate("""(()=>{const original=document.querySelector('#source-detail h3').textContent;const member=document.querySelector('#source-detail details button');member.click();const symbol=document.querySelector('#source-detail h3').textContent;const preview=document.querySelector('#source-detail pre').textContent;document.getElementById('source-back').click();const back=document.querySelector('#source-detail h3').textContent===original;document.getElementById('source-forward').click();const forward=document.querySelector('#source-detail h3').textContent===symbol;document.getElementById('source-back').click();return back&&forward&&preview.includes('def ');})()""")
+       assert checks['source_history_and_preview']
+       checks['source_graph_bound']=evaluate("""(()=>{const view=document.getElementById('view');view.value='Source: files';view.dispatchEvent(new Event('change'));Array.from(document.querySelectorAll('#source-detail button')).find(b=>b.textContent==='Focus bounded graph').click();return document.querySelectorAll('[data-node]').length;})()""")
+       assert 0<checks['source_graph_bound']<=61
+       evaluate("document.getElementById('source-browser').scrollIntoView({block:'center'})")
+       source_shot=call('Page.captureScreenshot',{'format':'png'})
+       (root/'docs/evidence/interactive-source-explorer.png').write_bytes(base64.b64decode(source_shot['data']))
+       evaluate('window.scrollTo(0,0)')
+       checks['layout_round_trip']=evaluate("""(()=>{const id=document.querySelector('[data-node]').dataset.node;Architecture.importLayout({version:1,positions:{[id]:{x:120,y:150}}});const exported=Architecture.exportLayout();let rejected=false;try{Architecture.importLayout({version:1,positions:{bad:{x:'evil',y:0}}});}catch{rejected=true;}return exported.positions[id].x===120&&rejected&&JSON.parse(localStorage.getItem('ai-car-architecture-layout-v1'))[id].y===150;})()""")
+       assert checks['layout_round_trip']
+       evaluate("document.getElementById('view').selectedIndex=0;document.getElementById('view').dispatchEvent(new Event('change'));Architecture.autoLayout();window.scrollTo(0,0)")
+       coords=evaluate("""(()=>{const svg=document.getElementById('diagram'),node=document.querySelector('[data-node]'),r=node.getBoundingClientRect();node.scrollIntoView({block:'center'});const a=node.getBoundingClientRect();return {id:node.dataset.node,x:a.left+30,y:a.top+25};})()""")
+       call('Input.dispatchMouseEvent',dict(type='mousePressed',button='left',buttons=1,clickCount=1,x=coords['x'],y=coords['y']))
+       call('Input.dispatchMouseEvent',dict(type='mouseMoved',buttons=1,x=coords['x']+35,y=coords['y']+25))
+       call('Input.dispatchMouseEvent',dict(type='mouseReleased',button='left',buttons=0,clickCount=1,x=coords['x']+35,y=coords['y']+25))
+       checks['real_node_drag']=evaluate('Boolean(Architecture.exportLayout().positions['+json.dumps(coords['id'])+'])');assert checks['real_node_drag']
+       evaluate('Architecture.autoLayout();window.scrollTo(0,0)')
+       group=evaluate("""(()=>{const n=[...document.querySelectorAll('[data-node]')].slice(0,2);return n.map(node=>{const r=node.getBoundingClientRect();return {id:node.dataset.node,x:r.left+30,y:r.top+25};});})()""")
+       for point in group:
+        call('Input.dispatchMouseEvent',dict(type='mousePressed',button='left',buttons=1,clickCount=1,modifiers=2,x=point['x'],y=point['y']))
+        call('Input.dispatchMouseEvent',dict(type='mouseReleased',button='left',buttons=0,clickCount=1,modifiers=2,x=point['x'],y=point['y']))
+       # Auto-layout preserves selection; clear then explicitly select the pair.
+       evaluate('Architecture.selectedIds.clear()')
+       for point in group:
+        call('Input.dispatchMouseEvent',dict(type='mousePressed',button='left',buttons=1,clickCount=1,modifiers=2,x=point['x'],y=point['y']))
+        call('Input.dispatchMouseEvent',dict(type='mouseReleased',button='left',buttons=0,clickCount=1,modifiers=2,x=point['x'],y=point['y']))
+       point=group[0]
+       call('Input.dispatchMouseEvent',dict(type='mousePressed',button='left',buttons=1,clickCount=1,x=point['x'],y=point['y']))
+       call('Input.dispatchMouseEvent',dict(type='mouseMoved',buttons=1,x=point['x']+30,y=point['y']+20))
+       call('Input.dispatchMouseEvent',dict(type='mouseReleased',button='left',buttons=0,clickCount=1,x=point['x']+30,y=point['y']+20))
+       positions=evaluate('Architecture.exportLayout().positions')
+       checks['real_group_drag']=all(p['id'] in positions for p in group);assert checks['real_group_drag']
+       evaluate('Architecture.selectedIds.clear();Architecture.autoLayout();window.scrollTo(0,0)')
        shot=call('Page.captureScreenshot',{'format':'png'})
        (root/'docs/evidence/interactive-architecture.png').write_bytes(base64.b64decode(shot['data']))
        call('Emulation.setDeviceMetricsOverride',{'width':420,'height':900,'deviceScaleFactor':1,'mobile':False});time.sleep(.2)
@@ -76,7 +111,7 @@ def main():
        (root/'docs/evidence/architecture-browser-checks.json').write_text(json.dumps({'browser':'Chromium headless; bundled assets over localhost (file URLs blocked by host browser policy)','checks':checks,'result':'PASS'},indent=2)+'\n')
        try:call('Browser.close')
        except Exception:pass
-       print('PASS: 10 views, 22 nodes, search, layer filter, collapse, details, relationships, zoom, real pointer pan, wheel, theme')
+       print('PASS: 22 views, source search, bounded graph, layout round-trip, real node drag, legacy search/filter/pan/zoom/theme')
      finally:
       if process.poll() is None:
        try:process.wait(timeout=5)

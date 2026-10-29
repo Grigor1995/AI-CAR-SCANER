@@ -12,7 +12,19 @@
       "Marketplace": 7,
       "Admin and Permission Management": 8,
       "Offline/Online Synchronization": 9,
-      "Cross-Platform Integration": 10
+      "Cross-Platform Integration": 10,
+      "Source: system": 12,
+      "Source: microservices": 19,
+      "Source: service dependencies": 12,
+      "Source: files": 12,
+      "Source: classes and interfaces": 12,
+      "Source: call graph": 12,
+      "Source: API and events": 4,
+      "Source: data ownership": 12,
+      "Source: shared C++ core": 3,
+      "Source: platforms": 4,
+      "Source: future purchase": 3,
+      "Source: before / after": 3
     },
     "search": 1,
     "layer_filter": 19,
@@ -24,6 +36,12 @@
     "theme": "light",
     "pan": true,
     "wheel_zoom": true,
+    "source_search": true,
+    "source_history_and_preview": true,
+    "source_graph_bound": 4,
+    "layout_round_trip": true,
+    "real_node_drag": true,
+    "real_group_drag": true,
     "responsive": true
   },
   "result": "PASS"

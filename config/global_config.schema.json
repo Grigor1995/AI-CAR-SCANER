@@ -1,0 +1,470 @@
+{
+  "$defs": {
+    "AI": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "llama-server",
+          "enum": [
+            "llama-server",
+            "openai-compatible",
+            "placeholder"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model_path": {
+          "default": "models",
+          "title": "Model Path",
+          "type": "string"
+        },
+        "endpoint": {
+          "default": "http://127.0.0.1:8000",
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "api_key_env": {
+          "default": "OPENAI_API_KEY",
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "context": {
+          "default": 8192,
+          "maximum": 131072,
+          "minimum": 512,
+          "title": "Context",
+          "type": "integer"
+        },
+        "temperature": {
+          "default": 0.1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "max_tokens": {
+          "default": 700,
+          "maximum": 32768,
+          "minimum": 64,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 300.0,
+          "maximum": 600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "retries": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        },
+        "offline": {
+          "default": true,
+          "title": "Offline",
+          "type": "boolean"
+        },
+        "rag_enabled": {
+          "default": true,
+          "title": "Rag Enabled",
+          "type": "boolean"
+        },
+        "rules_enabled": {
+          "const": true,
+          "default": true,
+          "title": "Rules Enabled",
+          "type": "boolean"
+        },
+        "ml_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Ml Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "AI",
+      "type": "object"
+    },
+    "App": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "AI Car Scanner",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "0.6.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "language": {
+          "default": "en",
+          "enum": [
+            "en",
+            "hy",
+            "ru",
+            "fr"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "platforms": {
+          "default": [
+            "desktop",
+            "android",
+            "ios"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Platforms",
+          "type": "array"
+        },
+        "units": {
+          "default": "EU",
+          "enum": [
+            "EU",
+            "USA"
+          ],
+          "title": "Units",
+          "type": "string"
+        }
+      },
+      "title": "App",
+      "type": "object"
+    },
+    "Catalog": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "embedded",
+          "enum": [
+            "embedded",
+            "remote"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "service_id": {
+          "const": "vehicle-catalog",
+          "default": "vehicle-catalog",
+          "title": "Service Id",
+          "type": "string"
+        },
+        "api_version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Api Version",
+          "type": "string"
+        },
+        "url": {
+          "default": "http://127.0.0.1:8011",
+          "title": "Url",
+          "type": "string"
+        },
+        "token_env": {
+          "const": "AI_CAR_VEHICLE_SERVICE_TOKEN",
+          "default": "AI_CAR_VEHICLE_SERVICE_TOKEN",
+          "title": "Token Env",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 2.0,
+          "maximum": 30,
+          "minimum": 0.1,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "retries": {
+          "default": 1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "health_path": {
+          "const": "/health",
+          "default": "/health",
+          "title": "Health Path",
+          "type": "string"
+        }
+      },
+      "title": "Catalog",
+      "type": "object"
+    },
+    "Marketplace": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "purchase_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Purchase Enabled",
+          "type": "boolean"
+        },
+        "checkout_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Checkout Enabled",
+          "type": "boolean"
+        },
+        "payments_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Payments Enabled",
+          "type": "boolean"
+        },
+        "subscriptions_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Subscriptions Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "Marketplace",
+      "type": "object"
+    },
+    "Monitoring": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "notifications_enabled": {
+          "default": true,
+          "title": "Notifications Enabled",
+          "type": "boolean"
+        },
+        "provider_credentials_env": {
+          "default": "AI_CAR_NOTIFICATION_CREDENTIALS",
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "title": "Provider Credentials Env",
+          "type": "string"
+        },
+        "delivery_mode": {
+          "const": "in_app_only",
+          "default": "in_app_only",
+          "title": "Delivery Mode",
+          "type": "string"
+        }
+      },
+      "title": "Monitoring",
+      "type": "object"
+    },
+    "Native": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum_cpp": {
+          "const": 20,
+          "default": 20,
+          "title": "Minimum Cpp",
+          "type": "integer"
+        },
+        "preferred_cpp": {
+          "const": 23,
+          "default": 23,
+          "title": "Preferred Cpp",
+          "type": "integer"
+        },
+        "enabled": {
+          "const": false,
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "build_policy": {
+          "const": "toolchain_owned",
+          "default": "toolchain_owned",
+          "title": "Build Policy",
+          "type": "string"
+        }
+      },
+      "title": "Native",
+      "type": "object"
+    },
+    "OBD": {
+      "additionalProperties": false,
+      "properties": {
+        "timeout_seconds": {
+          "default": 3.0,
+          "maximum": 60,
+          "minimum": 0.1,
+          "title": "Timeout Seconds",
+          "type": "number"
+        },
+        "retries": {
+          "default": 2,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        },
+        "poll_interval_ms": {
+          "default": 500,
+          "maximum": 60000,
+          "minimum": 50,
+          "title": "Poll Interval Ms",
+          "type": "integer"
+        },
+        "autodetect": {
+          "default": true,
+          "title": "Autodetect",
+          "type": "boolean"
+        },
+        "read_only": {
+          "const": true,
+          "default": true,
+          "title": "Read Only",
+          "type": "boolean"
+        },
+        "write_policy": {
+          "const": "explicit_authorized_operation",
+          "default": "explicit_authorized_operation",
+          "title": "Write Policy",
+          "type": "string"
+        },
+        "max_buffer_samples": {
+          "default": 100000,
+          "maximum": 1000000,
+          "minimum": 1000,
+          "title": "Max Buffer Samples",
+          "type": "integer"
+        }
+      },
+      "title": "OBD",
+      "type": "object"
+    },
+    "Services": {
+      "additionalProperties": false,
+      "properties": {
+        "vehicle_catalog": {
+          "$ref": "#/$defs/Catalog"
+        },
+        "backend_port": {
+          "default": 8001,
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Backend Port",
+          "type": "integer"
+        },
+        "database_url_env": {
+          "const": "DATABASE_URL",
+          "default": "DATABASE_URL",
+          "title": "Database Url Env",
+          "type": "string"
+        }
+      },
+      "title": "Services",
+      "type": "object"
+    },
+    "UI": {
+      "additionalProperties": false,
+      "properties": {
+        "theme": {
+          "default": "dark",
+          "enum": [
+            "dark",
+            "light"
+          ],
+          "title": "Theme",
+          "type": "string"
+        },
+        "chart": {
+          "default": "analog",
+          "enum": [
+            "analog",
+            "linear"
+          ],
+          "title": "Chart",
+          "type": "string"
+        }
+      },
+      "title": "UI",
+      "type": "object"
+    },
+    "Updates": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": false,
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "signed_required": {
+          "const": true,
+          "default": true,
+          "title": "Signed Required",
+          "type": "boolean"
+        },
+        "manifest_url": {
+          "default": "",
+          "title": "Manifest Url",
+          "type": "string"
+        }
+      },
+      "title": "Updates",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "app": {
+      "$ref": "#/$defs/App"
+    },
+    "native": {
+      "$ref": "#/$defs/Native"
+    },
+    "ai": {
+      "$ref": "#/$defs/AI"
+    },
+    "services": {
+      "$ref": "#/$defs/Services"
+    },
+    "obd": {
+      "$ref": "#/$defs/OBD"
+    },
+    "monitoring": {
+      "$ref": "#/$defs/Monitoring"
+    },
+    "ui": {
+      "$ref": "#/$defs/UI"
+    },
+    "updates": {
+      "$ref": "#/$defs/Updates"
+    },
+    "marketplace": {
+      "$ref": "#/$defs/Marketplace"
+    }
+  },
+  "title": "GlobalConfig",
+  "type": "object"
+}

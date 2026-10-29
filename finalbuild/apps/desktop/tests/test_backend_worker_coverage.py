@@ -64,7 +64,8 @@ def test_backend_worker_fails_explicitly_for_invalid_backend_port(monkeypatch):
     monkeypatch.setenv("AI_CAR_BACKEND_PORT", "not-an-integer")
     mock_run = Mock()
     monkeypatch.setitem(sys.modules, "uvicorn", SimpleNamespace(run=mock_run))
-    with pytest.raises(ValueError, match="invalid literal"):
+    with pytest.raises(ValueError, match="Invalid authorized environment override"):
+        # Configuration validation fails before Uvicorn and does not echo raw ENV.
         backend_worker.main()
     mock_run.assert_not_called()
 

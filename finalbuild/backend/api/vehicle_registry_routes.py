@@ -8,7 +8,13 @@ from pathlib import Path
 from urllib.parse import urlencode
 import re
 
-from vehicle.catalog_registry import makes, models, fitments, registry_stats, vehicle_protocol_profile
+from services.vehicle_catalog.port import catalog
+
+def makes(query=""): return catalog("makes", query=query)
+def models(make, year=None, query="", limit=300): return catalog("models", make=make, year=year, query=query, limit=limit)
+def fitments(make, model, year=None): return catalog("fitments", make=make, model=model, year=year)
+def registry_stats(): return catalog("stats")
+def vehicle_protocol_profile(**parameters): return catalog("profile", **parameters)
 from vehicle.protocol.registry import all_protocols, assess_protocols, read_elm_detected_protocol
 from vehicle.external_registry import (
     RemoteRegistryUnavailable, commons_photo_candidate, nhtsa_decode_vin,

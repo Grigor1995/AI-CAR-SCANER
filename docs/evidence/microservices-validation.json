@@ -1,0 +1,238 @@
+{
+  "date": "2026-10-29",
+  "baseline": "965ed9c",
+  "scope": "Incremental read-only catalog extraction; other contexts explicitly embedded/planned",
+  "common": {
+    "passed": 1133,
+    "skipped": 2,
+    "failed": 0,
+    "seconds": 72.36
+  },
+  "desktop": {
+    "status": "PASS",
+    "combined_coverage_percent": 90.06,
+    "production_core_coverage_percent": 90.36,
+    "passed_groups": 5,
+    "failed_groups": 0
+  },
+  "desktop_groups": [
+    {
+      "name": "logic",
+      "status": "PASS",
+      "cases": {
+        "total": 230,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 229
+      }
+    },
+    {
+      "name": "diagnostic-e2e",
+      "status": "PASS",
+      "cases": {
+        "total": 6,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      }
+    },
+    {
+      "name": "negative",
+      "status": "PASS",
+      "cases": {
+        "total": 68,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      }
+    },
+    {
+      "name": "ui-pom",
+      "status": "PASS",
+      "cases": {
+        "total": 142,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 142
+      }
+    },
+    {
+      "name": "ui-widgets",
+      "status": "PASS",
+      "cases": {
+        "total": 25,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 25
+      }
+    }
+  ],
+  "android": {
+    "result": "PASS",
+    "flavors": [
+      "user",
+      "customer",
+      "market"
+    ],
+    "gradle_tasks": 199,
+    "executed": 75,
+    "cached": 124,
+    "duration": "2m53s",
+    "jvm_tests_per_flavor": 113,
+    "checks": [
+      "Kotlin compile",
+      "instrumentation compile",
+      "JVM unit tests",
+      "APK build",
+      "lint",
+      "package identity",
+      "icon assets"
+    ]
+  },
+  "source_index": {
+    "files": 591,
+    "symbols": 4749,
+    "calls": 34041,
+    "statically_resolved_calls": 4171
+  },
+  "source_limitations": [
+    "Static bindings are not runtime traces",
+    "Tree-sitter native/dynamic calls are unresolved",
+    "Mixed business_api.py/service.py share SQL; no independent ownership claimed",
+    "No compile_commands.json/Clang semantic index; C++ overloads unresolved"
+  ],
+  "parser_recovery_diagnostics": 5,
+  "source_hash_validation": "591 source files; zero stale hashes at final review",
+  "browser": {
+    "browser": "Chromium headless; bundled assets over localhost (file URLs blocked by host browser policy)",
+    "checks": {
+      "initial_nodes": 22,
+      "all_views": {
+        "High-Level Architecture": 22,
+        "USER Diagnostic Flow": 12,
+        "CUSTOMER Diagnostic Flow": 8,
+        "Automated OBD Monitoring": 10,
+        "AI Diagnostic Decision Flow": 6,
+        "Notifications": 7,
+        "Marketplace": 7,
+        "Admin and Permission Management": 8,
+        "Offline/Online Synchronization": 9,
+        "Cross-Platform Integration": 10,
+        "Source: system": 12,
+        "Source: microservices": 19,
+        "Source: service dependencies": 12,
+        "Source: files": 12,
+        "Source: classes and interfaces": 12,
+        "Source: call graph": 12,
+        "Source: API and events": 4,
+        "Source: data ownership": 12,
+        "Source: shared C++ core": 3,
+        "Source: platforms": 4,
+        "Source: future purchase": 3,
+        "Source: before / after": 3
+      },
+      "search": 1,
+      "layer_filter": 19,
+      "collapse": 19,
+      "component_details": "Ownership + consentResponsibilityExplicit time-limited workshop sharingTechnologyDurable scoped grantsInput / outputOwner accept/revoke -> currently allowed readsDependenciesstorageRelevant API/invitations/*/accept, /consentsData flowcustomer \u2192 consent: request / check sharing, user \u2192 consent: explicit accept / revoke, consent \u2192 storage: grant transaction / current checksSecurity boundaryPer-vehicle scope/expiry; recheck every readFailure handlingRevoked/expired membership or grant denies accessStatusFOUNDATIONArchitecture documentation",
+      "relationship_details": "RelationshipDirectionwindows \u2192 backendCommunicationlocal HTTP APIPathofflineStatusExisting / foundation boundaryArchitecture documentation",
+      "path_filter": 0,
+      "zoom": true,
+      "theme": "light",
+      "pan": true,
+      "wheel_zoom": true,
+      "source_search": true,
+      "source_history_and_preview": true,
+      "source_graph_bound": 4,
+      "layout_round_trip": true,
+      "real_node_drag": true,
+      "real_group_drag": true,
+      "responsive": true
+    },
+    "result": "PASS"
+  },
+  "catalog_gateway": {
+    "result": "PASS",
+    "checks": {
+      "independent_services_started": true,
+      "catalog_authentication": true,
+      "catalog_readiness": true,
+      "gateway_requires_account": true,
+      "gateway_remote_stats": true,
+      "gateway_remote_makes": true,
+      "gateway_remote_models": true,
+      "gateway_remote_fitments": true,
+      "gateway_remote_profile": true,
+      "catalog_failure_is_503": true,
+      "identity_survives_catalog_failure": true,
+      "rollback_embedded_preserves_account": true,
+      "rollback_embedded_restores_catalog": true
+    },
+    "execution": "Two independent Python processes; real HTTP + temporary Alembic SQLite; no hardware/providers"
+  },
+  "icons": {
+    "result": "PASS",
+    "roles": {
+      "user": {
+        "sha256": "f4e2d33c14e003f144520e95120e0eaededf111625ce9e270faa0c5a5427957e",
+        "desktop_png": "1024 RGBA, alpha 0..255",
+        "desktop_ico": "16..256",
+        "ios": "1024 RGB opaque",
+        "android_package": "com.aicarscaner.user",
+        "jvm_tests": 113,
+        "failures": 0
+      },
+      "customer": {
+        "sha256": "7515d0a1f903023819636e7777bd1a6b2ded09e2f247770e5bfaa4310ba75064",
+        "desktop_png": "1024 RGBA, alpha 0..255",
+        "desktop_ico": "16..256",
+        "ios": "1024 RGB opaque",
+        "android_package": "com.aicarscaner.customer",
+        "jvm_tests": 113,
+        "failures": 0
+      },
+      "market": {
+        "sha256": "45c40237d841a3ddc2aacc966c4bdc06c82be3bf3b81a09c4a513be8f45d8c90",
+        "desktop_png": "1024 RGBA, alpha 0..255",
+        "desktop_ico": "16..256",
+        "ios": "1024 RGB opaque",
+        "android_package": "com.aicarscaner.market",
+        "jvm_tests": 113,
+        "failures": 0
+      }
+    },
+    "ios_runtime": "NOT EXECUTED; exported asset verified only",
+    "windows_runtime": "NOT EXECUTED; PNG/ICO export verified only"
+  },
+  "targeted_final": {
+    "config_gateway_environment_passed": 37,
+    "compatibility_checks_passed": 82
+  },
+  "not_executed": [
+    "Windows executable/installer runtime",
+    "iOS Xcode runtime/signing",
+    "Docker image execution",
+    "Physical OBD Bluetooth/Wi-Fi/USB and real ECU protocols",
+    "External notifications/verification providers",
+    "Licensed repair/wiring integrations"
+  ],
+  "inactive": [
+    "Purchase",
+    "Checkout",
+    "Payments",
+    "Subscriptions",
+    "Signed update daemon",
+    "Production C++ diagnostic core"
+  ],
+  "ci_cd": "Not added or used",
+  "notes": [
+    "Earlier LLM URL/port compatibility failures fixed",
+    "Desktop cyclic Qt wrapper collection fixed in GUI-thread test teardown",
+    "Final source index native dynamic/overload calls remain unresolved; no runtime call trace claimed"
+  ]
+}

@@ -46,6 +46,9 @@ def test_fixed_product_window_authenticates_or_surfaces_server_error_and_exits(m
     try:
         assert product_app.main(role,['--backend-url','http://example.invalid'])==0
         window=windows[0]
+        assert window.parent() is None
+        assert window.windowType()==QtCore.Qt.WindowType.Window
+        assert not window.windowIcon().isNull() and not app.windowIcon().isNull()
         assert window.password.text()=='' and window.token==''
         assert observed and all(call[2]['allow_redirects'] is False for call in observed)
         if role!='MARKET':assert any('/navigation?workspace='+role in call[1] for call in observed)
@@ -64,3 +67,29 @@ def test_product_identity_check_never_starts_qt_or_backend(capsys):
     assert product_app.main('MARKET',['--check'])==0
     assert '"backend_embedded": false' in capsys.readouterr().out
     with pytest.raises(ValueError):product_app.main('ADMIN',['--check'])
+
+
+@pytest.mark.parametrize('role',['USER','CUSTOMER','MARKET'])
+def test_windows_taskbar_identity_matches_installer_shortcut(monkeypatch,role):
+    import ctypes
+    from pathlib import Path
+    from unittest.mock import Mock
+    setter=Mock(return_value=0)
+    monkeypatch.setattr(product_app.sys,'platform','win32')
+    monkeypatch.setattr(ctypes,'windll',SimpleNamespace(shell32=SimpleNamespace(SetCurrentProcessExplicitAppUserModelID=setter)),raising=False)
+    product_app.configure_windows_identity(role)
+    setter.assert_called_once_with('com.aicarscaner.'+role.lower())
+    installer=(Path(product_app.__file__).resolve().parents[2]/'installer/windows/AI-Car-Scanner.iss').read_text(encoding='utf-8')
+    shortcuts=[line for line in installer.splitlines() if line.startswith('Name:') and '--app '+role.lower()+' ' in line]
+    assert len(shortcuts)==2
+    assert all('AppUserModelID: "'+product_app.APP_IDS[role]+'"' in line for line in shortcuts)
+
+
+def test_windows_identity_failure_keeps_gui_startup_available(monkeypatch,capsys):
+    import ctypes
+    from unittest.mock import Mock
+    monkeypatch.setattr(product_app.sys,'platform','win32')
+    setter=Mock(return_value=-1)
+    monkeypatch.setattr(ctypes,'windll',SimpleNamespace(shell32=SimpleNamespace(SetCurrentProcessExplicitAppUserModelID=setter)),raising=False)
+    product_app.configure_windows_identity('USER')
+    assert 'taskbar identity unavailable' in capsys.readouterr().err

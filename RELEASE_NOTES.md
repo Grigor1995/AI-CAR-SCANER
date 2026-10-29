@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — Desktop taskbar identity and window ownership (2026-10-29)
+
+- Give each Python-launched USER/CUSTOMER/MARKET client a standalone top-level window instead of a dialog owned by an invisible host, and explicitly assign its generated window icon.
+- Set distinct Windows AppUserModelIDs before creating Qt windows; source-installer shortcuts use the same IDs and product icons for correct grouping/pinning.
+- Verify real Qt windows/close behavior for all three products and mocked Windows API/installer identity contracts. Native Windows Explorer acceptance remains a local platform check.
+
 ## Unreleased — First-clone runner bootstrap fix (2026-10-29)
 
 - Fix `ModuleNotFoundError: backend` when starting runner.py from the repository root.

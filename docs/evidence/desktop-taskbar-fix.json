@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-29",
+  "baseline": "61afab1",
+  "issue": "Missing Windows taskbar icon/group for independent desktop clients",
+  "changes": [
+    "Standalone Qt.Window with no invisible native owner",
+    "Explicit per-window generated product icon",
+    "Distinct process AppUserModelID before Qt initialization",
+    "Matching source-installer shortcut AppUserModelID"
+  ],
+  "targeted_tests": {
+    "passed": 51,
+    "failed": 0,
+    "seconds": 3.11
+  },
+  "desktop": {
+    "status": "PASS",
+    "passed_groups": 5,
+    "failed_groups": 0,
+    "combined_coverage_percent": 90.1,
+    "production_core_coverage_percent": 90.43
+  },
+  "checks": [
+    "Real Qt event loops for USER/CUSTOMER/MARKET",
+    "Window parent is None, type Window, icon non-null",
+    "Authentication/controlled server error and close behavior preserved",
+    "Windows API success/failure via test doubles",
+    "Installer shortcut identity matches process identity",
+    "Current source index hashes"
+  ],
+  "not_executed": [
+    "Native Windows Explorer taskbar/pinning visual check",
+    "Windows Inno installer compilation/runtime"
+  ],
+  "other_platforms": "No Android/iOS source or artwork changes"
+}

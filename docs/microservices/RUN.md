@@ -50,3 +50,8 @@ To roll back restart backend with `AI_CAR_CATALOG_MODE=embedded`.
 Offline source explorer: open `docs/architecture/interactive_architecture.html`.
 Rebuild after code changes with `python scripts/architecture/generate_index.py`
 (install `scripts/architecture/requirements.txt` into the active developer venv).
+
+Desktop taskbar icons: fully close and relaunch the selected client after updating.
+The three products now use independent main windows and matching Windows
+AppUserModelID/shortcut identities. Existing pinned shortcuts created before this
+change may need to be unpinned and pinned again from the newly launched app.

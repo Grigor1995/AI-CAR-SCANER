@@ -66,12 +66,12 @@ Type: files; Name: "{autodesktop}\AI Car Customer.lnk"; Tasks: not desktopicon
 Type: files; Name: "{autodesktop}\AI Car Market.lnk"; Tasks: not desktopicon
 
 [Icons]
-Name: "{group}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-user.ico"
-Name: "{group}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-customer.ico"
-Name: "{group}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-market.ico"
-Name: "{autodesktop}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-user.ico"; Tasks: desktopicon
-Name: "{autodesktop}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-customer.ico"; Tasks: desktopicon
-Name: "{autodesktop}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-market.ico"; Tasks: desktopicon
+Name: "{group}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-user.ico"; AppUserModelID: "com.aicarscaner.user"
+Name: "{group}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-customer.ico"; AppUserModelID: "com.aicarscaner.customer"
+Name: "{group}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-market.ico"; AppUserModelID: "com.aicarscaner.market"
+Name: "{autodesktop}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-user.ico"; Tasks: desktopicon; AppUserModelID: "com.aicarscaner.user"
+Name: "{autodesktop}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-customer.ico"; Tasks: desktopicon; AppUserModelID: "com.aicarscaner.customer"
+Name: "{autodesktop}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\product-market.ico"; Tasks: desktopicon; AppUserModelID: "com.aicarscaner.market"
 Name: "{group}\Uninstall AI Car Scanner"; Filename: "{uninstallexe}"
 Name: "{group}\Installation logs"; Filename: "{app}\logs"
 

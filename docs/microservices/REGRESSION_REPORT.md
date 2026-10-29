@@ -33,3 +33,8 @@ Common: 1138 passed/2 skipped (76.62s); Desktop five groups PASS, core coverage
 90.36%. See `docs/evidence/runner-bootstrap-fix.json`. Native Windows setup
 execution remains unavailable; the missing-module/dependency path is exercised
 in a clean no-site-packages interpreter.
+
+Desktop taskbar follow-up: top-level window/icon and per-product Windows identity
+fix. Targeted Qt/deployment/installer tests: 51 passed. Full Desktop matrix: five
+groups PASS, core 90.43%. Windows Explorer visual/pinning
+acceptance remains a native-platform check; see `docs/evidence/desktop-taskbar-fix.json`.

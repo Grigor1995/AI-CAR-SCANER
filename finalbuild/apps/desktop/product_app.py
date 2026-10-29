@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 ROLES=('USER','CUSTOMER','MARKET')
+APP_IDS={role: 'com.aicarscaner.'+role.lower() for role in ROLES}
 
 
 def endpoint(value):
@@ -23,6 +24,20 @@ def endpoint(value):
     return value.rstrip('/')
 
 
+def configure_windows_identity(role):
+    """Give Python-launched products their own Explorer taskbar group/icon."""
+    if sys.platform != 'win32': return
+    import ctypes
+    try:
+        setter=ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID
+        setter.argtypes=[ctypes.c_wchar_p]
+        setter.restype=ctypes.c_long
+        result=setter(APP_IDS[role])
+        if result != 0: raise OSError('Windows rejected the application identity')
+    except (AttributeError, OSError):
+        print('[AI-Car-Scanner] Windows taskbar identity unavailable',file=sys.stderr)
+
+
 def main(role,argv=None):
     if role not in ROLES:raise ValueError('Unknown application')
     parser=argparse.ArgumentParser(prog='AI-Car-'+role.title())
@@ -32,7 +47,8 @@ def main(role,argv=None):
     args=parser.parse_args(argv)
     if args.check:
         print(json.dumps({'application':role,'backend_embedded':False,'primary_mode':role!='MARKET'}));return 0
-    from PySide6.QtCore import Signal,Slot,QSettings,QTimer
+    configure_windows_identity(role)
+    from PySide6.QtCore import Signal,Slot,QSettings,QTimer,Qt
     from PySide6.QtGui import QIcon,QFont
     from PySide6.QtWidgets import QApplication,QWidget
     from .business_workspace import BusinessWorkspace
@@ -45,7 +61,8 @@ def main(role,argv=None):
     from .theme import APP_QSS
     app.setStyleSheet(APP_QSS)
     asset_root=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[2]))
-    app.setWindowIcon(QIcon(str(asset_root/'assets/app_icons'/role.lower()/'icon.png')))
+    icon=QIcon(str(asset_root/'assets/app_icons'/role.lower()/'icon.png'))
+    app.setWindowIcon(icon)
     class Host(QWidget):
         delivered=Signal(int,object,str)
         def __init__(self):
@@ -66,6 +83,10 @@ def main(role,argv=None):
             if callbacks and not self.closing:
                 (callbacks[1](error) if error else callbacks[0](result))
     host=Host();window=BusinessWorkspace(host,fixed_workspace=role)
+    # Keep the host as the Python worker owner, but never as a hidden native
+    # owner window: owned dialogs are excluded from the Windows taskbar.
+    window.setParent(None,Qt.WindowType.Window)
+    window.setWindowIcon(icon)
     window.finished.connect(app.quit)
     def closing():host.closing=True;host.pending.clear()
     app.aboutToQuit.connect(closing);window.show()

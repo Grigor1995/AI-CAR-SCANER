@@ -1,0 +1,42 @@
+{
+  "result": "PASS for executed scope; target product PARTIALLY IMPLEMENTED",
+  "common": {
+    "passed": 1091,
+    "skipped": 2,
+    "seconds": 69.19
+  },
+  "ecosystem_coverage_percent": 98.05690492713393,
+  "coverage_gate": 90,
+  "desktop": {
+    "groups": "5 PASS",
+    "source_coverage_percent": 90.49,
+    "core_coverage_percent": 90.76,
+    "final_requests_client_boundary_tests": "2 PASS; runtime uses existing requests dependency"
+  },
+  "android": {
+    "result": "BUILD SUCCESSFUL",
+    "seconds": 103,
+    "tasks": 67,
+    "executed": 17,
+    "up_to_date": 50,
+    "scope": "Kotlin, instrumentation source compile, JVM tests, debug APK, lint; no device run"
+  },
+  "http_restart": {
+    "checks": 15,
+    "result": "PASS"
+  },
+  "chromium_dashboard": {
+    "checks": 11,
+    "result": "PASS"
+  },
+  "postgresql": "Offline DDL PASS; live DB/concurrency NOT RUN",
+  "windows_package": "NOT RUN: Linux host",
+  "ios": "NOT VERIFIED: Xcode absent",
+  "physical_obd": "BLOCKED: no hardware",
+  "gateway_automatic_scan": "NOT IMPLEMENTED",
+  "external_verification_and_delivery": "BLOCKED: user confirmed no providers available",
+  "licensed_wiring": "BLOCKED: user confirmed no licensed source available",
+  "payments": "UNSUPPORTED intentionally; no active checkout",
+  "full_native_business_editors": "PARTIALLY IMPLEMENTED; account browser only",
+  "full_french_diagnostics": "PLANNED; existing EN/HY/RU reused; explicit en fallback for fr"
+}

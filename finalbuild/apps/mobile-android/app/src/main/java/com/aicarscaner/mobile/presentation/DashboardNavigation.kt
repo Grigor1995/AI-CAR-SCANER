@@ -227,7 +227,8 @@ internal fun DashboardToolbar(
     onSettings:()->Unit,
     onNewSession:()->Unit,
     onSymptoms:()->Unit,
-    onAnalyze:()->Unit
+    onAnalyze:()->Unit,
+    onBusiness:()->Unit = {}
 ) {
     val text=com.aicarscaner.mobile.settings.strings(LocalDashboardLanguage.current)
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -238,6 +239,7 @@ internal fun DashboardToolbar(
         Box {
             TextButton(onClick={menuOpen=true},contentPadding=PaddingValues(4.dp)) { Text("⋮",modifier=Modifier.semantics{contentDescription="Application menu"}) }
             DropdownMenu(expanded=menuOpen,onDismissRequest={menuOpen=false}) {
+                DropdownMenuItem(text={Text("USER / CUSTOMER / ADMIN • MARKET")},onClick={menuOpen=false;onBusiness()})
                 DropdownMenuItem(text={Text(text.settings)},onClick={menuOpen=false;onSettings()})
             }
         }

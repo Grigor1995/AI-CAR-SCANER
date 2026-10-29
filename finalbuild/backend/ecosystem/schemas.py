@@ -97,7 +97,7 @@ class InviteInput(Input):
 class AcceptInput(Input):
     profile_id: UUID
     expires_in_days: int = Field(default=7, ge=1, le=90)
-    scopes: list[Literal['vehicle:read', 'report:read', 'live:read']] = Field(default_factory=lambda: ['vehicle:read', 'report:read'], min_length=1, max_length=3)
+    scopes: list[Literal['vehicle:read', 'report:read', 'live:read', 'history:read', 'diagnostic:write', 'maintenance:read', 'maintenance:write']] = Field(default_factory=lambda: ['vehicle:read', 'report:read'], min_length=1, max_length=7)
 
 
 # Response contracts are explicit; secrets and internal SQL rows are never serialized.
@@ -155,7 +155,7 @@ class ConsentOutput(BaseModel):
     center_name: str
     center_verified: bool
     profile_id: UUID
-    scopes: list[Literal['vehicle:read', 'report:read', 'live:read']]
+    scopes: list[Literal['vehicle:read', 'report:read', 'live:read', 'history:read', 'diagnostic:write', 'maintenance:read', 'maintenance:write']]
     expires_at: datetime
     revoked: bool
 

@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Incremental business workflows (2026-10-29)
+
+- Add owner/consent-scoped persistent diagnostics using the existing engine, explicit staff acceptance, work orders, verified directory and curated reference registry.
+- Add moderated merchant products/inventory and server-side public/professional/center/coupon/quantity quotes. MARKET remains a portal; payments are inactive and compatibility is an unverified seller claim.
+- Add audited admin governance, durable deferred/missed monitoring lifecycle and in-app notices, account preferences, engineering conversions and localized diagnostic response copies.
+- Add native account registration/login/read workspaces while preserving current UI/icons. Complete business mutation UI, unattended gateway scans, external verification/delivery, licensed sources and full French parity remain incomplete.
+- Add additive migration 0002, 25 business documents, interactive dashboard and executed QA evidence. Common suite: 1091 passed, 2 skipped; ecosystem coverage 98.06%; Desktop groups and Android build/lint pass. iOS/Windows hardware/provider limitations are explicit.
+
 ## Unreleased — Measured telemetry optimization (2026-10-29)
 
 - Reuse sorted/filtered signal samples for telemetry statistics and events while preserving public APIs, arithmetic and current UI/assets.

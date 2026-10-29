@@ -1723,6 +1723,13 @@ class MainWindow(QMainWindow):
         settings_action = QAction("Settings…", self)
         settings_action.triggered.connect(self._open_settings)
         menu.addAction(settings_action)
+        business_action = QAction("USER / CUSTOMER / ADMIN • MARKET", self)
+        def open_business():
+            from .business_workspace import BusinessWorkspace
+            self._business_workspace = BusinessWorkspace(self)
+            self._business_workspace.show()
+        business_action.triggered.connect(open_business)
+        menu.addAction(business_action)
         menu.addSeparator()
         quit_action = QAction("Exit", self)
         quit_action.triggered.connect(self.close)

@@ -1,4 +1,4 @@
-"""Feature-gated durable identity and consent HTTP boundary; no new diagnostics."""
+"""Feature-gated identity/consent boundary; installs shared business workflows."""
 from dataclasses import dataclass
 from datetime import timedelta
 import os
@@ -13,6 +13,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from diagnostic.session_persistence import persistence
 from security.rate_limit import SlidingWindowRateLimiter
@@ -57,6 +58,8 @@ def get_db():
             except Exception:
                 db.rollback()
                 raise
+    except StaleDataError as error:
+        raise DomainError('conflict', 409) from error
     except IntegrityError as error:
         raise DomainError('conflict', 409) from error
     except SQLAlchemyError as error:
@@ -250,3 +253,5 @@ def install(app):
     app.add_exception_handler(DomainError, domain_error)
     app.add_exception_handler(RequestValidationError, invalid_request)
     app.include_router(router)
+    from .business_api import router as business_router
+    app.include_router(business_router)

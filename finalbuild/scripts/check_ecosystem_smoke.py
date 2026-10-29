@@ -101,10 +101,19 @@ def main():
             checks['legacy_bypass_denied'] = request('/api/v1/vehicle-profiles',token=token)[0] == 403
             assert request(PREFIX+f'/consents/{grant["id"]}','DELETE',token=token)[0] == 204
             checks['revoked_read_denied'] = request(shared_path,token=mechanic)[0] == 404
+            status, diagnostic = request(PREFIX+'/diagnostics','POST',{'profile_id':vehicle_id},token)
+            checks['owned_diagnostic_created'] = status == 201
+            diagnostic_id = diagnostic['id']
+            status, analyzed = request(PREFIX+f'/diagnostics/{diagnostic_id}/analyze','POST',{'symptom':'Engine misfires under load','dtcs':['P0302']},token)
+            checks['shared_engine_analysis'] = status == 200 and bool(analyzed['hypotheses'])
+            status, _ = request(PREFIX+'/settings','PUT',{'language':'fr','units':'USA'},token)
+            checks['preferences_persisted'] = status == 200
             stop(); start()
             status, restored = request(PREFIX+'/me',token=token)
             checks['account_and_bearer_survive_restart'] = status == 200 and restored['id'] == owner
             checks['consent_revocation_survives_restart'] = request(shared_path,token=mechanic)[0] == 404
+            checks['diagnostic_survives_restart'] = request(PREFIX+f'/diagnostics/{diagnostic_id}',token=token)[1]['session']['dtcs'][0]['code'] == 'P0302'
+            checks['preferences_survive_restart'] = request(PREFIX+'/settings',token=token)[1]['language'] == 'fr'
             assert all(checks.values()), 'One or more smoke checks failed'
         finally:
             stop(); output.close()

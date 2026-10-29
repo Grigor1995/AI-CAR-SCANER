@@ -41,7 +41,9 @@ def test_issue_20_mobile_settings_are_inside_overflow_application_menu():
     ios = IOS_SCREEN.read_text(encoding="utf-8")
     assert 'contentDescription="Application menu"' in android
     assert "DropdownMenuItem(text={Text(text.settings)}" in android
-    assert "Menu { Button(t.settings){settingsOpen=true} }" in ios
+    menu = ios.split("Menu {", 1)[1].split("} label:", 1)[0]
+    assert "Button(t.settings){settingsOpen=true}" in menu
+    assert "businessOpen=true" in menu
     assert '.accessibilityLabel("Application menu")' in ios
 
 

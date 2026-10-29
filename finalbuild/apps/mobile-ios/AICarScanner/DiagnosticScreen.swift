@@ -24,6 +24,7 @@ struct DiagnosticScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var backendDraft=""
     @State private var settingsOpen = false
+    @State private var businessOpen = false
     @State private var newSessionOpen = false
     @State private var editSymptom:Symptom?
     @State private var editDTC:DTC?
@@ -60,7 +61,7 @@ struct DiagnosticScreen: View {
 
                         }
                         Spacer()
-                        Menu { Button(t.settings){settingsOpen=true} } label: { Image(systemName:"ellipsis") } .accessibilityLabel("Application menu")
+                        Menu { Button(t.settings){settingsOpen=true};Button("USER / CUSTOMER / ADMIN • MARKET"){businessOpen=true} } label: { Image(systemName:"ellipsis") } .accessibilityLabel("Application menu")
                         if viewModel.session != nil && tab != 12 { Button("＋"){newSessionOpen=true} }
                     }
                     if tab != 12 {
@@ -119,6 +120,7 @@ struct DiagnosticScreen: View {
                 Button(t.start){viewModel.clearSession();reset()}
             }message:{Text(t.confirm)}
             .sheet(isPresented:$settingsOpen){settingsView}
+            .sheet(isPresented:$businessOpen){BusinessWorkspace(baseURL:viewModel.settings.apiURL)}
             .sheet(item: $test) { recommendation in
                 TestSheet(test: recommendation, language: viewModel.settings.language,
                           loading: viewModel.loading, error: viewModel.error,

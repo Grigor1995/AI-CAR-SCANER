@@ -4,6 +4,7 @@ from alembic import context
 from diagnostic.database import database_engine
 
 from ecosystem.models import Base
+import ecosystem.business_models  # noqa: F401 — register additive tables
 from ecosystem.migration_policy import include_object
 
 config = context.config

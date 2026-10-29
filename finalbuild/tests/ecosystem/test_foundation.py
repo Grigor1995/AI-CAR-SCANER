@@ -277,7 +277,7 @@ def test_real_alembic_upgrade_downgrade_preserves_legacy_row(tmp_path,monkeypatc
     assert 'ecosystem_accounts' in inspect(engine).get_table_names()
     with engine.connect() as connection:
         assert connection.execute(select(profiles.c.id)).scalar()=='legacy'
-        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar()=='0001_ecosystem'
+        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar()=='0002_business'
     command.downgrade(config,'base')
     assert 'ecosystem_accounts' not in inspect(engine).get_table_names()
     with engine.connect() as connection:assert connection.execute(select(profiles.c.id)).scalar()=='legacy'

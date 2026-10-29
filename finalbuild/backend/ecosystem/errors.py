@@ -13,6 +13,20 @@ MESSAGES = {
 }
 
 
+FRENCH = {
+    'disabled':'Les fonctionnalités de l’écosystème sont désactivées.',
+    'unauthorized':'Authentification requise ou session expirée.',
+    'forbidden':'Accès refusé.', 'not_found':'Ressource introuvable.',
+    'conflict':'La ressource existe déjà ou a déjà été traitée.',
+    'invalid_credentials':'Adresse e-mail ou mot de passe incorrect.',
+    'invalid_input':'Champs de requête invalides.',
+    'rate_limited':'Trop de tentatives. Réessayez plus tard.',
+    'database_unavailable':'Configurez la base de données et appliquez les migrations.',
+    'legacy_blocked':'Les anciennes API sont indisponibles. Utilisez les API v2 authentifiées.',
+}
+MESSAGES = {key: (*values, FRENCH[key]) for key, values in MESSAGES.items()}
+
+
 class DomainError(Exception):
     def __init__(self, code, status=403):
         self.code, self.status = code, status
@@ -21,5 +35,5 @@ class DomainError(Exception):
 
 def error_body(code, language='en'):
     language = language.split(',')[0].split(';')[0].split('-')[0].lower()
-    index = {'en': 0, 'hy': 1, 'ru': 2}.get(language, 0)
+    index = {'en': 0, 'hy': 1, 'ru': 2, 'fr': 3}.get(language, 0)
     return {'code': code, 'detail': MESSAGES[code][index]}

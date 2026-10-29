@@ -79,6 +79,9 @@ def invite(db, account, center_id, target_id):
     target = db.get(Account, target_id)
     if target is None or not target.active:
         raise DomainError('not_found', 404)
+    pending = db.scalar(select(Invitation.id).where(Invitation.center_id == center_id, Invitation.account_id == target_id, Invitation.accepted_at.is_(None), Invitation.expires_at > utcnow()))
+    if pending:
+        raise DomainError('conflict', 409)
     invitation = Invitation(center_id=center_id, account_id=target_id, expires_at=utcnow() + timedelta(days=7))
     db.add(invitation)
     db.flush()

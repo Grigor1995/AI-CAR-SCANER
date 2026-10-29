@@ -46,3 +46,10 @@ Open [performance_architecture_dashboard.html](performance_architecture_dashboar
 for the bundled architecture graph, measured baseline, paired before/after data
 and isolated C++ experiment. See [performance reports](../performance/FINAL_PERFORMANCE_REPORT.md)
 for reproduction commands and unmeasured hardware/platform limitations.
+
+## Business transformation
+
+Open [business_architecture_dashboard.html](business_architecture_dashboard.html)
+for current business roles, permission boundaries, before/after views and explicit
+partial/planned components. See [business report](../business/FINAL_BUSINESS_MIGRATION_REPORT.md)
+for actual implemented scope, local run and remaining provider/native UI work.

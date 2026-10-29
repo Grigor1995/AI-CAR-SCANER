@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": {
+    "initial_nodes": 14,
+    "search": 1,
+    "roles": 4,
+    "collapse": 0,
+    "before": 8,
+    "after": 16,
+    "permissions": true,
+    "zoom": true,
+    "pan": true,
+    "wheel": true,
+    "responsive": true
+  },
+  "scope": "Chromium local HTTP, not Windows/iOS rendering"
+}

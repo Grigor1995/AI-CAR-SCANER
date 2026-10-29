@@ -143,6 +143,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
     val settingsStore = remember { AppSettingsStore(context) }
     var appSettings by remember { mutableStateOf(settingsStore.load()) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var businessOpen by remember { mutableStateOf(false) }
     var newSessionConfirmOpen by remember { mutableStateOf(false) }
     val text = strings(appSettings.language)
     val extra = text.extra
@@ -687,6 +688,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
         colorScheme = if (appSettings.darkTheme) AutomotiveDarkColors else AutomotiveLightColors
     ) {
         CompositionLocalProvider(LocalDashboardLanguage provides appSettings.language, LocalDashboardUsUnits provides appSettings.usUnits, LocalDashboardAnalog provides appSettings.analogDisplay) {
+        if (businessOpen) BusinessWorkspace {businessOpen=false}
         if (settingsOpen) {
             SettingsDialog(
                 settings = appSettings,
@@ -832,6 +834,7 @@ fun DiagnosticScreen(viewModel: DiagnosticViewModel) {
                         loading=state.loading,
                         onHome={selectedTab=11},
                         onSettings={settingsOpen=true},
+                        onBusiness={businessOpen=true},
                         onNewSession={newSessionConfirmOpen=true},
                         onSymptoms={selectedTab=0},
                         onAnalyze={selectedTab=4;viewModel.analyze(appSettings.language.code)}

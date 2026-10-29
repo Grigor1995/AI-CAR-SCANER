@@ -26,3 +26,10 @@ Remote catalog requires HTTPS, origins reject userinfo/query/fragment. Public
 snapshot excludes model paths, internal URLs and secret ENV references. Error
 messages never serialize Pydantic raw input. Offline explorer shows safe checked-in
 policy defaults, explicitly not live runtime health or mutable control plane.
+
+First-clone runner bootstrap uses only the shared stdlib JSON/version reader and
+bounded startup-field preflight, so no backend/Pydantic install is required to
+start setup. Once dependencies are installed, setup validates the full schema in
+the project venv before proceeding. Backend startup always uses full validation;
+bootstrap mode is not a service configuration/security fallback. Root imports
+(`finalbuild.shared`) and module imports (`shared`) resolve the same config source.

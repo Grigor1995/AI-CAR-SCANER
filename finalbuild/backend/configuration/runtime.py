@@ -12,8 +12,6 @@ import sys
 from pathlib import Path
 from threading import RLock
 from urllib.parse import urlsplit
-from pydantic import ValidationError
-from .models import GlobalConfig
 
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
 ENV_PATHS = {"AI_CAR_BACKEND_PORT": ("services.backend_port", int),
@@ -60,7 +58,30 @@ def read(path):
     except (OSError, ValueError):
         raise ConfigurationError("Configuration file is missing or invalid JSON") from None
 
+def source_data(root, env):
+    """Stdlib-only document loading, shared by first-clone setup and runtime.
+
+    This is syntax/version preflight, not a replacement for backend schema
+    validation. Native clients never receive a configuration control plane.
+    """
+    directory = Path(root) / "config"
+    data = read(directory / "global_config.json")
+    if not isinstance(data, dict) or type(data.get('schema_version', 1)) is not int or data.get('schema_version', 1) != 1:
+        raise ConfigurationError("Unsupported configuration schema version")
+    name = env.get("AI_CAR_CONFIG_ENV", "development")
+    if name not in {"development", "testing", "production"}:
+        raise ConfigurationError("Unknown configuration environment")
+    overlay = directory / "environments" / f"{name}.json"
+    if overlay.is_file(): data = merge(data, read(overlay))
+    elif name == "production": raise ConfigurationError("Production overlay must be explicitly installed")
+    if type(data.get('schema_version', 1)) is not int or data.get('schema_version', 1) != 1:
+        raise ConfigurationError("Unsupported configuration schema version")
+    return data
+
+
 def validate(data):
+    from pydantic import ValidationError
+    from .models import GlobalConfig
     # JSON conversion accepts JSON arrays as frozen tuples without type coercion.
     try:
         model = GlobalConfig.model_validate_json(json.dumps(data))
@@ -91,15 +112,8 @@ def classification(path):
 class ConfigManager:
     def __init__(self, root=ROOT, environ=None, preferences=None):
         env = os.environ if environ is None else environ
-        data = GlobalConfig().model_dump(mode="json")
-        directory = Path(root) / "config"
-        data = merge(data, read(directory / "global_config.json"))
-        name = env.get("AI_CAR_CONFIG_ENV", "development")
-        if name not in {"development", "testing", "production"}:
-            raise ConfigurationError("Unknown configuration environment")
-        overlay = directory / "environments" / f"{name}.json"
-        if overlay.is_file(): data = merge(data, read(overlay))
-        elif name == "production": raise ConfigurationError("Production overlay must be explicitly installed")
+        from .models import GlobalConfig
+        data = merge(GlobalConfig().model_dump(mode="json"), source_data(root, env))
         for key, (path, cast) in ENV_PATHS.items():
             if key in env:
                 try: put(data, path, cast(env[key]))

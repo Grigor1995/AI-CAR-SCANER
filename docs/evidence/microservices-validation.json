@@ -234,5 +234,6 @@
     "Earlier LLM URL/port compatibility failures fixed",
     "Desktop cyclic Qt wrapper collection fixed in GUI-thread test teardown",
     "Final source index native dynamic/overload calls remain unresolved; no runtime call trace claimed"
-  ]
+  ],
+  "follow_up_runner_bootstrap": "docs/evidence/runner-bootstrap-fix.json"
 }

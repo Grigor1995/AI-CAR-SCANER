@@ -10,7 +10,7 @@ import sys
 PROJECT = Path(__file__).resolve().parents[1]
 
 
-def environment_values(*, include_defaults=True, environ=None):
+def environment_values(*, include_defaults=True, environ=None, bootstrap=False):
     environ = os.environ if environ is None else environ
     paths = [PROJECT / 'config/environment.json'] if include_defaults else []
     local = (Path(sys.executable).resolve().parent / 'environment.local.json'
@@ -25,21 +25,42 @@ def environment_values(*, include_defaults=True, environ=None):
     values = {}
     global_root = PROJECT if getattr(sys, "frozen", False) else PROJECT.parent
     if include_defaults and (global_root / 'config/global_config.json').is_file():
-        # Importing configuration here is backend/setup-only; thin native clients
-        # deliberately do not import this module.
-        from backend.configuration.runtime import ConfigManager
-        config = ConfigManager(root=global_root, environ=environ).snapshot
-        values.update({'AI_CAR_BACKEND_PORT': str(config.services.backend_port),
-                       'LOCAL_LLM_SERVER_CONTEXT': str(config.ai.context),
-                       'DIAGNOSTIC_LLM_PROVIDER': config.ai.provider,
-                       'LOCAL_LLM_TEMPERATURE': str(config.ai.temperature),
-                       'LOCAL_LLM_MAX_TOKENS': str(config.ai.max_tokens),
-                       'LOCAL_LLM_SERVER_TIMEOUT_S': str(config.ai.timeout_seconds)})
-        if config.ai.endpoint != 'http://127.0.0.1:8000':
-            values['LOCAL_LLM_SERVER_URL'] = config.ai.endpoint
-        if config.ai.model_path != 'models':
-            model_path = Path(config.ai.model_path).expanduser()
-            values['LOCAL_LLM_MODEL_PATH'] = str(model_path if model_path.is_absolute() else PROJECT / model_path)
+        # runpy from repo root imports finalbuild.shared; module entrypoints
+        # import shared. Resolve the same backend source without changing sys.path.
+        if __package__.startswith('finalbuild.'):
+            from finalbuild.backend.configuration import runtime
+        else:
+            from backend.configuration import runtime
+        if bootstrap:
+            data = runtime.source_data(global_root, environ)
+        else:
+            data = runtime.ConfigManager(root=global_root, environ=environ).snapshot.model_dump(mode='json')
+        fields = {
+            'AI_CAR_BACKEND_PORT': ('services', 'backend_port', int, 1, 65535),
+            'LOCAL_LLM_SERVER_CONTEXT': ('ai', 'context', int, 512, 131072),
+            'DIAGNOSTIC_LLM_PROVIDER': ('ai', 'provider', str, None, None),
+            'LOCAL_LLM_TEMPERATURE': ('ai', 'temperature', (int, float), 0, 2),
+            'LOCAL_LLM_MAX_TOKENS': ('ai', 'max_tokens', int, 64, 32768),
+            'LOCAL_LLM_SERVER_TIMEOUT_S': ('ai', 'timeout_seconds', (int, float), 1, 600),
+            'LOCAL_LLM_SERVER_URL': ('ai', 'endpoint', str, None, None),
+            'LOCAL_LLM_MODEL_PATH': ('ai', 'model_path', str, None, None),
+        }
+        for name, (section, key, expected, low, high) in fields.items():
+            group = data.get(section, {})
+            if not isinstance(group, dict): raise ValueError('Invalid bootstrap configuration section')
+            if key not in group: continue
+            value = group[key]
+            if isinstance(value, bool) or not isinstance(value, expected):
+                raise ValueError('Invalid bootstrap configuration field type')
+            if low is not None and not low <= value <= high:
+                raise ValueError('Bootstrap configuration field outside allowed range')
+            # Preserve legacy port-based URL construction and model discovery.
+            if name == 'LOCAL_LLM_SERVER_URL' and value == 'http://127.0.0.1:8000': continue
+            if name == 'LOCAL_LLM_MODEL_PATH':
+                if value == 'models': continue
+                model_path = Path(value).expanduser()
+                value = model_path if model_path.is_absolute() else PROJECT / model_path
+            values[name] = str(value)
     for path in paths:
         if not path.is_file():
             continue

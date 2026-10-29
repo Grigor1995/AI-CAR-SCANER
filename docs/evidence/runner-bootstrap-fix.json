@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-29",
+  "baseline": "cb0ba8a",
+  "reported_error": "ModuleNotFoundError: backend from runner.py setup/check at repository root",
+  "fix": [
+    "Resolve finalbuild.shared and shared namespaces explicitly without sys.path mutation",
+    "Share stdlib-only JSON/version loading with bootstrap startup-field preflight",
+    "Defer Pydantic until full configuration validation in installed venv/backend startup"
+  ],
+  "clean_python": "Actual python -S subprocess tests: root help, setup help, check and bridge parity; no pydantic/fastapi/PySide6 imported",
+  "focused_tests": {
+    "passed": 88,
+    "failed": 0,
+    "seconds": 7.56
+  },
+  "common": {
+    "passed": 1138,
+    "skipped": 2,
+    "failed": 0,
+    "seconds": 76.62
+  },
+  "desktop": {
+    "status": "PASS",
+    "passed_groups": 5,
+    "failed_groups": 0,
+    "combined_coverage_percent": 90.06,
+    "production_core_coverage_percent": 90.36
+  },
+  "source_index_freshness": {
+    "files": 591,
+    "stale": 0
+  },
+  "limitations": [
+    "Host execution is Linux Python 3.13; native Windows runtime not available",
+    "No setup downloads or real Android/OBD hardware operations executed for this bootstrap fix"
+  ]
+}

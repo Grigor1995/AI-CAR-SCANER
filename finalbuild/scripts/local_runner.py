@@ -155,7 +155,7 @@ def save_state(state):
 
 def child_env(state):
     # Process ENV > local/explicit JSON > saved runner settings > shipped JSON.
-    env = environment_values()
+    env = environment_values(bootstrap=True)
     env.update(PYTHONUNBUFFERED='1', AI_CAR_BACKEND_HOST='127.0.0.1',
                AI_CAR_BACKEND_PORT=str(state.get('port', env.get('AI_CAR_BACKEND_PORT', 8001))),
                LOCAL_LLM_SERVER_HOST='127.0.0.1',
@@ -163,7 +163,7 @@ def child_env(state):
     for key, field in [('JAVA_HOME', 'java_home'), ('ANDROID_HOME', 'sdk'), ('ANDROID_SDK_ROOT', 'sdk'),
                        ('LOCAL_LLM_MODEL_PATH', 'model'), ('LOCAL_LLM_SERVER_PATH', 'llama')]:
         if state.get(field): env[key] = str(state[field])
-    env.update(environment_values(include_defaults=False))
+    env.update(environment_values(include_defaults=False, bootstrap=True))
     env.update(os.environ)
     env.setdefault('LOCAL_LLM_SERVER_URL', f'http://{env["LOCAL_LLM_SERVER_HOST"]}:{env["LOCAL_LLM_SERVER_PORT"]}')
     if env.get('JAVA_HOME'): env['PATH'] = str(Path(env['JAVA_HOME']) / 'bin') + os.pathsep + env.get('PATH', '')
@@ -192,7 +192,7 @@ def setup_python(runner, with_tests=False):
     if with_tests: requirements += ['-r', 'backend/requirements-dev.txt', '-r', 'apps/desktop/requirements-dev.txt']
     runner.run([str(python), '-m', 'pip', 'install', *requirements], cwd=PROJECT)
     runner.run([str(python), '-m', 'pip', 'check'], cwd=PROJECT)
-    runner.run([str(python), '-c', 'from PySide6 import QtCore; import fastapi, reportlab, sqlalchemy, PIL; print("Desktop/backend imports OK")'], cwd=PROJECT)
+    runner.run([str(python), '-c', 'from PySide6 import QtCore; import fastapi, reportlab, sqlalchemy, PIL; from shared.environment import environment_values; environment_values(); print("Desktop/backend imports and global configuration OK")'], cwd=PROJECT)
     return str(python)
 
 
@@ -536,8 +536,8 @@ def main(argv=None):
     configure.add_argument('--skip-android-build', action='store_true', help='Prepare tools without compiling the APK')
     configure.add_argument('--with-tests', action='store_true', help='Install and run Python/Desktop tests, plus Android JVM/lint when building Android')
     configure.add_argument('--run', action='store_true', help='Open USER client after setup; start the shared backend separately')
-    configure.add_argument('--port', type=int, default=int(os.environ.get('AI_CAR_BACKEND_PORT', environment_values().get('AI_CAR_BACKEND_PORT', 8001))))
-    configure.add_argument('--ai-port', type=int, default=int(os.environ.get('LOCAL_LLM_SERVER_PORT', environment_values().get('LOCAL_LLM_SERVER_PORT', 8000))))
+    configure.add_argument('--port', type=int, default=int(os.environ.get('AI_CAR_BACKEND_PORT', environment_values(bootstrap=True).get('AI_CAR_BACKEND_PORT', 8001))))
+    configure.add_argument('--ai-port', type=int, default=int(os.environ.get('LOCAL_LLM_SERVER_PORT', environment_values(bootstrap=True).get('LOCAL_LLM_SERVER_PORT', 8000))))
     configure.add_argument('--api-url', type=api_url)
     launch = commands.add_parser('desktop', help='Run one independent Desktop client; start the backend separately')
     launch.add_argument('--no-ai', action='store_true', help='Legacy launcher compatibility; new clients never start AI/backend')

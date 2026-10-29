@@ -64,3 +64,38 @@ def test_global_model_path_is_relative_to_backend_source_root(tmp_path, monkeypa
     monkeypatch.setattr(environment,'PROJECT',project)
     values=environment.environment_values(environ={})
     assert values['LOCAL_LLM_MODEL_PATH']==str(project/'models/example.gguf')
+
+
+def test_root_import_namespace_uses_same_validated_configuration():
+    """The root runner sees finalbuild.shared, unlike backend module entrypoints."""
+    root=Path(__file__).resolve().parents[2]
+    result=subprocess.run([sys.executable,'-c',
+        'from finalbuild.shared.environment import environment_values; '
+        'assert environment_values(environ={})["AI_CAR_BACKEND_PORT"] == "8001"'],
+        cwd=root,capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stderr
+
+
+@pytest.mark.parametrize('arguments, codes', [(['--help'], {0}), (['setup','--help'], {0}),
+                                              (['check'], {0,2})])
+def test_first_clone_runner_works_without_site_packages(arguments, codes):
+    """-S reproduces setup on Python before Pydantic/GUI/server are installed."""
+    root=Path(__file__).resolve().parents[2]
+    env={k:v for k,v in os.environ.items() if k not in {'PYTHONPATH','AI_CAR_ENV_CONFIG','AI_CAR_CONFIG_ENV'}}
+    result=subprocess.run([sys.executable,'-S',str(root/'runner.py'),*arguments],
+                          cwd=root,env=env,capture_output=True,text=True,timeout=15)
+    assert result.returncode in codes,result.stderr
+    assert 'Traceback' not in result.stderr
+
+
+def test_bootstrap_and_runtime_bridge_agree_without_importing_pydantic():
+    root=Path(__file__).resolve().parents[2]
+    code='''import sys,json
+from finalbuild.shared.environment import environment_values
+values=environment_values(environ={},bootstrap=True)
+assert not any(name.startswith(('pydantic','fastapi','PySide6')) for name in sys.modules)
+print(json.dumps(values))
+'''
+    result=subprocess.run([sys.executable,'-S','-c',code],cwd=root,capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stderr
+    assert json.loads(result.stdout)==environment.environment_values(environ={})

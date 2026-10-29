@@ -25,3 +25,11 @@ diagnostic-e2e: 6; negative: 68; UI POM: 142; UI widgets: 25.
 Common suite final: 1133 passed, 2 skipped in 72.36s. Separate real gateway/catalog
 HTTP smoke: 13 checks pass, including account-protected five operations, catalog
 shutdown → 503 with identity still working, and embedded rollback preserving bearer/account.
+
+Follow-up runner bootstrap fix (`cb0ba8a` baseline): root setup/check no longer
+import Pydantic before installing dependencies. Actual `python -S` subprocess
+tests cover first-clone command startup, namespace resolution and bridge parity.
+Common: 1138 passed/2 skipped (76.62s); Desktop five groups PASS, core coverage
+90.36%. See `docs/evidence/runner-bootstrap-fix.json`. Native Windows setup
+execution remains unavailable; the missing-module/dependency path is exercised
+in a clean no-site-packages interpreter.

@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased — First-clone runner bootstrap fix (2026-10-29)
+
+- Fix `ModuleNotFoundError: backend` when starting runner.py from the repository root.
+- Keep setup/help/check dependency-free before the project venv exists; share stdlib JSON/version loading, then validate the full global configuration inside the installed venv and on every backend startup.
+- Add clean `python -S` subprocess coverage and namespace/bridge parity checks. Existing ENV precedence, AI model discovery and backend validation remain intact.
+
 ## Unreleased — Optional catalog microservice, global config and source explorer (2026-10-29)
 
 - Add a real independently executable read-only vehicle catalog with authenticated internal HTTP, bounded retries/timeouts, no redirect credential forwarding, and an account-protected gateway. Embedded mode remains the default; private diagnostics/business SQL remain on the shared backend.

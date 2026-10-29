@@ -45,7 +45,7 @@ DiskSpanning=no
 
 [Tasks]
 Name: localai; Description: "Enable local AI - download or select an existing GGUF model"; GroupDescription: "Optional components:"; Flags: unchecked
-Name: desktopicon; Description: "Create a Desktop shortcut"; GroupDescription: "Shortcuts:"
+Name: desktopicon; Description: "Create Desktop shortcuts for USER, CUSTOMER and MARKET"; GroupDescription: "Shortcuts:"
 
 [Files]
 #if FileExists(PayloadDir + "\source.zip")
@@ -57,16 +57,24 @@ Source: "{#PayloadDir}\manifest.json"; DestDir: "{app}\installer"; Flags: ignore
 Source: "{#PayloadDir}\app.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
-Type: files; Name: "{autodesktop}\AI Car Scanner.lnk"; Tasks: not desktopicon
+Type: files; Name: "{autodesktop}\AI Car Scanner.lnk"
+Type: files; Name: "{group}\AI Car Scanner.lnk"
+Type: files; Name: "{autodesktop}\AI Car User.lnk"; Tasks: not desktopicon
+Type: files; Name: "{autodesktop}\AI Car Customer.lnk"; Tasks: not desktopicon
+Type: files; Name: "{autodesktop}\AI Car Market.lnk"; Tasks: not desktopicon
 
 [Icons]
-Name: "{group}\AI Car Scanner"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"
-Name: "{autodesktop}\AI Car Scanner"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"; Tasks: desktopicon
+Name: "{group}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"
+Name: "{group}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"
+Name: "{group}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"
+Name: "{autodesktop}\AI Car User"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app user --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"; Tasks: desktopicon
+Name: "{autodesktop}\AI Car Customer"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app customer --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"; Tasks: desktopicon
+Name: "{autodesktop}\AI Car Market"; Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --app market --root ""{app}"""; WorkingDir: "{app}\repo"; IconFilename: "{app}\app.ico"; Tasks: desktopicon
 Name: "{group}\Uninstall AI Car Scanner"; Filename: "{uninstallexe}"
 Name: "{group}\Installation logs"; Filename: "{app}\logs"
 
 [Run]
-Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --root ""{app}"""; WorkingDir: "{app}\repo"; Description: "Launch AI Car Scanner"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\repo\.venv\Scripts\pythonw.exe"; Parameters: """{app}\installer\windows_installer.py"" launch --root ""{app}"""; WorkingDir: "{app}\repo"; Description: "Launch AI Car User"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; Only the dedicated installer-owned application folder is removed.

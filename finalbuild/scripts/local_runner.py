@@ -34,7 +34,7 @@ TOOLS = ROOT / '.build-tools/setup'
 STATE = ROOT / '.runner-state.json'
 MODEL_NAME = 'Qwen3-8B-Q4_K_M.gguf'
 MODEL_REPO = 'Qwen/Qwen3-8B-GGUF'
-PACKAGE = 'com.aicarscaner.mobile'
+PACKAGE = 'com.aicarscaner.user'
 USER_AGENT = 'AI-Car-Scanner-local-setup/1'
 # Use the Java-based SDK tools compatible with JDK 17; latest may require a newer runtime.
 CMDLINE_PACKAGE = 'cmdline-tools;19.0'
@@ -340,11 +340,12 @@ def java_path(state):
 def build_android(state, runner, tests=False):
     project = PROJECT / 'apps/mobile-android'
     wrapper = project / 'gradle/wrapper/gradle-wrapper.jar'
-    tasks = [':app:assembleDebug'] + ([':app:testDebugUnitTest', ':app:lintDebug'] if tests else [])
+    role=state.get('app','user');variant=role.title()+'Debug'
+    tasks = [':app:assemble'+variant] + ([':app:test'+variant+'UnitTest', ':app:lint'+variant] if tests else [])
     # Direct Java avoids shell/.bat quoting and command-injection differences on Windows.
     runner.run([str(java_path(state)), '-cp', str(wrapper), 'org.gradle.wrapper.GradleWrapperMain', *tasks,
                 f'-PapiBaseUrl={state["api_url"]}', '--no-daemon', '--console=plain'], cwd=project, env=child_env(state))
-    apk = project / 'app/build/outputs/apk/debug/app-debug.apk'
+    apk = project / f'app/build/outputs/apk/{role}/debug/app-{role}-debug.apk'
     if not apk.is_file() or not apk.stat().st_size: raise SetupError('Gradle returned without the expected debug APK')
     return apk
 
@@ -394,7 +395,7 @@ def perform_setup(args):
     state['configured_at'] = datetime.now(timezone.utc).isoformat()
     save_state(state)
     print(f'[READY] Selected setup components completed. State: {STATE}\n[LOG] {log}', flush=True)
-    print('Next: python runner.py desktop  |  python runner.py android', flush=True)
+    print('Next: python runner.py backend --migrate  |  python runner.py desktop --app user  |  python runner.py android --app user', flush=True)
     return 0
 
 
@@ -406,7 +407,7 @@ def health(url):
     except (OSError, ValueError, http.client.HTTPException): return False
 
 
-def desktop(args):
+def legacy_desktop(args):
     state = load_state()
     python = venv_python()
     if not python.is_file(): raise SetupError('Run python runner.py setup first')
@@ -437,8 +438,33 @@ def choose_device(state, requested=None):
     return online[0]
 
 
+def desktop(args):
+    if getattr(args,'legacy',False):return legacy_desktop(args)
+    state=load_state();python=venv_python()
+    if not python.is_file():raise SetupError('Run python runner.py setup first')
+    role=getattr(args,'app','user')
+    env=child_env(state)
+    command=[str(python),'-m',f'apps.{role}.main']
+    if getattr(args,'backend_url',None):command+=['--backend-url',args.backend_url]
+    return subprocess.call(command,cwd=PROJECT,env=env)
+
+
+def backend(args):
+    python=venv_python()
+    if not python.is_file():raise SetupError('Run python runner.py setup first')
+    env=child_env(load_state())
+    port=args.port or int(env.get('AI_CAR_BACKEND_PORT','8001'))
+    command=[str(python),str(PROJECT/'backend/main.py'),'--host',args.host,'--port',str(port)]
+    if args.database:command+=['--database',str(args.database.resolve())]
+    if args.migrate:command+=['--migrate']
+    if args.local_ai:command+=['--local-ai']
+    return subprocess.call(command,cwd=ROOT,env=env)
+
+
 def android(args):
     state = load_state()
+    state['app']=getattr(args,'app','user')
+    package='com.aicarscaner.'+state['app']
     if not state.get('sdk') or not state.get('java_home'): raise SetupError('Run setup with Android enabled first')
     env = child_env(state)
     port = env['AI_CAR_BACKEND_PORT']
@@ -452,19 +478,19 @@ def android(args):
     if not args.build_only:
         target = urllib.parse.urlsplit(state['api_url'])
         check = urllib.parse.urlunsplit(target._replace(netloc='127.0.0.1' + (f':{target.port}' if target.port else ''))) if target.hostname == '10.0.2.2' else state['api_url']
-        if not health(check): raise SetupError(f'Backend is not healthy at {check}. Start python runner.py desktop in another terminal first.')
+        if not health(check): raise SetupError(f'Backend is not healthy at {check}. Start python runner.py backend --migrate in another terminal first.')
         serial = choose_device(state, args.serial)
     log = TOOLS / 'logs' / ('android-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '.log')
     apk = build_android(state, Runner(log), args.with_tests)
     if args.build_only: print(f'[APK] {apk}'); return 0
     adb_command(state, 'install', '-r', str(apk), serial=serial)
     if args.reverse: adb_command(state, 'reverse', f'tcp:{port}', f'tcp:{port}', serial=serial)
-    adb_command(state, 'shell', 'am', 'force-stop', PACKAGE, serial=serial)
+    adb_command(state, 'shell', 'am', 'force-stop', package, serial=serial)
     # Debug run-as changes only the backend URL; retain drafts and other app settings.
     root = ET.Element('map'); ET.SubElement(root, 'string', name='url').text = state['api_url'].rstrip('/')
     xml = ET.tostring(root, encoding='unicode')
-    adb_command(state, 'shell', '-T', 'run-as', PACKAGE, 'sh', '-c', "'mkdir -p shared_prefs && cat > shared_prefs/backend.xml'", serial=serial, input=xml, text=True)
-    adb_command(state, 'shell', 'am', 'start', '-n', PACKAGE + '/.MainActivity', serial=serial)
+    adb_command(state, 'shell', '-T', 'run-as', package, 'sh', '-c', "'mkdir -p shared_prefs && cat > shared_prefs/backend.xml'", serial=serial, input=xml, text=True)
+    adb_command(state, 'shell', 'am', 'start', '-n', package + '/com.aicarscaner.mobile.MainActivity', serial=serial)
     print(f'[RUN] Android on {serial}; backend={state["api_url"]}. Log: {log}')
     return 0
 
@@ -489,7 +515,7 @@ def check(args):
         if not (sdk / 'build-tools/35.0.0/source.properties').is_file(): problems.append('Android build-tools 35.0.0 missing')
         if not (sdk / 'platform-tools' / ('adb.exe' if os.name == 'nt' else 'adb')).is_file(): problems.append('Android platform-tools / ADB missing')
     if args.services:
-        if not health(env.get('AI_CAR_BACKEND_URL', f'http://127.0.0.1:{env["AI_CAR_BACKEND_PORT"]}')): problems.append('Backend is stopped: run python runner.py desktop')
+        if not health(env.get('AI_CAR_BACKEND_URL', f'http://127.0.0.1:{env["AI_CAR_BACKEND_PORT"]}')): problems.append('Backend is stopped: run python runner.py backend --migrate')
         if state.get('ai_enabled', True) and not health(env['LOCAL_LLM_SERVER_URL']): problems.append('Local AI server is not healthy')
     for message in problems: print('[NEEDS SETUP] ' + message)
     if not problems: print('[READY] Configured components' + (' and services' if args.services else '') + ' checked')
@@ -509,13 +535,23 @@ def main(argv=None):
     configure.add_argument('--accept-android-licenses', action='store_true', help='Accept Android SDK licenses noninteractively')
     configure.add_argument('--skip-android-build', action='store_true', help='Prepare tools without compiling the APK')
     configure.add_argument('--with-tests', action='store_true', help='Install and run Python/Desktop tests, plus Android JVM/lint when building Android')
-    configure.add_argument('--run', action='store_true', help='Open Desktop/backend after setup')
+    configure.add_argument('--run', action='store_true', help='Open USER client after setup; start the shared backend separately')
     configure.add_argument('--port', type=int, default=int(os.environ.get('AI_CAR_BACKEND_PORT', environment_values().get('AI_CAR_BACKEND_PORT', 8001))))
     configure.add_argument('--ai-port', type=int, default=int(os.environ.get('LOCAL_LLM_SERVER_PORT', environment_values().get('LOCAL_LLM_SERVER_PORT', 8000))))
     configure.add_argument('--api-url', type=api_url)
-    launch = commands.add_parser('desktop', help='Run Desktop + Backend + local AI using the project venv')
-    launch.add_argument('--no-ai', action='store_true')
+    launch = commands.add_parser('desktop', help='Run one independent Desktop client; start the backend separately')
+    launch.add_argument('--no-ai', action='store_true', help='Legacy launcher compatibility; new clients never start AI/backend')
+    launch.add_argument('--app',choices=('user','customer','market'),default='user')
+    launch.add_argument('--backend-url',type=api_url)
+    launch.add_argument('--legacy',action='store_true',help='Developer compatibility for the previous combined UI; not a fourth packaged app')
+    server=commands.add_parser('backend',help='Run the one centralized backend for all clients')
+    server.add_argument('--host',default='127.0.0.1')
+    server.add_argument('--port',type=int)
+    server.add_argument('--database',type=Path)
+    server.add_argument('--migrate',action='store_true')
+    server.add_argument('--local-ai',action='store_true')
     phone = commands.add_parser('android', help='Build, install, configure and launch on one connected emulator/device')
+    phone.add_argument('--app',choices=('user','customer','market'),default='user')
     phone.add_argument('--build-only', action='store_true')
     phone.add_argument('--serial')
     routing = phone.add_mutually_exclusive_group()
@@ -530,7 +566,7 @@ def main(argv=None):
         if not 1 <= args.port <= 65535 or not 1 <= args.ai_port <= 65535: parser.error('Ports must be 1..65535')
         if not args.skip_ai and args.port == args.ai_port: parser.error('Backend and local AI must use different ports')
     if args.command is None: parser.print_help(); return 0
-    try: return {'setup': setup, 'desktop': desktop, 'android': android, 'check': check}[args.command](args)
+    try: return {'setup': setup, 'desktop': desktop, 'android': android, 'backend':backend, 'check': check}[args.command](args)
     except KeyboardInterrupt: print('\nRunner cancelled; completed installs/downloads were retained.', file=sys.stderr); return 130
     except (SetupError, BuildError, OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as error:
         print(f'[FAILED] {error}', file=sys.stderr); return 1

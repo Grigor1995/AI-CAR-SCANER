@@ -29,3 +29,7 @@ htmlcov/
 
 # Local foundation smoke-test database
 /ecosystem.sqlite*
+
+# Local business backend databases contain private accounts/vehicle history.
+/business.sqlite*
+/finalbuild/business.sqlite*

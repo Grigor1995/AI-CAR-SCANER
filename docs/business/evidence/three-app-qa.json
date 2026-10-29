@@ -1,0 +1,77 @@
+{
+  "scope": "Three independent USER/CUSTOMER/MARKET clients per platform; one shared backend. Existing business UI completeness limitations preserved.",
+  "baseline": "17f86af",
+  "common_regression": {
+    "status": "PASS",
+    "passed": 1105,
+    "skipped": 2,
+    "seconds": 63.93
+  },
+  "targeted_deployment_build_installer_sqlite_tests": {
+    "status": "PASS",
+    "passed": 103,
+    "seconds": 6.16
+  },
+  "qt_role_bootstrap_async_http_and_error_cases": {
+    "status": "PASS",
+    "passed": 9,
+    "scope": "Real Qt loop, HTTP boundary doubles; no false hardware claim"
+  },
+  "desktop_matrix": {
+    "status": "PASS",
+    "groups": 5,
+    "source_coverage_percent": 90.06,
+    "production_core_coverage_percent": 90.36,
+    "production_gate_percent": 90,
+    "new_production_modules_included": [
+      "product_app.py",
+      "business_workspace.py"
+    ]
+  },
+  "android": {
+    "status": "BUILD SUCCESSFUL",
+    "duration_seconds": 179,
+    "tasks": 199,
+    "executed": 63,
+    "up_to_date": 136,
+    "jvm": {
+      "User": {
+        "tests": 113,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "Customer": {
+        "tests": 113,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "Market": {
+        "tests": 113,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "instrumentation": "All three source sets compile; device tests NOT RUN",
+    "apk_identities": "Verified via aapt dump badging on three actual APKs"
+  },
+  "shared_backend_real_http": {
+    "status": "PASS",
+    "checks": 20,
+    "entry": "backend.main",
+    "database": "one temporary SQLite; real Alembic/Uvicorn restart"
+  },
+  "source_moves": {
+    "files": 81,
+    "verification": "Byte comparison against baseline; package/catalog bootstrap adaptations recorded"
+  },
+  "windows_exe_installer": "NOT VERIFIED: Linux host; local packaging/shortcut orchestration tests PASS",
+  "ios": "NOT VERIFIED: no Xcode; three targets/bundle identities/plist invariants tested",
+  "docker": "NOT RUN: source definition updated to backend.main; no container validation claimed",
+  "physical_obd": "NOT RUN: no hardware",
+  "provider_integrations": "BLOCKED: user has no providers/licensed sources",
+  "new_sqlite_storage": "Explicit bootstrap migration test PASS; new files private mode on Linux; existing files not reassigned",
+  "static_checks": "Ruff selected correctness rules, Python syntax, Git whitespace PASS"
+}

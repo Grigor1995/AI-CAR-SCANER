@@ -19,14 +19,14 @@ api_packages = (
     "api", "diagnostic", "ai", "device", "acquisition",
     "telemetry", "vehicle", "obd", "vehicle_diagnostic", "multi_ecu",
     "network_discovery", "simulator",
-    "professional_platform", "security", "observability",
+    "professional_platform", "security", "observability", "ecosystem",
 )
 api_hiddenimports = ["api.main", "global_data", "backend.scripts.seed_vehicle_catalog"]
 for package in api_packages:
     api_hiddenimports.extend(collect_submodules(package))
 
 a = Analysis(
-    [str(project_root / "apps" / "desktop" / "backend_worker.py")],
+    [str(backend_root / "main.py")],
     pathex=[str(project_root), str(backend_root)],
     binaries=[],
     datas=[(str(project_root / "config" / "environment.json"), "config"),
@@ -46,7 +46,7 @@ a = Analysis(
         "diagnostic.local_database", *api_hiddenimports,
     ],
     hookspath=[], hooksconfig={}, runtime_hooks=[],
-    excludes=["tkinter"], noarchive=False,
+    excludes=["tkinter", "PySide6", "apps.desktop.ui", "apps.desktop.backend_recovery"], noarchive=False,
 )
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="backend_service", console=True)

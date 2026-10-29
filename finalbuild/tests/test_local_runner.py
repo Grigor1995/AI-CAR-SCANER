@@ -205,7 +205,7 @@ def test_gradle_invokes_java_directly_and_validates_output(local):
     command=tool.run.call_args.args[0]
     assert command[0].startswith(str(local/'JDK with spaces'))
     assert 'org.gradle.wrapper.GradleWrapperMain' in command and 'cmd.exe' not in command
-    apk=write(runner.PROJECT/'apps/mobile-android/app/build/outputs/apk/debug/app-debug.apk',b'APK')
+    apk=write(runner.PROJECT/'apps/mobile-android/app/build/outputs/apk/user/debug/app-user-debug.apk',b'APK')
     assert runner.build_android(state,tool)==apk
 
 
@@ -324,3 +324,25 @@ def test_runner_is_loopback_by_default_with_explicit_lan_override(monkeypatch):
     assert runner.child_env({})['AI_CAR_BACKEND_HOST']=='127.0.0.1'
     monkeypatch.setenv('AI_CAR_BACKEND_HOST','0.0.0.0')
     assert runner.child_env({})['AI_CAR_BACKEND_HOST']=='0.0.0.0'
+
+
+def test_three_apps_launch_as_clients_without_starting_local_services(local,monkeypatch):
+    python=write(runner.venv_python(),b'python fixture');calls=[]
+    monkeypatch.setattr(runner.subprocess,'call',lambda command,**kwargs:calls.append((command,kwargs)) or 0)
+    for role in ('user','customer','market'):
+        assert runner.main(['desktop','--app',role])==0
+        command,kwargs=calls[-1]
+        assert command==[str(python),'-m','apps.'+role+'.main']
+        assert '--with-backend' not in command and '--local-ai' not in command
+
+
+def test_one_backend_launcher_preserves_repo_relative_database_location(local,monkeypatch):
+    python=write(runner.venv_python(),b'python fixture');calls=[]
+    monkeypatch.setenv('DATABASE_URL','sqlite:///existing-business.sqlite')
+    monkeypatch.setattr(runner.subprocess,'call',lambda command,**kwargs:calls.append((command,kwargs)) or 0)
+    assert runner.main(['backend','--migrate','--port','8123'])==0
+    command,kwargs=calls[0]
+    assert command[:2]==[str(python),str(runner.PROJECT/'backend/main.py')]
+    assert '--migrate' in command and '--with-backend' not in command
+    assert kwargs['cwd']==local
+    assert kwargs['env']['DATABASE_URL']=='sqlite:///existing-business.sqlite'

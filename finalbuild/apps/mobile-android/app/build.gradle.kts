@@ -23,9 +23,31 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("https://ai-car-scaner.onrender.com/")
+        val apiBaseUrl = providers.gradleProperty("apiBaseUrl").getOrElse("http://10.0.2.2:8001/")
         require(apiBaseUrl.startsWith("https://") || apiBaseUrl.startsWith("http://"))
         buildConfigField("String", "API_BASE_URL", "\"" + apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
+    }
+
+    flavorDimensions += "workspace"
+    productFlavors {
+        create("user") {
+            dimension = "workspace"
+            applicationId = "com.aicarscaner.user"
+            buildConfigField("String", "APP_WORKSPACE", "\"USER\"")
+            manifestPlaceholders["appLabel"] = "AI Car User"
+        }
+        create("customer") {
+            dimension = "workspace"
+            applicationId = "com.aicarscaner.customer"
+            buildConfigField("String", "APP_WORKSPACE", "\"CUSTOMER\"")
+            manifestPlaceholders["appLabel"] = "AI Car Customer"
+        }
+        create("market") {
+            dimension = "workspace"
+            applicationId = "com.aicarscaner.market"
+            buildConfigField("String", "APP_WORKSPACE", "\"MARKET\"")
+            manifestPlaceholders["appLabel"] = "AI Car Market"
+        }
     }
 
     compileOptions {
@@ -60,4 +82,16 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.9.2")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.2")
+}
+
+// Compatibility aggregate task names for local QA tools; exactly three variants.
+afterEvaluate {
+    mapOf(
+        "compileDebugKotlin" to listOf("compileUserDebugKotlin", "compileCustomerDebugKotlin", "compileMarketDebugKotlin"),
+        "compileDebugAndroidTestKotlin" to listOf("compileUserDebugAndroidTestKotlin", "compileCustomerDebugAndroidTestKotlin", "compileMarketDebugAndroidTestKotlin"),
+        "testDebugUnitTest" to listOf("testUserDebugUnitTest", "testCustomerDebugUnitTest", "testMarketDebugUnitTest"),
+        "lintDebug" to listOf("lintUserDebug", "lintCustomerDebug", "lintMarketDebug")
+    ).forEach { (alias, targets) ->
+        if (tasks.findByName(alias) == null) tasks.register(alias) { dependsOn(targets) }
+    }
 }

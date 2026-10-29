@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased — Three independent apps and centralized backend
+
+- Centralize real vehicle/protocol code, server/AI lifecycle and PDF rendering under finalbuild/backend; retain small compatibility exports and preserve legacy behavior.
+- Package USER, CUSTOMER and MARKET separately on Desktop/Android/iOS with fixed workspaces, separate application identities/settings and one shared backend. ADMIN remains API-only.
+- Add explicit backend startup/migration command, independent client launch/build selection, business onboarding and app-owned backend URL configuration.
+- Windows artifacts separate three GUI clients from one headless backend; Android produces three APKs; Xcode defines three bundle targets. Update source installer to three shortcuts.
+- Full business native editors and unavailable providers remain partial/blocked. See docs/business/THREE_APP_DEPLOYMENT.md for executed verification and platform limits.
+
 ## Unreleased — Incremental business workflows (2026-10-29)
 
 - Add owner/consent-scoped persistent diagnostics using the existing engine, explicit staff acceptance, work orders, verified directory and curated reference registry.

@@ -150,7 +150,7 @@ def test_launch_uses_saved_runner_and_no_console_and_propagates_failure(tmp_path
     with pytest.raises(RuntimeError, match='code 7'):
         helper.launch(SimpleNamespace(root=root))
     command, options = calls[0]
-    assert command[-1] == 'desktop' and command[1].endswith('runner.py')
+    assert command[-3:] == ['desktop','--app','user'] and command[1].endswith('runner.py')
     assert options['cwd'] == root / 'repo'
     assert options['env']['PYTHONUTF8'] == '1'
     assert 'creationflags' in options

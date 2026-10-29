@@ -1,0 +1,8 @@
+flowchart LR
+    U["USER app<br/>Desktop / Android / iOS"] --> API["One shared backend<br/>backend/main.py"]
+    C["CUSTOMER app<br/>Desktop / Android / iOS"] --> API
+    M["MARKET app<br/>Desktop / Android / iOS"] --> API
+    API --> Auth[Identity / ownership / consent]
+    API --> Core[Shared diagnostic engine / AI / OBD]
+    API --> DB[(One SQL database)]
+    Operator["Protected ADMIN APIs<br/>No fourth app"] --> API

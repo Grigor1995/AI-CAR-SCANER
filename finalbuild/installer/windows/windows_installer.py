@@ -229,10 +229,10 @@ def launch(args):
     env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
     if (root / 'environment.json').is_file():
         env['AI_CAR_ENV_CONFIG'] = str(root / 'environment.json')
-    # Desktop's runner owns backend + AI startup/shutdown. Hide its console,
+    # Each fixed client connects to the independently managed shared backend. Hide its console,
     # retain stdout/stderr on disk, and report failed startup through a dialog.
     with (root / 'logs/desktop.log').open('a', encoding='utf-8') as output:
-        result = subprocess.run([str(repository / '.venv/Scripts/python.exe'), str(repository / 'runner.py'), 'desktop'],
+        result = subprocess.run([str(repository / '.venv/Scripts/python.exe'), str(repository / 'runner.py'), 'desktop', '--app', getattr(args,'app','user')],
                                 cwd=repository, env=env, stdout=output, stderr=subprocess.STDOUT,
                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     if result.returncode:
@@ -252,6 +252,7 @@ def main(argv=None):
     setup.add_argument('--model', type=Path, help='Use an existing GGUF without copying or downloading its weights')
     run = commands.add_parser('launch')
     run.add_argument('--root', type=Path, required=True)
+    run.add_argument('--app',choices=('user','customer','market'),default='user')
     args = parser.parse_args(argv)
     try:
         return install(args) if args.command == 'install' else launch(args)

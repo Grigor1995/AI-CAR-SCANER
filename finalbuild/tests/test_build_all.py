@@ -19,7 +19,7 @@ spec.loader.exec_module(build)
 
 def arguments(tmp_path, **overrides):
     values = dict(targets=list(build.TARGETS), output=tmp_path / "artifacts", check=False,
-                  skip_unavailable=False, with_tests=False, no_install=True)
+                  skip_unavailable=False, with_tests=False, no_install=True,apps=["user"],android_api_url=None)
     values.update(overrides)
     return Namespace(**values)
 
@@ -149,34 +149,42 @@ def test_ios_package_is_a_simulator_app_not_a_signed_ipa(monkeypatch, tmp_path):
     work = tmp_path / "work"
     output = tmp_path / "output"
     output.mkdir()
-    app = work / "DerivedData/Build/Products/Debug-iphonesimulator/AICarScanner.app"
+    app = work / "DerivedData/Build/Products/Debug-iphonesimulator/AICarScannerUser.app"
     app.mkdir(parents=True)
     (app / "Info.plist").write_text("simulator application metadata")
     runner = Mock()
     paths = build.build_ios(arguments(tmp_path), runner, work, output, tmp_path / "tools")
     import zipfile
     with zipfile.ZipFile(paths[0]) as archive:
-        assert "AICarScanner.app/Info.plist" in archive.namelist()
+        assert "AICarScannerUser.app/Info.plist" in archive.namelist()
     assert paths[0].name.endswith("iOS-Simulator.zip")
     commands = [call.args[0] for call in runner.run.call_args_list]
     assert any("CODE_SIGNING_ALLOWED=NO" in command and "iphonesimulator" in command for command in commands)
     assert not any("archive" in command or "-exportArchive" in command for command in commands)
 
 
-def test_desktop_archive_keeps_gui_and_backend_together(monkeypatch, tmp_path):
+def test_desktop_archives_separate_clients_from_one_backend(monkeypatch, tmp_path):
     monkeypatch.setattr(build, "REPO", tmp_path)
     monkeypatch.setattr(build, "desktop_python", lambda *args: Path("python.exe"))
     work = tmp_path / "work"
     dist = work / "dist"
     dist.mkdir(parents=True)
-    for name in ("AICarScanner.exe", "backend_service.exe"):
-        (dist / name).write_bytes(b"packaged executable fixture")
+    (dist/'backend').mkdir()
+    (dist/'backend/backend_service.exe').write_bytes(b'backend executable fixture')
+    for role in ('User','Customer','Market'):
+        (dist/role.lower()).mkdir()
+        (dist/role.lower()/('AI-Car-'+role+'.exe')).write_bytes(b'client executable fixture')
     output = tmp_path / "output"
     output.mkdir()
-    paths = build.build_desktop(arguments(tmp_path), Mock(), work, output, tmp_path / "tools")
+    paths = build.build_desktop(arguments(tmp_path,apps=["user","customer","market"]), Mock(), work, output, tmp_path / "tools")
     import zipfile
+    assert len(paths)==4
     with zipfile.ZipFile(paths[0]) as archive:
-        assert {"AICarScanner.exe", "backend_service.exe", "README.txt"}.issubset(archive.namelist())
+        assert archive.namelist()==['backend_service.exe']
+    for path,role in zip(paths[1:],('User','Customer','Market')):
+        with zipfile.ZipFile(path) as archive:
+            assert 'AI-Car-'+role+'.exe' in archive.namelist()
+            assert 'backend_service.exe' not in archive.namelist()
 
 
 def test_android_java_version_outside_gradle_support_is_rejected(monkeypatch, tmp_path):
@@ -214,7 +222,9 @@ def test_runner_timeout_stops_command_and_keeps_output(tmp_path, capsys):
 
 def test_android_builder_passes_selected_backend_url(monkeypatch, tmp_path):
     project = tmp_path / 'apps/mobile-android'
-    apk = project / 'app/build/outputs/apk/debug/app-debug.apk'
+    wrapper=project/'gradle/wrapper/gradle-wrapper.jar';wrapper.parent.mkdir(parents=True);wrapper.write_bytes(b'wrapper fixture')
+    monkeypatch.setattr(build,'java_executable',lambda:'java')
+    apk = project / 'app/build/outputs/apk/user/debug/app-user-debug.apk'
     apk.parent.mkdir(parents=True); apk.write_bytes(b'apk')
     output = tmp_path/'output'; output.mkdir()
     monkeypatch.setattr(build,'PROJECT',tmp_path)

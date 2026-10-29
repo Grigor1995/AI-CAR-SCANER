@@ -4,19 +4,26 @@ Evidence-driven automotive diagnostic platform with a shared FastAPI backend, de
 
 [Release notes](RELEASE_NOTES.md)
 
-## Ecosystem foundation (development)
+## Current products: three apps, one backend
 
-The `feature/ecosystem-foundation-20261028` branch starts the requested ecosystem
-without replacing the native UI or shared diagnostic engine. Audit, baseline,
-interactive architecture, API/migration/security design and a phased roadmap
-are in [docs](docs/CURRENT_SYSTEM_AUDIT.md). The first backend account/ownership/
-workshop-consent milestone is opt-in (`AI_CAR_ECOSYSTEM_ENABLED`, default off).
-Native login screens, authenticated diagnostic adapters, scheduling, notification
-providers, marketplace and admin tools remain later milestones.
+**USER**, **CUSTOMER**, **MARKET** are independent Desktop/Android/iOS applications.
+All connect to the same backend in `finalbuild/backend/`. ADMIN remains protected
+backend management, with no fourth app. Existing UI/icon assets and the shared
+engine are retained; full native business editing remains in development.
 
-[Implementation status](docs/IMPLEMENTATION_REPORT.md) ·
-[Interactive architecture](docs/architecture/interactive_architecture.html) ·
-[Rollout / local smoke test](docs/DEPLOYMENT_GUIDE.md).
+```bash
+python runner.py setup --skip-ai
+python runner.py backend --migrate
+# In separate terminals:
+python runner.py desktop --app user
+python runner.py desktop --app customer
+python runner.py desktop --app market
+```
+
+[Three-app deployment / Android / iOS / build commands](docs/business/THREE_APP_DEPLOYMENT.md) ·
+[Actual business implementation status](docs/business/FINAL_BUSINESS_MIGRATION_REPORT.md).
+New shared backend startup enables authenticated ecosystem APIs; legacy development
+recipes below refer to the previous combined UI and are retained for compatibility.
 
 ## Supported clients
 

@@ -1,0 +1,31 @@
+{
+  "result": "PASS",
+  "method": "aapt dump badging on all three real built APKs",
+  "device_installation": "NOT RUN",
+  "artifacts": [
+    {
+      "role": "USER",
+      "package": "com.aicarscaner.user",
+      "label": "AI Car User",
+      "activity": "com.aicarscaner.mobile.MainActivity",
+      "bytes": 168206965,
+      "sha256": "192a39d54f5ab92fb686db48935abc9998f6b6556f64f9184143f1606185db19"
+    },
+    {
+      "role": "CUSTOMER",
+      "package": "com.aicarscaner.customer",
+      "label": "AI Car Customer",
+      "activity": "com.aicarscaner.mobile.MainActivity",
+      "bytes": 168206973,
+      "sha256": "bd5807c1c5551e8b21c10dd308003e6952d99061ac43f4ce6c0e86243ce04381"
+    },
+    {
+      "role": "MARKET",
+      "package": "com.aicarscaner.market",
+      "label": "AI Car Market",
+      "activity": "com.aicarscaner.mobile.MainActivity",
+      "bytes": 168206971,
+      "sha256": "5348d6cbc88a157c216bb0bba05e77e1d00053a6d2e942863e7ed284095b4f06"
+    }
+  ]
+}

@@ -119,3 +119,7 @@ the account browser to the installed OkHttp 3 API and rebuilt successfully.
 Snapshot raw evidence is in evidence/. Full target completion is not claimed.
 
 External prerequisites confirmed by user: no email/SMS/push provider or licensed repair/wiring source is currently available. These integrations remain explicitly unavailable; no external messages or charges were initiated.
+
+## Subsequent deployment split
+
+For the current three independent apps and centralized backend, use [THREE_APP_DEPLOYMENT.md](THREE_APP_DEPLOYMENT.md). Earlier combined-window run recipes above are retained as historical/compatibility instructions. The business workflow limitations still apply.

@@ -3,6 +3,11 @@
   "database": "Temporary SQLite; real Alembic + Uvicorn subprocess and HTTP requests",
   "checks": {
     "explicit_alembic_upgrade": true,
+    "market_business_onboarding": true,
+    "separate_user_workspace": true,
+    "separate_customer_workspace": true,
+    "separate_market_workspace": true,
+    "market_has_no_customer_privilege": true,
     "owner_can_identify_inviter": true,
     "workshop_membership_discoverable": true,
     "invitation_alone_denied": true,

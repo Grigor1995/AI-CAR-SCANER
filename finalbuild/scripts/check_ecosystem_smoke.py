@@ -51,7 +51,7 @@ def main():
         process = None
         def start():
             nonlocal process
-            process = subprocess.Popen([sys.executable, '-m', 'apps.desktop.backend_worker'], cwd=ROOT/'finalbuild',
+            process = subprocess.Popen([sys.executable, '-m', 'backend.main'], cwd=ROOT/'finalbuild',
                                        env=env, stdout=output, stderr=subprocess.STDOUT)
             deadline = time.monotonic()+30
             while time.monotonic() < deadline:
@@ -82,12 +82,19 @@ def main():
             start()
             owner, token = user('owner')
             _, mechanic = user('mechanic')
+            _, merchant_token = user('merchant')
             status, profile = request(PREFIX+'/vehicles', 'POST', {'vehicle': {'make':'Mercedes-Benz','model':'E-Class','chassis':'W211'}}, token)
             assert status == 201
             vehicle_id = profile['id']
             status, center = request(PREFIX+'/service-centers','POST',{'name':'Smoke workshop','address':'Test address'},mechanic)
             assert status == 201
             center_id = center['id']
+            status, _ = request(PREFIX+'/merchants','POST',{'name':'Smoke merchant','address':'Test address'},merchant_token)
+            checks['market_business_onboarding'] = status == 201
+            for role, bearer_token in [('USER',token),('CUSTOMER',mechanic),('MARKET',merchant_token)]:
+                status, nav = request(PREFIX+'/navigation?workspace='+role,token=bearer_token)
+                checks['separate_'+role.lower()+'_workspace'] = status == 200 and nav['workspace'] == role
+            checks['market_has_no_customer_privilege'] = request(PREFIX+'/navigation?workspace=CUSTOMER',token=merchant_token)[0] == 403
             status, invite = request(PREFIX+f'/service-centers/{center_id}/invitations','POST',{'account_id':owner},mechanic)
             assert status == 201
             shared_path = PREFIX+f'/service-centers/{center_id}/vehicles/{vehicle_id}'

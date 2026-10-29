@@ -206,41 +206,38 @@ def build_desktop(args, runner: Runner, work: Path, output: Path, tools: Path) -
     runner.run([str(python), "apps/desktop/stage_windows_icons.py", "--source", str(source), "--output-dir", str(icons)], env=env)
     env["AI_CAR_ICON_STAGE_DIR"] = str(icons)
     dist = work / "dist"
-    for spec, folder in [("backend_service.spec", "backend"), ("AICarScanner.spec", "gui")]:
-        runner.run([str(python), "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", str(dist), "--workpath", str(work / folder), "apps/desktop/specs/" + spec], env=env)
-    for filename in ("AICarScanner.exe", "backend_service.exe"):
-        require_file(dist / filename)
-    (dist / "README.txt").write_text(
-        "AI CAR SCANNER — Windows Desktop\n\nExtract this entire ZIP. Keep both executables together.\n"
-        "Run: AICarScanner.exe --with-backend\n"
-        "Local SQLite storage is prepared by the launcher.\n"
-        "Local AI model/server binaries are configured separately and are not downloaded by this builder.\n",
-        encoding="utf-8",
-    )
-    archive = Path(shutil.make_archive(str(output / "AI-Car-Scanner-Windows"), "zip", dist))
-    return [require_file(archive)]
+    runner.run([str(python), "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", str(dist / "backend"), "--workpath", str(work / "backend"), "apps/desktop/specs/backend_service.spec"], env=env)
+    require_file(dist / "backend/backend_service.exe")
+    artifacts=[Path(shutil.make_archive(str(output / "AI-Car-Backend-Windows"), "zip", dist / "backend"))]
+    for role in getattr(args,'apps',('user','customer','market')):
+        role_env={**env,'AI_CAR_PRODUCT':role.upper()}
+        target=dist / role
+        runner.run([str(python), "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", str(target), "--workpath", str(work / role), "apps/desktop/specs/product.spec"], env=role_env)
+        require_file(target / ('AI-Car-'+role.title()+'.exe'))
+        (target/'README.txt').write_text('AI Car '+role.title()+' — independent client.\nStart the shared backend separately: backend_service.exe --migrate\nConfigure --backend-url http://127.0.0.1:8001.\nNo backend/AI process is embedded in this app.\n',encoding='utf-8')
+        artifacts.append(Path(shutil.make_archive(str(output / ('AI-Car-'+role.title()+'-Windows')), "zip", target)))
+    return [require_file(path) for path in artifacts]
 
 
 def build_android(args, runner: Runner, work: Path, output: Path, tools: Path) -> list[Path]:
     project = PROJECT / "apps/mobile-android"
-    wrapper = project / ("gradlew.bat" if platform.system() == "Windows" else "gradlew")
-    command = ["cmd.exe", "/d", "/c", str(wrapper)] if platform.system() == "Windows" else ["bash", str(wrapper)]
-    tasks = [":app:assembleDebug"]
-    if args.with_tests:
-        tasks += [":app:testDebugUnitTest", ":app:lintDebug"]
     env = os.environ.copy()
-    sdk = android_sdk()
-    if sdk:
-        env["ANDROID_HOME"] = str(sdk)
-        env["ANDROID_SDK_ROOT"] = str(sdk)
-    env.setdefault("GRADLE_USER_HOME", str(tools / "gradle"))
-    api_url = getattr(args, "android_api_url", None)
-    properties = [f"-PapiBaseUrl={api_url}"] if api_url else []
-    runner.run(command + tasks + properties + ["--no-daemon", "--console=plain"], cwd=project, env=env)
-    source = require_file(project / "app/build/outputs/apk/debug/app-debug.apk")
-    target = output / "AI-Car-Scanner-Android-debug.apk"
-    shutil.copy2(source, target)
-    return [require_file(target)]
+    java=java_executable()
+    if java is None:raise BuildError('JDK 17–23 is required')
+    wrapper=require_file(project/'gradle/wrapper/gradle-wrapper.jar')
+    command = [str(java),'-cp',str(wrapper),'org.gradle.wrapper.GradleWrapperMain']
+    tasks=[];roles=getattr(args,'apps',('user','customer','market'))
+    for role in roles:
+        variant=role.title()+'Debug';tasks+=[':app:assemble'+variant]
+        if args.with_tests:tasks+=[':app:test'+variant+'UnitTest',':app:lint'+variant]
+    if args.android_api_url:tasks.append('-PapiBaseUrl='+args.android_api_url)
+    runner.run(command + tasks + ["--no-daemon", "--console=plain"], cwd=project, env=env)
+    artifacts=[]
+    for role in roles:
+        source=project / f'app/build/outputs/apk/{role}/debug/app-{role}-debug.apk'
+        target=output / ('AI-Car-'+role.title()+'-Android-debug.apk')
+        shutil.copy2(require_file(source),target);artifacts.append(require_file(target))
+    return artifacts
 
 
 def simulator_destination() -> str:
@@ -261,14 +258,17 @@ def simulator_destination() -> str:
 def build_ios(args, runner: Runner, work: Path, output: Path, tools: Path) -> list[Path]:
     project = PROJECT / "apps/mobile-ios"
     runner.run(["xcodegen", "generate", "--spec", "project.yml"], cwd=project)
-    common = ["xcodebuild", "-project", "AICarScanner.xcodeproj", "-scheme", "AICarScanner", "-configuration", "Debug", "-derivedDataPath", str(work / "DerivedData"), "CODE_SIGNING_ALLOWED=NO"]
-    runner.run(common + ["-sdk", "iphonesimulator", "-destination", "generic/platform=iOS Simulator", "build"], cwd=project)
+    def command(role):
+        return ["xcodebuild", "-project", "AICarScanner.xcodeproj", "-scheme", "AICarScanner"+role.title(), "-configuration", "Debug", "-derivedDataPath", str(work / "DerivedData"), "CODE_SIGNING_ALLOWED=NO"]
+    artifacts=[]
+    for role in getattr(args,'apps',('user','customer','market')):
+        runner.run(command(role) + ["-sdk", "iphonesimulator", "-destination", "generic/platform=iOS Simulator", "build"], cwd=project)
+        application=work / ('DerivedData/Build/Products/Debug-iphonesimulator/AICarScanner'+role.title()+'.app')
+        require_file(application/'Info.plist')
+        artifacts.append(require_file(Path(shutil.make_archive(str(output / ('AI-Car-'+role.title()+'-iOS-Simulator')), "zip", application.parent, application.name))))
     if args.with_tests:
-        runner.run(common + ["-destination", simulator_destination(), "-enableCodeCoverage", "YES", "-resultBundlePath", str(output / "TestResults.xcresult"), "test"], cwd=project)
-    application = work / "DerivedData/Build/Products/Debug-iphonesimulator/AICarScanner.app"
-    require_file(application / "Info.plist")
-    archive = Path(shutil.make_archive(str(output / "AI-Car-Scanner-iOS-Simulator"), "zip", application.parent, application.name))
-    return [require_file(archive)]
+        runner.run(command('user')+["-destination",simulator_destination(),"-enableCodeCoverage","YES","-resultBundlePath",str(output/'TestResults.xcresult'),"test"],cwd=project)
+    return artifacts
 
 
 BUILDERS = {"desktop": build_desktop, "android": build_android, "ios": build_ios}
@@ -348,6 +348,7 @@ def execute(args) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--targets", nargs="+", choices=TARGETS, default=list(TARGETS))
+    parser.add_argument("--apps",choices=("user","customer","market"),nargs="+",default=["user","customer","market"],help="Independent apps to build; default builds all three")
     parser.add_argument("--output", type=Path, default=REPO / "artifacts", help="Artifact base directory; each run has its own timestamped folder")
     parser.add_argument("--check", action="store_true", help="Check toolchains only; do not install, build or write outputs")
     parser.add_argument("--skip-unavailable", action="store_true", help="Allow a partial local build; unavailable targets remain explicitly reported")

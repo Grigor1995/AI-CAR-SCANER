@@ -30,14 +30,14 @@ def _probe(paths, cwd):
 def test_root_first_import_resolves_real_obd_client(tmp_path):
     result = _probe([ROOT, BACKEND], tmp_path)
     assert result.returncode == 0, result.stderr
-    assert "backend" + os.sep + "vehicle" not in result.stdout
+    assert "backend" + os.sep + "vehicle" in result.stdout
     assert "vehicle" + os.sep + "obd" + os.sep + "client.py" in result.stdout
 
 
 def test_backend_first_import_resolves_same_shared_core(tmp_path):
     result = _probe([BACKEND, ROOT], tmp_path)
     assert result.returncode == 0, result.stderr
-    assert "backend" + os.sep + "vehicle" not in result.stdout
+    assert "backend" + os.sep + "vehicle" in result.stdout
     assert "vehicle" + os.sep + "obd" + os.sep + "client.py" in result.stdout
 
 
@@ -53,3 +53,14 @@ def test_explicit_backend_namespace_keeps_legacy_simulator_service():
     from vehicle.obd.client import GenericObdClient as SharedClient
     assert ObdDiagnosticService is not None
     assert LegacyClient is not SharedClient
+
+
+def test_relocated_catalog_uses_frozen_bundle_resource_root(monkeypatch,tmp_path):
+    import runpy
+    (tmp_path/'data').mkdir()
+    (tmp_path/'data/vehicle_catalog.json').write_text('{"fixture":"packaged-resource"}',encoding='utf-8')
+    monkeypatch.setattr(sys,'frozen',True,raising=False)
+    monkeypatch.setattr(sys,'_MEIPASS',str(tmp_path),raising=False)
+    loaded=runpy.run_path(str(ROOT/'backend/vehicle/catalog_registry.py'))
+    assert loaded['ROOT']==tmp_path
+    assert loaded['global_catalog']()=={'fixture':'packaged-resource'}

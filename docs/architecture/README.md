@@ -53,3 +53,5 @@ Open [business_architecture_dashboard.html](business_architecture_dashboard.html
 for current business roles, permission boundaries, before/after views and explicit
 partial/planned components. See [business report](../business/FINAL_BUSINESS_MIGRATION_REPORT.md)
 for actual implemented scope, local run and remaining provider/native UI work.
+
+The current three-product deployment is documented in [three_app_deployment.mmd](three_app_deployment.mmd) and [local deployment guide](../business/THREE_APP_DEPLOYMENT.md).

@@ -11,7 +11,7 @@ from apps.desktop import backend_worker, prepare_windows_icon
 def test_backend_worker_uses_source_root_and_environment(monkeypatch, tmp_path):
     backend_dir = tmp_path / "backend"
     backend_dir.mkdir()
-    monkeypatch.setattr(backend_worker, "__file__", str(tmp_path / "apps" / "desktop" / "backend_worker.py"))
+    monkeypatch.setattr(backend_worker, "__file__", str(tmp_path / "backend" / "server.py"))
     monkeypatch.setattr(backend_worker.sys, "frozen", False, raising=False)
     monkeypatch.setenv("AI_CAR_BACKEND_HOST", "0.0.0.0")
     monkeypatch.setenv("AI_CAR_BACKEND_PORT", "8123")

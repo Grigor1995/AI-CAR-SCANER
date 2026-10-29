@@ -9,7 +9,7 @@ def test_standalone_specs_exist():
 
 def test_desktop_main_references_backend_service():
     root = Path(__file__).resolve().parents[2]
-    text = (root / "apps" / "desktop" / "main.py").read_text()
+    text = (root / "backend" / "desktop_runtime.py").read_text()
     assert "backend_service.exe" in text
     assert 'getattr(sys, "frozen", False)' in text
 

@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Product runtime modules. Debug probes and PyInstaller-only hooks are still
 # included in the full-inventory number, but not the production-core subtotal.
 PRODUCTION_MODULES = frozenset({
-    "api_client.py", "models.py", "storage.py", "main.py",
+    "api_client.py", "models.py", "storage.py", "main.py", "product_app.py", "business_workspace.py",
     "backend_worker.py", "ui.py", "prepare_windows_icon.py",
     "stage_windows_icons.py", "verify_icons.py",
     "vehicle_artwork.py", "backend_recovery.py",

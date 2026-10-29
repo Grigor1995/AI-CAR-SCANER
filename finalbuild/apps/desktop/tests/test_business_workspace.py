@@ -56,3 +56,30 @@ def test_registration_and_failed_login_keep_password_out_of_output(monkeypatch):
     assert captured[0][1]=='POST' and captured[0][2]['full_name']=='Owner'
     assert window.password.text()==''
     window.close();host.close();app.processEvents()
+
+
+def test_fixed_role_clients_cannot_switch_to_another_entitlement():
+    app=QApplication.instance() or QApplication([])
+    for role in ('USER','CUSTOMER','MARKET'):
+        host=QWidget();host.api=SimpleNamespace(base_url='http://127.0.0.1:8001');host.run_worker=lambda *args:None
+        window=module.BusinessWorkspace(host,fixed_workspace=role);window.token='t'*43
+        requested=[];window.request=lambda *args,**kw:requested.append(args[0])
+        window.show_account({'modes':['USER','CUSTOMER','ADMIN'],'portals':['MARKET']})
+        assert window.workspace.count()==1 and window.workspace.currentText()==role
+        assert window.workspace.isHidden() and requested[0].startswith(module.P+'/navigation?workspace='+role)
+        window.close();host.close()
+    app.processEvents()
+
+
+def test_customer_and_market_onboarding_uses_existing_backend_organization_apis():
+    app=QApplication.instance() or QApplication([])
+    for role,path in [('CUSTOMER','/service-centers'),('MARKET','/merchants')]:
+        host=QWidget();host.api=SimpleNamespace(base_url='http://127.0.0.1:8001');host.run_worker=lambda *args:None
+        window=module.BusinessWorkspace(host,fixed_workspace=role);window.token='t'*43;requested=[]
+        window.request=lambda *args,**kw:requested.append(args)
+        window.show_account({'modes':['USER'],'portals':[]})
+        assert window.workspace.count()==0 and not window.onboard.isHidden()
+        window.organization.setText('Business');window.address.setText('Declared address');window.create_organization()
+        assert requested[0][:3]==(module.P+path,'POST',{'name':'Business','address':'Declared address'})
+        window.close();host.close()
+    app.processEvents()

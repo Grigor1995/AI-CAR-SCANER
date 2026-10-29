@@ -43,7 +43,7 @@ def test_backend_worker_routes_to_uvicorn_with_explicit_config(
     try:
         backend_worker.main()
         expected_backend = (
-            bundle / "backend" if frozen else Path(backend_worker.__file__).resolve().parents[2] / "backend"
+            bundle / "backend" if frozen else Path(backend_worker.__file__).resolve().parents[1] / "backend"
         )
         assert str(expected_backend) in sys.path
         launch.assert_called_once_with(
@@ -80,7 +80,7 @@ def test_local_database_preparation_precedes_server_and_failures_block_startup(m
 
     def prepare(url, root):
         assert url == "sqlite:///test-local.db"
-        assert root == Path(backend_worker.__file__).resolve().parents[2]
+        assert root == Path(backend_worker.__file__).resolve().parents[1]
         events.append("seed")
         if seed_error is not None:
             raise seed_error

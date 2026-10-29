@@ -1,0 +1,594 @@
+{
+  "source_baseline": "17f86af",
+  "moves": [
+    {
+      "from": "finalbuild/vehicle/__init__.py",
+      "to": "finalbuild/backend/vehicle/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "b38cc82a48b9786b2f4b339715dbeff29fd5818d71eca5c69435549180dbd8d7",
+      "status": "ADAPTED import/resource shim"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/__init__.py",
+      "to": "finalbuild/backend/vehicle/acquisition/__init__.py",
+      "before_sha256": "cb4d74444a5912d48f403de413dcf53950f9b462283bcda46904811f367239c7",
+      "after_sha256": "cb4d74444a5912d48f403de413dcf53950f9b462283bcda46904811f367239c7",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/factory.py",
+      "to": "finalbuild/backend/vehicle/acquisition/factory.py",
+      "before_sha256": "43380c684cc4871962cd19f877d88b9ceaafac7df08b8c372558311c1c83b35f",
+      "after_sha256": "43380c684cc4871962cd19f877d88b9ceaafac7df08b8c372558311c1c83b35f",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/manager.py",
+      "to": "finalbuild/backend/vehicle/acquisition/manager.py",
+      "before_sha256": "31aeac04986ec17e34935964dfb60842c743405e70191ef8bf30b8be143196d7",
+      "after_sha256": "31aeac04986ec17e34935964dfb60842c743405e70191ef8bf30b8be143196d7",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/models.py",
+      "to": "finalbuild/backend/vehicle/acquisition/models.py",
+      "before_sha256": "c2d66b885583804631e21a9f43ef8b4c99682e6a4cbd788b96ef5b0ccdcba27f",
+      "after_sha256": "c2d66b885583804631e21a9f43ef8b4c99682e6a4cbd788b96ef5b0ccdcba27f",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/offline_queue.py",
+      "to": "finalbuild/backend/vehicle/acquisition/offline_queue.py",
+      "before_sha256": "82473ceb0196d34181327f8731e24dcf7222279cea53947960b49039f16c9af9",
+      "after_sha256": "82473ceb0196d34181327f8731e24dcf7222279cea53947960b49039f16c9af9",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/acquisition/sources.py",
+      "to": "finalbuild/backend/vehicle/acquisition/sources.py",
+      "before_sha256": "ced4a7c38d83b4c18ab4d5e33eb8ad952c47727e3294b233e7d8dd43c5c7bc9c",
+      "after_sha256": "ced4a7c38d83b4c18ab4d5e33eb8ad952c47727e3294b233e7d8dd43c5c7bc9c",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/__init__.py",
+      "to": "finalbuild/backend/vehicle/adapters/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/base.py",
+      "to": "finalbuild/backend/vehicle/adapters/base.py",
+      "before_sha256": "f2f03b25a95e22e4a91254d5b0f71fffdac48c7f139a9383d2e4f2ef9630df59",
+      "after_sha256": "f2f03b25a95e22e4a91254d5b0f71fffdac48c7f139a9383d2e4f2ef9630df59",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/can_simulator.py",
+      "to": "finalbuild/backend/vehicle/adapters/can_simulator.py",
+      "before_sha256": "8b40929a4ca85edb6456990f3f6dff68ce2cbf275f22b1bd1d849ef2e1d19bbd",
+      "after_sha256": "8b40929a4ca85edb6456990f3f6dff68ce2cbf275f22b1bd1d849ef2e1d19bbd",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/j2534.py",
+      "to": "finalbuild/backend/vehicle/adapters/j2534.py",
+      "before_sha256": "401eafa270eb9edb0c9950b3959f7704631a714725ac3ba4aeda2e0a1524a4e5",
+      "after_sha256": "401eafa270eb9edb0c9950b3959f7704631a714725ac3ba4aeda2e0a1524a4e5",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/simulator.py",
+      "to": "finalbuild/backend/vehicle/adapters/simulator.py",
+      "before_sha256": "85872d5e9299d8dabaa19a69d37d302026fb82d3e663b9ed2abad5c32bcb633b",
+      "after_sha256": "85872d5e9299d8dabaa19a69d37d302026fb82d3e663b9ed2abad5c32bcb633b",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/uds_simulator.py",
+      "to": "finalbuild/backend/vehicle/adapters/uds_simulator.py",
+      "before_sha256": "4131dd57cfefbe4cb26a00d96024d5f1c2d9ce4b8c5ed5aea4878d696d8b791f",
+      "after_sha256": "4131dd57cfefbe4cb26a00d96024d5f1c2d9ce4b8c5ed5aea4878d696d8b791f",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/adapters/vendor.py",
+      "to": "finalbuild/backend/vehicle/adapters/vendor.py",
+      "before_sha256": "d34a444bcecaaa2fd0930b1181ec352a1b0c542ecae37d9fb0ad6307d8880991",
+      "after_sha256": "d34a444bcecaaa2fd0930b1181ec352a1b0c542ecae37d9fb0ad6307d8880991",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/can/__init__.py",
+      "to": "finalbuild/backend/vehicle/can/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/can/bus.py",
+      "to": "finalbuild/backend/vehicle/can/bus.py",
+      "before_sha256": "9bf9f65c5ca9f3fe7a478b4f9ead0d5c8bddaf46e30cf79ad13ed4cab787883e",
+      "after_sha256": "9bf9f65c5ca9f3fe7a478b4f9ead0d5c8bddaf46e30cf79ad13ed4cab787883e",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/can/models.py",
+      "to": "finalbuild/backend/vehicle/can/models.py",
+      "before_sha256": "6918e9facc792d96aacf6a87acfcc979b5b9e261eba3ee1bb421ce05f44ef0f9",
+      "after_sha256": "6918e9facc792d96aacf6a87acfcc979b5b9e261eba3ee1bb421ce05f44ef0f9",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/catalog_registry.py",
+      "to": "finalbuild/backend/vehicle/catalog_registry.py",
+      "before_sha256": "22d5889ff890ad123adbdefa26db3c85715112e81d4f3bedbab7d3626055a866",
+      "after_sha256": "e113cc28388e122a1b76611f968fe1ee570e08c2632f25858f93c48e8dca0774",
+      "status": "ADAPTED import/resource shim"
+    },
+    {
+      "from": "finalbuild/vehicle/devices/connection.py",
+      "to": "finalbuild/backend/vehicle/devices/connection.py",
+      "before_sha256": "5212e110e05e3a86761e7b70dd084668462ef7ac421f309249c571ec6aef09e7",
+      "after_sha256": "5212e110e05e3a86761e7b70dd084668462ef7ac421f309249c571ec6aef09e7",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/devices/models.py",
+      "to": "finalbuild/backend/vehicle/devices/models.py",
+      "before_sha256": "d49dd5c0885c3fa8628a67697b8f06fad564a0a63e545e811c33bab2ab4bfc88",
+      "after_sha256": "d49dd5c0885c3fa8628a67697b8f06fad564a0a63e545e811c33bab2ab4bfc88",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/devices/registry.py",
+      "to": "finalbuild/backend/vehicle/devices/registry.py",
+      "before_sha256": "e3b9148f3609106cfa84fa057e3981204d90e4a513f626bc3f947acd7c2fcac0",
+      "after_sha256": "e3b9148f3609106cfa84fa057e3981204d90e4a513f626bc3f947acd7c2fcac0",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/diagnostic_discovery.py",
+      "to": "finalbuild/backend/vehicle/diagnostic_discovery.py",
+      "before_sha256": "42bd31f00098d6081bb2344eccb0cf3fa863a083581402f767fa8342547f3c0c",
+      "after_sha256": "42bd31f00098d6081bb2344eccb0cf3fa863a083581402f767fa8342547f3c0c",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/doip/__init__.py",
+      "to": "finalbuild/backend/vehicle/doip/__init__.py",
+      "before_sha256": "35f9c54f6e0e5a6b2e8834ec3db531f6c9d25d8e921dd75727e2860e109b1a92",
+      "after_sha256": "35f9c54f6e0e5a6b2e8834ec3db531f6c9d25d8e921dd75727e2860e109b1a92",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/doip/client.py",
+      "to": "finalbuild/backend/vehicle/doip/client.py",
+      "before_sha256": "d889ff8663d7327fe32c85a85d0b1f9a35bb80eb71aaa013c2fb4d04a087364b",
+      "after_sha256": "d889ff8663d7327fe32c85a85d0b1f9a35bb80eb71aaa013c2fb4d04a087364b",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/external_registry.py",
+      "to": "finalbuild/backend/vehicle/external_registry.py",
+      "before_sha256": "25a75fc24a786d655939763e31066c5bac5e20d92d78131b02896570a692d2c4",
+      "after_sha256": "25a75fc24a786d655939763e31066c5bac5e20d92d78131b02896570a692d2c4",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/interfaces.py",
+      "to": "finalbuild/backend/vehicle/interfaces.py",
+      "before_sha256": "4622d28b0a6b1263194fd2fde11cfb5b268e28f7fbcb2b5e43dc0c174970b3f2",
+      "after_sha256": "4622d28b0a6b1263194fd2fde11cfb5b268e28f7fbcb2b5e43dc0c174970b3f2",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/isotp/__init__.py",
+      "to": "finalbuild/backend/vehicle/isotp/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/isotp/models.py",
+      "to": "finalbuild/backend/vehicle/isotp/models.py",
+      "before_sha256": "c1872a2fd241280a1986f3d40a6dca92398a19024a51bc0b3d65ccd4d5957b11",
+      "after_sha256": "c1872a2fd241280a1986f3d40a6dca92398a19024a51bc0b3d65ccd4d5957b11",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/isotp/stack.py",
+      "to": "finalbuild/backend/vehicle/isotp/stack.py",
+      "before_sha256": "915a1521e1877d17f6e162cc0a2e893c0ee45bfa24c2384aafd832f2a562ec28",
+      "after_sha256": "915a1521e1877d17f6e162cc0a2e893c0ee45bfa24c2384aafd832f2a562ec28",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/j2534/constants.py",
+      "to": "finalbuild/backend/vehicle/j2534/constants.py",
+      "before_sha256": "95b641adc9b0e056ff25dfe5188a340862c4aa282fda3ce750ded097575b9b5c",
+      "after_sha256": "95b641adc9b0e056ff25dfe5188a340862c4aa282fda3ce750ded097575b9b5c",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/j2534/interface.py",
+      "to": "finalbuild/backend/vehicle/j2534/interface.py",
+      "before_sha256": "e55ac0997f41fe12e4762a341654e58307f73721b2d63d30626840649efe6fc3",
+      "after_sha256": "e55ac0997f41fe12e4762a341654e58307f73721b2d63d30626840649efe6fc3",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/j2534/windows.py",
+      "to": "finalbuild/backend/vehicle/j2534/windows.py",
+      "before_sha256": "064cdedd3a2f428065ae4c2985e31155adf83579e9fed46a05aff6c39b33a25e",
+      "after_sha256": "064cdedd3a2f428065ae4c2985e31155adf83579e9fed46a05aff6c39b33a25e",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/__init__.py",
+      "to": "finalbuild/backend/vehicle/network/__init__.py",
+      "before_sha256": "ce2ce7dafc244a4e324acc0e908c64e84554ea605505ce37046353828ca677f8",
+      "after_sha256": "ce2ce7dafc244a4e324acc0e908c64e84554ea605505ce37046353828ca677f8",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/active_discovery.py",
+      "to": "finalbuild/backend/vehicle/network/active_discovery.py",
+      "before_sha256": "8e4f1c8824175161bc2265c4a38eb1828326a3ca924122c2dee91148a8df56db",
+      "after_sha256": "8e4f1c8824175161bc2265c4a38eb1828326a3ca924122c2dee91148a8df56db",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/discovery.py",
+      "to": "finalbuild/backend/vehicle/network/discovery.py",
+      "before_sha256": "2c99953351683aae7b571fe24b9a025c05e9530eb8814fd0ec8fec2fdcefcd7a",
+      "after_sha256": "2c99953351683aae7b571fe24b9a025c05e9530eb8814fd0ec8fec2fdcefcd7a",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/models.py",
+      "to": "finalbuild/backend/vehicle/network/models.py",
+      "before_sha256": "f5cb17bdfcb5df688ff61cc649dddc2a26db5ff443971ea15fcfef3c9a93dddf",
+      "after_sha256": "f5cb17bdfcb5df688ff61cc649dddc2a26db5ff443971ea15fcfef3c9a93dddf",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/multibus.py",
+      "to": "finalbuild/backend/vehicle/network/multibus.py",
+      "before_sha256": "0b5743e46094bfef99e3c668922a5e2b5dd1987535e7babb90f2cfbf730dd933",
+      "after_sha256": "0b5743e46094bfef99e3c668922a5e2b5dd1987535e7babb90f2cfbf730dd933",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/multiplexer.py",
+      "to": "finalbuild/backend/vehicle/network/multiplexer.py",
+      "before_sha256": "52e299b450e0cc1557bae3fc611b815f7d19e43bbb71d5289f36dafc3c804139",
+      "after_sha256": "52e299b450e0cc1557bae3fc611b815f7d19e43bbb71d5289f36dafc3c804139",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/network/runtime.py",
+      "to": "finalbuild/backend/vehicle/network/runtime.py",
+      "before_sha256": "a1653ddc381b250731291ff5424230a3aa8c5c403d99fbbe86ca412663218529",
+      "after_sha256": "a1653ddc381b250731291ff5424230a3aa8c5c403d99fbbe86ca412663218529",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/__init__.py",
+      "to": "finalbuild/backend/vehicle/obd/__init__.py",
+      "before_sha256": "71cfaac8b18a097b533e3ec249196e4642a3ec51327ffec84a2c850f53bda60a",
+      "after_sha256": "71cfaac8b18a097b533e3ec249196e4642a3ec51327ffec84a2c850f53bda60a",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/adapters/__init__.py",
+      "to": "finalbuild/backend/vehicle/obd/adapters/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/adapters/ble.py",
+      "to": "finalbuild/backend/vehicle/obd/adapters/ble.py",
+      "before_sha256": "c12367d42c5e56f9e5c32e1a3a4b4c3a43935a54969e1b3ca7d99cadbd1d64ed",
+      "after_sha256": "c12367d42c5e56f9e5c32e1a3a4b4c3a43935a54969e1b3ca7d99cadbd1d64ed",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/adapters/simulator.py",
+      "to": "finalbuild/backend/vehicle/obd/adapters/simulator.py",
+      "before_sha256": "011525f3be46a0a7fa06b8747b7cd73c9cb6903dcf6ea4b475aa6b2c97fb0a2a",
+      "after_sha256": "011525f3be46a0a7fa06b8747b7cd73c9cb6903dcf6ea4b475aa6b2c97fb0a2a",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/adapters/tcp_wifi.py",
+      "to": "finalbuild/backend/vehicle/obd/adapters/tcp_wifi.py",
+      "before_sha256": "8a2214b7b2434ede8ca06bf57a9f8d0397d15a6fa415ec764ba28e40c5a00543",
+      "after_sha256": "8a2214b7b2434ede8ca06bf57a9f8d0397d15a6fa415ec764ba28e40c5a00543",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/adapters/usb_serial.py",
+      "to": "finalbuild/backend/vehicle/obd/adapters/usb_serial.py",
+      "before_sha256": "4d47b192eb298f18735e7ee5d701fe8ee4f06e46bebbf61dcd7f72412285b1c1",
+      "after_sha256": "4d47b192eb298f18735e7ee5d701fe8ee4f06e46bebbf61dcd7f72412285b1c1",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/client.py",
+      "to": "finalbuild/backend/vehicle/obd/client.py",
+      "before_sha256": "f6862e5adc4fff4ec6c9eab6340fec0eb82b9143086cd0a53aba75ed0dee0b53",
+      "after_sha256": "f6862e5adc4fff4ec6c9eab6340fec0eb82b9143086cd0a53aba75ed0dee0b53",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/pid_catalog.py",
+      "to": "finalbuild/backend/vehicle/obd/pid_catalog.py",
+      "before_sha256": "bf02305f09d5837b00ebbabb9035939dda801352c08b93d34a3fcdf1842a9abc",
+      "after_sha256": "bf02305f09d5837b00ebbabb9035939dda801352c08b93d34a3fcdf1842a9abc",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/protocols/__init__.py",
+      "to": "finalbuild/backend/vehicle/obd/protocols/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/protocols/elm327.py",
+      "to": "finalbuild/backend/vehicle/obd/protocols/elm327.py",
+      "before_sha256": "e9c16371f0194958c74467c4a3da296c39a8e9e5ebfdab74681a95ac60c343c8",
+      "after_sha256": "e9c16371f0194958c74467c4a3da296c39a8e9e5ebfdab74681a95ac60c343c8",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/obd/transport.py",
+      "to": "finalbuild/backend/vehicle/obd/transport.py",
+      "before_sha256": "1005f70557e48d4706e65ddba345f3150c80c3e7849d95625f4f55af8852e7b8",
+      "after_sha256": "1005f70557e48d4706e65ddba345f3150c80c3e7849d95625f4f55af8852e7b8",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/protocol/__init__.py",
+      "to": "finalbuild/backend/vehicle/protocol/__init__.py",
+      "before_sha256": "85afa1b03e75e9f5dd83b0d598cde3557370ac2b738ad8cb34c1e47efd94efe3",
+      "after_sha256": "85afa1b03e75e9f5dd83b0d598cde3557370ac2b738ad8cb34c1e47efd94efe3",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/protocol/elm327_probe.py",
+      "to": "finalbuild/backend/vehicle/protocol/elm327_probe.py",
+      "before_sha256": "6fdbe9bf0dd7b515c478230ff252d66b7392dfadde060fbf5ae25a7b6868f0b7",
+      "after_sha256": "6fdbe9bf0dd7b515c478230ff252d66b7392dfadde060fbf5ae25a7b6868f0b7",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/protocol/registry.py",
+      "to": "finalbuild/backend/vehicle/protocol/registry.py",
+      "before_sha256": "4b2ac35e263086b5f9fe621faa90095563231436ce911d54e8780031cad10a83",
+      "after_sha256": "4b2ac35e263086b5f9fe621faa90095563231436ce911d54e8780031cad10a83",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/protocol/trace.py",
+      "to": "finalbuild/backend/vehicle/protocol/trace.py",
+      "before_sha256": "2950892a94bd5e15f279f5f6ca200be1756248426405ed0949647ad58fb630da",
+      "after_sha256": "2950892a94bd5e15f279f5f6ca200be1756248426405ed0949647ad58fb630da",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/uds/__init__.py",
+      "to": "finalbuild/backend/vehicle/uds/__init__.py",
+      "before_sha256": "efc19615aaccd21a921a3bd19a90d8cf3ef1ad0961f50299b06d290ad59dc8a6",
+      "after_sha256": "efc19615aaccd21a921a3bd19a90d8cf3ef1ad0961f50299b06d290ad59dc8a6",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/uds/client.py",
+      "to": "finalbuild/backend/vehicle/uds/client.py",
+      "before_sha256": "0262f03423e1fc2a5c15c3bc815c5060d08ec01e6aca251b1dae29c2406ef53d",
+      "after_sha256": "0262f03423e1fc2a5c15c3bc815c5060d08ec01e6aca251b1dae29c2406ef53d",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/uds/decoder.py",
+      "to": "finalbuild/backend/vehicle/uds/decoder.py",
+      "before_sha256": "f73120a8f055496246fd8c17ce729d017bca061362509f8c2488c5bc546e2280",
+      "after_sha256": "f73120a8f055496246fd8c17ce729d017bca061362509f8c2488c5bc546e2280",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/uds/diagnostics.py",
+      "to": "finalbuild/backend/vehicle/uds/diagnostics.py",
+      "before_sha256": "0042d095d1465c143e96f982e20495db4a84a0ed6bb8b0304520c08831ab37c8",
+      "after_sha256": "0042d095d1465c143e96f982e20495db4a84a0ed6bb8b0304520c08831ab37c8",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/vehicle/uds/read_only.py",
+      "to": "finalbuild/backend/vehicle/uds/read_only.py",
+      "before_sha256": "f68a983218efc98d8980dd48995818195c88b34b9b2f7b3cd3ebb7f2f65c13e2",
+      "after_sha256": "f68a983218efc98d8980dd48995818195c88b34b9b2f7b3cd3ebb7f2f65c13e2",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/__init__.py",
+      "before_sha256": "abcf0732ee1ee34c387c31519c4fd33648d3deac16e5888f7d80f5c9e84d58bb",
+      "after_sha256": "ad527ebe044c2f0d2c8f0529cc1fdf2a955cd9f84ffa05e60f7f66448d1bab90",
+      "status": "ADAPTED import/resource shim"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/adapters/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/adapters/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/adapters/can_simulator.py",
+      "to": "finalbuild/backend/legacy_vehicle/adapters/can_simulator.py",
+      "before_sha256": "caaadfea47400aedaf9c1d280c7af1261ba71ddfb1f2cd59e16fd23e7c94fed8",
+      "after_sha256": "caaadfea47400aedaf9c1d280c7af1261ba71ddfb1f2cd59e16fd23e7c94fed8",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/adapters/uds_simulator.py",
+      "to": "finalbuild/backend/legacy_vehicle/adapters/uds_simulator.py",
+      "before_sha256": "5ff319116fcd30d78e9f14585e01b625c119ba3638a3d5d1f4fb124f4a1fc92d",
+      "after_sha256": "5ff319116fcd30d78e9f14585e01b625c119ba3638a3d5d1f4fb124f4a1fc92d",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/can/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/can/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/can/models.py",
+      "to": "finalbuild/backend/legacy_vehicle/can/models.py",
+      "before_sha256": "93b1760e9bbe0acdbe9eb08a5d3b038b59b458fe388b6a216605c1581811d8c1",
+      "after_sha256": "93b1760e9bbe0acdbe9eb08a5d3b038b59b458fe388b6a216605c1581811d8c1",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/interfaces.py",
+      "to": "finalbuild/backend/legacy_vehicle/interfaces.py",
+      "before_sha256": "afaa6400165632a67ba28cc58d75f2b7817d58df254bff13a202f8ad2cf96640",
+      "after_sha256": "afaa6400165632a67ba28cc58d75f2b7817d58df254bff13a202f8ad2cf96640",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/isotp/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/isotp/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/isotp/stack.py",
+      "to": "finalbuild/backend/legacy_vehicle/isotp/stack.py",
+      "before_sha256": "df5f15bda37e72b221c507e6dac25bb0dce3d2e870b34a08fbdf2b26c7825db2",
+      "after_sha256": "df5f15bda37e72b221c507e6dac25bb0dce3d2e870b34a08fbdf2b26c7825db2",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/network/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/network/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/network/active_discovery.py",
+      "to": "finalbuild/backend/legacy_vehicle/network/active_discovery.py",
+      "before_sha256": "16a33978d24fc23fa89575303201066b72a48aefee4c4e977eb8e4cc9d3f0d7a",
+      "after_sha256": "16a33978d24fc23fa89575303201066b72a48aefee4c4e977eb8e4cc9d3f0d7a",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/network/discovery.py",
+      "to": "finalbuild/backend/legacy_vehicle/network/discovery.py",
+      "before_sha256": "a25ed1e2e3ca8d0357e85fc048bf9b436628ee02f24c67f10a559477861933cb",
+      "after_sha256": "a25ed1e2e3ca8d0357e85fc048bf9b436628ee02f24c67f10a559477861933cb",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/network/models.py",
+      "to": "finalbuild/backend/legacy_vehicle/network/models.py",
+      "before_sha256": "1d81838cdb8fd1c5aafa79be99f5bdc566f75af3574aa5a9911630795f34acbd",
+      "after_sha256": "1d81838cdb8fd1c5aafa79be99f5bdc566f75af3574aa5a9911630795f34acbd",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/network/multibus.py",
+      "to": "finalbuild/backend/legacy_vehicle/network/multibus.py",
+      "before_sha256": "e215ff6c35d1786b0be31cdafd9a89c056071d0f00fc1af076d43a1e6b34a269",
+      "after_sha256": "e215ff6c35d1786b0be31cdafd9a89c056071d0f00fc1af076d43a1e6b34a269",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/obd/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/obd/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/obd/client.py",
+      "to": "finalbuild/backend/legacy_vehicle/obd/client.py",
+      "before_sha256": "ee6400c38720ab071c2b50d97f14f0cfa84585ef3377d76a38b57ba872e6f061",
+      "after_sha256": "ee6400c38720ab071c2b50d97f14f0cfa84585ef3377d76a38b57ba872e6f061",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/obd/service.py",
+      "to": "finalbuild/backend/legacy_vehicle/obd/service.py",
+      "before_sha256": "d3b904dbc4bc7370cf2d31ee217c8c0909fa4d230604146b2048f13c8f9f70cc",
+      "after_sha256": "d3b904dbc4bc7370cf2d31ee217c8c0909fa4d230604146b2048f13c8f9f70cc",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/protocol/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/protocol/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/protocol/trace.py",
+      "to": "finalbuild/backend/legacy_vehicle/protocol/trace.py",
+      "before_sha256": "4bc37af9ac75e00a15670a220895d4cf2d21ceb744fc20887866b401f948ce2c",
+      "after_sha256": "4bc37af9ac75e00a15670a220895d4cf2d21ceb744fc20887866b401f948ce2c",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/uds/__init__.py",
+      "to": "finalbuild/backend/legacy_vehicle/uds/__init__.py",
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/uds/client.py",
+      "to": "finalbuild/backend/legacy_vehicle/uds/client.py",
+      "before_sha256": "64e9139db199434d93b4204e279e6e9ce0f616b67fc507ee2e002619c6f998c7",
+      "after_sha256": "64e9139db199434d93b4204e279e6e9ce0f616b67fc507ee2e002619c6f998c7",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/backend/vehicle/uds/diagnostics.py",
+      "to": "finalbuild/backend/legacy_vehicle/uds/diagnostics.py",
+      "before_sha256": "5afd220aa69af3f3b5209b55fecac441729071b2fa746d66ae5b251f6fa7e83a",
+      "after_sha256": "5afd220aa69af3f3b5209b55fecac441729071b2fa746d66ae5b251f6fa7e83a",
+      "status": "UNCHANGED"
+    },
+    {
+      "from": "finalbuild/apps/desktop/main.py",
+      "to": "finalbuild/backend/desktop_runtime.py",
+      "before_sha256": "b4017dfe0f6f8c7f0664edfb77ff7595d02cbad1ed05f05e42e96acc30e2e878",
+      "after_sha256": "515e714bb6d9a5395204f671632828053ced1cff35fd88c77980985003e21225",
+      "status": "ADAPTED centralized entry/resource root"
+    },
+    {
+      "from": "finalbuild/apps/desktop/backend_worker.py",
+      "to": "finalbuild/backend/server.py",
+      "before_sha256": "6163918debf3dea7a0500f56c2395ac58793f84f1357a967eb59df4fc8327f2b",
+      "after_sha256": "4636bf8333095f371bac3dd8b5d21dcac560f06f61fe41c7c40f7cd721cd9e41",
+      "status": "ADAPTED centralized entry/resource root"
+    },
+    {
+      "from": "finalbuild/shared/reporting.py",
+      "to": "finalbuild/backend/reporting.py",
+      "before_sha256": "bb60a440715b229edf29438017b538002686abfad1f381f1561c5a8ad5d92140",
+      "after_sha256": "bb60a440715b229edf29438017b538002686abfad1f381f1561c5a8ad5d92140",
+      "status": "UNCHANGED"
+    }
+  ],
+  "method": "Compare moved source blobs with baseline; protocol algorithms preserved, package bootstraps/resource roots/legacy entry imports adapted as recorded."
+}

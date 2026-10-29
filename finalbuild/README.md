@@ -1,5 +1,9 @@
 # AI Auto Diagnostic Platform
 
+Current deployment is three apps (USER/CUSTOMER/MARKET) and one independent backend.
+See [current build/run instructions](../docs/business/THREE_APP_DEPLOYMENT.md).
+The phase notes below describe historical milestones and legacy combined UI.
+
 Evidence-driven, offline-capable automotive diagnostic platform. Phase 1 is a software-only MVP with manual diagnostics, deterministic rules, local AI interfaces, RAG interfaces, a vehicle simulator, and automated regression testing.
 
 ## Phase 1 status
